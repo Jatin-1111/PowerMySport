@@ -1,3 +1,11 @@
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildExperienceLevel,
+  ChildGender,
+  ChildTrainingType,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
 import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, IPayoutMethod, PaginationMetadata } from "@/types";
 
@@ -60,7 +68,7 @@ export interface ExpertSessionPlayer {
   _id?: string;
   name: string;
   age?: number;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   sportsFocus?: string[];
   topSportMatch?: { sport: string; fitLabel: string; score: number };
   energyType?: string;
@@ -119,7 +127,7 @@ export interface ExpertSessionPlayerDetail {
   name: string;
   age?: number;
   dob?: string;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
   sportsFocus?: string[];
   yearsPlaying?: number;
@@ -139,13 +147,13 @@ export interface ExpertSessionPlayerDetail {
   contactComfort?: "loves" | "neutral" | "avoids";
   environment?: "outdoor" | "indoor" | "no-preference";
   waterComfort?: "comfortable" | "neutral" | "uncomfortable";
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
   eyesight?: "sharp" | "corrected" | "limited";
   agility?: "high" | "moderate" | "low";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  experienceLevel?: "beginner" | "intermediate" | "competitive";
-  trainingType?: "self" | "club" | "academy" | "private";
+  weeklyHoursCategory?: ChildWeeklyHours;
+  experienceLevel?: ChildExperienceLevel;
+  trainingType?: ChildTrainingType;
   currentStandingTier?: number;
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
   wizardCompletedAt?: string;

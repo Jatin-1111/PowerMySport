@@ -20,6 +20,14 @@ export interface IPlayerProfile {
 // while admin correctly treated them as optional). See that package for the
 // merge notes.
 import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildExperienceLevel,
+  ChildGender,
+  ChildTrainingType,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
+import type {
   UserRole,
   BookingStatus,
   PaymentUserType,
@@ -74,7 +82,7 @@ export interface Dependent {
   name: string;
   dob: string; // ISO date string
   age?: number;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
   location?: string; // Indian state
 
@@ -89,14 +97,14 @@ export interface Dependent {
   chosenSportAt?: string;
 
   /** What it takes to actually do the sport. */
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  trainingType?: "self" | "club" | "academy" | "private";
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
+  trainingType?: ChildTrainingType;
 
   /** Where they stand in the sport now. */
   yearsPlaying?: number;
-  experienceLevel?: "beginner" | "intermediate" | "competitive";
+  experienceLevel?: ChildExperienceLevel;
   currentStandingTier?: number; // 1-5
 
   personalityTags?: string[];

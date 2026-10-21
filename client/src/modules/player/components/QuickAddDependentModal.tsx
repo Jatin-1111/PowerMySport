@@ -1,5 +1,6 @@
 "use client";
 
+import type { ChildGender } from "@powermysport/shared-types";
 import { toast } from "@/lib/toast";
 import { BinaryCards } from "@/modules/find-sport/components/inputs/BinaryCards";
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
@@ -23,7 +24,7 @@ interface QuickAddDependentModalProps {
 const EMPTY_FORM = {
   name: "",
   dob: "",
-  gender: "MALE" as "MALE" | "FEMALE" | "OTHER",
+  gender: "MALE" as ChildGender,
   relation: DEFAULT_DEPENDENT_RELATION,
 };
 

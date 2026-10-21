@@ -1,3 +1,4 @@
+import type { ChildAmbition, ChildBudgetRange, ChildWeeklyHours } from "@powermysport/shared-types";
 // ─── Pathway Module Types ─────────────────────────────────────────────────────
 
 export type WizardAnswers = {
@@ -32,9 +33,9 @@ export type WizardAnswers = {
   environment: "outdoor" | "indoor" | "no-preference" | null;
   waterComfort: "comfortable" | "neutral" | "uncomfortable" | null;
   // Section E — Practical
-  budget: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus" | null;
-  ambition: "fun" | "competitive" | "national" | "career" | "professional" | null;
-  weeklyHours: "1-3" | "4-7" | "8-12" | "13-plus" | null;
+  budget: ChildBudgetRange | null;
+  ambition: ChildAmbition | null;
+  weeklyHours: ChildWeeklyHours | null;
 };
 
 /** Hard cap on how many sports a parent can put on their own shortlist. */
@@ -103,7 +104,7 @@ export type SportProfile = {
   requiresWater: boolean;
   requiresContact: boolean; // contact avoidance is a deal-breaker
   // Indian context
-  minBudgetTier: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
+  minBudgetTier: ChildBudgetRange;
   minCityTier: 1 | 2 | 3; // 1=all cities, 3=only tier-1 metros
   ageStartSensitivity: "critical" | "moderate" | "flexible";
   ageWindowIdeal: [number, number];

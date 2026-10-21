@@ -1,3 +1,4 @@
+import type { ChildGender } from "@powermysport/shared-types";
 import { Player } from "../../client/models/Player";
 import { resolveChildAge } from "../../utils/childAge";
 
@@ -124,7 +125,7 @@ type DependentRow = {
   userId: unknown;
   age?: number | null;
   dob?: Date | null;
-  gender?: "MALE" | "FEMALE" | "OTHER" | null;
+  gender?: ChildGender | null;
   sportsFocus?: string[] | null;
   chosenSport?: string | null;
   location?: string | null;

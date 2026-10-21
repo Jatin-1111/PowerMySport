@@ -7,7 +7,7 @@ export interface KnownSportForm {
   dateOfBirth: string; // ISO "YYYY-MM-DD" or ""
   gender: string | null;
   state: string | null;
-  trainingType: string | null; // "self" | "club" | "academy" | "private"
+  trainingType: string | null; // one of CHILD_TRAINING_TYPES
   heightCm: number | null;
   weightKg: number | null;
   ambition: string | null;

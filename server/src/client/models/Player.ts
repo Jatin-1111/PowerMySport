@@ -1,3 +1,18 @@
+import {
+  CHILD_AMBITIONS,
+  CHILD_BUDGET_RANGES,
+  CHILD_EXPERIENCE_LEVELS,
+  CHILD_TRAINING_TYPES,
+  CHILD_WEEKLY_HOURS,
+} from "@powermysport/shared-types";
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildExperienceLevel,
+  ChildGender,
+  ChildTrainingType,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
 import mongoose, { Document, Schema } from "mongoose";
 
 /**
@@ -53,7 +68,7 @@ export interface PlayerDocument extends Document {
   name: string;
   age?: number;
   dob?: Date;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
   sportsFocus: string[];
   yearsPlaying?: number;
@@ -62,11 +77,11 @@ export interface PlayerDocument extends Document {
   /** The sport-matching quiz's own answers; see QuizAnswers. Merged on each save; a retake overwrites every answer. */
   quiz?: QuizAnswers;
   // Wizard practical (finer-grained than budgetTier)
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  experienceLevel?: "beginner" | "intermediate" | "competitive";
-  trainingType?: "self" | "club" | "academy" | "private";
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
+  experienceLevel?: ChildExperienceLevel;
+  trainingType?: ChildTrainingType;
   /** Sports the parent shortlisted themselves in the assessment (max 3). */
   consideringSports?: string[];
   // Build-the-profile: current standing / track record
@@ -135,13 +150,13 @@ const playerSchema = new Schema<PlayerDocument>(
     },
     quiz: { type: quizSchema, default: undefined },
     // Wizard practical
-    budgetRange: { type: String, enum: ["under-3k", "3k-7k", "7k-15k", "15k-plus"] },
+    budgetRange: { type: String, enum: [...CHILD_BUDGET_RANGES] },
     // "professional" is retained for rows written before "career" replaced it
     // as the top visible option — the wizard no longer offers it.
-    ambition: { type: String, enum: ["fun", "competitive", "national", "career", "professional"] },
-    weeklyHoursCategory: { type: String, enum: ["1-3", "4-7", "8-12", "13-plus"] },
-    experienceLevel: { type: String, enum: ["beginner", "intermediate", "competitive"] },
-    trainingType: { type: String, enum: ["self", "club", "academy", "private"] },
+    ambition: { type: String, enum: [...CHILD_AMBITIONS] },
+    weeklyHoursCategory: { type: String, enum: [...CHILD_WEEKLY_HOURS] },
+    experienceLevel: { type: String, enum: [...CHILD_EXPERIENCE_LEVELS] },
+    trainingType: { type: String, enum: [...CHILD_TRAINING_TYPES] },
     consideringSports: { type: [String], default: [] },
     // Build-the-profile: current standing / track record
     currentStandingTier: { type: Number, min: 1, max: 5 },

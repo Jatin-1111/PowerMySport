@@ -4,6 +4,12 @@
 // height category, budget tier, objective and weekly hours are not stored; they are
 // derived from the fields kept (see the helpers below).
 
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildGender,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
 import type { Dependent, DependentQuiz } from "@/types";
 import type { SportFitResult, SportResult, WizardAnswers } from "../types";
 
@@ -129,13 +135,13 @@ export function buildDependentPayload(
 export interface WizardSourceProfile {
   age?: number;
   dob?: string | Date;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   location?: string;
   sportsFocus?: string[];
   consideringSports?: string[];
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
   quiz?: DependentQuiz | null;
 }
 

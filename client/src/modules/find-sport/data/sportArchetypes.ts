@@ -10,6 +10,7 @@
 // @/modules/sports/config/sportArchetypes. This file keeps only the
 // wizard-facing ladders and ambition options.
 
+import type { ChildAmbition, ChildExperienceLevel } from "@powermysport/shared-types";
 import {
   getSportArchetypeInfo,
   normalizeSportKey,
@@ -206,7 +207,7 @@ export function getGoverningBodyName(sport: string): string | null {
 //    written with it, but is no longer offered.
 
 export interface AmbitionOption {
-  value: "fun" | "competitive" | "national" | "career" | "professional";
+  value: ChildAmbition;
   label: string;
   context: string;
 }
@@ -301,7 +302,7 @@ export function getAmbitionOptions(sport: string): AmbitionOption[] {
 
 export function deriveExperienceLevel(
   tier: number | null | undefined
-): "beginner" | "intermediate" | "competitive" | undefined {
+): ChildExperienceLevel | undefined {
   if (tier == null) return undefined;
   if (tier <= 2) return "beginner";
   if (tier === 3) return "intermediate";

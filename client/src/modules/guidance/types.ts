@@ -1,3 +1,9 @@
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildGender,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
 import type { DependentQuiz } from "@/types";
 // ─── Guidance Module Types ────────────────────────────────────────────────────
 
@@ -130,16 +136,16 @@ export type PlayerProfile = {
   name: string;
   age?: number;
   dob?: string;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   sportsFocus: string[];
   yearsPlaying?: number;
   personalityTags?: string[];
   location?: string;
   /** The quiz answers, as the server stores them: one record, absent until the quiz is taken. */
   quiz?: DependentQuiz;
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
   /** Sports the parent shortlisted themselves in the assessment (max 3). */
   consideringSports?: string[];
   sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;

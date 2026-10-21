@@ -1,3 +1,11 @@
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildExperienceLevel,
+  ChildGender,
+  ChildTrainingType,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
 import mongoose from "mongoose";
 import { Booking } from "../../../client/models/Booking";
 import { Player, QuizAnswers } from "../../../client/models/Player";
@@ -138,7 +146,7 @@ export interface AddDependentPayload {
   parentalConsent?: boolean;
   age?: number;
   dob?: string | Date;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
   sportsFocus?: string[];
   sports?: string[];
@@ -148,11 +156,11 @@ export interface AddDependentPayload {
   /** The quiz answers; merged over any earlier set, and null clears them. */
   quiz?: QuizAnswers | null;
   // Wizard practical
-  budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
-  ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
-  experienceLevel?: "beginner" | "intermediate" | "competitive";
-  trainingType?: "self" | "club" | "academy" | "private";
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
+  experienceLevel?: ChildExperienceLevel;
+  trainingType?: ChildTrainingType;
   consideringSports?: string[];
   // Build-the-profile: current standing / track record
   currentStandingTier?: number;

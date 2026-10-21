@@ -1,3 +1,9 @@
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildGender,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
 import { Medal, Star, Trophy, type LucideIcon } from "lucide-react";
 
 // ─── Wizard-derived field labels ─────────────────────────────────────────────
@@ -6,16 +12,17 @@ import { Medal, Star, Trophy, type LucideIcon } from "lucide-react";
 // my-profile dependent cards so both surfaces describe the same values the
 // same way.
 
-export const GENDER_LABELS: Record<string, string> = {
+export const GENDER_LABELS: Record<ChildGender, string> = {
   MALE: "Male",
   FEMALE: "Female",
   OTHER: "Other",
 };
 
-export const AMBITION_LABELS: Record<string, string> = {
+export const AMBITION_LABELS: Record<ChildAmbition, string> = {
   fun: "Plays for fun",
   competitive: "Competitive",
   national: "National-level goal",
+  career: "Career in sport",
   professional: "Professional pathway",
 };
 
@@ -104,14 +111,14 @@ export const HEIGHT_LABELS: Record<string, string> = {
   tall: "Tall for age",
 };
 
-export const BUDGET_RANGE_LABELS: Record<string, string> = {
+export const BUDGET_RANGE_LABELS: Record<ChildBudgetRange, string> = {
   "under-3k": "Under ₹3,000/month",
   "3k-7k": "₹3,000 – 7,000/month",
   "7k-15k": "₹7,000 – 15,000/month",
   "15k-plus": "₹15,000+/month",
 };
 
-export const WEEKLY_HOURS_LABELS: Record<string, string> = {
+export const WEEKLY_HOURS_LABELS: Record<ChildWeeklyHours, string> = {
   "1-3": "1–3 hrs/week",
   "4-7": "4–7 hrs/week",
   "8-12": "8–12 hrs/week",

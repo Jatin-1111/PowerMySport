@@ -16,6 +16,7 @@ import type {
   VenueListerProfile,
   User as SharedUser,
 } from "@powermysport/shared-types";
+import type { ChildGender } from "@powermysport/shared-types";
 export type { UserRole, BookingStatus, PaymentUserType, PaymentStatus, VenueListerProfile };
 
 // Admin role types
@@ -51,7 +52,7 @@ export interface Dependent {
   _id?: string;
   name: string;
   dob: string; // ISO date string
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
   sports?: string[];
 }

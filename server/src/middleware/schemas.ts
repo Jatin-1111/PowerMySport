@@ -1,3 +1,10 @@
+import {
+  CHILD_AMBITIONS,
+  CHILD_BUDGET_RANGES,
+  CHILD_EXPERIENCE_LEVELS,
+  CHILD_TRAINING_TYPES,
+  CHILD_WEEKLY_HOURS,
+} from "@powermysport/shared-types";
 import { z } from "zod";
 
 export const registerSchema = z.object({
@@ -1451,7 +1458,7 @@ export const coachWaitlistSchema = z.object({
 export const MAX_DEPENDENTS_PER_PARENT = 10;
 
 /** An enum that also takes "" or null, which both mean "not answered". */
-const childEnum = <T extends [string, ...string[]]>(values: T) =>
+const childEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess((value) => (value === "" ? null : value), z.enum(values).nullish());
 
 const childText = (max: number) =>
@@ -1508,11 +1515,11 @@ const childFields = {
   yearsPlaying: childNumber(0, 20),
   personalityTags: childTextList(20, 40).optional(),
   quiz: childQuiz.nullish(),
-  budgetRange: childEnum(["under-3k", "3k-7k", "7k-15k", "15k-plus"]),
-  ambition: childEnum(["fun", "competitive", "national", "career", "professional"]),
-  weeklyHoursCategory: childEnum(["1-3", "4-7", "8-12", "13-plus"]),
-  experienceLevel: childEnum(["beginner", "intermediate", "competitive"]),
-  trainingType: childEnum(["self", "club", "academy", "private"]),
+  budgetRange: childEnum(CHILD_BUDGET_RANGES),
+  ambition: childEnum(CHILD_AMBITIONS),
+  weeklyHoursCategory: childEnum(CHILD_WEEKLY_HOURS),
+  experienceLevel: childEnum(CHILD_EXPERIENCE_LEVELS),
+  trainingType: childEnum(CHILD_TRAINING_TYPES),
   currentStandingTier: childNumber(1, 5),
   sportMatches: z
     .array(
