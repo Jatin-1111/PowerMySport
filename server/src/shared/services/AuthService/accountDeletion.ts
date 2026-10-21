@@ -48,67 +48,21 @@ export const requestAccountDeletion = async (
 };
 
 /**
- * Step 2 of account deletion: called by the scheduled job
- * (`finalizePendingAccountDeletions` in scheduledJobs.ts) once the grace
- * period has elapsed with no recovery login. A hard delete of the User
- * document would orphan or corrupt historical Booking/Payment/Review
- * documents that reference it, and financial records need to survive for
- * tax/dispute purposes — so this anonymizes personally-identifying fields
- * on the User document itself (Booking/Payment history is intentionally
- * left untouched), then cascade-deletes the data that has no legal/
- * financial retention need (calendar events, friend requests, AI guidance
- * chat history, a parent's children's Player profiles, etc).
+ * Removes the data a user owns that has no legal or financial retention need:
+ * calendar events, friend requests, guidance and assistant chats, children's
+ * profiles and everything that names them, carts, community reactions, and
+ * notifications. Bookings, payments, orders and wallets are NOT touched; they
+ * outlive the account for tax and dispute purposes.
  *
- * NOTE: `delete user.field` on a Mongoose document does NOT issue an
- * $unset — it only removes the JS property from the in-memory object.
- * We use a single updateOne with $set + $unset to guarantee the fields
- * are actually removed from MongoDB.
+ * It does not touch the User document. `finalizeAccountDeletion` anonymizes the
+ * user and then calls this; the dummy-data script calls it and then deletes the
+ * user outright. One list, so a collection added here is cleaned by both, and the
+ * two cannot drift apart (they did: the script used to delete the account and leave
+ * children, guidance, chats and check-ins behind).
+ *
+ * Each step is independently try/caught so one failure does not block the rest.
  */
-export const finalizeAccountDeletion = async (userId: string): Promise<void> => {
-  const user = await User.findById(userId).select("_id");
-  if (!user) return;
-
-  const anonymizedTag = `deleted-${user._id.toString()}`;
-
-  await User.updateOne(
-    { _id: user._id },
-    {
-      $set: {
-        name: "Deleted User",
-        email: `${anonymizedTag}@deleted.powermysport.com`,
-        phone: anonymizedTag,
-        isActive: false,
-        pendingDeletion: false,
-        deactivatedAt: new Date(),
-        addresses: [],
-        refundMethods: [],
-        pushSubscriptions: [],
-      },
-      $unset: {
-        password: "",
-        googleId: "",
-        photoUrl: "",
-        photoS3Key: "",
-        dob: "",
-        city: "",
-        defaultAddressId: "",
-        shippingAddress: "",
-        legalConsents: "",
-        notificationPreferences: "",
-        reminderPreferences: "",
-        resetPasswordToken: "",
-        resetPasswordExpires: "",
-        parentProfile: "",
-        playerProfile: "",
-        bio: "",
-        sportInterests: "",
-        involvementYears: "",
-        deletionRequestedAt: "",
-      },
-    }
-  );
-  invalidateAccountStatusCache(user._id.toString());
-
+export const cascadeDeleteUserData = async (userId: string): Promise<void> => {
   // Cascade-delete data with no legal/financial retention need. Each is
   // independently try/caught so one failure doesn't block the rest —
   // matching the defensive style already used in runScheduledCleanup().
@@ -263,7 +217,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     try {
       await run();
     } catch (error) {
-      log.error(`finalizeAccountDeletion: failed to clean up ${label} for user ${userId}:`, error);
+      log.error(`cascadeDeleteUserData: failed to clean up ${label} for user ${userId}:`, error);
     }
   }
 
@@ -280,7 +234,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
           await s3Service.deleteFile(doc.s3Key, "documents");
         } catch (error) {
           log.error(
-            `finalizeAccountDeletion: failed to delete S3 document ${doc.s3Key} for user ${userId}:`,
+            `cascadeDeleteUserData: failed to delete S3 document ${doc.s3Key} for user ${userId}:`,
             error
           );
         }
@@ -289,7 +243,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
     await ConciergeRequest.deleteMany({ userId });
   } catch (error) {
     log.error(
-      `finalizeAccountDeletion: failed to clean up ConciergeRequest for user ${userId}:`,
+      `cascadeDeleteUserData: failed to clean up ConciergeRequest for user ${userId}:`,
       error
     );
   }
@@ -305,6 +259,70 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
       error
     );
   }
+};
+
+/**
+ * Step 2 of account deletion: called by the scheduled job
+ * (`finalizePendingAccountDeletions` in scheduledJobs.ts) once the grace
+ * period has elapsed with no recovery login. A hard delete of the User
+ * document would orphan or corrupt historical Booking/Payment/Review
+ * documents that reference it, and financial records need to survive for
+ * tax/dispute purposes — so this anonymizes personally-identifying fields
+ * on the User document itself (Booking/Payment history is intentionally
+ * left untouched), then cascade-deletes the data that has no legal/
+ * financial retention need (see `cascadeDeleteUserData`).
+ *
+ * NOTE: `delete user.field` on a Mongoose document does NOT issue an
+ * $unset — it only removes the JS property from the in-memory object.
+ * We use a single updateOne with $set + $unset to guarantee the fields
+ * are actually removed from MongoDB.
+ */
+export const finalizeAccountDeletion = async (userId: string): Promise<void> => {
+  const user = await User.findById(userId).select("_id");
+  if (!user) return;
+
+  const anonymizedTag = `deleted-${user._id.toString()}`;
+
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: {
+        name: "Deleted User",
+        email: `${anonymizedTag}@deleted.powermysport.com`,
+        phone: anonymizedTag,
+        isActive: false,
+        pendingDeletion: false,
+        deactivatedAt: new Date(),
+        addresses: [],
+        refundMethods: [],
+        pushSubscriptions: [],
+      },
+      $unset: {
+        password: "",
+        googleId: "",
+        photoUrl: "",
+        photoS3Key: "",
+        dob: "",
+        city: "",
+        defaultAddressId: "",
+        shippingAddress: "",
+        legalConsents: "",
+        notificationPreferences: "",
+        reminderPreferences: "",
+        resetPasswordToken: "",
+        resetPasswordExpires: "",
+        parentProfile: "",
+        playerProfile: "",
+        bio: "",
+        sportInterests: "",
+        involvementYears: "",
+        deletionRequestedAt: "",
+      },
+    }
+  );
+  invalidateAccountStatusCache(user._id.toString());
+
+  await cascadeDeleteUserData(userId);
 };
 
 /**
