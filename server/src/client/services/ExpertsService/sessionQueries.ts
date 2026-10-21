@@ -8,6 +8,7 @@ import {
   withFreshPhoto,
   serializeFullPlayerForExpert,
   fetchPlayerSummariesByIds,
+  playerForSession,
   serializeSession,
 } from "./shared";
 import { assertExpertOperational } from "./sessionLifecycle";
@@ -32,9 +33,7 @@ export const getExpertSessionForUser = async (params: {
   return serializeSession(session, {
     expert: expert ? await withFreshPhoto(serializeExpert(expert), expert) : undefined,
     expertInPersonAddress: expert?.inPersonAddress,
-    player: (session as any).playerId
-      ? playerSummaries.get((session as any).playerId.toString())
-      : undefined,
+    player: playerForSession(session, playerSummaries),
   });
 };
 
@@ -99,7 +98,11 @@ export const getExpertSessionPlayerDetail = async (params: {
   assertExpertMayReadChildProfile(session);
 
   if (!session.playerId) {
-    throw new Error("No player profile is linked to this session");
+    throw new Error(
+      (session as any).playerSnapshot
+        ? "The parent has deleted this child's profile"
+        : "No player profile is linked to this session"
+    );
   }
 
   const player = await Player.findById(session.playerId).lean();
@@ -129,7 +132,7 @@ export const listUserExpertSessions = async (userId: string) => {
       return serializeSession(s, {
         expert: e ? await withFreshPhoto(serializeExpert(e), e) : undefined,
         expertInPersonAddress: e?.inPersonAddress,
-        player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
+        player: playerForSession(s, playerSummaries),
       });
     })
   );
@@ -158,7 +161,7 @@ export const listExpertOwnSessions = async (expertUserId: string) => {
     return serializeSession(s, {
       clientName: u?.name || "Client",
       expertTimezone: tz,
-      player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
+      player: playerForSession(s, playerSummaries),
     });
   });
 };
@@ -201,7 +204,7 @@ export const getExpertSessionsForAdmin = async (expertId: string) => {
         ...serializeSession(s, {
           clientName: u?.name || "Client",
           expertTimezone: tz,
-          player: s.playerId ? playerSummaries.get(s.playerId.toString()) : undefined,
+          player: playerForSession(s, playerSummaries),
         }),
         awaitingMom: isAwaitingMom(s),
       };

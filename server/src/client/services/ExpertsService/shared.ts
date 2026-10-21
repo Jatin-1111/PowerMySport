@@ -243,6 +243,20 @@ export const fetchPlayerSummariesByIds = async (
   );
 };
 
+/**
+ * Who a session was about, for display: the child's current briefing, or, once the parent
+ * has deleted the profile, the name and age kept on the session. `removed` lets a screen
+ * say the profile is gone instead of showing a name with nothing behind it.
+ */
+export const playerForSession = (
+  session: { playerId?: unknown; playerSnapshot?: { name?: string; age?: number } | null },
+  summaries: Map<string, ReturnType<typeof summarizePlayerForExpert>>
+) => {
+  if (session.playerId) return summaries.get(String(session.playerId));
+  const snapshot = session.playerSnapshot;
+  return snapshot?.name ? { name: snapshot.name, age: snapshot.age, removed: true } : undefined;
+};
+
 export const serializeSession = (
   session: any,
   extra: {

@@ -29,6 +29,12 @@ export interface ExpertSessionDocument extends Document {
   userId: mongoose.Types.ObjectId;
   /** The child (Player, type DEPENDENT) this session is about, if the parent picked one when booking. */
   playerId?: mongoose.Types.ObjectId;
+  /**
+   * Who the session was about, kept when the parent deletes the child's profile: only the
+   * name and the age at that time, so the history still reads ("Session for Riya, 11")
+   * without keeping the profile itself. `playerId` is cleared when this is set.
+   */
+  playerSnapshot?: { name: string; age?: number };
   amount: number;
   status: ExpertSessionStatus;
   paymentStatus: "PENDING" | "COMPLETED" | "FAILED";
@@ -117,6 +123,13 @@ const expertSessionSchema = new Schema<ExpertSessionDocument>(
       type: Schema.Types.ObjectId,
       ref: "Player",
       index: true,
+    },
+    playerSnapshot: {
+      type: new Schema(
+        { name: { type: String, trim: true }, age: { type: Number } },
+        { _id: false }
+      ),
+      default: undefined,
     },
     amount: { type: Number, required: true, min: 0 },
     status: {

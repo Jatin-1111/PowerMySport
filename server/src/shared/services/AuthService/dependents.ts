@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { Booking } from "../../../client/models/Booking";
+import { ExpertSession } from "../../../client/models/ExpertBooking";
 import { Player, QuizAnswers } from "../../../client/models/Player";
 import { User, UserDocument } from "../../../client/models/User";
 import { resolveChildAge } from "../../../utils/childAge";
@@ -336,6 +337,34 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
       `Cannot delete dependent with ${bookingCount} active booking(s). Please cancel or complete these bookings first.`
     );
   }
+
+  // An expert session still ahead of us is about this child: the expert reads the
+  // profile to prepare, and a paid session cannot lose who it was for. Once it is
+  // completed or cancelled the parent may delete.
+  const openSessions = await ExpertSession.countDocuments({
+    playerId: dependent._id,
+    $or: [
+      { status: { $in: ["PAID", "SCHEDULED"] } },
+      { status: "PENDING_PAYMENT", holdExpiresAt: { $gt: new Date() } },
+    ],
+  });
+  if (openSessions > 0) {
+    throw new AppError(
+      `Cannot delete ${dependent.name} while ${openSessions} expert session(s) for them are still open. Delete the profile after they are completed or cancelled.`,
+      409
+    );
+  }
+
+  // The sessions that are over keep the child's name and age, and lose the link: the
+  // profile is about to go, and the history should still say who it was for. Done
+  // before the delete so a failure here leaves the child in place.
+  await ExpertSession.updateMany(
+    { playerId: dependent._id },
+    {
+      $set: { playerSnapshot: { name: dependent.name, age: resolveChildAge(dependent) } },
+      $unset: { playerId: "" },
+    }
+  );
 
   await Player.deleteOne({ _id: dependentId });
 
