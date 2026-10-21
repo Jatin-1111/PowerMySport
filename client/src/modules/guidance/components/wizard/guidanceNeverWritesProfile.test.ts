@@ -18,4 +18,8 @@ describe("the guidance wizard", () => {
     expect(source).toMatch(/profileSuggestions\(/);
     expect(source).toMatch(/suggestions=\{suggestions\}/);
   });
+
+  it("does not show the raw error from a failed request to the parent", () => {
+    expect(source).not.toMatch(/setError\(\s*err instanceof Error \? err\.message/);
+  });
 });

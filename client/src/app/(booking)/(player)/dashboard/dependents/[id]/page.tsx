@@ -512,8 +512,9 @@ export default function DependentDetailPage() {
               <div>
                 <h3 className="text-ink font-medium">Delete this profile</h3>
                 <p className="text-ink-muted mt-1 max-w-xl text-pretty text-sm">
-                  Permanently removes {dependent.name}&apos;s profile, assessment results, and
-                  booking history. This cannot be undone.
+                  Permanently removes {dependent.name}&apos;s profile, assessment results and saved
+                  plans. A child with an open booking or session cannot be deleted until it is
+                  finished or cancelled. This cannot be undone.
                 </p>
               </div>
               <Button

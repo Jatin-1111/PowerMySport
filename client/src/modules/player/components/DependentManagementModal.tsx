@@ -197,8 +197,12 @@ export default function DependentManagementModal({
           <Button type="button" variant="secondary" onClick={handleBack} disabled={isLoading}>
             {stepIndex === 0 ? "Cancel" : "Back"}
           </Button>
+          {/* Distinct keys: without them React reuses one button and flips its type to
+              "submit" in the middle of the click that reaches the last step, so the form
+              is submitted (and the dialog closes) before step 3 is ever shown. */}
           {isLastStep ? (
             <Button
+              key="save"
               type="submit"
               form="dependent-form"
               loading={isLoading}
@@ -208,6 +212,7 @@ export default function DependentManagementModal({
             </Button>
           ) : (
             <Button
+              key="next"
               type="button"
               onClick={handleNext}
               disabled={stepIndex === 0 && !step0CanAdvance}

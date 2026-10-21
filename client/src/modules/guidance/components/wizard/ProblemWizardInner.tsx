@@ -187,7 +187,12 @@ export function ProblemWizardInner({
       setLoading(false);
       setSubmission(res.data.data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to generate plan. Please try again.");
+      // The raw reason (the AI provider's JSON, a parse error) is for the console, not the
+      // parent: it was being shown as the error under the Get my plan button.
+      console.error("Guidance request failed:", err);
+      setError(
+        "We could not build your plan just now. Nothing was saved. Please try again in a minute."
+      );
       setLoading(false);
     }
   };
