@@ -36,6 +36,7 @@ import {
   trackCommunityRoleMixEvent,
 } from "./communityShared";
 import mongoose from "mongoose";
+import { closeConversationRooms, evictUserFromConversationRooms } from "./CommunityRealtimeService";
 
 /**
  * Groups: creation, settings, membership and invites.
@@ -392,6 +393,11 @@ export const communityGroupService = {
 
     await Promise.all([CommunityGroup.deleteOne({ _id: group._id }), removeAllMembers(groupId)]);
 
+    // Sockets already in the rooms would otherwise keep them until they reconnect.
+    if (groupConversation) {
+      closeConversationRooms(String(groupConversation._id), groupId);
+    }
+
     return { groupId: String(group._id), deletedGroup: true };
   },
 
@@ -417,6 +423,12 @@ export const communityGroupService = {
       conversationType: "GROUP",
       groupId: group._id,
     });
+
+    // The person has left: their open tabs must stop receiving the group's
+    // messages now, not at their next reconnect.
+    if (groupConversation) {
+      evictUserFromConversationRooms(userId, String(groupConversation._id), groupId);
+    }
 
     if (groupConversation) {
       groupConversation.participants = groupConversation.participants.filter(

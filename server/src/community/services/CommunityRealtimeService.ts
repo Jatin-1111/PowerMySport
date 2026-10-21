@@ -115,3 +115,36 @@ export const emitCommunityUserEvent = (
 ): void => {
   emitToRooms([`user:${userId}`], eventName, payload);
 };
+
+/**
+ * Take one user's open sockets out of a conversation's rooms.
+ *
+ * Room membership is decided when a socket joins and lives on the socket, not
+ * on the database row. Leaving a group deleted the participant but not the
+ * room membership, so an ex-member's already-open tab kept receiving every new
+ * message of a private group until it reconnected. Addressed through the
+ * `user:` room so it reaches every tab and, with the Redis adapter, every
+ * server instance.
+ */
+export const evictUserFromConversationRooms = (
+  userId: string,
+  conversationId: string,
+  groupId?: string
+): void => {
+  if (!socketInstance) {
+    return;
+  }
+
+  const rooms = [`conversation:${conversationId}`, ...(groupId ? [`group:${groupId}`] : [])];
+  socketInstance.of("/community").in(`user:${userId}`).socketsLeave(rooms);
+};
+
+/** Empty a conversation's rooms for everyone, for when the group is deleted. */
+export const closeConversationRooms = (conversationId: string, groupId?: string): void => {
+  if (!socketInstance) {
+    return;
+  }
+
+  const rooms = [`conversation:${conversationId}`, ...(groupId ? [`group:${groupId}`] : [])];
+  socketInstance.of("/community").in(rooms).socketsLeave(rooms);
+};
