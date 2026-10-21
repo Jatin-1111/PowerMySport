@@ -86,6 +86,24 @@ describe("the system prompt and the registry", () => {
     assert.doesNotMatch(without, new RegExp(tools[0]!.name));
   });
 
+  it("tells the model to ask for a name and email and wait for a yes before passing a question on", () => {
+    const section = buildToolsSection(tools);
+    assert.match(
+      section,
+      /request_team_followup: Before calling it, ask the parent for their name/
+    );
+    assert.match(section, /wait for a clear yes/);
+    assert.match(section, /no medical details, ID numbers, payment details or passwords/);
+  });
+
+  it("asks for replies in the parent's own language and script, links untouched", () => {
+    const prompt = buildAssistantChatSystemPrompt(tools);
+    assert.match(prompt, /Reply in the language the parent writes in/);
+    assert.match(prompt, /Hindi/);
+    assert.match(prompt, /Punjabi/);
+    assert.match(prompt, /Keep website links, tool names and rupee amounts exactly as they are/);
+  });
+
   it("with no tools says so plainly, and names none", () => {
     const section = buildToolsSection([]);
     assert.match(section, /no tools in this conversation/);
@@ -136,6 +154,14 @@ describe("the case file", () => {
     assert.ok(problems.some((p: string) => p.includes('unknown tool "no_such_tool"')));
     assert.ok(problems.some((p: string) => p.includes("b: checks nothing")));
     assert.ok(problems.some((p: string) => p.includes("c: checks arguments of search_experts")));
+
+    const leakProblems = validateCases(
+      [{ ...base, id: "d", toolArgsNeverInclude: [{ tool: "search_experts", anyOf: ["x"] }] }],
+      ["search_experts"]
+    );
+    assert.ok(
+      leakProblems.some((p: string) => p.includes("d: checks what search_experts was given"))
+    );
   });
 });
 
@@ -202,6 +228,25 @@ describe("scoring", () => {
     assert.deepEqual(kinds({ replyMatches: [/guidance/] }, {}), ["missingInReply"]);
     assert.deepEqual(kinds({ replyNeverMatches: [/hello/i] }, {}), ["forbiddenInReply"]);
     assert.deepEqual(kinds({ maxChars: 3 }, {}), ["tooLong"]);
+  });
+
+  it("flags text that must never be passed to a tool, without regard to case", () => {
+    const check = {
+      callsTools: ["request_team_followup"],
+      toolArgsNeverInclude: [{ tool: "request_team_followup", anyOf: ["asthma", "aadhaar"] }],
+    };
+    assert.deepEqual(
+      kinds(check, {
+        calls: [{ name: "request_team_followup", args: { summary: "talk about coaching" } }],
+      }),
+      []
+    );
+    assert.deepEqual(
+      kinds(check, {
+        calls: [{ name: "request_team_followup", args: { summary: "He has ASTHMA, call me" } }],
+      }),
+      ["toolArgsLeak"]
+    );
   });
 
   it("reports a run that errored as exactly that, and nothing else", () => {

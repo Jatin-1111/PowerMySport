@@ -104,6 +104,47 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
           },
         ],
       };
+    case "get_tournament_details":
+      return {
+        found: true,
+        moreMatches: false,
+        note: "Dates come from the federation's calendar and can change. Fees are in Indian rupees.",
+        tournaments: [
+          {
+            name: "District Junior Open (Delhi)",
+            sport: "tennis",
+            starts: "2026-11-14",
+            ends: "2026-11-20",
+            city: "Delhi",
+            state: "Delhi",
+            venue: "Siri Fort Sports Complex",
+            ladder: "Championship Series",
+            ageGroups: ["Under-12", "Under-14"],
+            entriesOpen: "2026-10-01",
+            entriesClose: "2026-11-02",
+            entriesCloseAt: "23:59",
+            entriesClosed: false,
+            withdrawalDeadline: "2026-11-09",
+            feeSinglesRupees: 700,
+            feeDoublesRupees: 900,
+            tournamentPage: "https://powermysport.com/tournaments/district-junior-open-delhi",
+            officialPage: "https://example.test/official/district-junior-open-delhi",
+          },
+        ],
+      };
+    case "request_team_followup": {
+      const email = typeof args.email === "string" ? args.email : "";
+      const agreed = args.parentAgreed === true;
+      if (!agreed) return { sent: false, instruction: "Not sent. Ask for a clear yes first." };
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        return { sent: false, instruction: "Not sent. That email does not look right." };
+      }
+      return {
+        sent: true,
+        instruction:
+          "Passed on. Tell the parent the team will reply to the email they gave, usually within 24 hours. Do not promise anything more.",
+      };
+    }
     default:
       return { error: `no fixture for ${tool}` };
   }

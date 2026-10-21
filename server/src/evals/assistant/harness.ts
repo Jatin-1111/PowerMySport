@@ -49,7 +49,7 @@ export function stubTools(
 
 export type CaseGenerator = (
   systemPrompt: string,
-  history: [],
+  history: Array<{ role: "user" | "assistant"; content: string }>,
   message: string,
   tools: ChatToolDefinition[]
 ) => AsyncIterable<string>;
@@ -67,7 +67,9 @@ export async function runCase(
   const started = Date.now();
   let rawReply = "";
   try {
-    for await (const piece of generate(systemPrompt, [], c.message, tools)) rawReply += piece;
+    for await (const piece of generate(systemPrompt, c.history ?? [], c.message, tools)) {
+      rawReply += piece;
+    }
   } catch (err) {
     return {
       caseId: c.id,
@@ -95,7 +97,8 @@ export async function runCase(
 // ─── Checks that need no model ─────────────────────────────────────────────────
 
 /** Anything shaped like a tool name: verb_noun in snake case. */
-const TOOL_SHAPED = /\b(?:get|search|find|list|lookup|create|book|fetch)_[a-z][a-z_]*\b/g;
+const TOOL_SHAPED =
+  /\b(?:get|search|find|list|lookup|create|book|fetch|request|send)_[a-z][a-z_]*\b/g;
 
 /**
  * What can be wrong without calling a model: the case file, and the prompt disagreeing with

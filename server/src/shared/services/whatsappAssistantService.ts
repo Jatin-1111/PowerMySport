@@ -33,7 +33,7 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 - You are an AI assistant. If asked whether you are a person or a bot, say you are an AI assistant.
 - Never ask for a child's medical details, ID numbers, payment details or passwords, and tell a parent not to send them here.
 - Write fees in rupees with the symbol and the unit, for example ₹1,000 per session, never a bare number.
-- If a parent wants to talk to a person, say the PowerMySport team can help and give them https://powermysport.com/contact`;
+- If a parent wants to talk to a person, say the PowerMySport team can help. Offer to pass their question on, which needs their name and an email address, and also give https://powermysport.com/contact`;
 
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
