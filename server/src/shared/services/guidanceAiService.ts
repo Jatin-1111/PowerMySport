@@ -414,6 +414,17 @@ async function callGuidanceModel<T>(
   );
 }
 
+/**
+ * What the guidance model is sent. The request carries the child's profile id so
+ * the stored submission and its check-in can be tied to the right child, but the
+ * model has no use for it and nothing identifying goes to the provider (the
+ * planner follows the same rule).
+ */
+export const guidanceModelContents = (payload: GuidanceRequest): string => {
+  const { dependent_id: _dependentId, ...forModel } = payload;
+  return JSON.stringify(forModel);
+};
+
 export const generateYouthSportsGuidance = async (
   payload: GuidanceRequest
 ): Promise<GuidanceResponse> => {
@@ -467,7 +478,7 @@ export const generateYouthSportsGuidance = async (
     }
   }
 
-  const contents = JSON.stringify(payload);
+  const contents = guidanceModelContents(payload);
   const hasSport = !!payload.sport;
   const hasPersonality = payload.personality_tags.length > 0;
   const planHorizon = payload.plan_horizon ?? "journey";
