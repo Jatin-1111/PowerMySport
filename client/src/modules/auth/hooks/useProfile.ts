@@ -3,7 +3,6 @@
 import { queryKeys } from "@/lib/query/keys";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { normalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { User } from "@/types";
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
@@ -28,29 +27,11 @@ const fetchProfile = async (setUser: (user: User | null) => void): Promise<User 
 
   // The store stays the source of truth for identity — guards, nav and the
   // socket provider all read it — so a fresh profile is written back rather
-  // than living only in the query cache. `setUser` gets the RAW response: it
-  // normalizes dependents internally, and feeding it an already-normalized
-  // object would double-normalize — `normalizeDependent` reads flat wire
-  // fields, so handed a grouped `{ sport: {...}, physical: {...} }` shape it
-  // finds nothing at the top level and produces an empty one.
+  // than living only in the query cache. Both copies hold the response as it
+  // came: a child is the same shape on the wire, in the store and on screen.
   if (rawUser) setUser(rawUser);
 
-  if (!rawUser) return null;
-
-  // React Query's cache is a second, independent copy of "the profile" —
-  // every reader of `useProfile().data` (not `useAuthStore` state) needs the
-  // same normalized `dependents` shape the store computes above, or code that
-  // reads `dependent.sport`/`.physical`/etc. off this copy silently sees an
-  // empty object instead of a type error, since nothing catches a runtime
-  // shape mismatch against the `Dependent` type. This is what made the family
-  // roster and sport-journey card score every dependent as barely-started
-  // regardless of how much of the assessment had actually been saved — only
-  // the handful of fields that happen to be flat in both shapes (name,
-  // location, ...) survived the round trip.
-  return {
-    ...rawUser,
-    dependents: rawUser.dependents?.map((d) => normalizeDependent(d)),
-  };
+  return rawUser;
 };
 
 export const useProfile = (): UseQueryResult<User | null> => {

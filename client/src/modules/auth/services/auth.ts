@@ -1,7 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
 import { ApiResponse, AuthResponse, Dependent, User } from "@/types";
 import { requestParentalConsent } from "@/modules/player/store/parentalConsentStore";
-import { denormalizeDependent, toApiPayload } from "@/modules/player/utils/dependentNormalize";
 import { useAuthStore } from "../store/authStore";
 
 const CONSENT_REQUIRED = 428;
@@ -141,13 +140,11 @@ export const authApi = {
     return response.data;
   },
 
-  /** Accepts the grouped client `Dependent` shape and flattens it to the
-   * wire format the server actually stores — the one and only place a write
-   * should do that conversion (see `dependentNormalize.ts`). */
+  /** A child goes to the server exactly as the `Dependent` type describes it. */
   addDependent: async (
-    data: Partial<Omit<Dependent, "_id">> & { name: string; dob?: string | Date }
+    data: Partial<Omit<Dependent, "_id">> & { name: string }
   ): Promise<ApiResponse<any>> => {
-    const payload = toApiPayload(denormalizeDependent(data));
+    const payload: Record<string, unknown> = { ...data };
 
     // The profile already says consent is missing, so ask first instead of sending a
     // request that is certain to be refused.
@@ -170,14 +167,14 @@ export const authApi = {
 
   updateDependent: async (
     dependentId: string,
-    data: Partial<Omit<Dependent, "_id" | "dob">> & { dob?: string | Date }
+    data: Partial<Omit<Dependent, "_id">>
   ): Promise<ApiResponse<any>> => {
     // A parent who has not agreed to the current policy is asked at their next
     // edit. Declining does not block the edit; only adding a child needs it.
     const needsConsent = useAuthStore.getState().user?.parentalConsentCurrent === false;
     const agreed = needsConsent ? await requestParentalConsent() : false;
     const response = await axiosInstance.put(`/auth/dependents/${dependentId}`, {
-      ...toApiPayload(denormalizeDependent(data)),
+      ...data,
       ...(agreed ? { parentalConsent: true } : {}),
     });
     if (agreed) markConsentGiven();

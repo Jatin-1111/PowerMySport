@@ -15,12 +15,6 @@ import {
   normalizeDependentRelation,
 } from "../data/dependentRelations";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
-import {
-  denormalizeDependent,
-  normalizeDependent,
-  QUIZ_KEYS,
-  type DependentWire,
-} from "@/modules/player/utils/dependentNormalize";
 import { Button } from "@/modules/shared/ui/Button";
 import { Modal } from "@/modules/shared/ui/Modal";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
@@ -28,13 +22,9 @@ import type { Dependent } from "@/types";
 import { Calendar, ChevronRight, UserRound } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-// This form's internal state deliberately stays FLAT (matching the wire
-// format), not the grouped `Dependent` shape — the ~30 fields below read
-// far more naturally as one flat object while the user is filling them in
-// step by step. `denormalizeDependent`/`normalizeDependent` convert at the
-// two edges: loading `initialDependent` in, and building `onSubmit`'s
-// payload out. Nothing in between needs to know the grouped shape exists.
-type DependentFormData = Omit<DependentWire, "dob"> & { dob: string | Date };
+// The form edits a child as the server stores it, minus the quiz answers: those are
+// changed by retaking the quiz, so they are neither loaded here nor sent back.
+type DependentFormData = Omit<Dependent, "quiz">;
 
 interface DependentManagementModalProps {
   isOpen: boolean;
@@ -107,17 +97,19 @@ export default function DependentManagementModal({
     const deepLinkIndex = initialStepId ? STEPS.findIndex((s) => s.id === initialStepId) : -1;
     setStepIndex(deepLinkIndex >= 0 ? deepLinkIndex : 0);
     setDir(1);
-    const flat = denormalizeDependent(initialDependent);
+    // The quiz answers are dropped on purpose; retaking the quiz is how they change.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { quiz: _quiz, ...profile } = initialDependent;
     setFormData({
       ...EMPTY_FORM,
-      ...flat,
+      ...profile,
       name: initialDependent.name,
       dob: initialDependent.dob ? new Date(initialDependent.dob).toISOString().split("T")[0] : "",
-      relation: normalizeDependentRelation(flat.relation),
+      relation: normalizeDependentRelation(profile.relation),
       // Same reason as the relation above: a dependent saved with the old
       // "Jammu & Kashmir" spelling matches no option in the canonical list, so
       // the field would render blank and lose the state on the next save.
-      location: normalizeStoredState(flat.location),
+      location: normalizeStoredState(profile.location),
     });
   }, [isOpen, initialDependent, initialStepId]);
 
@@ -181,12 +173,8 @@ export default function DependentManagementModal({
       return;
     }
 
-    // The quiz answers are not edited here, so they are not sent back.
-    const submitData: DependentFormData = { ...formData };
-    for (const key of QUIZ_KEYS) delete submitData[key];
-
     try {
-      await onSubmit(normalizeDependent(submitData));
+      await onSubmit(formData);
       setFormData(EMPTY_FORM);
       setStepIndex(0);
       onClose();

@@ -1,3 +1,4 @@
+import type { DependentQuiz } from "@/types";
 // ─── Guidance Module Types ────────────────────────────────────────────────────
 
 export type GuidanceFormState = {
@@ -136,25 +137,10 @@ export type PlayerProfile = {
   yearsPlaying?: number;
   personalityTags?: string[];
   location?: string;
-  // Wizard fields
-  heightCm?: number;
-  weightKg?: number;
-  energyType?: "explosive" | "endurance";
-  motorType?: "gross" | "fine";
-  visualTracking?: "strong" | "moderate" | "weak";
-  teamIndividual?: number;
-  competitiveResponse?: "fired-up" | "calm" | "discouraged";
-  focusStyle?: "bursts" | "sustained";
-  decisionStyle?: "react" | "strategic";
-  pressureResponse?: "thrives" | "manages" | "avoids";
-  repetitionTolerance?: "high" | "low";
-  contactComfort?: "loves" | "neutral" | "avoids";
-  environment?: "outdoor" | "indoor" | "no-preference";
-  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
+  /** The quiz answers, as the server stores them: one record, absent until the quiz is taken. */
+  quiz?: DependentQuiz;
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  eyesight?: "sharp" | "corrected" | "limited";
-  agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
   wizardCity?: string;
   /** Sports the parent shortlisted themselves in the assessment (max 3). */

@@ -1,13 +1,11 @@
 // ─── WizardAnswers ⇄ Dependent/Player mapping ────────────────────────────────
-// Shared translation layer between the pathway wizard's answer shape and the
-// Player/Dependent record persisted via /api/auth/dependents. Used by the
-// wizard (WizardShell) and by the dependent profile builder so both write the
-// exact same stored fields from the same source data. Build, height category,
-// budget tier, objective and weekly hours are not stored; they are derived from
-// the fields kept (see the helpers below).
+// Translates between the quiz's answer shape and a child as the server stores it
+// (the `Dependent` type: profile fields flat, quiz answers under `quiz`). Build,
+// height category, budget tier, objective and weekly hours are not stored; they are
+// derived from the fields kept (see the helpers below).
 
-import type { Dependent } from "@/types";
-import { EMPTY_ANSWERS, type SportFitResult, type SportResult, type WizardAnswers } from "../types";
+import type { Dependent, DependentQuiz } from "@/types";
+import type { SportFitResult, SportResult, WizardAnswers } from "../types";
 
 /** Build and height category are worked out from the measurements, never stored. */
 export function deriveBodyCategories(
@@ -96,14 +94,15 @@ export function buildDependentPayload(
     age: answers.age ?? undefined,
     gender: genderMap,
     location: answers.state ?? undefined,
-    sport: {
-      sportsFocus: answers.priorSports.length ? answers.priorSports : undefined,
-      consideringSports: answers.consideringSports.length ? answers.consideringSports : undefined,
-      sportMatches: mergeSportMatches(scored, chosen),
-      wizardCompletedAt: new Date().toISOString(),
-      ...(chosenSport ? { chosenSport, chosenSportAt: new Date().toISOString() } : {}),
-    },
-    physical: {
+    sportsFocus: answers.priorSports.length ? answers.priorSports : undefined,
+    consideringSports: answers.consideringSports.length ? answers.consideringSports : undefined,
+    sportMatches: mergeSportMatches(scored, chosen),
+    wizardCompletedAt: new Date().toISOString(),
+    ...(chosenSport ? { chosenSport, chosenSportAt: new Date().toISOString() } : {}),
+    budgetRange: answers.budget ?? undefined,
+    ambition: answers.ambition ?? undefined,
+    weeklyHoursCategory: answers.weeklyHours ?? undefined,
+    quiz: {
       heightCm: answers.height ?? undefined,
       weightKg: answers.weight ?? undefined,
       energyType: answers.energyType ?? undefined,
@@ -111,32 +110,22 @@ export function buildDependentPayload(
       visualTracking: answers.visualTracking ?? undefined,
       eyesight: answers.eyesight ?? undefined,
       agility: answers.agility ?? undefined,
-    },
-    personality: {
       teamIndividual: answers.teamIndividual ?? undefined,
       competitiveResponse: answers.competitiveResponse ?? undefined,
       focusStyle: answers.focusStyle ?? undefined,
       decisionStyle: answers.decisionStyle ?? undefined,
       pressureResponse: answers.pressureResponse ?? undefined,
       repetitionTolerance: answers.repetitionTolerance ?? undefined,
-    },
-    comfort: {
       contactComfort: answers.contactComfort ?? undefined,
       environment: answers.environment ?? undefined,
       waterComfort: answers.waterComfort ?? undefined,
     },
-    practical: {
-      budgetRange: answers.budget ?? undefined,
-      ambition: answers.ambition ?? undefined,
-      weeklyHoursCategory: answers.weeklyHours ?? undefined,
-    },
   };
 }
 
-// Structural subset of Player/Dependent fields needed to pre-fill a
-// WizardAnswers object. Both the guidance module's `PlayerProfile` and the
-// app-wide `Dependent` type satisfy this shape, so either can be passed here
-// without casting.
+// The part of a child the quiz pre-fill reads: the profile fields and the `quiz` record,
+// as the server returns them. Both the guidance module's `PlayerProfile` and the
+// app-wide `Dependent` satisfy it, so either can be passed without casting.
 export interface WizardSourceProfile {
   age?: number;
   dob?: string | Date;
@@ -144,25 +133,10 @@ export interface WizardSourceProfile {
   location?: string;
   sportsFocus?: string[];
   consideringSports?: string[];
-  heightCm?: number;
-  weightKg?: number;
-  energyType?: "explosive" | "endurance";
-  motorType?: "gross" | "fine";
-  visualTracking?: "strong" | "moderate" | "weak";
-  teamIndividual?: number;
-  competitiveResponse?: "fired-up" | "calm" | "discouraged";
-  focusStyle?: "bursts" | "sustained";
-  decisionStyle?: "react" | "strategic";
-  pressureResponse?: "thrives" | "manages" | "avoids";
-  repetitionTolerance?: "high" | "low";
-  contactComfort?: "loves" | "neutral" | "avoids";
-  environment?: "outdoor" | "indoor" | "no-preference";
-  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
   budgetRange?: "under-3k" | "3k-7k" | "7k-15k" | "15k-plus";
   ambition?: "fun" | "competitive" | "national" | "career" | "professional";
-  eyesight?: "sharp" | "corrected" | "limited";
-  agility?: "high" | "moderate" | "low";
   weeklyHoursCategory?: "1-3" | "4-7" | "8-12" | "13-plus";
+  quiz?: DependentQuiz | null;
 }
 
 export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAnswers> {
@@ -178,95 +152,28 @@ export function prefillFromPlayer(player: WizardSourceProfile): Partial<WizardAn
   if (player.sportsFocus?.length) out.priorSports = player.sportsFocus;
   if (player.consideringSports?.length) out.consideringSports = player.consideringSports;
 
-  // Wizard physical — prefer exact numeric values for round-tripping
-  if (player.heightCm) out.height = player.heightCm;
-  if (player.weightKg) out.weight = player.weightKg;
-  if (player.energyType) out.energyType = player.energyType;
-  if (player.motorType) out.motorType = player.motorType;
-  if (player.visualTracking) out.visualTracking = player.visualTracking;
-  // Wizard personality
-  if (player.teamIndividual !== undefined) out.teamIndividual = player.teamIndividual;
-  if (player.competitiveResponse) out.competitiveResponse = player.competitiveResponse;
-  if (player.focusStyle) out.focusStyle = player.focusStyle;
-  if (player.decisionStyle) out.decisionStyle = player.decisionStyle;
-  if (player.pressureResponse) out.pressureResponse = player.pressureResponse;
-  if (player.repetitionTolerance) out.repetitionTolerance = player.repetitionTolerance;
-  // Wizard comfort
-  if (player.contactComfort) out.contactComfort = player.contactComfort;
-  if (player.environment) out.environment = player.environment;
-  if (player.waterComfort) out.waterComfort = player.waterComfort;
-  // Wizard practical
+  // The quiz's own answers
+  const q = player.quiz ?? {};
+  if (q.heightCm) out.height = q.heightCm;
+  if (q.weightKg) out.weight = q.weightKg;
+  if (q.energyType) out.energyType = q.energyType;
+  if (q.motorType) out.motorType = q.motorType;
+  if (q.visualTracking) out.visualTracking = q.visualTracking;
+  if (q.eyesight) out.eyesight = q.eyesight;
+  if (q.agility) out.agility = q.agility;
+  if (q.teamIndividual !== undefined) out.teamIndividual = q.teamIndividual;
+  if (q.competitiveResponse) out.competitiveResponse = q.competitiveResponse;
+  if (q.focusStyle) out.focusStyle = q.focusStyle;
+  if (q.decisionStyle) out.decisionStyle = q.decisionStyle;
+  if (q.pressureResponse) out.pressureResponse = q.pressureResponse;
+  if (q.repetitionTolerance) out.repetitionTolerance = q.repetitionTolerance;
+  if (q.contactComfort) out.contactComfort = q.contactComfort;
+  if (q.environment) out.environment = q.environment;
+  if (q.waterComfort) out.waterComfort = q.waterComfort;
+  // What it takes to do the sport
   if (player.budgetRange) out.budget = player.budgetRange;
   if (player.ambition) out.ambition = player.ambition;
-  if (player.eyesight) out.eyesight = player.eyesight;
-  if (player.agility) out.agility = player.agility;
   if (player.weeklyHoursCategory) out.weeklyHours = player.weeklyHoursCategory;
 
   return out;
-}
-
-/**
- * Builds a full WizardAnswers object directly from a dependent profile-builder
- * form (rather than the wizard's own answer state), so the same scoreSports()
- * engine can be run whenever a dependent is edited outside the guided /pathway
- * flow — keeping sportMatches in sync with whatever data the parent enters,
- * wizard or not.
- */
-export function dependentToWizardAnswers(
-  dep: WizardSourceProfile,
-  childName: string,
-  age: number | null
-): WizardAnswers {
-  const genderMap =
-    dep.gender === "MALE"
-      ? ("boy" as const)
-      : dep.gender === "FEMALE"
-        ? ("girl" as const)
-        : dep.gender === "OTHER"
-          ? ("prefer-not" as const)
-          : null;
-
-  return {
-    ...EMPTY_ANSWERS,
-    childName,
-    dob: dep.dob ? new Date(dep.dob).toISOString().slice(0, 10) : null,
-    age,
-    gender: genderMap,
-    state: dep.location ?? null,
-    priorSports: dep.sportsFocus ?? [],
-    consideringSports: dep.consideringSports ?? [],
-    height: dep.heightCm ?? null,
-    weight: dep.weightKg ?? null,
-    energyType: dep.energyType ?? null,
-    motorType: dep.motorType ?? null,
-    visualTracking: dep.visualTracking ?? null,
-    eyesight: dep.eyesight ?? null,
-    agility: dep.agility ?? null,
-    teamIndividual: dep.teamIndividual ?? null,
-    competitiveResponse: dep.competitiveResponse ?? null,
-    focusStyle: dep.focusStyle ?? null,
-    decisionStyle: dep.decisionStyle ?? null,
-    pressureResponse: dep.pressureResponse ?? null,
-    repetitionTolerance: dep.repetitionTolerance ?? null,
-    contactComfort: dep.contactComfort ?? null,
-    environment: dep.environment ?? null,
-    waterComfort: dep.waterComfort ?? null,
-    budget: dep.budgetRange ?? null,
-    ambition: dep.ambition ?? null,
-    weeklyHours: dep.weeklyHoursCategory ?? null,
-  };
-}
-
-/** True once enough signal exists to make a fresh sportMatches computation meaningful. */
-export function hasWizardSignal(dep: WizardSourceProfile, age: number | null): boolean {
-  if (!age) return false;
-  return Boolean(
-    dep.energyType ||
-    dep.ambition ||
-    dep.teamIndividual !== undefined ||
-    dep.contactComfort ||
-    dep.budgetRange ||
-    dep.focusStyle ||
-    dep.decisionStyle
-  );
 }

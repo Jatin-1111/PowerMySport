@@ -1,5 +1,4 @@
 import { User } from "@/types";
-import { normalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { create } from "zustand";
 
 interface AuthStore {
@@ -33,22 +32,10 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isLoading: false,
   error: null,
   setUser: (user) => {
-    // Every API response that carries a `User` (login, register, getProfile,
-    // updateProfile — every one of them) hands back dependents in the flat
-    // wire shape, even though `User.dependents` is typed as the grouped
-    // `Dependent[]`. Normalizing here, once, is what lets every other read
-    // site in the app treat `user.dependents` as already-grouped — this
-    // function must never receive an already-normalized `Dependent[]` back
-    // (nothing in the app currently reads the store and feeds it back in;
-    // keep it that way, or this would silently double-normalize into an
-    // empty shape rather than erroring).
-    const normalized: User | null = user
-      ? { ...user, dependents: user.dependents?.map((d) => normalizeDependent(d)) }
-      : null;
-    set({ user: normalized });
+    set({ user });
     if (typeof window !== "undefined") {
-      if (normalized) {
-        localStorage.setItem("user", JSON.stringify(normalized));
+      if (user) {
+        localStorage.setItem("user", JSON.stringify(user));
       } else {
         localStorage.removeItem("user");
       }

@@ -31,7 +31,17 @@ export function HydrationBoundary({ children }: { children: React.ReactNode }) {
 
     if (user) {
       try {
-        useAuthStore.setState({ user: JSON.parse(user) });
+        const saved = JSON.parse(user);
+        // Children saved by an earlier version are grouped (`sport`, `physical`, ...),
+        // not flat, and every screen now reads them flat. They are refetched the moment
+        // the profile loads, so drop them rather than show them half-empty meanwhile.
+        // Remove this once no browser can still hold a user saved before this change.
+        const isOldShape = (d: Record<string, unknown>) =>
+          "sport" in d || "physical" in d || "practical" in d || "standing" in d;
+        if (Array.isArray(saved.dependents) && saved.dependents.some(isOldShape)) {
+          delete saved.dependents;
+        }
+        useAuthStore.setState({ user: saved });
       } catch (error) {
         console.error("Failed to parse user from localStorage:", error);
         localStorage.removeItem("user");

@@ -6,7 +6,6 @@ import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileFormSelect } from "@/modules/player/components/ProfileFormSelect";
 import { DEFAULT_DEPENDENT_RELATION, DEPENDENT_RELATIONS } from "../data/dependentRelations";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
-import { normalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { Button } from "@/modules/shared/ui/Button";
 import { Input } from "../../shared/ui/Input";
 import { Modal } from "@/modules/shared/ui/Modal";
@@ -80,7 +79,7 @@ export default function QuickAddDependentModal({
     }
 
     try {
-      await onSubmit(normalizeDependent(formData));
+      await onSubmit(formData);
       setFormData(EMPTY_FORM);
       onClose();
     } catch (err: unknown) {

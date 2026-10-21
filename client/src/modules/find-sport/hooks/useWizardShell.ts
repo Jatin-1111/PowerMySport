@@ -1,6 +1,5 @@
 "use client";
 
-import { flattenQuiz } from "@/modules/player/utils/dependentNormalize";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api/axios";
@@ -130,8 +129,7 @@ export function useWizardShell() {
       .get<{ success: boolean; data: PlayerProfile[] }>("/auth/players")
       .then((res) => {
         if (!res.data.success || !Array.isArray(res.data.data)) return;
-        // The quiz answers come nested under `quiz`; the prefill reads them flat.
-        const dependents = res.data.data.filter((p) => p.type === "DEPENDENT").map(flattenQuiz);
+        const dependents = res.data.data.filter((p) => p.type === "DEPENDENT");
         setPlayers(dependents);
 
         if (dependents.length === 0 && pendingImport.current) {

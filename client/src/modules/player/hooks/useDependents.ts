@@ -7,7 +7,6 @@ import {
   calculateDependentCompletion,
   hasAssessment,
 } from "@/modules/player/utils/dependentCompletion";
-import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import type { Dependent } from "@/types";
 import { useMemo } from "react";
 
@@ -19,13 +18,9 @@ import { useMemo } from "react";
  * fetch data the page has in hand and give the two copies separate chances to
  * disagree.
  *
- * Scoring lives here, once, for a specific reason: `calculateDependentCompletion`
- * reads the *flat* wire shape, but every dependent that comes back from the API
- * has already been run through `normalizeDependent` into the nested shape (see
- * `fetchProfile` in `useProfile.ts`). Score a nested dependent directly and every
- * field reads as absent — the ring silently shows 0% for a fully-filled profile.
- * `denormalizeDependent` flattens it back, matching what the dependent detail
- * page does.
+ * Scoring lives here, once: `calculateDependentCompletion` takes a child as the
+ * server returns it, so the roster, the card and the detail page all score the same
+ * object the same way.
  */
 
 export interface DependentGap {
@@ -56,8 +51,7 @@ const summarize = (dependent: Dependent): DependentSummary | null => {
   const id = dependent._id?.toString();
   if (!id) return null;
 
-  const flat = denormalizeDependent(dependent);
-  const { percent, missing } = calculateDependentCompletion(flat);
+  const { percent, missing } = calculateDependentCompletion(dependent);
 
   // `missing` arrives in field-declaration order, not by importance. Sorting by
   // weight is what makes "one CTA per child" the *highest-value* next action
@@ -68,11 +62,11 @@ const summarize = (dependent: Dependent): DependentSummary | null => {
     id,
     name: dependent.name || "Child",
     age: getDependentAge(dependent.dob) ?? dependent.age ?? null,
-    sport: dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0] || null,
+    sport: dependent.chosenSport || dependent.sportsFocus?.[0] || null,
     completionPercent: percent,
     topGap: top ? { ...top, href: nextStepHref(id, top.field) } : null,
-    hasAssessment: hasAssessment(flat),
-    hasChosenSport: Boolean(dependent.sport?.chosenSport),
+    hasAssessment: hasAssessment(dependent),
+    hasChosenSport: Boolean(dependent.chosenSport),
     dependent,
   };
 };

@@ -7,7 +7,6 @@ import { formatDependentRelation } from "@/modules/player/data/dependentRelation
 import { GENDER_LABELS, wizardChip } from "@/modules/player/data/wizardLabels";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
-import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { User } from "@/types";
 import { ArrowRight, Plus, Trash2, Users } from "lucide-react";
 import type { useRouter } from "next/navigation";
@@ -66,8 +65,8 @@ export function DependentsCard({
         <ul className="divide-hairline border-hairline mt-8 divide-y border-y">
           {dependents.map((dependent) => {
             const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
-            const sport = dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0];
-            const completion = calculateDependentCompletion(denormalizeDependent(dependent));
+            const sport = dependent.chosenSport || dependent.sportsFocus?.[0];
+            const completion = calculateDependentCompletion(dependent);
             const meta = [
               dependent.relation ? formatDependentRelation(dependent.relation) : null,
               formatGender(dependent.gender),

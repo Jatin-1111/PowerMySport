@@ -20,16 +20,18 @@ export interface DependentCompletionProfile {
   experienceLevel?: string;
   currentStandingTier?: number;
   wizardCompletedAt?: string;
-  // The quiz's own answers, read only by `hasQuizAnswers`.
-  heightCm?: number;
-  weightKg?: number;
-  energyType?: string;
-  teamIndividual?: number;
-  focusStyle?: string;
-  decisionStyle?: string;
-  contactComfort?: string;
-  environment?: string;
-  waterComfort?: string;
+  // The quiz's own answers, read only by `isMissingArchetypeTraits`.
+  quiz?: {
+    heightCm?: number;
+    weightKg?: number;
+    energyType?: string;
+    teamIndividual?: number;
+    focusStyle?: string;
+    decisionStyle?: string;
+    contactComfort?: string;
+    environment?: string;
+    waterComfort?: string;
+  } | null;
 }
 
 export const DEPENDENT_COMPLETION_FIELDS: Array<{
@@ -111,9 +113,9 @@ export function hasAssessment(profile: DependentCompletionProfile | null | undef
 export function isMissingArchetypeTraits(
   profile: DependentCompletionProfile | null | undefined
 ): boolean {
-  const p = profile ?? {};
-  const physical = !!p.heightCm && !!p.weightKg && !!p.energyType;
-  const personality = p.teamIndividual !== undefined && !!p.focusStyle && !!p.decisionStyle;
-  const comfort = !!p.contactComfort && !!p.environment && !!p.waterComfort;
+  const q = profile?.quiz ?? {};
+  const physical = !!q.heightCm && !!q.weightKg && !!q.energyType;
+  const personality = q.teamIndividual !== undefined && !!q.focusStyle && !!q.decisionStyle;
+  const comfort = !!q.contactComfort && !!q.environment && !!q.waterComfort;
   return !(physical && personality && comfort);
 }

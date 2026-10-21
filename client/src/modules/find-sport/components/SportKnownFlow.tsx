@@ -1,6 +1,5 @@
 "use client";
 
-import { flattenQuiz } from "@/modules/player/utils/dependentNormalize";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -337,9 +336,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       .get<{ success: boolean; data: any[] }>("/auth/players")
       .then((res) => {
         if (!res.data.success) return;
-        setDependents(
-          (res.data.data || []).filter((p: any) => p.type === "DEPENDENT").map(flattenQuiz)
-        );
+        setDependents((res.data.data || []).filter((p: any) => p.type === "DEPENDENT"));
       })
       .catch(() => {});
   }, [token]);
@@ -424,38 +421,30 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       ...(form.gender ? { gender: form.gender as Dependent["gender"] } : {}),
       ...(form.state ? { location: form.state } : {}),
       ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
-      sport: {
-        ...(form.sport
-          ? {
-              sportsFocus: [form.sport],
-              // This flow's entire premise is "the parent already knows the
-              // sport" — that's a decision, not just an interest, so it sets
-              // chosenSport too. (Previously this only ever wrote
-              // sportsFocus, which is why "I know my sport" didn't register
-              // as a completed choice anywhere else in the app.)
-              chosenSport: form.sport,
-              chosenSportAt: new Date().toISOString(),
-            }
-          : {}),
-      },
-      practical: {
-        // `form.ambition` is typed as a loose `string` because the options
-        // vary per sport archetype (see getAmbitionOptions), but every value
-        // it can actually hold comes from AMBITION_OPTIONS, whose `value` is
-        // this exact literal union.
-        ...(form.ambition
-          ? { ambition: form.ambition as NonNullable<Dependent["practical"]>["ambition"] }
-          : {}),
-      },
-      standing: {
-        ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
-        ...(form.currentStandingTier !== null
-          ? {
-              currentStandingTier: form.currentStandingTier,
-              experienceLevel: deriveExperienceLevel(form.currentStandingTier),
-            }
-          : {}),
-      },
+      ...(form.sport
+        ? {
+            sportsFocus: [form.sport],
+            // This flow's entire premise is "the parent already knows the
+            // sport" — that's a decision, not just an interest, so it sets
+            // chosenSport too. (Previously this only ever wrote
+            // sportsFocus, which is why "I know my sport" didn't register
+            // as a completed choice anywhere else in the app.)
+            chosenSport: form.sport,
+            chosenSportAt: new Date().toISOString(),
+          }
+        : {}),
+      // `form.ambition` is typed as a loose `string` because the options
+      // vary per sport archetype (see getAmbitionOptions), but every value
+      // it can actually hold comes from AMBITION_OPTIONS, whose `value` is
+      // this exact literal union.
+      ...(form.ambition ? { ambition: form.ambition as Dependent["ambition"] } : {}),
+      ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
+      ...(form.currentStandingTier !== null
+        ? {
+            currentStandingTier: form.currentStandingTier,
+            experienceLevel: deriveExperienceLevel(form.currentStandingTier),
+          }
+        : {}),
     };
 
     // The dependent-sharing mechanism the expert-booking CTA relies on needs a

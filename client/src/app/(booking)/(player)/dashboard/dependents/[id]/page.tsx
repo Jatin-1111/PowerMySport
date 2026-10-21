@@ -37,7 +37,6 @@ import {
 import { deriveBodyCategories } from "@/modules/find-sport/utils/dependentMapping";
 import { getDependentAge } from "@/modules/player/utils/dependentAge";
 import { calculateDependentCompletion } from "@/modules/player/utils/dependentCompletion";
-import { denormalizeDependent } from "@/modules/player/utils/dependentNormalize";
 import { roadmapHref } from "@/modules/pathway/data/sports";
 import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
@@ -186,47 +185,42 @@ export default function DependentDetailPage() {
   const age = getDependentAge(dependent.dob) ?? dependent.age ?? null;
   const isEligibleToGraduate = age !== null && age >= 18;
   const genderLabel = formatGender(dependent.gender);
-  const completion = calculateDependentCompletion(denormalizeDependent(dependent));
-  const effectiveSport = dependent.sport?.chosenSport || dependent.sport?.sportsFocus?.[0];
+  const completion = calculateDependentCompletion(dependent);
+  const effectiveSport = dependent.chosenSport || dependent.sportsFocus?.[0];
 
-  const physical = dependent.physical ?? {};
-  const body = deriveBodyCategories(physical.heightCm, physical.weightKg, age);
-  const personality = dependent.personality ?? {};
-  const comfort = dependent.comfort ?? {};
-  const practical = dependent.practical ?? {};
+  const quiz = dependent.quiz ?? {};
+  const body = deriveBodyCategories(quiz.heightCm, quiz.weightKg, age);
   const physicalChips = [
-    physical.heightCm && physical.weightKg
-      ? `${physical.heightCm} cm · ${physical.weightKg} kg`
-      : null,
+    quiz.heightCm && quiz.weightKg ? `${quiz.heightCm} cm · ${quiz.weightKg} kg` : null,
     wizardChip(body.build, BUILD_LABELS),
     wizardChip(body.heightCategory, HEIGHT_LABELS),
-    wizardChip(physical.energyType, ENERGY_LABELS),
-    wizardChip(physical.visualTracking, VISUAL_TRACKING_LABELS),
-    wizardChip(physical.eyesight, EYESIGHT_LABELS),
-    wizardChip(physical.agility, AGILITY_LABELS),
+    wizardChip(quiz.energyType, ENERGY_LABELS),
+    wizardChip(quiz.visualTracking, VISUAL_TRACKING_LABELS),
+    wizardChip(quiz.eyesight, EYESIGHT_LABELS),
+    wizardChip(quiz.agility, AGILITY_LABELS),
   ].filter(Boolean) as string[];
 
   const personalityChips = [
-    personality.teamIndividual !== undefined
-      ? TEAM_INDIVIDUAL_LABELS[personality.teamIndividual as number]
+    quiz.teamIndividual !== undefined
+      ? TEAM_INDIVIDUAL_LABELS[quiz.teamIndividual as number]
       : null,
-    wizardChip(personality.competitiveResponse, COMPETITIVE_RESPONSE_LABELS),
-    wizardChip(personality.focusStyle, FOCUS_LABELS),
-    wizardChip(personality.decisionStyle, DECISION_LABELS),
-    wizardChip(personality.pressureResponse, PRESSURE_LABELS),
-    wizardChip(personality.repetitionTolerance, REPETITION_LABELS),
+    wizardChip(quiz.competitiveResponse, COMPETITIVE_RESPONSE_LABELS),
+    wizardChip(quiz.focusStyle, FOCUS_LABELS),
+    wizardChip(quiz.decisionStyle, DECISION_LABELS),
+    wizardChip(quiz.pressureResponse, PRESSURE_LABELS),
+    wizardChip(quiz.repetitionTolerance, REPETITION_LABELS),
   ].filter(Boolean) as string[];
 
   const comfortChips = [
-    wizardChip(comfort.contactComfort, CONTACT_LABELS),
-    wizardChip(comfort.environment, ENV_LABELS),
-    wizardChip(comfort.waterComfort, WATER_COMFORT_LABELS),
+    wizardChip(quiz.contactComfort, CONTACT_LABELS),
+    wizardChip(quiz.environment, ENV_LABELS),
+    wizardChip(quiz.waterComfort, WATER_COMFORT_LABELS),
   ].filter(Boolean) as string[];
 
   const practicalChips = [
-    wizardChip(practical.budgetRange, BUDGET_RANGE_LABELS),
-    wizardChip(practical.ambition, AMBITION_LABELS),
-    wizardChip(practical.weeklyHoursCategory, WEEKLY_HOURS_LABELS),
+    wizardChip(dependent.budgetRange, BUDGET_RANGE_LABELS),
+    wizardChip(dependent.ambition, AMBITION_LABELS),
+    wizardChip(dependent.weeklyHoursCategory, WEEKLY_HOURS_LABELS),
   ].filter(Boolean) as string[];
 
   const hasTraitChips =
@@ -297,8 +291,8 @@ export default function DependentDetailPage() {
     }
   };
 
-  const assessedOn = dependent.sport?.wizardCompletedAt
-    ? new Date(dependent.sport.wizardCompletedAt).toLocaleDateString(undefined, {
+  const assessedOn = dependent.wizardCompletedAt
+    ? new Date(dependent.wizardCompletedAt).toLocaleDateString(undefined, {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -396,7 +390,7 @@ export default function DependentDetailPage() {
       </section>
 
       {/* ── Assessment results ── */}
-      {(dependent.sport?.sportMatches?.length ?? 0) > 0 && (
+      {(dependent.sportMatches?.length ?? 0) > 0 && (
         <section aria-labelledby="assessment-results" className="border-hairline border-t pt-10">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -419,7 +413,7 @@ export default function DependentDetailPage() {
             </Link>
           </div>
           <ol className="divide-hairline border-hairline mt-8 divide-y border-y">
-            {dependent.sport!.sportMatches!.map((m, i) => (
+            {dependent.sportMatches!.map((m, i) => (
               <li key={m.sport} className="flex items-center gap-4 py-4">
                 <span className="text-ink-muted w-5 text-sm tabular-nums">{i + 1}</span>
                 <span className="text-ink flex-1 font-medium">{m.sport}</span>
@@ -475,7 +469,7 @@ export default function DependentDetailPage() {
         <RankingLinkCard
           dependentId={dependent._id}
           dependentName={dependent.name}
-          sports={[dependent.sport?.chosenSport, ...(dependent.sport?.sportsFocus ?? [])]}
+          sports={[dependent.chosenSport, ...(dependent.sportsFocus ?? [])]}
         />
       )}
 

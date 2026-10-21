@@ -15,8 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
  * the stale window — the roster shows the new child, the profile page doesn't,
  * and nothing in the UI explains why.
  *
- * `authApi.addDependent` already flattens the payload through
- * `denormalizeDependent`, so callers pass the nested shape.
+ * `authApi.addDependent` sends the child exactly as the `Dependent` type describes it.
  */
 export const useAddDependent = () => {
   const queryClient = useQueryClient();

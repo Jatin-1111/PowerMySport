@@ -87,15 +87,17 @@ describe("isMissingArchetypeTraits", () => {
   it("is false once physical/personality/comfort are all filled", () => {
     expect(
       isMissingArchetypeTraits({
-        heightCm: 140,
-        weightKg: 35,
-        energyType: "explosive",
-        teamIndividual: 3,
-        focusStyle: "bursts",
-        decisionStyle: "react",
-        contactComfort: "neutral",
-        environment: "outdoor",
-        waterComfort: "neutral",
+        quiz: {
+          heightCm: 140,
+          weightKg: 35,
+          energyType: "explosive",
+          teamIndividual: 3,
+          focusStyle: "bursts",
+          decisionStyle: "react",
+          contactComfort: "neutral",
+          environment: "outdoor",
+          waterComfort: "neutral",
+        },
       })
     ).toBe(false);
   });
