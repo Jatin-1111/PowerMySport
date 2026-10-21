@@ -336,7 +336,7 @@ export function SportKnownFlow({ onBack }: { onBack: () => void }) {
       .get<{ success: boolean; data: any[] }>("/auth/players")
       .then((res) => {
         if (!res.data.success) return;
-        setDependents((res.data.data || []).filter((p: any) => p.type === "DEPENDENT"));
+        setDependents(res.data.data || []);
       })
       .catch(() => {});
   }, [token]);

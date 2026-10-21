@@ -54,7 +54,7 @@ export const childCountsFor = async (
   userIds: Array<Types.ObjectId | string>
 ): Promise<Map<string, number>> => {
   const rows = await Player.aggregate<{ _id: Types.ObjectId; count: number }>([
-    { $match: { type: "DEPENDENT", userId: { $in: userIds.map((id) => new Types.ObjectId(id)) } } },
+    { $match: { userId: { $in: userIds.map((id) => new Types.ObjectId(id)) } } },
     { $group: { _id: "$userId", count: { $sum: 1 } } },
   ]);
   return new Map(rows.map((row) => [row._id.toString(), row.count]));
@@ -206,34 +206,17 @@ export const getPlayersUsers = asyncHandler(async (req: Request, res: Response):
   const [total, users] = await Promise.all([
     User.countDocuments(query),
     User.find(query)
-      .select("name email phone createdAt lastActiveAt")
+      .select("name email phone createdAt lastActiveAt athleteProfile")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
   ]);
 
-  const userIds = users.map((user) => user._id);
-  const playerProfiles = await Player.find({
-    userId: { $in: userIds },
-  }).lean();
-
-  const profilesByUserId = new Map<string, any[]>();
-  for (const profile of playerProfiles) {
-    const uidStr = profile.userId.toString();
-    if (!profilesByUserId.has(uidStr)) {
-      profilesByUserId.set(uidStr, []);
-    }
-    profilesByUserId.get(uidStr)!.push(profile);
-  }
-
   const onlineByUserId = await areUsersOnline(users.map((user) => user._id.toString()));
 
   const data = users.map((user) => {
-    const userProfiles = profilesByUserId.get(user._id.toString()) || [];
-
-    const selfProfile = userProfiles.find((p) => p.type === "SELF");
-    const sports = selfProfile?.sportsFocus || [];
+    const sports = user.athleteProfile?.sportsFocus || [];
     const sportsCount = sports.length;
     const hasSportsProfile = sportsCount > 0;
 

@@ -174,7 +174,6 @@ export const initiateBooking = async (
       const dependent = await Player.findOne({
         _id: payload.dependentId,
         userId: user._id,
-        type: "DEPENDENT",
       });
       if (!dependent) {
         throw new Error("Dependent not found");

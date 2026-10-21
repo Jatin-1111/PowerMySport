@@ -137,21 +137,18 @@ export const getProfile = asyncHandler(async (req: Request, res: Response): Prom
     await user.refreshPhotoUrl();
   }
 
-  const allPlayers = await getPlayersByUserId(user._id.toString());
-  const dependents = allPlayers
-    .filter((p: any) => p.type === "DEPENDENT")
-    .map(serializeChildForParent);
+  const dependents = (await getPlayersByUserId(user._id.toString())).map(serializeChildForParent);
 
-  const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
-  const playerProfile = selfPlayer
+  const athlete = (user as any).athleteProfile;
+  const playerProfile = athlete
     ? {
-        sportsFocus: selfPlayer.sportsFocus || [],
-        yearsPlaying: selfPlayer.yearsPlaying,
-        personalityTags: selfPlayer.personalityTags,
-        primaryObjective: selfPlayer.primaryObjective,
-        weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
-        budgetTier: selfPlayer.budgetTier,
-        location: selfPlayer.location,
+        sportsFocus: athlete.sportsFocus || [],
+        yearsPlaying: athlete.yearsPlaying,
+        personalityTags: athlete.personalityTags,
+        primaryObjective: athlete.primaryObjective,
+        weeklyTimeCommitment: athlete.weeklyTimeCommitment,
+        budgetTier: athlete.budgetTier,
+        location: athlete.location,
       }
     : undefined;
 
@@ -427,9 +424,10 @@ export const getMyPlayersHandler = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Players fetched successfully",
-      // The same view of a child as the profile, plus the row's type: this list mixes a
-      // parent's own athlete row with their children, and callers filter on it.
-      data: players.map((p: any) => ({ ...serializeChildForParent(p), type: p.type })),
+      // The same view of a child as the profile. `type` is constant now that the list holds
+      // children only; it is still sent so a browser tab running the previous client, which
+      // filters on it, keeps working. Remove it in the release after that client is gone.
+      data: players.map((p: any) => ({ ...serializeChildForParent(p), type: "DEPENDENT" })),
     });
   }
 );

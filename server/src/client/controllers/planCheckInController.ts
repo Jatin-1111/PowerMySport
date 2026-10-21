@@ -83,7 +83,7 @@ export const recordFindSportChoice = asyncHandler(
     let validDependentId: string | null = null;
     if (dependentId && mongoose.isValidObjectId(dependentId)) {
       const updated = await Player.findOneAndUpdate(
-        { _id: dependentId, userId: req.user.id, type: "DEPENDENT" },
+        { _id: dependentId, userId: req.user.id },
         {
           $set: { chosenSport: sportName, chosenSportAt: new Date() },
           // ── Why the choice also lands in `sportsFocus` ──

@@ -25,6 +25,19 @@ export interface UserDocument extends Document {
   bio?: string;
   sportInterests?: string[];
   involvementYears?: number;
+  /**
+   * An adult's own sport details (the "My sports" card). Lived on a `type: "SELF"` Player
+   * row until migration 65, which made `players` hold children only.
+   */
+  athleteProfile?: {
+    sportsFocus?: string[];
+    yearsPlaying?: number;
+    personalityTags?: string[];
+    primaryObjective?: "Recreational" | "Fitness" | "Compete";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
+    location?: string;
+  };
   legalConsents?: {
     terms?: { accepted: boolean; acceptedAt?: Date; version?: string };
     privacy?: { accepted: boolean; acceptedAt?: Date; version?: string };
@@ -130,6 +143,21 @@ const userSchema = new Schema<UserDocument>(
     bio: { type: String, maxlength: 300 },
     sportInterests: { type: [String], default: [] },
     involvementYears: { type: Number, min: 0, max: 40 },
+    athleteProfile: {
+      type: new Schema(
+        {
+          sportsFocus: { type: [String], default: [] },
+          yearsPlaying: { type: Number, min: 0, max: 20 },
+          personalityTags: { type: [String] },
+          primaryObjective: { type: String, enum: ["Recreational", "Fitness", "Compete"] },
+          weeklyTimeCommitment: { type: Number },
+          budgetTier: { type: String, enum: ["Budget", "Moderate", "Premium"] },
+          location: { type: String, trim: true },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
     legalConsents: {
       terms: {
         accepted: { type: Boolean, default: false },

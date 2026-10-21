@@ -313,6 +313,7 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
         resetPasswordExpires: "",
         parentProfile: "",
         playerProfile: "",
+        athleteProfile: "",
         bio: "",
         sportInterests: "",
         involvementYears: "",

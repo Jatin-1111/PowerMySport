@@ -32,7 +32,6 @@ import { toast } from "sonner";
 interface DependentOption {
   _id: string;
   name: string;
-  type: "SELF" | "DEPENDENT";
 }
 
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
@@ -68,7 +67,7 @@ export function ExpertDetailClient({ initialExpert = null }: { initialExpert?: E
       .get<{ success: boolean; data: DependentOption[] }>("/auth/players")
       .then((res) => {
         if (!res.data.success || !Array.isArray(res.data.data)) return;
-        const deps = res.data.data.filter((p) => p.type === "DEPENDENT");
+        const deps = res.data.data;
         setDependents(deps);
 
         // One-time handoff from the "Yes, I know the sport" flow: it already

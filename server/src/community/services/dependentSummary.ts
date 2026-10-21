@@ -173,7 +173,7 @@ export const summarizeDependents = async (
   parentId: string,
   fallbackCity: string | null
 ): Promise<DependentSummary[]> => {
-  const rows = await Player.find({ userId: parentId, type: "DEPENDENT" })
+  const rows = await Player.find({ userId: parentId })
     .select(DEPENDENT_FIELDS)
     .sort({ createdAt: 1 })
     .lean<DependentRow[]>();
@@ -197,7 +197,7 @@ export const summarizeDependentsFor = async (
     return byParent;
   }
 
-  const rows = await Player.find({ userId: { $in: parentIds }, type: "DEPENDENT" })
+  const rows = await Player.find({ userId: { $in: parentIds } })
     .select(DEPENDENT_FIELDS)
     .sort({ createdAt: 1 })
     .lean<DependentRow[]>();

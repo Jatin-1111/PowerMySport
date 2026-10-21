@@ -38,7 +38,6 @@ export const graduateDependent = async (
     const dependent = await Player.findOne({
       _id: payload.dependentId,
       userId: payload.parentId,
-      type: "DEPENDENT",
     }).session(session);
 
     if (!dependent) {
@@ -183,7 +182,7 @@ export const addDependent = async (userId: string, payload: AddDependentPayload)
     await recordParentalConsent(user._id);
   }
 
-  const existing = await Player.countDocuments({ userId: user._id, type: "DEPENDENT" });
+  const existing = await Player.countDocuments({ userId: user._id });
   if (existing >= MAX_DEPENDENTS_PER_PARENT) {
     throw new AppError(
       `You can add up to ${MAX_DEPENDENTS_PER_PARENT} child profiles. Remove one to add another.`,
@@ -243,7 +242,6 @@ export const updateDependent = async (
   const dependent = await Player.findOne({
     _id: dependentId,
     userId,
-    type: "DEPENDENT",
   });
   if (!dependent) {
     throw new Error("Dependent not found");
@@ -317,7 +315,6 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
   const dependent = await Player.findOne({
     _id: dependentId,
     userId,
-    type: "DEPENDENT",
   });
   if (!dependent) {
     throw new Error("Dependent not found");

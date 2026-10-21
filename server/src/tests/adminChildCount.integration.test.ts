@@ -53,15 +53,6 @@ describe("childCountsFor", () => {
     assert.equal(counts.get(String(b)), 1);
   });
 
-  it("does not count a parent's own athlete row as a child", async () => {
-    const a = oid();
-    await db
-      .collection("players")
-      .insertMany([{ userId: a, type: "SELF", name: "Parent" }, child(a)]);
-
-    assert.equal((await childCountsFor([a])).get(String(a)), 1);
-  });
-
   it("has no entry for a parent with no children, so the caller shows 0", async () => {
     const a = oid();
     assert.equal((await childCountsFor([a])).has(String(a)), false);

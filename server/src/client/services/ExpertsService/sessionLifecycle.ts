@@ -152,7 +152,6 @@ export const initiateExpertSession = async (params: {
     const player = await Player.findOne({
       _id: params.playerId,
       userId: toObjectId(params.userId),
-      type: "DEPENDENT",
     }).select("_id");
     if (player) playerId = player._id as mongoose.Types.ObjectId;
   }

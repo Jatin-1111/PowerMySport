@@ -78,7 +78,7 @@ export function ProblemWizardInner({
       .get<{ success: boolean; data: any[] }>("/auth/players")
       .then((res) => {
         clearTimeout(timeout);
-        const deps = (res.data.data || []).filter((p: any) => p.type === "DEPENDENT");
+        const deps = res.data.data || [];
         setDependents(deps);
         // Always show the picker when there's at least one dependent — even
         // with exactly one, the parent needs the "Continue without selecting"

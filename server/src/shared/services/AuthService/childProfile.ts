@@ -47,10 +47,7 @@ export const serializeChildForParent = (p: any) => ({
  */
 export const NOT_SENT_TO_THE_PARENT: Record<string, string> = {
   userId: "the owner's own id; the caller already knows it",
-  type: "added by the players list itself, which mixes a parent's own row with children",
+  type: "always DEPENDENT now; being removed from the stored rows (migration 66)",
   createdAt: "internal bookkeeping",
   updatedAt: "internal bookkeeping",
-  primaryObjective: "used only for an adult's own athlete row, never for a child",
-  weeklyTimeCommitment: "used only for an adult's own athlete row, never for a child",
-  budgetTier: "used only for an adult's own athlete row, never for a child",
 };

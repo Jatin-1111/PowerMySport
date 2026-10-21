@@ -1,4 +1,3 @@
-import { Player } from "../../../client/models/Player";
 import { User, UserDocument } from "../../../client/models/User";
 import { S3Service } from "../S3Service";
 
@@ -13,6 +12,8 @@ export interface UpdateProfilePayload {
     involvementYears?: number;
   };
   playerProfile?: {
+    /** What the client sends. `sports` is the old name and is still accepted. */
+    sportsFocus?: string[];
     sports?: string[];
     yearsPlaying?: number;
     personalityTags?: string[];
@@ -73,33 +74,24 @@ export const updateProfile = async (
     if (p.involvementYears !== undefined) parentDoc.involvementYears = p.involvementYears;
   }
 
-  // Update player profile if provided
-  if (payload.playerProfile && Array.isArray(payload.playerProfile.sports)) {
-    let selfPlayer = await Player.findOne({ userId, type: "SELF" });
-    if (!selfPlayer) {
-      selfPlayer = new Player({
-        userId: user._id,
-        type: "SELF",
-        name: user.name,
-        sportsFocus: payload.playerProfile.sports,
-      });
-    } else {
-      if (payload.playerProfile.sports) selfPlayer.sportsFocus = payload.playerProfile.sports;
-    }
-
-    if (payload.playerProfile.yearsPlaying !== undefined)
-      selfPlayer.yearsPlaying = payload.playerProfile.yearsPlaying;
-    if (payload.playerProfile.personalityTags)
-      selfPlayer.personalityTags = payload.playerProfile.personalityTags;
-    if (payload.playerProfile.primaryObjective)
-      selfPlayer.primaryObjective = payload.playerProfile.primaryObjective;
-    if (payload.playerProfile.weeklyTimeCommitment !== undefined)
-      selfPlayer.weeklyTimeCommitment = payload.playerProfile.weeklyTimeCommitment;
-    if (payload.playerProfile.budgetTier) selfPlayer.budgetTier = payload.playerProfile.budgetTier;
-    if (payload.playerProfile.location !== undefined)
-      selfPlayer.location = payload.playerProfile.location;
-
-    await selfPlayer.save();
+  // The adult's own sport details live on the user. (They were saved to a SELF row in
+  // `players`, and the client sends `sportsFocus` while this read `sports`, so a save
+  // from the "My sports" card changed nothing.)
+  const incoming = payload.playerProfile;
+  if (incoming) {
+    const sports = incoming.sportsFocus ?? incoming.sports;
+    const profile: Record<string, unknown> = {
+      ...((user as any).athleteProfile?.toObject?.() ?? (user as any).athleteProfile ?? {}),
+    };
+    if (Array.isArray(sports)) profile.sportsFocus = sports;
+    if (incoming.yearsPlaying !== undefined) profile.yearsPlaying = incoming.yearsPlaying;
+    if (incoming.personalityTags) profile.personalityTags = incoming.personalityTags;
+    if (incoming.primaryObjective) profile.primaryObjective = incoming.primaryObjective;
+    if (incoming.weeklyTimeCommitment !== undefined)
+      profile.weeklyTimeCommitment = incoming.weeklyTimeCommitment;
+    if (incoming.budgetTier) profile.budgetTier = incoming.budgetTier;
+    if (incoming.location !== undefined) profile.location = incoming.location;
+    if (Object.keys(profile).length > 0) (user as any).athleteProfile = profile;
   }
 
   if (payload.shippingAddress) {

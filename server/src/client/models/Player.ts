@@ -48,7 +48,8 @@ const quizSchema = new Schema<QuizAnswers>(
 
 export interface PlayerDocument extends Document {
   userId: mongoose.Types.ObjectId; // Master User who owns this profile
-  type: "SELF" | "DEPENDENT";
+  /** Always DEPENDENT. Kept until migration 66 removes it from every row; nothing filters on it any more. */
+  type: "DEPENDENT";
   name: string;
   age?: number;
   dob?: Date;
@@ -57,9 +58,6 @@ export interface PlayerDocument extends Document {
   sportsFocus: string[];
   yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Fitness" | "Compete";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
   location?: string; // Indian state
   /** The sport-matching quiz's own answers; see QuizAnswers. Merged on each save; a retake overwrites every answer. */
   quiz?: QuizAnswers;
@@ -98,8 +96,8 @@ const playerSchema = new Schema<PlayerDocument>(
     },
     type: {
       type: String,
-      enum: ["SELF", "DEPENDENT"],
-      required: true,
+      enum: ["DEPENDENT"],
+      default: "DEPENDENT",
     },
     name: {
       type: String,
@@ -130,17 +128,6 @@ const playerSchema = new Schema<PlayerDocument>(
     },
     personalityTags: {
       type: [String],
-    },
-    primaryObjective: {
-      type: String,
-      enum: ["Recreational", "Fitness", "Compete"],
-    },
-    weeklyTimeCommitment: {
-      type: Number,
-    },
-    budgetTier: {
-      type: String,
-      enum: ["Budget", "Moderate", "Premium"],
     },
     location: {
       type: String,

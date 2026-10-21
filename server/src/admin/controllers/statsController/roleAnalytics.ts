@@ -11,10 +11,8 @@ export const getPlayersAnalytics = asyncHandler(
     const monthStart = getStartOfCurrentMonth();
     const twentyFourHoursAgo = getTwentyFourHoursAgo();
 
-    // `withSportsProfile`/`withDependents` count through the Player collection,
-    // not through the user document. Migration 14 moved both off User — the
-    // fields these once matched (`playerProfile.sports`, `dependents`) no
-    // longer exist on the schema, so counting them there reported a flat zero.
+    // `withDependents` counts through the Player collection, which holds children only.
+    // `withSportsProfile` reads the user's own `athleteProfile`.
     const countPlayerOwners = (match: Record<string, unknown>) =>
       Player.aggregate<{ owners: number }>([
         { $match: match },
@@ -43,15 +41,15 @@ export const getPlayersAnalytics = asyncHandler(
         role: "Player",
         createdAt: { $gte: monthStart },
       }),
-      countPlayerOwners({ type: "SELF", "sportsFocus.0": { $exists: true } }),
-      countPlayerOwners({ type: "DEPENDENT" }),
+      User.countDocuments({ role: "Player", "athleteProfile.sportsFocus.0": { $exists: true } }),
+      countPlayerOwners({}),
       User.countDocuments({
         role: "Player",
         createdAt: { $gte: twentyFourHoursAgo },
       }),
     ]);
 
-    const withSportsProfile = sportsProfileOwners[0]?.owners ?? 0;
+    const withSportsProfile = sportsProfileOwners;
     const withDependents = dependentOwners[0]?.owners ?? 0;
 
     res.status(200).json({

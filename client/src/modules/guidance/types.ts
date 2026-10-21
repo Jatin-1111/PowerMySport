@@ -127,7 +127,6 @@ export type GuidanceSubmission = {
 
 export type PlayerProfile = {
   _id: string;
-  type: "SELF" | "DEPENDENT";
   name: string;
   age?: number;
   dob?: string;
