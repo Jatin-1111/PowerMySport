@@ -10,6 +10,10 @@ import {
   type ConsultForm,
   type ProblemId,
 } from "@/modules/guidance/config/wizard/guidanceUtils";
+import {
+  profileSuggestions,
+  type ProfileSuggestion,
+} from "@/modules/guidance/utils/profileSuggestions";
 import { QuestionInput } from "@/modules/guidance/components/wizard/QuestionInput";
 import { LoadingView, ResultsScreen } from "@/modules/guidance/components/wizard/ResultsScreen";
 import {
@@ -67,6 +71,7 @@ export function ProblemWizardInner({
   const [loading, setLoading] = useState(false);
   const [submission, setSubmission] = useState<GuidanceSubmission | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<ProfileSuggestion[]>([]);
   const [dependents, setDependents] = useState<any[]>([]);
   const [selectedDependentId, setSelectedDependentId] = useState<string | null>(null);
   const [preFillPhase, setPreFillPhase] = useState<PreFillPhase>(token ? "loading" : "ready");
@@ -93,10 +98,6 @@ export function ProblemWizardInner({
   }, [token]);
 
   const selectedDependent = dependents.find((d) => d._id === selectedDependentId);
-
-  /** The child's sports with this one added; the PUT replaces the list, so it must carry the rest. */
-  const addSport = (existing: string[] | undefined, sport: string): string[] =>
-    existing?.includes(sport) ? existing : [...(existing ?? []), sport];
 
   function applyDependent(dep: any) {
     setForm((prev) => {
@@ -179,21 +180,9 @@ export function ProblemWizardInner({
         return;
       }
 
-      // Sync shared profile fields back to the matched dependent
-      if (selectedDependentId) {
-        api
-          .put(`/auth/dependents/${selectedDependentId}`, {
-            ...(form.sport
-              ? { sportsFocus: addSport(selectedDependent?.sportsFocus, form.sport) }
-              : {}),
-            ...(form.gender ? { gender: form.gender } : {}),
-            ...(form.state ? { location: form.state } : {}),
-            ...(form.experienceLevel ? { experienceLevel: form.experienceLevel } : {}),
-            ...(form.weeklyHours ? { weeklyHoursCategory: form.weeklyHours } : {}),
-            ...(form.budgetRange ? { budgetRange: form.budgetRange } : {}),
-          })
-          .catch(() => {});
-      }
+      // Guidance only suggests: the answers that differ from the child's profile are offered
+      // under the plan, and nothing is saved unless the parent says so.
+      setSuggestions(selectedDependentId ? profileSuggestions(selectedDependent, form) : []);
 
       setLoading(false);
       setSubmission(res.data.data);
@@ -210,6 +199,7 @@ export function ProblemWizardInner({
     setSubmission(null);
     setError(null);
     setSelectedDependentId(null);
+    setSuggestions([]);
     setPreFillPhase(dependents.length > 0 ? "select" : "ready");
   };
 
@@ -221,6 +211,7 @@ export function ProblemWizardInner({
         problemId={problemId}
         onReset={reset}
         dependent={dependents.find((d) => d._id === selectedDependentId) ?? null}
+        suggestions={suggestions}
       />
     );
 

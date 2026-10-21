@@ -2,12 +2,14 @@ import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { GuidanceChatDrawer } from "@/modules/guidance/components/chat/GuidanceChatDrawer";
 import { LoginRequiredModal } from "@/modules/guidance/components/chat/LoginRequiredModal";
+import { ProfileUpdateCard } from "@/modules/guidance/components/results/ProfileUpdateCard";
 import { ResultsView } from "@/modules/guidance/components/results/ResultsView";
 import {
   downloadGuidanceReportPdf,
   getGuidanceWhatsAppUrl,
 } from "@/modules/guidance/services/guidance";
 import type { GuidanceSubmission } from "@/modules/guidance/types";
+import type { ProfileSuggestion } from "@/modules/guidance/utils/profileSuggestions";
 import type { ProblemId } from "@/modules/guidance/config/wizard/guidanceUtils";
 import { PROBLEM_TYPES } from "@/modules/guidance/config/wizard/wizardConfig";
 import {
@@ -70,11 +72,14 @@ export function ResultsScreen({
   problemId,
   onReset,
   dependent,
+  suggestions = [],
 }: {
   submission: GuidanceSubmission;
   problemId: ProblemId;
   onReset: () => void;
   dependent?: any | null;
+  /** Answers that differ from the child's profile, offered for the parent to accept. */
+  suggestions?: ProfileSuggestion[];
 }) {
   const { user } = useAuthStore();
   const [chatOpen, setChatOpen] = useState(false);
@@ -136,6 +141,14 @@ export function ResultsScreen({
             Here&apos;s your personalised plan, based on everything you told us.
           </p>
         </div>
+
+        {dependent && suggestions.length > 0 && (
+          <ProfileUpdateCard
+            childId={dependent._id}
+            childName={dependent.name ?? "your child"}
+            suggestions={suggestions}
+          />
+        )}
 
         {/* Results */}
         <div className="rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_10px_40px_-18px_rgba(15,23,42,0.25)] ring-1 ring-slate-900/[0.03] backdrop-blur-sm">
