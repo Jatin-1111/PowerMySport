@@ -118,7 +118,7 @@ export interface DependentSummary {
 }
 
 /** The dependent fields this module reads. Nothing that names the child. */
-const DEPENDENT_FIELDS = "userId age dob gender sportsFocus chosenSport location";
+export const DEPENDENT_FIELDS = "userId age dob gender sportsFocus chosenSport location";
 
 type DependentRow = {
   userId: unknown;

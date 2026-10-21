@@ -163,7 +163,51 @@ export const serializeExpertFull = (expert: any) => ({
 /** The quiz answers of a Player, or an empty set when the quiz was never taken. */
 const quiz = (player: PlayerDocument | any): Record<string, any> => player?.quiz ?? {};
 
-const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
+/**
+ * What an expert sees of a child, in two tiers (the briefing on lists, the full profile for
+ * a paid session). Each tier names the stored fields it deliberately leaves out, with the
+ * reason, and a test requires every field of the model to be shown or listed here, so a
+ * field added to the model is never shown to experts by accident or forgotten by omission.
+ * Quiz answers are checked one by one as `quiz.<name>`.
+ */
+export const EXPERT_BRIEFING_WITHHOLDS: Record<string, string> = {
+  userId: "the owner's id",
+  type: "internal marker",
+  createdAt: "internal bookkeeping",
+  updatedAt: "internal bookkeeping",
+  dob: "the briefing shows an age, not a date of birth",
+  relation: "not needed to prepare for a session",
+  yearsPlaying: "in the full profile, which needs a paid session",
+  personalityTags: "in the full profile, which needs a paid session",
+  location: "in the full profile, which needs a paid session",
+  weeklyHoursCategory: "in the full profile, which needs a paid session",
+  experienceLevel: "in the full profile, which needs a paid session",
+  trainingType: "in the full profile, which needs a paid session",
+  consideringSports: "the parent's shortlist is theirs, not the expert's",
+  currentStandingTier: "in the full profile, which needs a paid session",
+  chosenSport: "a decision the parent has not shared with this expert",
+  chosenSportAt: "a decision the parent has not shared with this expert",
+  "quiz.heightCm": "physical measures are in the full profile only",
+  "quiz.weightKg": "physical measures are in the full profile only",
+  "quiz.visualTracking": "in the full profile, which needs a paid session",
+  "quiz.eyesight": "physical measures are in the full profile only",
+  "quiz.agility": "physical measures are in the full profile only",
+  "quiz.decisionStyle": "in the full profile, which needs a paid session",
+  "quiz.repetitionTolerance": "in the full profile, which needs a paid session",
+  "quiz.waterComfort": "in the full profile, which needs a paid session",
+};
+
+export const EXPERT_FULL_PROFILE_WITHHOLDS: Record<string, string> = {
+  userId: "the owner's id",
+  type: "internal marker",
+  createdAt: "internal bookkeeping",
+  updatedAt: "internal bookkeeping",
+  consideringSports: "the parent's shortlist is theirs, not the expert's",
+  chosenSport: "a decision the parent has not shared with this expert",
+  chosenSportAt: "a decision the parent has not shared with this expert",
+};
+
+export const summarizePlayerForExpert = (player: PlayerDocument | any) => ({
   _id: player._id?.toString(),
   name: player.name,
   age: resolveChildAge(player),
