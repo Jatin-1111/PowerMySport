@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { JsonLd } from "@/components/seo/JsonLd";
 import { getCommunityAppUrl } from "@/lib/community/url";
@@ -72,9 +72,17 @@ export default async function SportPathwayPage({
   // rather than flashing stage one and jumping once JavaScript arrives.
   const stageParam = Array.isArray(query.stage) ? query.stage[0] : query.stage;
 
-  // Nothing published for this sport yet. A 404 rather than an empty shell: an
-  // empty pathway is worse than none, and it keeps a thin page out of the index.
-  if (!guide || guide.stages.length === 0) notFound();
+  // Nothing published for this sport yet. Never an empty shell: an empty pathway is
+  // worse than none, and it keeps a thin page out of the index.
+  if (!guide || guide.stages.length === 0) {
+    // A sport we list but have not written yet. The dashboard, the quiz results and
+    // guidance all link to every listed sport, so a parent following one used to land on
+    // a "page has left the field" dead end. Send them to the picker of what is published
+    // (a temporary redirect: the sport may be published later). A slug we do not list at
+    // all is a typo or a stale link, and stays a 404.
+    if (sportFromSlug(sport)) redirect("/roadmap");
+    notFound();
+  }
 
   const communityUrl = getCommunityAppUrl();
 
