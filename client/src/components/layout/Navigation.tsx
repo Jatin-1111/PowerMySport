@@ -130,7 +130,12 @@ const exploreGroups = exploreItems.reduce<
   return groups;
 }, []);
 
-/** Served by the community app through a rewrite, so it has no page in this route tree. */
+/**
+ * Served by the community app through a rewrite, so it has no page in this route tree.
+ * Links to it must not prefetch: the prefetch asks for a React Server Components payload,
+ * which the community app does not answer, so every page on the site made one failed
+ * request (a 404 on `/community?_rsc=...`). Clicking still works; it is a normal navigation.
+ */
 const COMMUNITY_PATH = "/community";
 
 /** "SUPER_ADMIN" as "Super admin": sentence case, for the menu's account block. */
@@ -234,7 +239,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
       label: "Explore",
       links: exploreItems.map(({ href, label, description }) => ({ href, label, description })),
     },
-    { kind: "link", href: COMMUNITY_PATH, label: "Community" },
+    { kind: "link", href: COMMUNITY_PATH, label: "Community", prefetch: false },
     {
       kind: "group",
       key: "services",
@@ -336,7 +341,8 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
 
             {/* Community Link */}
             <Link
-              href="/community"
+              href={COMMUNITY_PATH}
+              prefetch={false}
               className={cn(
                 "shop-nav-link relative font-medium",
                 isActive("/community") &&

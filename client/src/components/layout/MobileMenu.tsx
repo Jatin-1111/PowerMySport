@@ -13,7 +13,7 @@ export interface MobileMenuLink {
 }
 
 export type MobileMenuItem =
-  | { kind: "link"; href: string; label: string }
+  | { kind: "link"; href: string; label: string; prefetch?: boolean }
   | { kind: "group"; key: string; label: string; links: MobileMenuLink[] };
 
 export interface MobileMenuAccount {
@@ -91,6 +91,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        prefetch={item.prefetch}
                         onClick={onClose}
                         aria-current={active ? "page" : undefined}
                         className={cn(ROW, active ? "text-power-orange-solid" : "text-ink")}
