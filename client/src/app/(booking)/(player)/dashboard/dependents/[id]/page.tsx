@@ -2,6 +2,7 @@
 
 import { toast } from "@/lib/toast";
 import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
+import { useSaveChild } from "@/modules/player/hooks/useSaveChild";
 import { authApi } from "@/modules/auth/services/auth";
 import DependentManagementModal from "@/modules/player/components/DependentManagementModal";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
@@ -107,6 +108,7 @@ export default function DependentDetailPage() {
   const dependentId = String(params.id || "");
   const router = useRouter();
   const loadProfile = useRefreshProfile();
+  const { updateChild } = useSaveChild();
 
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -233,9 +235,10 @@ export default function DependentDetailPage() {
     if (!dependent._id) return;
     setIsSaving(true);
     try {
-      await authApi.updateDependent(dependent._id, data);
+      const { refreshed } = await updateChild(dependent._id, data);
       toast.success("Profile updated successfully");
-      await fetchProfile();
+      const profile = await refreshed;
+      if (profile) setUser(profile);
     } catch (error: unknown) {
       throw error;
     } finally {

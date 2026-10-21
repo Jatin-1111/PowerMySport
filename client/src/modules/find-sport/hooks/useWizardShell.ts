@@ -6,7 +6,7 @@ import api from "@/lib/api/axios";
 import { useFlow } from "@/flow/useFlow";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
-import { authApi } from "@/modules/auth/services/auth";
+import { useSaveChild } from "@/modules/player/hooks/useSaveChild";
 import type { PlayerProfile } from "@/modules/guidance/types";
 import type { WizardAnswers } from "../types";
 import { EMPTY_ANSWERS } from "../types";
@@ -25,6 +25,7 @@ import { firstNoteFor, scheduleTrialCheckIn, trialSignals } from "../components/
 export function useWizardShell() {
   const { token } = useAuthStore();
   const refreshProfile = useRefreshProfile();
+  const { addChild, updateChild } = useSaveChild();
   // A dashboard "Find their sport" card links here with ?dependentId=<id> so
   // the wizard knows up front who this assessment is for. Without it, the
   // dependent picker below defaults to nothing selected, and finishing the
@@ -137,19 +138,17 @@ export function useWizardShell() {
           const { answers: a, scored, chosen, chosenSport: pickedSport } = pendingImport.current;
           pendingImport.current = null;
           const childName = a.childName?.trim() || "My Child";
-          authApi
-            .addDependent({
-              name: childName,
-              ...buildDependentPayload(a, scored, childName, chosen, pickedSport),
-            })
-            .then((r) => {
-              if (r.data?._id) setSelectedDependentId(r.data._id);
+          addChild({
+            name: childName,
+            ...buildDependentPayload(a, scored, childName, chosen, pickedSport),
+          })
+            .then(({ child }) => {
+              if (child?._id) setSelectedDependentId(child._id);
               setSavedForName(childName);
               setSavedStatus("saved");
               try {
                 localStorage.removeItem("pms_wizard_results");
               } catch {}
-              void refreshProfile();
             })
             .catch(() => setSavedStatus("error"));
         } else {
@@ -329,7 +328,7 @@ export function useWizardShell() {
             players.find((p) => p._id === selectedDependentId)?.name.split(" ")[0] ??
             answers.childName;
           try {
-            await authApi.updateDependent(
+            await updateChild(
               selectedDependentId,
               buildDependentPayload(answers, scored, undefined, chosen)
             );
@@ -341,7 +340,6 @@ export function useWizardShell() {
               chosen,
               displayName || answers.childName
             );
-            void refreshProfile();
           } catch {
             setSavedStatus("error");
           }
@@ -350,15 +348,14 @@ export function useWizardShell() {
           setSavedStatus("saving");
           const childName = answers.childName?.trim() || "My Child";
           try {
-            const res = await authApi.addDependent({
+            const { child } = await addChild({
               name: childName,
               ...buildDependentPayload(answers, scored, childName, chosen),
             });
-            if (res.data?._id) setSelectedDependentId(res.data._id);
+            if (child?._id) setSelectedDependentId(child._id);
             setSavedForName(childName);
             setSavedStatus("saved");
-            scheduleTrialCheckIn(res.data?._id ?? null, scored, chosen, childName);
-            void refreshProfile();
+            scheduleTrialCheckIn(child?._id ?? null, scored, chosen, childName);
           } catch {
             setSavedStatus("error");
           }

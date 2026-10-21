@@ -3,6 +3,7 @@
 import { toast } from "@/lib/toast";
 import { useRefreshProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
+import { useSaveChild } from "@/modules/player/hooks/useSaveChild";
 import { type DependentModalStepId } from "@/modules/player/components/DependentManagementModal";
 import { User } from "@/types";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +28,7 @@ export function useProfilePage() {
   // both reads and writes the profile, so a cached read after a save would show
   // the user the value they just replaced.
   const loadProfile = useRefreshProfile();
+  const { addChild, updateChild } = useSaveChild();
   const searchParams = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,9 +101,10 @@ export function useProfilePage() {
   const handleQuickAddDependent = async (dependentData: Dependent) => {
     setIsAddingDependent(true);
     try {
-      await authApi.addDependent(dependentData);
+      const { refreshed } = await addChild(dependentData);
       toast.success("Dependent added successfully");
-      await fetchProfile();
+      const profile = await refreshed;
+      if (profile) setUser(profile);
     } catch (error: unknown) {
       throw error;
     } finally {
@@ -113,9 +116,10 @@ export function useProfilePage() {
     if (!selectedDependent?._id) return;
     setSavingDependentId(selectedDependent._id);
     try {
-      await authApi.updateDependent(selectedDependent._id, dependentData);
+      const { refreshed } = await updateChild(selectedDependent._id, dependentData);
       toast.success("Dependent updated successfully");
-      await fetchProfile();
+      const profile = await refreshed;
+      if (profile) setUser(profile);
     } catch (error: unknown) {
       throw error;
     } finally {

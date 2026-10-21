@@ -2,16 +2,12 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { updateDependent, getProfile } = vi.hoisted(() => ({
-  updateDependent: vi.fn(),
-  getProfile: vi.fn(),
-}));
+const { updateChild } = vi.hoisted(() => ({ updateChild: vi.fn() }));
 
-vi.mock("@/modules/auth/services/auth", () => ({ authApi: { updateDependent, getProfile } }));
+vi.mock("@/modules/player/hooks/useSaveChild", () => ({ useSaveChild: () => ({ updateChild }) }));
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { toast } from "@/lib/toast";
-import { useAuthStore } from "@/modules/auth/store/authStore";
 import type { ProfileSuggestion } from "@/modules/guidance/utils/profileSuggestions";
 import { ProfileUpdateCard } from "./ProfileUpdateCard";
 
@@ -36,11 +32,9 @@ const mount = (list = suggestions) =>
   render(<ProfileUpdateCard childId="c1" childName="Riya" suggestions={list} />);
 
 beforeEach(() => {
-  updateDependent.mockReset().mockResolvedValue({ success: true });
-  getProfile.mockReset().mockResolvedValue({ data: { id: "u1", name: "Parent" } });
+  updateChild.mockReset().mockResolvedValue({ child: {}, refreshed: Promise.resolve(null) });
   vi.mocked(toast.success).mockClear();
   vi.mocked(toast.error).mockClear();
-  useAuthStore.setState({ user: null });
 });
 
 describe("ProfileUpdateCard", () => {
@@ -49,7 +43,7 @@ describe("ProfileUpdateCard", () => {
 
     expect(screen.getByText(/Update Riya's profile with these answers/)).toBeTruthy();
     expect(screen.getByText("8 to 12 hours a week")).toBeTruthy();
-    expect(updateDependent).not.toHaveBeenCalled();
+    expect(updateChild).not.toHaveBeenCalled();
   });
 
   it("saves only the suggested fields when the parent accepts", async () => {
@@ -58,12 +52,11 @@ describe("ProfileUpdateCard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Update profile" }));
 
     await waitFor(() => expect(screen.getByText(/now matches these answers/)).toBeTruthy());
-    expect(updateDependent).toHaveBeenCalledTimes(1);
-    expect(updateDependent).toHaveBeenCalledWith("c1", {
+    expect(updateChild).toHaveBeenCalledTimes(1);
+    expect(updateChild).toHaveBeenCalledWith("c1", {
       weeklyHoursCategory: "8-12",
       budgetRange: "3k-7k",
     });
-    expect(useAuthStore.getState().user).toMatchObject({ id: "u1" });
   });
 
   it("saves nothing when the parent says not now", () => {
@@ -71,12 +64,12 @@ describe("ProfileUpdateCard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Not now" }));
 
-    expect(updateDependent).not.toHaveBeenCalled();
+    expect(updateChild).not.toHaveBeenCalled();
     expect(container.textContent).toBe("");
   });
 
   it("says so, and lets the parent try again, when the save fails", async () => {
-    updateDependent.mockRejectedValueOnce(new Error("boom"));
+    updateChild.mockRejectedValueOnce(new Error("boom"));
     mount();
 
     fireEvent.click(screen.getByRole("button", { name: "Update profile" }));

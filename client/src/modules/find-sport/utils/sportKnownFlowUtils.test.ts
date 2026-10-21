@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { isAnswered, getAgeFromDob, EMPTY_FORM, type KnownSportForm } from "./sportKnownFlowUtils";
+import {
+  buildKnownSportFields,
+  isAnswered,
+  getAgeFromDob,
+  EMPTY_FORM,
+  type KnownSportForm,
+} from "./sportKnownFlowUtils";
 import {
   getCurrentStandingLadder,
   getBestResultLadder,
@@ -403,5 +409,56 @@ describe("deriveExperienceLevel — backward-compat collapse", () => {
   it("tiers 4–5 collapse to competitive", () => {
     expect(deriveExperienceLevel(4)).toBe("competitive");
     expect(deriveExperienceLevel(5)).toBe("competitive");
+  });
+});
+
+// ─── buildKnownSportFields ───────────────────────────────────────────────────
+
+describe("buildKnownSportFields", () => {
+  const now = new Date("2026-10-21T10:00:00.000Z");
+
+  it("saves nothing for an empty form, so a blank flow never clears a profile", () => {
+    expect(buildKnownSportFields(form(), now)).toEqual({});
+  });
+
+  it("records the sport as a decision, not only an interest", () => {
+    const fields = buildKnownSportFields(form({ sport: "Tennis" }), now);
+
+    expect(fields).toMatchObject({
+      sportsFocus: ["Tennis"],
+      chosenSport: "Tennis",
+      chosenSportAt: "2026-10-21T10:00:00.000Z",
+    });
+  });
+
+  it("derives the experience level from the standing, so the two cannot disagree", () => {
+    expect(buildKnownSportFields(form({ currentStandingTier: 1 }), now)).toMatchObject({
+      currentStandingTier: 1,
+      experienceLevel: "beginner",
+    });
+    expect(buildKnownSportFields(form({ currentStandingTier: 3 }), now)).toMatchObject({
+      experienceLevel: "intermediate",
+    });
+    expect(buildKnownSportFields(form({ currentStandingTier: 5 }), now)).toMatchObject({
+      experienceLevel: "competitive",
+    });
+  });
+
+  it("keeps a years-playing of 0, which is an answer", () => {
+    expect(buildKnownSportFields(form({ yearsPlaying: 0 }), now)).toEqual({ yearsPlaying: 0 });
+  });
+
+  it("carries only the questions that were answered", () => {
+    const fields = buildKnownSportFields(
+      form({ gender: "FEMALE", state: "Delhi", dateOfBirth: "2015-06-01", ambition: "fun" }),
+      now
+    );
+
+    expect(fields).toEqual({
+      gender: "FEMALE",
+      location: "Delhi",
+      dob: "2015-06-01",
+      ambition: "fun",
+    });
   });
 });

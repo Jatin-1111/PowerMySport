@@ -1,3 +1,6 @@
+import type { ChildFields } from "@/modules/player/hooks/useSaveChild";
+import { deriveExperienceLevel } from "../data/sportArchetypes";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface KnownSportForm {
@@ -56,4 +59,35 @@ export function isAnswered(id: keyof KnownSportForm, form: KnownSportForm): bool
   if (typeof v === "string") return v.length > 0;
   if (typeof v === "number") return true;
   return v !== null;
+}
+
+/**
+ * What "I know my sport" saves on the child.
+ *
+ * The flow's premise is that the parent already knows the sport, so that is a decision, not
+ * just an interest: it sets `chosenSport` as well as `sportsFocus` (it used to write only
+ * `sportsFocus`, so the choice never registered anywhere else). The level is derived from the
+ * 1 to 5 standing so the two cannot disagree. Only answered questions are included, so a
+ * blank one never clears something already on the profile.
+ */
+export function buildKnownSportFields(form: KnownSportForm, now: Date = new Date()): ChildFields {
+  return {
+    // Loosely typed as `string` on the form, but this flow only ever writes MALE or FEMALE.
+    ...(form.gender ? { gender: form.gender as ChildFields["gender"] } : {}),
+    ...(form.state ? { location: form.state } : {}),
+    ...(form.dateOfBirth ? { dob: form.dateOfBirth } : {}),
+    ...(form.sport
+      ? { sportsFocus: [form.sport], chosenSport: form.sport, chosenSportAt: now.toISOString() }
+      : {}),
+    // Typed as `string` because the options vary per sport archetype, but every value it can
+    // hold comes from the ambition vocabulary.
+    ...(form.ambition ? { ambition: form.ambition as ChildFields["ambition"] } : {}),
+    ...(form.yearsPlaying !== null ? { yearsPlaying: form.yearsPlaying } : {}),
+    ...(form.currentStandingTier !== null
+      ? {
+          currentStandingTier: form.currentStandingTier,
+          experienceLevel: deriveExperienceLevel(form.currentStandingTier),
+        }
+      : {}),
+  };
 }

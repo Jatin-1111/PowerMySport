@@ -1,6 +1,5 @@
 import { toast } from "@/lib/toast";
-import { authApi } from "@/modules/auth/services/auth";
-import { useAuthStore } from "@/modules/auth/store/authStore";
+import { useSaveChild } from "@/modules/player/hooks/useSaveChild";
 import type { ProfileSuggestion } from "@/modules/guidance/utils/profileSuggestions";
 import { useState } from "react";
 
@@ -17,6 +16,7 @@ export function ProfileUpdateCard({
   childName: string;
   suggestions: ProfileSuggestion[];
 }) {
+  const { updateChild } = useSaveChild();
   const [state, setState] = useState<"asking" | "saving" | "saved" | "dismissed">("asking");
 
   if (suggestions.length === 0 || state === "dismissed") return null;
@@ -25,10 +25,7 @@ export function ProfileUpdateCard({
     setState("saving");
     try {
       const changes = Object.fromEntries(suggestions.map((s) => [s.field, s.value]));
-      await authApi.updateDependent(childId, changes);
-      // Bring the signed-in user up to date, so the dashboard shows the new values.
-      const profile = await authApi.getProfile();
-      if (profile.data) useAuthStore.getState().setUser(profile.data);
+      await updateChild(childId, changes);
       setState("saved");
       toast.success(`${childName}'s profile is updated.`);
     } catch {
