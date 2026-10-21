@@ -102,15 +102,18 @@ export const setupCommunitySocket = (io: Server): void => {
     }
   });
 
-  communityNamespace.on("connection", async (socket) => {
+  communityNamespace.on("connection", (socket) => {
     const userId = socket.data.userId as string;
     const socketRateLimit = new Map<string, RateLimitState>();
-    try {
-      await CommunityService.touchLastSeen(userId);
-      await markUserOnline(userId, socket.id);
-    } catch (error) {
-      log.error("Failed to initialize community socket presence:", error);
-    }
+
+    // Everything in this block is synchronous, and every `socket.on` below is
+    // registered before the first `await`. The setup that needs the database
+    // (last seen, presence, auto-joining recent conversations) runs after the
+    // handlers exist. It used to run first: an event sent in the first few
+    // hundred milliseconds after connecting, which is exactly when the client
+    // replays its room joins and flushes anything queued while offline, had no
+    // listener yet and vanished without an acknowledgement.
+    socket.join(`user:${userId}`);
 
     const heartbeat = setInterval(() => {
       touchUserLastActive(userId).catch((error: unknown) => {
@@ -118,19 +121,26 @@ export const setupCommunitySocket = (io: Server): void => {
       });
     }, 60_000);
 
-    socket.join(`user:${userId}`);
-
-    try {
-      const recentConversationIds = await CommunityService.listRecentConversationIdsForRealtime(
-        userId,
-        30
-      );
-      for (const conversationId of recentConversationIds) {
-        socket.join(`conversation:${conversationId}`);
+    const initializeConnection = async (): Promise<void> => {
+      try {
+        await CommunityService.touchLastSeen(userId);
+        await markUserOnline(userId, socket.id);
+      } catch (error) {
+        log.error("Failed to initialize community socket presence:", error);
       }
-    } catch {
-      // no-op: socket can still join lazily when conversation is opened
-    }
+
+      try {
+        const recentConversationIds = await CommunityService.listRecentConversationIdsForRealtime(
+          userId,
+          30
+        );
+        for (const conversationId of recentConversationIds) {
+          socket.join(`conversation:${conversationId}`);
+        }
+      } catch {
+        // no-op: socket can still join lazily when conversation is opened
+      }
+    };
 
     socket.on("community:joinConversation", async (payload) => {
       try {
@@ -604,6 +614,9 @@ export const setupCommunitySocket = (io: Server): void => {
 
     socket.on("disconnect", async () => {
       clearInterval(heartbeat);
+      // Presence is written by initializeConnection, so a socket that drops
+      // straight away must not be marked offline before it was marked online.
+      await connectionReady;
       try {
         await markUserOffline(userId, socket.id);
       } catch (error) {
@@ -616,5 +629,8 @@ export const setupCommunitySocket = (io: Server): void => {
         log.error("Failed to persist community last seen on disconnect:", error);
       }
     });
+
+    // Last, after every handler above is in place.
+    const connectionReady = initializeConnection();
   });
 };
