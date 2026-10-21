@@ -60,7 +60,7 @@ export default function WriterProfileClient({ identifier }: { identifier: string
         <p className="text-slate-700">Writer not found.</p>
         <Link
           href="/experiences"
-          className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-4 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
         >
           Back to Experiences
         </Link>

@@ -105,7 +105,7 @@ export function DependentSummaryList({
 
   return (
     <div className={className}>
-      <p className="mb-2 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-400">
         <Users size={12} />
         {shown.length === 1 ? "Their child" : "Their children"}
       </p>
@@ -126,7 +126,7 @@ export function DependentSummaryList({
               </span>
             )}
             {categoryLabel(dependent) && (
-              <span className="inline-flex rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-slate-600 ring-1 ring-slate-200">
+              <span className="inline-flex rounded-md bg-white px-1.5 py-0.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
                 {categoryLabel(dependent)}
               </span>
             )}

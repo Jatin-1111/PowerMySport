@@ -45,7 +45,7 @@ export default function BlogAccountChip({ className = "" }: { className?: string
   if (loading) {
     return (
       <div
-        className={`inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 py-1 pl-1 pr-3 shadow-sm ${className}`}
+        className={`inline-flex items-center gap-2 rounded-full border border-white/70 bg-white py-1 pl-1 pr-3 shadow-sm ${className}`}
       >
         <span className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
         <span className="h-3 w-16 animate-pulse rounded-full bg-slate-200" />
@@ -64,11 +64,11 @@ export default function BlogAccountChip({ className = "" }: { className?: string
       <Link
         href="/experiences/account"
         title="My Account"
-        className={`hover:border-power-orange/40 group inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/80 py-1 pl-1 pr-3 shadow-sm backdrop-blur-sm transition hover:bg-white ${className}`}
+        className={`hover:border-power-orange/40 group inline-flex items-center gap-2 rounded-full border border-white/70 bg-white py-1 pl-1 pr-3 shadow-sm transition hover:bg-white ${className}`}
       >
         <AuthorAvatar name={profile.name} photoUrl={profile.photoUrl} size={32} />
         <span className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate text-[11px] font-medium text-slate-400 group-hover:text-slate-500">
+          <span className="truncate text-xs font-medium text-slate-400 group-hover:text-slate-500">
             My Account
           </span>
           <span className="truncate text-xs font-semibold text-slate-800">

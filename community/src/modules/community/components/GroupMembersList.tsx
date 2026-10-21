@@ -120,13 +120,13 @@ export function GroupMembersList({
                     {member.displayName}
                   </div>
                   {!member.isIdentityPublic && member.alias && (
-                    <div className="truncate text-[11px] text-slate-500">{member.alias}</div>
+                    <div className="truncate text-xs text-slate-500">{member.alias}</div>
                   )}
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <span
-                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-semibold ${
                     member.isIdentityPublic
                       ? "border border-emerald-100 bg-emerald-50 text-emerald-600"
                       : "border border-slate-200 bg-slate-50 text-slate-500"

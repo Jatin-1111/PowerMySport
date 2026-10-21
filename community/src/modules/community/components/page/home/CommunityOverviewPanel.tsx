@@ -51,19 +51,19 @@ export default function CommunityOverviewPanel({ page }: Props) {
                     setWorkspaceView("DIRECTORY");
                     setDirectoryView("CONTACTS");
                   }}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
                 >
                   Open chats
                 </button>
                 <Link
                   href="/questions"
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
                 >
                   Explore Q&A
                 </Link>
                 <a
                   href={mainAppUrl}
-                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
                 >
                   Switch to Main App <ExternalLink size={16} />
                 </a>
@@ -112,37 +112,31 @@ export default function CommunityOverviewPanel({ page }: Props) {
             variants={panelVariants}
             className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Conversations
-            </p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">{safeConversations.length}</p>
+            <p className="text-xs font-semibold text-slate-500">Conversations</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{safeConversations.length}</p>
             <p className="mt-1 text-sm text-slate-500">Active threads</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
             className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Unread</p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">{totalUnread}</p>
+            <p className="text-xs font-semibold text-slate-500">Unread</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{totalUnread}</p>
             <p className="mt-1 text-sm text-slate-500">Messages waiting</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
             className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Groups joined
-            </p>
-            <p className="mt-2 text-2xl font-bold text-slate-900">{groupsJoinedCount}</p>
+            <p className="text-xs font-semibold text-slate-500">Groups joined</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">{groupsJoinedCount}</p>
             <p className="mt-1 text-sm text-slate-500">Community circles</p>
           </motion.div>
           <motion.div
             variants={panelVariants}
             className="border-border/80 shadow-xs rounded-2xl border bg-white p-4"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Connection
-            </p>
+            <p className="text-xs font-semibold text-slate-500">Connection</p>
             <p className="mt-2 text-lg font-semibold text-slate-900">
               {isSocketConnected ? "Realtime" : "Polling"}
             </p>

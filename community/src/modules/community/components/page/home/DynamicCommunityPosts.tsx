@@ -29,7 +29,7 @@ export default function DynamicCommunityPosts() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-40 animate-pulse rounded-3xl border border-slate-200 bg-white"
+            className="h-40 animate-pulse rounded-2xl border border-slate-200 bg-white"
           />
         ))}
       </div>
@@ -38,7 +38,7 @@ export default function DynamicCommunityPosts() {
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-3xl border border-slate-200 bg-white p-5 text-center text-sm text-slate-500">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 text-center text-sm text-slate-500">
         No recent posts available.
       </div>
     );
@@ -50,10 +50,10 @@ export default function DynamicCommunityPosts() {
         return (
           <article
             key={post.id}
-            className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10"
+            className="hover: rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
           >
             <div className="flex items-start justify-between gap-3">
-              <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+              <span className="inline-flex rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
                 {post.sport || "General"}
               </span>
               <MessageSquareQuote className="mt-0.5 h-4 w-4 text-slate-300" />

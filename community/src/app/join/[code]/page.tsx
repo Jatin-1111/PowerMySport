@@ -75,7 +75,7 @@ export default function JoinCommunityPage() {
   }, [inviteCode, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] px-4 py-6 sm:py-8">
+    <div className="bg-paper flex min-h-screen items-center justify-center px-4 py-6 sm:py-8">
       <div className="border-border w-full max-w-md rounded-2xl border bg-white p-5 shadow-xl sm:p-8">
         {status === "loading" && (
           <div className="text-center">

@@ -9,12 +9,12 @@ interface AuthorAvatarProps {
 
 const gradientFor = (seed: string): string => {
   const palettes = [
-    "from-orange-400 to-rose-400",
-    "from-sky-400 to-indigo-400",
-    "from-emerald-400 to-teal-400",
-    "from-violet-400 to-fuchsia-400",
-    "from-amber-400 to-orange-500",
-    "from-cyan-400 to-blue-500",
+    "bg-ink",
+    "bg-ink-body",
+    "bg-power-orange-solid",
+    "bg-indigo-800",
+    "bg-slate-700",
+    "bg-indigo-700",
   ];
   let hash = 0;
   for (let i = 0; i < seed.length; i += 1) {
@@ -23,7 +23,7 @@ const gradientFor = (seed: string): string => {
   return palettes[Math.abs(hash) % palettes.length];
 };
 
-/** Circular author avatar: photo if present, otherwise a gradient initial. */
+/** Circular author avatar: photo if present, otherwise a solid warm initial. */
 export default function AuthorAvatar({
   name,
   photoUrl,
@@ -48,9 +48,9 @@ export default function AuthorAvatar({
   return (
     <span
       style={{ width: size, height: size, fontSize: size * 0.42 }}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${gradientFor(
+      className={`inline-flex shrink-0 items-center justify-center rounded-full ${gradientFor(
         name || "?"
-      )} font-bold text-white ring-2 ring-white ${className}`}
+      )} font-semibold text-white ring-2 ring-white ${className}`}
     >
       {initial}
     </span>

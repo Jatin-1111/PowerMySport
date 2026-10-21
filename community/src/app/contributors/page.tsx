@@ -147,11 +147,9 @@ function ContributorsPageContent() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className="rounded-2xl border border-amber-200/80 bg-[linear-gradient(125deg,#fff9ed_0%,#fffdf7_100%)] p-4 sm:p-5"
+            className="rounded-2xl border border-amber-200/80 bg-white p-4 sm:p-5"
           >
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
-              My Contribution
-            </p>
+            <p className="mb-3 text-xs font-semibold text-amber-700">My Contribution</p>
             <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
@@ -183,7 +181,7 @@ function ContributorsPageContent() {
                   key={stat.label}
                   whileHover={{ y: -3, boxShadow: "0 8px 20px -6px rgba(0,0,0,0.08)" }}
                   transition={{ duration: 0.18 }}
-                  className="flex items-center gap-3 rounded-xl border border-white/80 bg-white/90 p-3 shadow-sm"
+                  className="flex items-center gap-3 rounded-xl border border-white/80 bg-white p-3 shadow-sm"
                 >
                   <span
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${stat.tint}`}
@@ -191,10 +189,10 @@ function ContributorsPageContent() {
                     <stat.icon size={16} />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-lg font-bold leading-tight text-slate-900">{stat.value}</p>
-                    <p className="truncate text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      {stat.label}
+                    <p className="text-lg font-semibold leading-tight text-slate-900">
+                      {stat.value}
                     </p>
+                    <p className="truncate text-xs font-semibold text-slate-500">{stat.label}</p>
                   </div>
                 </motion.div>
               ))}
@@ -211,14 +209,16 @@ function ContributorsPageContent() {
             {/* Leaderboard list */}
             <section className="community-card overflow-hidden !p-0">
               <div className="border-b border-slate-100 px-5 py-4">
-                <h2 className="font-title text-base font-bold text-slate-900">Top Contributors</h2>
+                <h2 className="font-title text-base font-semibold text-slate-900">
+                  Top Contributors
+                </h2>
               </div>
 
               {displayRows.length === 0 ? (
                 <p className="px-5 py-6 text-sm text-slate-500">No contributor data yet.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-slate-100 bg-slate-50/80 px-5 py-2.5 text-xs font-semibold text-slate-500">
                     <span>Place</span>
                     <span>Contributor</span>
                     <span className="text-center">Posts</span>
@@ -242,11 +242,11 @@ function ContributorsPageContent() {
                               : "border-l-transparent"
                           }`}
                         >
-                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
+                          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
                             {item.rank}
                           </span>
                           <span className="flex min-w-0 items-center gap-2.5">
-                            <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-bold text-slate-500">
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-500">
                               {item.photoUrl ? (
                                 <img
                                   src={item.photoUrl}
@@ -261,7 +261,7 @@ function ContributorsPageContent() {
                               {item.name}
                             </span>
                             {isMe && (
-                              <span className="bg-power-orange-solid shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold text-white">
+                              <span className="bg-power-orange-solid shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold text-white">
                                 You
                               </span>
                             )}
@@ -269,7 +269,7 @@ function ContributorsPageContent() {
                           <span className="text-center text-sm text-slate-700">{item.posts}</span>
                           <span className="text-center text-sm text-slate-700">{item.answers}</span>
                           <span className="text-center text-sm text-slate-700">{item.upvotes}</span>
-                          <span className="text-right text-sm font-bold text-emerald-700">
+                          <span className="text-right text-sm font-semibold text-emerald-700">
                             {item.score} pts
                           </span>
                         </motion.button>

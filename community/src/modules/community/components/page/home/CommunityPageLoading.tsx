@@ -12,11 +12,11 @@ export default function CommunityPageLoading({ page }: Props) {
       initial={prefersReducedMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.25 }}
-      className="bg-size-[22px_22px] bg-position-[0_0,11px_11px] min-h-screen bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)]"
+      className="bg-size-[22px_22px] bg-position-[0_0,11px_11px] min-h-screen bg-[#efeae2] bg-transparent"
     >
       <div className="flex h-screen w-full">
         {/* Skeleton Sidebar (Inbox) */}
-        <div className="hidden w-[320px] flex-col border-r border-slate-200/50 bg-white/60 p-4 backdrop-blur-xl md:flex lg:w-[380px]">
+        <div className="hidden w-[320px] flex-col border-r border-slate-200/50 bg-white p-4 md:flex lg:w-[380px]">
           <div className="mb-6 flex items-center gap-3">
             <div className="h-6 w-6 animate-pulse rounded-full bg-slate-200" />
             <div className="h-5 w-32 animate-pulse rounded bg-slate-200" />
@@ -38,9 +38,9 @@ export default function CommunityPageLoading({ page }: Props) {
         </div>
 
         {/* Skeleton Chat Panel */}
-        <div className="flex flex-1 flex-col bg-white/30 backdrop-blur-sm">
+        <div className="flex flex-1 flex-col bg-white/30">
           {/* Header */}
-          <div className="flex items-center gap-3 border-b border-slate-200/50 bg-white/50 p-4 backdrop-blur-md">
+          <div className="flex items-center gap-3 border-b border-slate-200/50 bg-white/50 p-4">
             <div className="h-11 w-11 animate-pulse rounded-full bg-slate-200" />
             <div className="space-y-2">
               <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
@@ -53,7 +53,7 @@ export default function CommunityPageLoading({ page }: Props) {
             {/* Other person bubble */}
             <div className="flex items-end gap-2">
               <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-slate-200" />
-              <div className="h-16 w-64 animate-pulse rounded-[24px] rounded-bl-[6px] bg-white/80 shadow-sm" />
+              <div className="h-16 w-64 animate-pulse rounded-[24px] rounded-bl-[6px] bg-white shadow-sm" />
             </div>
 
             {/* My bubble */}
@@ -65,14 +65,14 @@ export default function CommunityPageLoading({ page }: Props) {
             <div className="flex items-end gap-2">
               <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-slate-200" />
               <div className="space-y-2">
-                <div className="h-20 w-72 animate-pulse rounded-[24px] bg-white/80 shadow-sm" />
-                <div className="h-12 w-40 animate-pulse rounded-[24px] rounded-bl-[6px] bg-white/80 shadow-sm" />
+                <div className="h-20 w-72 animate-pulse rounded-[24px] bg-white shadow-sm" />
+                <div className="h-12 w-40 animate-pulse rounded-[24px] rounded-bl-[6px] bg-white shadow-sm" />
               </div>
             </div>
           </div>
 
           {/* Composer */}
-          <div className="border-t border-slate-200/50 bg-white/60 p-4 backdrop-blur-xl">
+          <div className="border-t border-slate-200/50 bg-white p-4">
             <div className="flex items-center gap-3">
               <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-slate-200" />
               <div className="h-12 flex-1 animate-pulse rounded-[24px] bg-white shadow-sm" />

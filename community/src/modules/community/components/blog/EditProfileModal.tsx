@@ -77,7 +77,7 @@ export default function EditProfileModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[400] bg-slate-900/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[400] bg-slate-900/50"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.96, y: 20 }}
@@ -86,10 +86,10 @@ export default function EditProfileModal({
             transition={{ type: "spring", damping: 26, stiffness: 300 }}
             className="fixed inset-0 z-[401] flex items-center justify-center p-3 sm:p-6"
           >
-            <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                <h2 className="font-title text-lg font-bold text-slate-900">Edit Profile</h2>
+                <h2 className="font-title text-lg font-semibold text-slate-900">Edit Profile</h2>
                 <button
                   onClick={onClose}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
@@ -104,17 +104,13 @@ export default function EditProfileModal({
                   <AuthorAvatar name={profile.name} photoUrl={profile.photoUrl} size={64} />
                   <div className="grid flex-1 gap-2">
                     <div>
-                      <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        Name
-                      </label>
+                      <label className="text-xs font-semibold text-slate-400">Name</label>
                       <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
                         {profile.name}
                       </div>
                     </div>
                     <div>
-                      <label className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        Email
-                      </label>
+                      <label className="text-xs font-semibold text-slate-400">Email</label>
                       <div className="truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
                         {email || "—"}
                       </div>
@@ -197,7 +193,7 @@ export default function EditProfileModal({
                 <button
                   onClick={() => void save()}
                   disabled={saving}
-                  className="bg-power-orange-solid shadow-power-orange/20 inline-flex min-w-[120px] items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
+                  className="bg-power-orange-solid shadow-power-orange/20 inline-flex min-w-[120px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
                 >
                   {saving ? <Loader2 size={16} className="animate-spin" /> : "Save changes"}
                 </button>

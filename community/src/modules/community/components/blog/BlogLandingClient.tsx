@@ -160,14 +160,11 @@ export default function BlogLandingClient() {
   };
 
   return (
-    <div className="relative isolate min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_42%,#fff6e9_100%)]">
+    <div className="bg-paper relative isolate min-h-[calc(100vh-5.5rem)]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-      >
-        <div className="h-136 w-136 absolute left-[-12%] top-[-8%] rounded-full bg-sky-300/25 blur-3xl" />
-        <div className="h-124 w-124 absolute right-[-16%] top-[14%] rounded-full bg-amber-200/25 blur-3xl" />
-      </div>
+      ></div>
 
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         {/* Blog-tab account access (avatar + username) */}
@@ -179,7 +176,7 @@ export default function BlogLandingClient() {
 
         <section className="space-y-4">
           {/* Search bar above the topics */}
-          <div className="focus-within:border-power-orange/40 mx-auto flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 shadow-sm backdrop-blur-sm focus-within:bg-white">
+          <div className="focus-within:border-power-orange/40 mx-auto flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm focus-within:bg-white">
             <Search size={18} className="text-slate-400" />
             <input
               value={searchInput}
@@ -198,7 +195,7 @@ export default function BlogLandingClient() {
           </div>
 
           <div>
-            <h2 className="font-title text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+            <h2 className="font-title text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
               Explore trending topics
             </h2>
             <p className="mt-0.5 text-sm text-slate-500">
@@ -226,7 +223,7 @@ export default function BlogLandingClient() {
               <button
                 onClick={() => void loadBlogs(page + 1, true)}
                 disabled={isLoadingMore}
-                className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
               >
                 {isLoadingMore ? "Loading..." : "Load more experiences"}
               </button>

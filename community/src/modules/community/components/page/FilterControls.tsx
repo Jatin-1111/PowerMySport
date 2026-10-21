@@ -56,7 +56,7 @@ export function MultiCheckboxDropdown({
         type="button"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        className={`flex w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition ${
+        className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm font-medium transition ${
           count > 0
             ? "border-power-orange/50 bg-power-orange/5 text-slate-800"
             : "border-slate-300 bg-slate-50 text-slate-600 hover:bg-white"
@@ -66,7 +66,7 @@ export function MultiCheckboxDropdown({
           {icon}
           {label}
           {count > 0 ? (
-            <span className="bg-power-orange-solid inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white">
+            <span className="bg-power-orange-solid inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs font-semibold text-white">
               {count}
             </span>
           ) : null}
@@ -145,7 +145,7 @@ export function SelectDropdown({
         type="button"
         onClick={() => setOpen((state) => !state)}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white"
+        className="flex w-full items-center justify-between gap-2 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white"
       >
         <span className="flex items-center gap-1.5 truncate">
           {icon}
@@ -171,7 +171,7 @@ export function SelectDropdown({
                     onChange(option.value);
                     setOpen(false);
                   }}
-                  className={`flex flex-1 items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition ${
+                  className={`flex flex-1 items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition ${
                     active
                       ? "bg-power-orange/10 text-power-orange font-semibold"
                       : "text-slate-700 hover:bg-slate-50"

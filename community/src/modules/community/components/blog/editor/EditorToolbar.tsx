@@ -118,7 +118,7 @@ export default function EditorToolbar({ editor }: { editor: Editor | null }) {
   };
 
   return (
-    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 rounded-t-2xl border border-b-0 border-slate-200 bg-white/95 px-2 py-1.5 backdrop-blur">
+    <div className="sticky top-0 z-10 flex flex-wrap items-center gap-0.5 rounded-t-2xl border border-b-0 border-slate-200 bg-white px-2 py-1.5">
       <ToolbarButton
         label="Undo"
         onClick={() => editor.chain().focus().undo().run()}

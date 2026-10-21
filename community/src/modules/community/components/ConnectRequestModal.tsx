@@ -70,7 +70,7 @@ function Dialog({
         className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-2xl sm:rounded-2xl sm:p-6"
       >
         <div className="flex items-start justify-between gap-3">
-          <h2 id={titleId} className="text-lg font-bold text-slate-900">
+          <h2 id={titleId} className="text-lg font-semibold text-slate-900">
             Send a message request
           </h2>
           <button
@@ -137,7 +137,7 @@ function Dialog({
             <button
               type="submit"
               disabled={tooShort || submitting}
-              className="bg-power-orange-solid inline-flex min-w-[130px] items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-power-orange-solid inline-flex min-w-[130px] items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? (
                 <>

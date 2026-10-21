@@ -310,7 +310,7 @@ export default function DiscoverPageClient() {
                         color: "#64748b",
                       }
                 }
-                className="flex shrink-0 items-center gap-1.5 rounded-full px-4 py-3 text-[13px] font-semibold shadow-sm backdrop-blur transition-colors duration-300 hover:shadow-md"
+                className="flex shrink-0 items-center gap-1.5 rounded-md px-4 py-3 text-[13px] font-semibold shadow-sm transition-colors duration-300 hover:shadow-md"
               >
                 <motion.span
                   animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
@@ -325,7 +325,7 @@ export default function DiscoverPageClient() {
                       initial={{ opacity: 0, scale: 0.5 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.5 }}
-                      className="bg-power-orange/15 text-power-orange flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold"
+                      className="bg-power-orange/15 text-power-orange flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold"
                     >
                       {(selectedSport !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0)}
                     </motion.span>
@@ -344,7 +344,7 @@ export default function DiscoverPageClient() {
                   className="overflow-hidden"
                 >
                   <div
-                    className="rounded-2xl p-5 shadow-sm backdrop-blur-md"
+                    className="rounded-2xl p-5 shadow-sm"
                     style={{
                       border: "1px solid rgba(226, 232, 240, 0.6)",
                       background: "rgba(255, 255, 255, 0.8)",
@@ -352,7 +352,7 @@ export default function DiscoverPageClient() {
                   >
                     <div className="grid gap-6 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <label className="mb-2 block text-xs font-semibold text-slate-400">
                           Sport
                         </label>
                         <select
@@ -370,7 +370,7 @@ export default function DiscoverPageClient() {
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        <label className="mb-2 block text-xs font-semibold text-slate-400">
                           City
                         </label>
                         <select
@@ -408,13 +408,7 @@ export default function DiscoverPageClient() {
           </div>
 
           {/* Tabs */}
-          <div
-            className="mx-auto flex w-full max-w-3xl rounded-2xl p-1 shadow-inner backdrop-blur-md"
-            style={{
-              background: "rgba(241, 245, 249, 0.8)",
-              boxShadow: "0 0 0 1px rgba(226, 232, 240, 0.5) inset",
-            }}
-          >
+          <div className="bg-paper-deep mx-auto flex w-full max-w-3xl rounded-lg p-1">
             {["COMMUNITIES", "PARENTS"].map((tab) => {
               const isActive = activeTab === tab;
               const Icon = tab === "COMMUNITIES" ? Users : User;
@@ -430,18 +424,14 @@ export default function DiscoverPageClient() {
                     }
                     setActiveTab(tab as any);
                   }}
-                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-[13px] font-semibold transition-colors duration-200 ${
-                    isActive ? "text-power-orange" : "text-slate-400 hover:text-slate-600"
+                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 text-sm font-semibold transition-colors duration-200 ${
+                    isActive ? "text-ink" : "text-ink-muted hover:text-ink"
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="discoverTab"
-                      className="absolute inset-0 z-0 rounded-xl bg-white shadow-md"
-                      style={{
-                        boxShadow:
-                          "0 4px 6px -1px rgba(0,0,0,0.1), 0 0 0 1px rgba(226,232,240,0.6)",
-                      }}
+                      className="absolute inset-0 z-0 rounded-md bg-white"
                       initial={false}
                       transition={{ type: "spring", stiffness: 280, damping: 26, mass: 0.8 }}
                     />
@@ -477,7 +467,7 @@ export default function DiscoverPageClient() {
                         <p className="text-sm leading-6 text-slate-500 sm:text-base">
                           Groups and squads for your favorite sports
                         </p>
-                        <span className="inline-flex items-center justify-center rounded-full border border-white bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
+                        <span className="inline-flex items-center justify-center rounded-md border border-white bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
                           {filteredCommunities.length}
                         </span>
                       </div>
@@ -490,8 +480,7 @@ export default function DiscoverPageClient() {
                         }
                         setIsCreateModalOpen(true);
                       }}
-                      style={{ background: "rgba(233,115,22,0.9)" }}
-                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                      className="bg-power-orange-solid btn-motion inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
                     >
                       <Plus size={16} />
                       <span className="hidden sm:inline">Create Community</span>
@@ -501,7 +490,7 @@ export default function DiscoverPageClient() {
 
                   {filteredCommunities.length === 0 ? (
                     <div
-                      className="community-card flex flex-col items-center justify-center py-12 text-center backdrop-blur-sm"
+                      className="community-card flex flex-col items-center justify-center py-12 text-center"
                       style={{
                         background: "rgba(255, 255, 255, 0.5)",
                         border: "1px solid rgba(255, 255, 255, 0.6)",
@@ -532,7 +521,7 @@ export default function DiscoverPageClient() {
                               className="relative mb-4 flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl"
                               style={{
                                 aspectRatio: "5/3",
-                                background: "linear-gradient(135deg, #fff7ed, #f1f5f9)",
+                                background: "#efe7da",
                               }}
                             >
                               <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
@@ -557,7 +546,7 @@ export default function DiscoverPageClient() {
                                   className="absolute inset-0 h-full w-full object-cover"
                                 />
                               ) : (
-                                <span className="font-title text-power-orange/20 text-4xl font-bold uppercase">
+                                <span className="font-title text-power-orange/20 text-4xl font-semibold">
                                   {group.name.charAt(0)}
                                 </span>
                               )}
@@ -565,7 +554,7 @@ export default function DiscoverPageClient() {
 
                             <div className="flex flex-1 flex-col px-2 pb-2">
                               <div className="w-full min-w-0 flex-1 text-left">
-                                <h3 className="font-title truncate text-base font-bold text-slate-900">
+                                <h3 className="font-title truncate text-base font-semibold text-slate-900">
                                   {group.name}
                                 </h3>
                                 <p className="mt-1.5 line-clamp-2 min-h-[32px] text-xs leading-relaxed text-slate-500">
@@ -574,9 +563,9 @@ export default function DiscoverPageClient() {
                               </div>
 
                               <div className="mt-4 flex w-full flex-col gap-3 border-t border-slate-100 pt-4">
-                                <div className="flex items-center gap-2 text-[11px] font-medium">
+                                <div className="flex items-center gap-2 text-xs font-medium">
                                   <div
-                                    className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                                    className="flex items-center gap-1.5 rounded-md px-2.5 py-1"
                                     style={{
                                       border: "1px solid rgba(186,210,235,0.6)",
                                       background: "rgba(240,249,255,0.6)",
@@ -590,7 +579,7 @@ export default function DiscoverPageClient() {
                                   </div>
                                   {group.sport && (
                                     <div
-                                      className="flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                                      className="flex items-center gap-1.5 rounded-md px-2.5 py-1"
                                       style={{
                                         border: "1px solid rgba(252,211,77,0.6)",
                                         background: "rgba(255,251,235,0.6)",
@@ -610,15 +599,14 @@ export default function DiscoverPageClient() {
                                       setSelectedCommunity(group);
                                       setIsCommunityModalOpen(true);
                                     }}
-                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                                   >
                                     <Eye size={14} /> Details
                                   </button>
                                   {group.isMember ? (
                                     <button
                                       onClick={() => handleCommunityChat(group.id)}
-                                      style={{ background: "rgba(233,115,22,0.85)" }}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
+                                      className="bg-power-orange-solid btn-motion inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
                                     >
                                       <MessageSquare size={14} /> Chat
                                     </button>
@@ -626,7 +614,7 @@ export default function DiscoverPageClient() {
                                     <button
                                       onClick={() => handleJoinGroup(group.id)}
                                       disabled={isJoiningCommunity}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-slate-800 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
+                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-slate-800 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
                                     >
                                       <LogIn size={14} /> Join
                                     </button>
@@ -655,14 +643,14 @@ export default function DiscoverPageClient() {
                       <h2 className="community-section-title">Sports Parents</h2>
                       <p className="community-section-copy">Connect with other parents</p>
                     </div>
-                    <span className="inline-flex items-center justify-center rounded-full border border-white bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
+                    <span className="inline-flex items-center justify-center rounded-md border border-white bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
                       {filteredPlayers.length}
                     </span>
                   </div>
 
                   {filteredPlayers.length === 0 ? (
                     <div
-                      className="community-card flex flex-col items-center justify-center py-12 text-center backdrop-blur-sm"
+                      className="community-card flex flex-col items-center justify-center py-12 text-center"
                       style={{
                         background: "rgba(255, 255, 255, 0.5)",
                         border: "1px solid rgba(255, 255, 255, 0.6)",
@@ -709,7 +697,7 @@ export default function DiscoverPageClient() {
                                 </div>
                               )}
                             </div>
-                            <h3 className="font-title line-clamp-1 text-base font-bold text-slate-900">
+                            <h3 className="font-title line-clamp-1 text-base font-semibold text-slate-900">
                               {player.displayName}
                             </h3>
 
@@ -721,7 +709,7 @@ export default function DiscoverPageClient() {
                             {(() => {
                               const line = familyLine(player.dependents);
                               return line ? (
-                                <p className="mt-1 line-clamp-1 text-[11px] font-medium text-slate-500">
+                                <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">
                                   {line}
                                 </p>
                               ) : null;
@@ -769,14 +757,13 @@ export default function DiscoverPageClient() {
                                   setSelectedPlayerId(player.id);
                                   setIsPlayerModalOpen(true);
                                 }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
                               >
                                 <Eye size={12} /> Details
                               </button>
                               <button
                                 onClick={() => handlePlayerChat(player.id, player.displayName)}
-                                style={{ background: "rgba(233,115,22,0.85)" }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm transition hover:opacity-90"
+                                className="bg-power-orange-solid btn-motion inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
                               >
                                 <MessageSquare size={12} /> Chat
                               </button>
@@ -845,7 +832,7 @@ export default function DiscoverPageClient() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
                 onClick={() => setPhotoLightbox(null)}
               >
                 <motion.div

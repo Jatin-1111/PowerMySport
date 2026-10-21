@@ -97,7 +97,7 @@ export function CommunityMemberProfileModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="z-60 fixed inset-0 flex items-end justify-center bg-slate-950/50 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+          className="z-60 bg-ink/40 fixed inset-0 flex items-end justify-center p-2 sm:items-center sm:p-4"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
               onClose();
@@ -109,13 +109,13 @@ export function CommunityMemberProfileModal({
             animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
             exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 18, scale: 0.98 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="border-border w-full max-w-2xl overflow-hidden rounded-3xl border bg-white shadow-2xl"
+            className="border-border w-full max-w-2xl overflow-hidden rounded-2xl border bg-white shadow-2xl"
           >
-            <div className="border-border relative overflow-hidden border-b bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(30,41,59,0.94))] px-4 py-4 text-white sm:px-6 sm:py-5">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(233,115,22,0.18),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(26,163,88,0.12),transparent_36%)]" />
+            <div className="border-border bg-ink relative overflow-hidden border-b px-4 py-4 text-white sm:px-6 sm:py-5">
+              <div className="bg-paper absolute inset-0" />
               <div className="relative flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/60">
+                  <p className="text-xs font-semibold tracking-[0.24em] text-white/60">
                     Community member profile
                   </p>
                   <h3 className="mt-2 text-xl font-semibold tracking-tight sm:text-3xl">
@@ -123,10 +123,10 @@ export function CommunityMemberProfileModal({
                   </h3>
                   {profile && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
+                      <span className="inline-flex items-center rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
                         {profile.role === "Coach" ? "Coach" : "Player"}
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
+                      <span className="inline-flex items-center rounded-md bg-white/10 px-3 py-1 text-xs font-semibold text-white/85">
                         {profile.isIdentityPublic ? "Public identity" : "Private identity"}
                       </span>
                     </div>
@@ -183,12 +183,12 @@ export function CommunityMemberProfileModal({
                           {profile.displayName}
                         </h4>
                         {profile.isIdentityPublic ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
                             <BadgeCheck size={12} />
                             Visible name
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700">
                             <Shield size={12} />
                             Alias only
                           </span>
@@ -201,24 +201,24 @@ export function CommunityMemberProfileModal({
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                         {profile.city && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1">
                             <MapPin size={12} />
                             {profile.city}
                           </span>
                         )}
                         {age !== null && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1">
                             {age} years old
                           </span>
                         )}
                         {profile.createdAt && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1">
                             <CalendarDays size={12} />
                             Joined {formatDate(profile.createdAt)}
                           </span>
                         )}
                         {profile.lastActiveAt && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1">
                             <Clock3 size={12} />
                             Active {formatDateTime(profile.lastActiveAt)}
                           </span>
@@ -227,7 +227,7 @@ export function CommunityMemberProfileModal({
                     </div>
                     <button
                       onClick={onMessage}
-                      className="bg-power-orange-solid inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
+                      className="bg-power-orange-solid inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 sm:w-auto"
                     >
                       <MessageSquare size={16} />
                       Message
@@ -236,17 +236,13 @@ export function CommunityMemberProfileModal({
 
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        Role
-                      </p>
+                      <p className="text-xs font-semibold text-slate-500">Role</p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
                         {profile.role === "Coach" ? "Coach" : "Player"}
                       </p>
                     </div>
                     <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        Privacy
-                      </p>
+                      <p className="text-xs font-semibold text-slate-500">Privacy</p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
                         {profile.messagePrivacy === "NONE"
                           ? "No messages"
@@ -256,9 +252,7 @@ export function CommunityMemberProfileModal({
                       </p>
                     </div>
                     <div className="border-border shadow-xs rounded-2xl border bg-white p-4 sm:p-5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                        Read receipts
-                      </p>
+                      <p className="text-xs font-semibold text-slate-500">Read receipts</p>
                       <p className="mt-2 text-sm font-medium text-slate-900">
                         {profile.readReceiptsEnabled ? "Enabled" : "Disabled"}
                       </p>
@@ -274,15 +268,13 @@ export function CommunityMemberProfileModal({
                       <DependentSummaryList dependents={profile.dependents} />
                     ) : (
                       <>
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                          Public sports
-                        </p>
+                        <p className="text-xs font-semibold text-slate-500">Public sports</p>
                         <div className="mt-3 flex flex-wrap gap-2">
                           {profile.sports.length ? (
                             profile.sports.map((sport) => (
                               <span
                                 key={sport}
-                                className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
+                                className="inline-flex items-center rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"
                               >
                                 {sport}
                               </span>

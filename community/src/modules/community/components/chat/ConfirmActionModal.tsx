@@ -32,7 +32,7 @@ export default function ConfirmActionModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[60] bg-slate-900/50 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-slate-900/50"
             onClick={onCancel}
           />
           <div className="pointer-events-none fixed inset-0 z-[61] flex items-center justify-center p-4">
@@ -43,7 +43,7 @@ export default function ConfirmActionModal({
               transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
               className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
             >
-              <h3 className="text-[15px] font-bold text-slate-900">{title}</h3>
+              <h3 className="text-[15px] font-semibold text-slate-900">{title}</h3>
               <p className="mt-1.5 text-[13px] leading-relaxed text-slate-500">{description}</p>
               <div className="mt-5 flex gap-2.5">
                 <button

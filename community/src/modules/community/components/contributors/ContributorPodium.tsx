@@ -9,21 +9,21 @@ const ORDINALS: Record<number, string> = { 1: "1st", 2: "2nd", 3: "3rd" };
 const PODIUM_STYLES: Record<number, { height: string; bar: string; ring: string; glow: string }> = {
   1: {
     height: "h-52 sm:h-72",
-    bar: "bg-gradient-to-b from-[#FDF3DC] to-[#F9E2A7]",
+    bar: "bg-[#FDF3DC]",
     ring: "ring-[#F0D999]",
     glow: "bg-amber-200/40",
   },
   2: {
     height: "h-40 sm:h-56",
-    bar: "bg-gradient-to-b from-[#EFEDF8] to-[#D9D4EE]",
-    ring: "ring-[#CFC9EA]",
-    glow: "bg-violet-200/30",
+    bar: "bg-paper-deep",
+    ring: "ring-hairline",
+    glow: "bg-slate-200/40",
   },
   3: {
     height: "h-32 sm:h-44",
-    bar: "bg-gradient-to-b from-[#F7E7E5] to-[#EBCBC7]",
-    ring: "ring-[#E4BFBB]",
-    glow: "bg-rose-200/30",
+    bar: "bg-wash",
+    ring: "ring-indigo-200",
+    glow: "bg-indigo-100/40",
   },
 };
 
@@ -60,7 +60,7 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
           {item.photoUrl ? (
             <img src={item.photoUrl} alt={item.name} className="h-full w-full object-cover" />
           ) : (
-            <span className="text-sm font-bold text-slate-400 sm:text-base">
+            <span className="text-sm font-semibold text-slate-400 sm:text-base">
               {item.name.charAt(0).toUpperCase()}
             </span>
           )}
@@ -81,10 +81,10 @@ function PodiumSlot({ item }: { item: LeaderboardItem }) {
         style={{ transformOrigin: "bottom" }}
         className={`relative mt-2 flex w-full flex-col items-center justify-end gap-2 overflow-hidden rounded-t-xl pb-4 shadow-md ${style.bar} ${style.height}`}
       >
-        <span className="text-xs font-bold uppercase tracking-wide text-slate-600">
+        <span className="text-xs font-semibold text-slate-600">
           {ORDINALS[item.rank] || `#${item.rank}`}
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-white/85 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm">
+        <span className="inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-sm">
           <Star size={11} className="text-amber-500" fill="currentColor" />
           {item.score} pts
         </span>
@@ -98,7 +98,7 @@ export function ContributorPodium({ items }: { items: LeaderboardItem[] }) {
 
   if (top.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-3xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center">
+      <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 py-10 text-center">
         <User size={26} className="text-slate-300" />
         <p className="text-sm font-medium text-slate-500">
           No contributors yet — be the first to earn points.
@@ -113,10 +113,6 @@ export function ContributorPodium({ items }: { items: LeaderboardItem[] }) {
 
   return (
     <div className="relative mx-auto flex max-w-[280px] items-end justify-center gap-3 px-2 py-8 sm:max-w-sm sm:gap-8">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[radial-gradient(circle_at_50%_65%,rgba(251,191,36,0.14),transparent_65%)]"
-      />
       {visualOrder.map((item) => (
         <PodiumSlot key={item.id} item={item} />
       ))}

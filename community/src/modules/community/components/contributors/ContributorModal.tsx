@@ -60,7 +60,7 @@ export function ContributorModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[200] bg-slate-900/45 backdrop-blur-sm"
+            className="fixed inset-0 z-[200] bg-slate-900/45"
           />
           <motion.div
             initial={{ opacity: 0 }}
@@ -81,10 +81,10 @@ export function ContributorModal({
                 className="relative my-auto w-full max-w-md"
               >
                 <div className="flex max-h-[85vh] flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
-                  <div className="relative shrink-0 border-b border-slate-100 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_60%,#fff1dc_100%)] px-7 py-8">
+                  <div className="bg-paper relative shrink-0 border-b border-slate-100 px-7 py-8">
                     <button
                       onClick={onClose}
-                      className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-600"
+                      className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-400 shadow-sm ring-1 ring-slate-200 transition hover:bg-white hover:text-slate-600"
                     >
                       <X size={16} />
                     </button>
@@ -98,15 +98,15 @@ export function ContributorModal({
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <span className="text-power-orange text-2xl font-bold">
+                          <span className="text-power-orange text-2xl font-semibold">
                             {contributor.name.charAt(0).toUpperCase()}
                           </span>
                         )}
                       </div>
-                      <h2 className="font-title mt-4 text-lg font-bold text-slate-900">
+                      <h2 className="font-title mt-4 text-lg font-semibold text-slate-900">
                         {contributor.name}
                       </h2>
-                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-white/85 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                      <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
                         Rank #{contributor.rank}
                       </span>
                     </div>
@@ -120,18 +120,14 @@ export function ContributorModal({
                       { label: "Score", value: contributor.score },
                     ].map((stat) => (
                       <div key={stat.label} className="text-center">
-                        <p className="text-base font-bold text-slate-900">{stat.value}</p>
-                        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                          {stat.label}
-                        </p>
+                        <p className="text-base font-semibold text-slate-900">{stat.value}</p>
+                        <p className="mt-0.5 text-xs font-semibold text-slate-400">{stat.label}</p>
                       </div>
                     ))}
                   </div>
 
                   <div className="max-h-[40vh] overflow-y-auto rounded-b-[2rem] px-6 py-5">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Questions Asked
-                    </p>
+                    <p className="mb-3 text-xs font-semibold text-slate-400">Questions Asked</p>
                     {isLoadingThreads ? (
                       <p className="py-4 text-center text-sm text-slate-500">Loading threads...</p>
                     ) : threads.length === 0 ? (

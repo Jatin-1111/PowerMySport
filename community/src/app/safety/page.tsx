@@ -75,7 +75,7 @@ export default function SafetyPage() {
             <p className="mt-4 text-sm text-slate-500">Loading safety data...</p>
           ) : (
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-sm font-semibold text-slate-900">Blocked Users</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Manage users you blocked from direct interactions.
@@ -92,7 +92,7 @@ export default function SafetyPage() {
                         <p className="text-sm font-medium text-slate-800">{user.name}</p>
                         <button
                           onClick={() => unblock(user.id)}
-                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-2xl border px-3 py-2 text-xs font-semibold transition"
+                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-xs font-semibold transition"
                         >
                           Unblock
                         </button>
@@ -102,7 +102,7 @@ export default function SafetyPage() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] p-4 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <p className="text-sm font-semibold text-slate-900">My Report Status</p>
                 <p className="mt-1 text-xs text-slate-500">
                   Track moderation outcomes and resolutions.
@@ -121,7 +121,7 @@ export default function SafetyPage() {
                             {report.targetType}
                           </p>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${report.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
+                            className={`rounded-md px-2 py-0.5 text-xs font-semibold ${report.status === "RESOLVED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
                           >
                             {report.status}
                           </span>

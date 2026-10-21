@@ -22,7 +22,7 @@ export default function CategoryPicker({ onSelect }: CategoryPickerProps) {
         transition={{ duration: 0.3 }}
         className="text-center"
       >
-        <h1 className="font-title text-2xl font-bold text-slate-900 sm:text-3xl">
+        <h1 className="font-title text-2xl font-semibold text-slate-900 sm:text-3xl">
           What&apos;s this about?
         </h1>
         <p className="mt-2 text-sm text-slate-500">Pick the closest one — two lines is plenty.</p>

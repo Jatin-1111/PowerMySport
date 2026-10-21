@@ -13,7 +13,7 @@ export function DeleteMessageModal({ isDeleting, onClose, onConfirm }: DeleteMes
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isDeleting) onClose();
       }}
@@ -30,7 +30,7 @@ export function DeleteMessageModal({ isDeleting, onClose, onConfirm }: DeleteMes
               <Trash2 size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Delete Message</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Delete Message</h3>
             </div>
           </div>
           <button

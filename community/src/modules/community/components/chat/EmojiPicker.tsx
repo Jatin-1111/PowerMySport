@@ -162,12 +162,12 @@ export default function EmojiPicker({ onSelect, onClose, alignRight }: EmojiPick
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.95 }}
       transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-      className={`absolute bottom-full ${alignRight ? "right-0" : "left-0"} z-50 mb-2 w-[320px] overflow-hidden rounded-2xl border border-slate-200/60 bg-white/95 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl`}
+      className={`absolute bottom-full ${alignRight ? "right-0" : "left-0"} z-50 mb-2 w-[320px] overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)]`}
     >
       <div className="emoji-picker-scroll max-h-[280px] space-y-2 overflow-y-auto p-2">
         {EMOJI_CATEGORIES.map((category) => (
           <div key={category.name}>
-            <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+            <p className="px-2 py-1 text-xs font-semibold tracking-[0.15em] text-slate-400">
               {category.name}
             </p>
             <div className="grid grid-cols-8 gap-0.5">

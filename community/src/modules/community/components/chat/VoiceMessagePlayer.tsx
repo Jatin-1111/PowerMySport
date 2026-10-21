@@ -162,7 +162,7 @@ export function VoiceMessagePlayer({
         })}
       </div>
 
-      <span className="shrink-0 text-[11px] tabular-nums opacity-70">
+      <span className="shrink-0 text-xs tabular-nums opacity-70">
         {formatClock(isPlaying || elapsed > 0 ? elapsed : totalSeconds)}
       </span>
     </div>

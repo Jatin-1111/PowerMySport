@@ -74,14 +74,14 @@ function ImageUploadingPlaceholder({ isOwn }: { isOwn: boolean }) {
       style={{ width: "100%", maxWidth: 240, aspectRatio: "4/3" }}
       aria-label="Uploading image…"
     >
-      <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+      <div className="absolute inset-0 animate-pulse" />
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
         <ImageIcon size={28} className={isOwn ? "text-orange-100/70" : "text-slate-400"} />
         <span className={`text-xs font-medium ${isOwn ? "text-orange-100/80" : "text-slate-500"}`}>
           Uploading…
         </span>
         <div className="h-1 w-20 overflow-hidden rounded-full bg-white/20">
-          <div className="h-full w-3/4 origin-left animate-pulse rounded-full bg-white/60" />
+          <div className="h-full w-3/4 origin-left animate-pulse rounded-full bg-white" />
         </div>
       </div>
     </div>
@@ -277,7 +277,7 @@ export const MessageBubble = memo(function MessageBubble({
         {!isOwnMessage && isGroupConversation && (
           <div
             onClick={onClickName ? () => onClickName(message) : undefined}
-            className={`mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
+            className={`mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 shadow-sm ring-2 ring-white ${onClickName ? "cursor-pointer transition-opacity hover:opacity-80" : ""}`}
           >
             {senderAvatarChar}
           </div>
@@ -285,7 +285,7 @@ export const MessageBubble = memo(function MessageBubble({
 
         {/* Avatar for DM other's messages */}
         {!isOwnMessage && !isGroupConversation && (
-          <div className="mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-200 to-slate-300 text-[10px] font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
+          <div className="mb-1 mt-auto inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700 shadow-sm ring-2 ring-white">
             {senderAvatarChar}
           </div>
         )}
@@ -326,7 +326,7 @@ export const MessageBubble = memo(function MessageBubble({
                     onClickName(message);
                   }
                 }}
-                className={`text-power-orange mb-0.5 text-[11px] font-semibold ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "cursor-pointer hover:underline" : ""}`}
+                className={`text-power-orange mb-0.5 text-xs font-semibold ${isImageMessage ? "px-0.5" : ""} ${message.senderDisplayName !== "Anonymous" && onClickName ? "cursor-pointer hover:underline" : ""}`}
               >
                 {message.senderDisplayName}
               </div>
@@ -340,7 +340,7 @@ export const MessageBubble = memo(function MessageBubble({
                   event.stopPropagation();
                   onJumpToMessage?.(message.replyTo!.id);
                 }}
-                className={`mb-1.5 block w-full rounded-lg border-l-2 px-2 py-1 text-left text-[11px] leading-4 ${
+                className={`mb-1.5 block w-full rounded-lg border-l-2 px-2 py-1 text-left text-xs leading-4 ${
                   isOwnMessage
                     ? "border-white/60 bg-white/15"
                     : "border-power-orange/60 bg-slate-100"
@@ -416,7 +416,7 @@ export const MessageBubble = memo(function MessageBubble({
                     <span className="block truncate text-[13px] font-medium">
                       {message.metadata?.fileName || "Attachment"}
                     </span>
-                    <span className="block text-[11px] opacity-70">
+                    <span className="block text-xs opacity-70">
                       {formatFileSize(message.metadata?.fileSize) || "Download"}
                     </span>
                   </span>
@@ -449,7 +449,7 @@ export const MessageBubble = memo(function MessageBubble({
 
             {/* ── Meta row: timestamp + receipts ── */}
             <div
-              className={`mt-0.5 flex flex-wrap items-center gap-1 text-[10px] ${
+              className={`mt-0.5 flex flex-wrap items-center gap-1 text-xs ${
                 isOwnMessage ? "justify-end text-orange-400/80" : "justify-start text-slate-400"
               } ${isImageMessage ? "px-0.5" : ""}`}
             >
@@ -472,7 +472,7 @@ export const MessageBubble = memo(function MessageBubble({
                       onReact?.(message, reaction.emoji);
                     }}
                     title={reaction.reactedByMe ? "Remove your reaction" : "React with this"}
-                    className={`flex h-6 items-center gap-0.5 rounded-full border px-1.5 text-[11px] shadow-sm transition ${
+                    className={`flex h-6 items-center gap-0.5 rounded-full border px-1.5 text-xs shadow-sm transition ${
                       reaction.reactedByMe
                         ? "border-power-orange/50 text-power-orange bg-orange-50"
                         : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
@@ -490,7 +490,7 @@ export const MessageBubble = memo(function MessageBubble({
 
           {/* Timestamp below bubble */}
           <div
-            className={`mt-1.5 flex items-center gap-1.5 text-[10px] text-slate-400 ${isOwnMessage ? "justify-end pr-1" : "justify-start pl-1"}`}
+            className={`mt-1.5 flex items-center gap-1.5 text-xs text-slate-400 ${isOwnMessage ? "justify-end pr-1" : "justify-start pl-1"}`}
           >
             {isPinned && <Pin size={10} className="text-power-orange fill-power-orange" />}
             <span className="tabular-nums">{getMessageTimestamp(message.createdAt)}</span>
@@ -528,7 +528,7 @@ export const MessageBubble = memo(function MessageBubble({
             }`}
           >
             <div
-              className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white/95 px-1 py-0.5 shadow-md backdrop-blur-sm ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
+              className={`flex items-center gap-0.5 rounded-xl border border-slate-200/60 bg-white px-1 py-0.5 shadow-md ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
             >
               {/* React */}
               {!message.isDeleted && (

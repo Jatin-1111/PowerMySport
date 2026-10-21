@@ -337,7 +337,7 @@ export default function CommunityChatPanel({ page }: Props) {
       className={`chat-bg relative h-full min-h-0 min-w-0 flex-col overflow-hidden ${workspaceView === "CHAT" ? "flex" : "hidden md:flex"}`}
     >
       {/* ── Header ── */}
-      <div className="z-20 shrink-0 border-b border-slate-200/50 bg-white/80 px-3 py-2.5 shadow-[0_1px_12px_rgba(0,0,0,0.03)] backdrop-blur-xl supports-[backdrop-filter]:bg-white/70 sm:px-4">
+      <div className="z-20 shrink-0 border-b border-slate-200/50 bg-white px-3 py-2.5 shadow-[0_1px_12px_rgba(0,0,0,0.03)] supports-[backdrop-filter]:bg-white sm:px-4">
         <div className="flex items-center gap-3">
           {/* Back button (mobile only) */}
           <button
@@ -357,7 +357,7 @@ export default function CommunityChatPanel({ page }: Props) {
             onClick={() => setShowChatDetailsSidebar(!showChatDetailsSidebar)}
             className="flex min-w-0 flex-1 items-center gap-3 text-left transition hover:opacity-80"
           >
-            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-bold uppercase text-slate-700 shadow-sm ring-2 ring-white">
+            <div className="inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-sm font-semibold text-slate-700 shadow-sm ring-2 ring-white">
               {selectedConversationPhotoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -374,7 +374,7 @@ export default function CommunityChatPanel({ page }: Props) {
               <h2 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-slate-900">
                 {selectedConversationDisplayName}
               </h2>
-              <p className="mt-0.5 text-[11px] font-medium text-slate-500">
+              <p className="mt-0.5 text-xs font-medium text-slate-500">
                 {lastSeenText ? (
                   <span className="text-slate-600">{lastSeenText}</span>
                 ) : isGroup ? (
@@ -458,7 +458,7 @@ export default function CommunityChatPanel({ page }: Props) {
               exit={{ height: 0, opacity: 0 }}
               className="mt-2.5 overflow-hidden"
             >
-              <div className="rounded-[14px] border border-orange-200/60 bg-gradient-to-r from-orange-50/80 to-amber-50/80 px-3.5 py-2.5 shadow-sm backdrop-blur-md">
+              <div className="rounded-[14px] border border-orange-200/60 bg-orange-50/80 px-3.5 py-2.5 shadow-sm">
                 {selectedConversationNeedsMyApproval ? (
                   <>
                     <p className="font-600 text-[14px] text-orange-900">Message request</p>
@@ -468,7 +468,7 @@ export default function CommunityChatPanel({ page }: Props) {
                     <div className="mt-2.5 flex gap-2">
                       <button
                         onClick={handleAcceptRequest}
-                        className="from-power-orange rounded-xl bg-gradient-to-b to-orange-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-orange-500/20 transition hover:from-orange-500 hover:to-orange-700 active:scale-95"
+                        className="hover: hover: rounded-xl bg-orange-500 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md transition active:scale-95"
                       >
                         Accept
                       </button>
@@ -517,7 +517,7 @@ export default function CommunityChatPanel({ page }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="z-10 shrink-0 overflow-hidden border-b border-slate-200/50 bg-slate-50/90 backdrop-blur"
+            className="z-10 shrink-0 overflow-hidden border-b border-slate-200/50 bg-slate-50/90"
           >
             <div className="flex items-center justify-between gap-3 px-4 py-2">
               <div className="flex min-w-0 items-center gap-2">
@@ -553,7 +553,7 @@ export default function CommunityChatPanel({ page }: Props) {
               exit={{ opacity: 0, y: -8 }}
               className="flex justify-center py-3"
             >
-              <div className="flex items-center gap-2 rounded-full border border-slate-200/60 bg-white/80 px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm backdrop-blur-md">
+              <div className="flex items-center gap-2 rounded-md border border-slate-200/60 bg-white px-4 py-1.5 text-xs font-medium text-slate-500 shadow-sm">
                 <Loader2 className="text-power-orange h-3.5 w-3.5 animate-spin" />
                 Loading older messages…
               </div>
@@ -589,8 +589,8 @@ export default function CommunityChatPanel({ page }: Props) {
             >
               {showDateSeparator && (
                 <div className="flex items-center gap-3 py-3">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300/40 to-slate-300/40" />
-                  <span className="shrink-0 rounded-full border border-slate-200/50 bg-white/80 px-3 py-1 text-[10px] font-semibold tracking-wide text-slate-500 shadow-sm backdrop-blur-md">
+                  <div className="bg-hairline h-px flex-1" />
+                  <span className="shrink-0 rounded-md border border-slate-200/50 bg-white px-3 py-1 text-xs font-semibold tracking-wide text-slate-500 shadow-sm">
                     {new Date(message.createdAt).toLocaleDateString("en-IN", {
                       day: "numeric",
                       month: "long",
@@ -600,16 +600,16 @@ export default function CommunityChatPanel({ page }: Props) {
                           : undefined,
                     })}
                   </span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent via-slate-300/40 to-slate-300/40" />
+                  <div className="bg-hairline h-px flex-1" />
                 </div>
               )}
               {isFirstUnread && (
                 <div className="flex items-center gap-3 py-2">
-                  <div className="via-power-orange/40 to-power-orange/40 h-px flex-1 bg-gradient-to-r from-transparent" />
-                  <span className="text-power-orange shrink-0 rounded-full border border-orange-200/60 bg-orange-50 px-3 py-1 text-[10px] font-semibold tracking-wide shadow-sm">
+                  <div className="bg-hairline h-px flex-1" />
+                  <span className="text-power-orange shrink-0 rounded-md border border-orange-200/60 bg-orange-50 px-3 py-1 text-xs font-semibold tracking-wide shadow-sm">
                     New Messages
                   </span>
-                  <div className="via-power-orange/40 to-power-orange/40 h-px flex-1 bg-gradient-to-l from-transparent" />
+                  <div className="bg-hairline h-px flex-1" />
                 </div>
               )}
               <MessageBubble
@@ -676,7 +676,7 @@ export default function CommunityChatPanel({ page }: Props) {
               transition={{ duration: 0.2 }}
               className="mt-2 flex items-end justify-start gap-2"
             >
-              <div className="inline-flex items-center gap-2 rounded-[18px] rounded-bl-[6px] border border-slate-200/60 bg-white/90 px-4 py-2.5 shadow-sm backdrop-blur-sm">
+              <div className="inline-flex items-center gap-2 rounded-[18px] rounded-bl-[6px] border border-slate-200/60 bg-white px-4 py-2.5 shadow-sm">
                 <div className="flex items-center gap-1.5">
                   <span
                     className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
@@ -706,7 +706,7 @@ export default function CommunityChatPanel({ page }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="shrink-0 overflow-hidden border-t border-orange-200/50 bg-gradient-to-b from-orange-50/50 to-white/50 backdrop-blur-xl"
+            className="shrink-0 overflow-hidden border-t border-orange-200/50 bg-orange-50/50"
           >
             <div className="px-4 py-3 sm:px-5">
               <div className="mb-2 flex items-center justify-between">
@@ -732,7 +732,7 @@ export default function CommunityChatPanel({ page }: Props) {
                   if (e.key === "Escape") handleCancelEditMessage();
                 }}
                 rows={2}
-                className="focus:border-power-orange focus:ring-power-orange/10 w-full resize-none rounded-[14px] border border-slate-200 bg-white/80 px-4 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition focus:bg-white focus:outline-none focus:ring-4"
+                className="focus:border-power-orange focus:ring-power-orange/10 w-full resize-none rounded-[14px] border border-slate-200 bg-white px-4 py-2.5 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] transition focus:bg-white focus:outline-none focus:ring-4"
               />
               <div className="mt-2 flex justify-end gap-2">
                 <button
@@ -744,7 +744,7 @@ export default function CommunityChatPanel({ page }: Props) {
                 <button
                   onClick={handleSaveEditedMessage}
                   disabled={isMutatingMessageId === editingMessageId}
-                  className="from-power-orange flex items-center gap-1.5 rounded-xl bg-gradient-to-b to-orange-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md shadow-orange-500/20 transition hover:from-orange-500 hover:to-orange-700 active:scale-95 disabled:opacity-50"
+                  className="hover: hover: flex items-center gap-1.5 rounded-xl bg-orange-500 px-4 py-1.5 text-[12px] font-semibold text-white shadow-md transition active:scale-95 disabled:opacity-50"
                 >
                   <Check size={13} /> Save
                 </button>
@@ -755,7 +755,7 @@ export default function CommunityChatPanel({ page }: Props) {
       </AnimatePresence>
 
       {/* ── Composer ── */}
-      <div className="z-20 shrink-0 border-t border-slate-200/40 bg-white/90 px-3 py-2.5 shadow-[0_-2px_16px_rgba(0,0,0,0.02)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/70 sm:px-4">
+      <div className="z-20 shrink-0 border-t border-slate-200/40 bg-white px-3 py-2.5 shadow-[0_-2px_16px_rgba(0,0,0,0.02)] supports-[backdrop-filter]:bg-white sm:px-4">
         {/* Hidden file input */}
         {/* One picker for both kinds. Two buttons that both opened a file
             dialog read as duplicates; which dialog you wanted was a decision
@@ -790,7 +790,7 @@ export default function CommunityChatPanel({ page }: Props) {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               className="mb-2.5"
             >
-              <div className="relative inline-block rounded-[16px] border border-slate-200/80 bg-white/50 p-1 shadow-sm backdrop-blur-md">
+              <div className="relative inline-block rounded-[16px] border border-slate-200/80 bg-white/50 p-1 shadow-sm">
                 <button
                   onClick={() => setPendingImageFile(null)}
                   className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-white bg-slate-800 text-white shadow-md transition hover:bg-slate-700 active:scale-90"
@@ -821,7 +821,7 @@ export default function CommunityChatPanel({ page }: Props) {
         {replyingTo ? (
           <div className="border-power-orange mb-2 flex items-start gap-2 rounded-lg border-l-2 bg-slate-50 px-3 py-2">
             <div className="min-w-0 flex-1">
-              <p className="text-power-orange text-[11px] font-semibold">
+              <p className="text-power-orange text-xs font-semibold">
                 Replying to {replyingTo.senderDisplayName}
               </p>
               <p className="truncate text-xs text-slate-600">
@@ -928,7 +928,7 @@ export default function CommunityChatPanel({ page }: Props) {
               isSending || isUploadingImage || !canSendSelectedConversationMessage || !hasContent
             }
             onClick={handleSend}
-            className="from-power-orange inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br to-orange-500 text-white shadow-[0_2px_8px_rgba(233,115,22,0.3)] transition-all hover:from-orange-500 hover:to-orange-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+            className="hover: hover: inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white shadow-[0_2px_8px_rgba(233,115,22,0.3)] transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Send message"
           >
             {isSending ? (

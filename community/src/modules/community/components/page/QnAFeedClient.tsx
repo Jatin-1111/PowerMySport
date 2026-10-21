@@ -114,7 +114,7 @@ function FilterCapsule({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${CAPSULE_TONES[tone]}`}
+      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold ${CAPSULE_TONES[tone]}`}
     >
       <span className="max-w-[10rem] truncate">{label}</span>
       <button
@@ -706,84 +706,53 @@ export default function QnAFeedClient() {
   };
 
   return (
-    <div className="relative isolate min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#eef4ff_0%,#f4f8ff_42%,#fff6e9_100%)]">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-      >
-        <div className="h-136 w-136 absolute left-[-12%] top-[-8%] rounded-full bg-sky-300/30 blur-3xl" />
-        <div className="h-124 w-124 bg-amber-200/28 absolute right-[-16%] top-[14%] rounded-full blur-3xl" />
-        <div className="bg-indigo-200/18 absolute left-[24%] top-[48%] h-64 w-64 rounded-full blur-3xl" />
-        <div className="bg-size-[42px_42px] absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.14)_1px,transparent_1px)] opacity-40" />
-      </div>
-
+    <div className="bg-paper relative isolate min-h-[calc(100vh-5.5rem)]">
       <div className="mx-auto w-full max-w-7xl space-y-5 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 lg:px-6">
-        <motion.section
-          initial={reduceMotion ? false : { opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, ease: "easeOut" }}
+        <section
           aria-labelledby="qna-hero-title"
-          className="sm:rounded-4xl relative overflow-hidden rounded-3xl border border-white/80 bg-[linear-gradient(125deg,#fafdff_0%,#eaf4ff_36%,#fff1dc_100%)] px-4 py-6 text-slate-900 shadow-sm sm:px-8 sm:py-8"
+          className="bg-paper-deep rounded-2xl px-5 py-8 sm:px-10 sm:py-12"
         >
-          <motion.div
-            aria-hidden="true"
-            animate={reduceMotion ? undefined : { x: [0, -10, 0], y: [0, 10, 0] }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-sky-300/25 blur-3xl"
-          />
-          <motion.div
-            aria-hidden="true"
-            animate={reduceMotion ? undefined : { x: [0, 12, 0], y: [0, -8, 0] }}
-            transition={{ duration: 17, repeat: Infinity, ease: "easeInOut" }}
-            className="pointer-events-none absolute -bottom-24 left-0 h-64 w-64 rounded-full bg-amber-200/30 blur-3xl"
-          />
+          <p className="text-ink-body inline-flex items-center gap-1.5 text-sm font-medium">
+            <Sparkles size={14} strokeWidth={1.5} aria-hidden="true" />
+            Community knowledge exchange
+          </p>
+          <h1
+            id="qna-hero-title"
+            className="font-editorial text-ink mt-3 text-balance text-4xl font-light leading-[1.08] sm:text-5xl lg:text-6xl"
+          >
+            Ask better questions.{" "}
+            <span className="text-ink-muted italic">Share better answers.</span>
+          </h1>
+          <p className="text-ink-body mt-4 max-w-[56ch] text-pretty text-base leading-relaxed sm:text-lg">
+            Post what you are stuck on and get practical answers from parents who have solved it
+            before.
+          </p>
 
-          <div className="relative">
-            <div>
-              <p className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-600">
-                <Sparkles size={12} className="text-power-orange" aria-hidden="true" />
-                Community knowledge exchange
-              </p>
-              <h1
-                id="qna-hero-title"
-                className="font-title mt-3 text-2xl font-semibold leading-[1.1] tracking-tight sm:text-3xl lg:text-[2.4rem]"
-              >
-                Ask better questions. <span className="text-slate-500">Share better answers.</span>
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-slate-700">
-                Post what you are stuck on and get practical answers from parents who have solved it
-                before.
-              </p>
-
-              <div className="mt-5 flex flex-wrap items-center gap-2.5">
-                <motion.button
-                  type="button"
-                  aria-haspopup="dialog"
-                  whileHover={reduceMotion ? undefined : { scale: 1.03 }}
-                  whileTap={reduceMotion ? undefined : { scale: 0.97 }}
-                  onClick={() => {
-                    if (!hasAuthToken()) {
-                      redirectToMainLogin();
-                      return;
-                    }
-                    setShowAskForm((v) => !v);
-                  }}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                >
-                  <Plus size={16} aria-hidden="true" />
-                  Ask a question
-                </motion.button>
-                <Link
-                  href="/contributors"
-                  className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                >
-                  <Trophy size={16} className="text-amber-600" aria-hidden="true" />
-                  Leaderboard
-                </Link>
-              </div>
-            </div>
+          <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => {
+                if (!hasAuthToken()) {
+                  redirectToMainLogin();
+                  return;
+                }
+                setShowAskForm((v) => !v);
+              }}
+              className="btn-motion bg-power-orange-solid inline-flex min-h-12 items-center gap-2 rounded-md px-7 py-3.5 text-base font-semibold text-white hover:bg-indigo-700"
+            >
+              <Plus size={16} aria-hidden="true" />
+              Ask a question
+            </button>
+            <Link
+              href="/contributors"
+              className="text-ink decoration-ink/30 hover:decoration-ink inline-flex items-center gap-2 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+            >
+              <Trophy size={16} strokeWidth={1.5} aria-hidden="true" />
+              Leaderboard
+            </Link>
           </div>
-        </motion.section>
+        </section>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
           <div className="space-y-6">
@@ -801,7 +770,7 @@ export default function QnAFeedClient() {
                 <div className="inline-flex shrink-0 items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1">
                   <button
                     onClick={() => setViewMode("ALL")}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                       viewMode === "ALL"
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-white"
@@ -817,7 +786,7 @@ export default function QnAFeedClient() {
                       }
                       setViewMode("MINE");
                     }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
                       viewMode === "MINE"
                         ? "bg-slate-900 text-white shadow-sm"
                         : "text-slate-600 hover:bg-white"
@@ -858,7 +827,7 @@ export default function QnAFeedClient() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setShowFilterPanel((v) => !v)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-semibold uppercase tracking-wide transition ${
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-md border px-4 py-2.5 text-xs font-semibold transition ${
                     showFilterPanel || hasActiveFilters
                       ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                       : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
@@ -872,7 +841,7 @@ export default function QnAFeedClient() {
                   </motion.span>
                   <span className="hidden sm:inline">Filters</span>
                   {hasActiveFilters && (
-                    <span className="bg-power-orange-solid flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white">
+                    <span className="bg-power-orange-solid flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold text-white">
                       {selectedSports.length +
                         selectedCities.length +
                         (categoryFilter ? 1 : 0) +
@@ -888,7 +857,7 @@ export default function QnAFeedClient() {
                   <button
                     key={option.value}
                     onClick={() => setSort(option.value)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition ${
+                    className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition ${
                       sort === option.value
                         ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
                         : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
@@ -953,7 +922,7 @@ export default function QnAFeedClient() {
                               <button
                                 type="button"
                                 onClick={() => void toggleTopicFollow(value)}
-                                className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition ${
+                                className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold transition ${
                                   followedTopics.includes(value.toLowerCase())
                                     ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                                     : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
@@ -975,9 +944,7 @@ export default function QnAFeedClient() {
               {/* Active filter capsules + Clear all */}
               {hasActiveFilters ? (
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                    Active
-                  </span>
+                  <span className="text-xs font-semibold text-slate-400">Active</span>
                   {categoryFilter ? (
                     <FilterCapsule
                       label={categoryFilter}
@@ -1020,7 +987,7 @@ export default function QnAFeedClient() {
                   ) : null}
                   <button
                     onClick={clearAllFilters}
-                    className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-100"
+                    className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-100"
                   >
                     <Trash2 size={13} />
                     Clear all
@@ -1030,11 +997,11 @@ export default function QnAFeedClient() {
             </section>
 
             {isLoading ? (
-              <div className="rounded-3xl border border-white/90 bg-white/90 p-12 text-center text-slate-500 shadow-sm backdrop-blur-md">
+              <div className="rounded-2xl border border-white/90 bg-white p-12 text-center text-slate-500 shadow-sm">
                 Loading questions...
               </div>
             ) : posts.length === 0 ? (
-              <div className="border-border bg-white/82 rounded-3xl border border-dashed p-12 text-center text-slate-600 shadow-sm backdrop-blur-sm">
+              <div className="border-border rounded-2xl border border-dashed bg-white p-12 text-center text-slate-600 shadow-sm">
                 {viewMode === "MINE"
                   ? "You have not posted a question yet. Start your first knowledge thread."
                   : "No knowledge threads found. Start one and invite answers."}
@@ -1044,7 +1011,7 @@ export default function QnAFeedClient() {
                 {featuredPost ? (
                   <article
                     onClick={() => router.push(`/questions/${featuredPost.id}`)}
-                    className="border-power-orange/30 from-power-orange/5 hover:border-power-orange/50 bg-linear-to-br group relative flex cursor-pointer gap-0 overflow-hidden rounded-xl border-2 via-white to-white shadow-lg transition-all hover:shadow-xl"
+                    className="border-power-orange/30 hover:border-power-orange/50 group relative flex cursor-pointer gap-0 overflow-hidden rounded-xl border-2 bg-white shadow-lg transition-all hover:shadow-xl"
                   >
                     {/* Voting Sidebar */}
                     <div
@@ -1063,7 +1030,7 @@ export default function QnAFeedClient() {
                       >
                         <ArrowBigUp size={18} />
                       </button>
-                      <span className="text-xs font-bold text-slate-700">
+                      <span className="text-xs font-semibold text-slate-700">
                         {featuredPost.voteScore}
                       </span>
                       <button
@@ -1082,16 +1049,16 @@ export default function QnAFeedClient() {
 
                     {/* Featured Content */}
                     <div className="flex-1 p-5 sm:p-6">
-                      <div className="border-power-orange/30 bg-power-orange/10 mb-3 inline-flex items-center gap-2 rounded-full border-2 px-3 py-1.5">
-                        <Trophy size={14} className="text-power-orange font-bold" />
-                        <span className="text-power-orange text-xs font-bold uppercase tracking-wide">
+                      <div className="border-power-orange/30 bg-power-orange/10 mb-3 inline-flex items-center gap-2 rounded-md border-2 px-3 py-1.5">
+                        <Trophy size={14} className="text-power-orange font-semibold" />
+                        <span className="text-power-orange text-xs font-semibold">
                           Featured Thread
                         </span>
                       </div>
 
                       <Link
                         href={`/questions/${featuredPost.id}`}
-                        className="font-title hover:text-power-orange block text-2xl font-bold leading-tight text-slate-900 transition-colors"
+                        className="font-title hover:text-power-orange block text-2xl font-semibold leading-tight text-slate-900 transition-colors"
                       >
                         {featuredPost.title}
                       </Link>
@@ -1105,18 +1072,18 @@ export default function QnAFeedClient() {
                         {featuredPost.tags.map((tag) => (
                           <span
                             key={`${featuredPost.id}-${tag}`}
-                            className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
+                            className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
                           >
                             {tag}
                           </span>
                         ))}
                         {featuredPost.sport ? (
-                          <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+                          <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
                             {featuredPost.sport}
                           </span>
                         ) : null}
                         {featuredPost.city ? (
-                          <span className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                          <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                             {featuredPost.city}
                           </span>
                         ) : null}
@@ -1139,7 +1106,7 @@ export default function QnAFeedClient() {
                               : featuredPost.author.displayName}
                           </span>
                           {featuredPost.author.isVerifiedExpert ? (
-                            <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                               ★ {featuredPost.author.expertTitle}
                             </span>
                           ) : null}
@@ -1186,7 +1153,9 @@ export default function QnAFeedClient() {
                           >
                             <ArrowBigUp size={16} />
                           </button>
-                          <span className="text-xs font-bold text-slate-700">{post.voteScore}</span>
+                          <span className="text-xs font-semibold text-slate-700">
+                            {post.voteScore}
+                          </span>
                           <button
                             onClick={() => void vote(post, -1)}
                             disabled={voting.isLoading(post.id)}
@@ -1217,30 +1186,30 @@ export default function QnAFeedClient() {
                           {/* Tags & Status */}
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             {post.category && post.category !== "General" ? (
-                              <span className="inline-flex rounded-full border border-violet-200 bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700">
+                              <span className="inline-flex rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
                                 {post.category}
                               </span>
                             ) : null}
                             {post.tags.map((tag) => (
                               <span
                                 key={`${post.id}-${tag}`}
-                                className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 transition hover:bg-slate-100"
+                                className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
                               >
                                 {tag}
                               </span>
                             ))}
                             {post.sport ? (
-                              <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-700">
+                              <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
                                 {post.sport}
                               </span>
                             ) : null}
                             {post.city ? (
-                              <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
+                              <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                                 {post.city}
                               </span>
                             ) : null}
                             {post.status === "CLOSED" ? (
-                              <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+                              <span className="inline-flex rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                                 Closed
                               </span>
                             ) : null}
@@ -1261,7 +1230,7 @@ export default function QnAFeedClient() {
                                 {post.isAnonymous ? "Anonymous" : post.author.displayName}
                               </span>
                               {post.author.isVerifiedExpert ? (
-                                <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                                <span className="inline-flex items-center gap-0.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                                   ★ {post.author.expertTitle}
                                 </span>
                               ) : null}
@@ -1327,7 +1296,7 @@ export default function QnAFeedClient() {
                     <button
                       onClick={() => void loadMore()}
                       disabled={isLoadingMore}
-                      className="border-border inline-flex min-h-10 items-center gap-2 rounded-lg border bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                      className="border-border inline-flex min-h-10 items-center gap-2 rounded-md border bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
                     >
                       {isLoadingMore ? (
                         <>
@@ -1362,12 +1331,10 @@ export default function QnAFeedClient() {
                   key={stat.label}
                   whileHover={{ y: -3 }}
                   transition={{ duration: 0.18 }}
-                  className="bg-white/92 rounded-2xl border border-white/85 p-4 shadow-sm backdrop-blur-sm"
+                  className="rounded-2xl border border-white/85 bg-white p-4 shadow-sm"
                 >
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    {stat.label}
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-slate-900">{stat.value}</p>
+                  <p className="text-xs font-semibold text-slate-500">{stat.label}</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">{stat.value}</p>
                 </motion.div>
               ))}
             </motion.section>
@@ -1377,7 +1344,7 @@ export default function QnAFeedClient() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
-              className="rounded-3xl border border-white/90 bg-white/90 p-4 shadow-sm backdrop-blur-md sm:p-5"
+              className="rounded-2xl border border-white/90 bg-white p-4 shadow-sm sm:p-5"
             >
               <div className="mb-3 flex items-center justify-between gap-2">
                 <h3 className="font-title text-lg font-semibold text-slate-900">Your Activity</h3>
@@ -1388,7 +1355,7 @@ export default function QnAFeedClient() {
                         initial={{ opacity: 0, scale: 0.7 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.7 }}
-                        className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        className="bg-power-orange/10 text-power-orange rounded-md px-2.5 py-1 text-xs font-semibold"
                       >
                         {activityUnreadCount} unread
                       </motion.span>
@@ -1397,7 +1364,7 @@ export default function QnAFeedClient() {
                   <button
                     onClick={() => void handleMarkAllActivityRead()}
                     disabled={activityUnreadCount === 0 || isMarkingActivityRead}
-                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isMarkingActivityRead ? "Marking..." : "Mark all read"}
                   </button>
@@ -1431,7 +1398,7 @@ export default function QnAFeedClient() {
                           }`}
                         >
                           <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                            <p className="text-xs font-semibold text-slate-500">
                               {getActivityLabel(item)}
                             </p>
                             <span className="text-xs text-slate-500">
@@ -1466,7 +1433,7 @@ export default function QnAFeedClient() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                  className="relative overflow-hidden rounded-3xl border-2 border-amber-300/70 bg-[linear-gradient(135deg,#fff9ed_0%,#fff2d8_100%)] p-4 shadow-md sm:p-5"
+                  className="relative overflow-hidden rounded-2xl border-2 border-amber-300/70 bg-white p-4 shadow-md sm:p-5"
                 >
                   <motion.div
                     aria-hidden="true"
@@ -1482,7 +1449,7 @@ export default function QnAFeedClient() {
                     >
                       <AlertTriangle size={13} />
                     </motion.span>
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">
+                    <p className="text-xs font-semibold tracking-[0.16em] text-amber-800">
                       Help Needed Now
                     </p>
                   </div>
@@ -1491,7 +1458,7 @@ export default function QnAFeedClient() {
                       <Link
                         key={`urgent-${item.id}`}
                         href={`/questions/${item.id}`}
-                        className="block rounded-xl border border-amber-200/70 bg-white/90 px-3 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white hover:shadow-sm"
+                        className="block rounded-xl border border-amber-200/70 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white hover:shadow-sm"
                       >
                         <span className="line-clamp-1">{item.title}</span>
                         <span className="mt-1 inline-flex items-center gap-2 text-xs font-semibold text-amber-700">
@@ -1510,9 +1477,7 @@ export default function QnAFeedClient() {
                 whileHover={{ y: -3 }}
                 className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-                  Knowledge Opportunities
-                </p>
+                <p className="text-xs font-semibold text-blue-700">Knowledge Opportunities</p>
                 <p className="mt-1 text-sm text-blue-900">
                   {spotlight.unansweredCount} questions still need helpful answers.
                 </p>
@@ -1521,9 +1486,7 @@ export default function QnAFeedClient() {
                 whileHover={{ y: -3 }}
                 className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                  Solved Discussions
-                </p>
+                <p className="text-xs font-semibold text-emerald-700">Solved Discussions</p>
                 <p className="mt-1 text-sm text-emerald-900">
                   {spotlight.answeredCount} questions already have shared solutions.
                 </p>

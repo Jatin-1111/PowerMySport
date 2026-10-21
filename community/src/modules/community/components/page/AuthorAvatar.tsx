@@ -51,7 +51,7 @@ export default function AuthorAvatar({ author, size = 32, className = "" }: Auth
   return (
     <span
       style={{ ...dimension, fontSize }}
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold shadow-sm ring-2 ring-white ${colorFor(
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold shadow-sm ring-2 ring-white ${colorFor(
         name
       )} ${className}`}
       aria-hidden="true"

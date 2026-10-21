@@ -69,7 +69,7 @@ export default function RichTextCanvas({
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
       <EditorToolbar editor={editor} />
       <EditorContent editor={editor} />
-      <div className="flex items-center justify-end border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 sm:px-6">
+      <div className="flex items-center justify-end border-t border-slate-100 px-4 py-2 text-xs text-slate-400 sm:px-6">
         {wordCount} {wordCount === 1 ? "word" : "words"} · {readTimeMin} min read
       </div>
     </div>

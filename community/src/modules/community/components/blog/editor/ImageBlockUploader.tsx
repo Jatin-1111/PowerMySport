@@ -90,7 +90,7 @@ export default function ImageBlockUploader({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-slate-700 shadow-sm transition hover:bg-white"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-700 shadow-sm transition hover:bg-white"
             aria-label="Replace image"
           >
             <RefreshCw size={15} />
@@ -99,7 +99,7 @@ export default function ImageBlockUploader({
             <button
               type="button"
               onClick={onRemove}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-rose-600 shadow-sm transition hover:bg-white"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-rose-600 shadow-sm transition hover:bg-white"
               aria-label="Remove image"
             >
               <Trash2 size={15} />

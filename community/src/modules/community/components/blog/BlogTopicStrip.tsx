@@ -16,7 +16,7 @@ export default function BlogTopicStrip({ activeTopic, onSelect }: BlogTopicStrip
     <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       <button
         onClick={() => onSelect("")}
-        className={`inline-flex shrink-0 items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-sm font-semibold transition ${
+        className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3.5 py-2 text-sm font-semibold transition ${
           isAll
             ? "border-slate-900 bg-slate-900 text-white shadow-sm"
             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -32,7 +32,7 @@ export default function BlogTopicStrip({ activeTopic, onSelect }: BlogTopicStrip
             key={topic.slug}
             whileTap={{ scale: 0.95 }}
             onClick={() => onSelect(active ? "" : topic.slug)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-2xl border px-3.5 py-2 text-sm font-semibold transition ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3.5 py-2 text-sm font-semibold transition ${
               active
                 ? "border-power-orange/40 bg-power-orange/10 text-power-orange shadow-sm"
                 : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"

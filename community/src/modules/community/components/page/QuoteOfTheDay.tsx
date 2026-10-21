@@ -52,21 +52,13 @@ export default function QuoteOfTheDay() {
     : "";
 
   return (
-    <figure className="group relative flex h-full min-h-52 flex-col overflow-hidden rounded-[1.4rem] bg-white/80 p-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5 backdrop-blur-md sm:p-6">
+    <figure className="group relative flex h-full min-h-52 flex-col overflow-hidden rounded-[1.4rem] bg-white p-5 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.35)] ring-1 ring-slate-900/5 sm:p-6">
       {/* Depth, in three cheap layers: a warm corner glow, a cool one on the
           opposite side, and a hairline highlight along the top edge so the
           card reads as glass rather than a flat white box. */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(233,115,22,0.22),transparent_66%)] blur-2xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(56,189,248,0.20),transparent_66%)] blur-2xl"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent"
+        className="bg-hairline pointer-events-none absolute inset-x-6 top-0 h-px"
       />
       <Quote
         aria-hidden="true"
@@ -75,14 +67,14 @@ export default function QuoteOfTheDay() {
       />
 
       <figcaption className="relative flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-          <span className="text-power-orange flex h-6 w-6 items-center justify-center rounded-lg bg-[linear-gradient(135deg,rgba(233,115,22,0.16),rgba(245,158,11,0.2))]">
+        <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-slate-500">
+          <span className="text-power-orange flex h-6 w-6 items-center justify-center rounded-lg bg-white">
             <Quote size={12} aria-hidden="true" />
           </span>
           Quote of the day
         </span>
         {today && (
-          <span className="inline-flex items-center rounded-full border border-slate-200/80 bg-white/70 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-slate-500">
+          <span className="inline-flex items-center rounded-md border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-semibold tabular-nums text-slate-500">
             {today.label} · IST
           </span>
         )}
@@ -101,14 +93,14 @@ export default function QuoteOfTheDay() {
               <p className="font-title text-pretty text-[1.15rem] font-medium leading-snug tracking-tight text-slate-900 sm:text-[1.35rem]">
                 <span
                   aria-hidden="true"
-                  className="mr-0.5 bg-[linear-gradient(120deg,#E97316,#F59E0B)] bg-clip-text align-text-top text-2xl font-bold leading-none text-transparent sm:text-3xl"
+                  className="text-power-orange-solid mr-0.5 align-text-top text-2xl font-semibold leading-none sm:text-3xl"
                 >
                   &ldquo;
                 </span>
                 {today.quote.text}
                 <span
                   aria-hidden="true"
-                  className="ml-0.5 bg-[linear-gradient(120deg,#F59E0B,#E97316)] bg-clip-text align-text-bottom text-2xl font-bold leading-none text-transparent sm:text-3xl"
+                  className="text-power-orange-solid ml-0.5 align-text-bottom text-2xl font-semibold leading-none sm:text-3xl"
                 >
                   &rdquo;
                 </span>
@@ -117,7 +109,7 @@ export default function QuoteOfTheDay() {
               <footer className="mt-4 flex items-center gap-2.5">
                 <span
                   aria-hidden="true"
-                  className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f172a,#334155)] text-[11px] font-bold tracking-wide text-white shadow-sm"
+                  className="bg-ink flex h-8 w-8 flex-none items-center justify-center rounded-full text-xs font-semibold tracking-wide text-white shadow-sm"
                 >
                   {initials}
                 </span>

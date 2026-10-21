@@ -1,7 +1,6 @@
 "use client";
 
 import { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
 
 type CommunityPageHeaderProps = {
   title: string;
@@ -11,6 +10,8 @@ type CommunityPageHeaderProps = {
   size?: "default" | "lg";
 };
 
+/** Page masthead: a deeper-paper band, serif light title, plain kicker. No
+ *  motion or decoration, so the content under it is what draws the eye. */
 export function CommunityPageHeader({
   title,
   subtitle,
@@ -18,82 +19,34 @@ export function CommunityPageHeader({
   action,
   size = "default",
 }: CommunityPageHeaderProps) {
-  const prefersReducedMotion = useReducedMotion();
-  const cardTransition = prefersReducedMotion
-    ? { duration: 0.01 }
-    : { duration: 0.45, ease: "easeOut" as const };
   const isLarge = size === "lg";
 
   return (
-    <motion.div
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 18 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-      transition={cardTransition}
-      className={`relative overflow-hidden rounded-3xl border border-white/70 bg-[linear-gradient(120deg,#f8fbff_0%,#e5f1ff_38%,#fff4e2_100%)] text-slate-900 shadow-sm sm:rounded-[4xl] ${
+    <header
+      className={`bg-paper-deep rounded-2xl ${
         isLarge
-          ? "flex min-h-[170px] flex-col justify-center p-5 sm:min-h-[210px] sm:p-8 lg:min-h-[230px] lg:p-9"
-          : "p-4 sm:p-8"
+          ? "flex min-h-[170px] flex-col justify-center p-6 sm:min-h-[210px] sm:p-10 lg:min-h-[230px] lg:p-12"
+          : "p-5 sm:p-10"
       }`}
     >
-      <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          {badge && (
-            <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-600 backdrop-blur">
-              {badge}
-            </span>
-          )}
+          {badge && <p className="text-ink-body text-sm font-medium">{badge}</p>}
           <h1
-            className={`font-title mt-2.5 font-semibold tracking-tight ${
-              isLarge ? "text-2xl sm:text-3xl lg:text-4xl" : "text-2xl sm:text-4xl"
+            className={`font-editorial text-ink mt-2 text-balance font-light leading-[1.08] ${
+              isLarge ? "text-4xl sm:text-5xl lg:text-6xl" : "text-3xl sm:text-5xl"
             }`}
           >
             {title}
           </h1>
           {subtitle && (
-            <p
-              className={`mt-2 leading-relaxed text-slate-700 ${
-                isLarge ? "max-w-2xl text-sm sm:text-base" : "max-w-2xl text-sm sm:text-base"
-              }`}
-            >
+            <p className="text-ink-body mt-4 max-w-[56ch] text-pretty text-base leading-relaxed sm:text-lg">
               {subtitle}
             </p>
           )}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
-      <motion.div
-        aria-hidden="true"
-        animate={
-          prefersReducedMotion ? { opacity: 0.45 } : { x: [0, -8, 0], y: [0, 8, 0], opacity: 0.45 }
-        }
-        transition={
-          prefersReducedMotion
-            ? { duration: 0.01 }
-            : {
-                duration: 14,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "easeInOut",
-              }
-        }
-        className="bg-power-orange/30 pointer-events-none absolute -right-24 -top-20 h-56 w-56 rounded-full blur-3xl"
-      />
-      <motion.div
-        aria-hidden="true"
-        animate={
-          prefersReducedMotion ? { opacity: 0.3 } : { x: [0, 10, 0], y: [0, -10, 0], opacity: 0.3 }
-        }
-        transition={
-          prefersReducedMotion
-            ? { duration: 0.01 }
-            : {
-                duration: 16,
-                repeat: Number.POSITIVE_INFINITY,
-                ease: "easeInOut",
-              }
-        }
-        className="bg-turf-green/25 pointer-events-none absolute -bottom-16 -left-16 h-44 w-44 rounded-full blur-3xl"
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.4),transparent_35%)]" />
-    </motion.div>
+    </header>
   );
 }

@@ -7,7 +7,7 @@ type Props = {
 
 export default function CommunityChatEmptyState({ onBack }: Props) {
   return (
-    <div className="bg-size-[22px_22px] bg-position-[0_0,11px_11px] relative flex h-full w-full flex-col items-center justify-center bg-[#efeae2] bg-[radial-gradient(rgba(255,255,255,0.34)_1px,transparent_1px),radial-gradient(rgba(0,0,0,0.03)_1px,transparent_1px)]">
+    <div className="bg-size-[22px_22px] bg-position-[0_0,11px_11px] relative flex h-full w-full flex-col items-center justify-center bg-[#efeae2] bg-transparent">
       {/* Mobile back button if somehow landed here */}
       {onBack && (
         <div className="absolute left-0 top-0 p-3 lg:hidden">
@@ -46,7 +46,7 @@ export default function CommunityChatEmptyState({ onBack }: Props) {
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
             className="relative flex h-32 w-32 items-center justify-center rounded-[2.5rem] border border-slate-100 bg-white shadow-[0_8px_40px_rgba(233,115,22,0.12)] ring-1 ring-white/60"
           >
-            <div className="from-power-orange/5 absolute inset-0 rounded-[2.5rem] bg-gradient-to-tr to-transparent opacity-50" />
+            <div className="bg-power-orange/5 absolute inset-0 rounded-[2.5rem] opacity-50" />
             <MessageSquare size={52} strokeWidth={1.2} className="text-power-orange opacity-90" />
           </motion.div>
         </div>

@@ -110,7 +110,7 @@ export default function SportsSelect({
     <div className="relative w-full" ref={containerRef}>
       {/* Trigger Button / Input */}
       <div
-        className={`focus-within:border-power-orange/50 focus-within:ring-power-orange/10 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm backdrop-blur transition-all focus-within:bg-white focus-within:ring-4 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
+        className={`focus-within:border-power-orange/50 focus-within:ring-power-orange/10 flex w-full items-center justify-between rounded-md border border-slate-200 bg-white px-4 py-3.5 text-sm font-medium text-slate-900 shadow-sm transition-all focus-within:bg-white focus-within:ring-4 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
         onClick={() => !disabled && setIsOpen(true)}
       >
         <span className={value ? "text-slate-900" : "text-slate-400"}>{value || placeholder}</span>

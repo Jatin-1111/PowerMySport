@@ -441,7 +441,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
   const categoryMeta = getExperienceCategory(category);
 
   return (
-    <div className="relative min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#f5f8ff_0%,#ffffff_45%)]">
+    <div className="bg-paper relative min-h-[calc(100vh-5.5rem)]">
       <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
         {/* Header */}
         <div className="flex items-center justify-between gap-3">
@@ -463,7 +463,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
                 {saveIndicator}
               </span>
             )}
-            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <span className="rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
               {postStatus === "PUBLISHED"
                 ? "Editing experience"
                 : postStatus === "DRAFT"
@@ -477,7 +477,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         <button
           type="button"
           onClick={() => setCategory("")}
-          className={`mt-4 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 ${categoryMeta.accent}`}
+          className={`mt-4 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 ${categoryMeta.accent}`}
         >
           <categoryMeta.Icon size={13} />
           {categoryMeta.label}
@@ -520,7 +520,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             event.target.style.height = `${event.target.scrollHeight}px`;
           }}
           placeholder="Give it a title (optional)"
-          className="font-title mt-5 w-full resize-none bg-transparent text-3xl font-bold leading-tight tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
+          className="font-title mt-5 w-full resize-none bg-transparent text-3xl font-semibold leading-tight tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
         />
 
         {/* Excerpt / subtitle */}
@@ -533,7 +533,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             placeholder="A one or two line subtitle — shown on cards and previews (optional, auto-generated from your content if left blank)"
             className="focus:border-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none placeholder:text-slate-300"
           />
-          <p className="mt-1 text-right text-[11px] text-slate-400">
+          <p className="mt-1 text-right text-xs text-slate-400">
             {excerpt.length}/{EXCERPT_MAX_LENGTH}
           </p>
         </div>
@@ -558,7 +558,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         {/* Sport + tags */}
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <label className="mb-1 block text-xs font-semibold text-slate-400">
               Sport (optional)
             </label>
             <select
@@ -575,7 +575,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <label className="mb-1 block text-xs font-semibold text-slate-400">
               Tags (comma separated)
             </label>
             <input
@@ -598,11 +598,11 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
       </div>
 
       {/* Sticky action bar */}
-      <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white/90 backdrop-blur-xl">
+      <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3 px-4 py-3 sm:px-6">
           <button
             onClick={() => setPreviewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             <Eye size={16} />
             Preview
@@ -611,7 +611,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             <button
               onClick={() => void saveDraft()}
               disabled={isSavingDraft || isPublishing}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
             >
               {isSavingDraft ? <Loader2 size={16} className="animate-spin" /> : null}
               Save draft
@@ -620,7 +620,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           <button
             onClick={() => void publish()}
             disabled={isPublishing || isSavingDraft}
-            className="bg-power-orange-solid shadow-power-orange/20 inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
+            className="bg-power-orange-solid shadow-power-orange/20 inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
           >
             {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {postStatus === "PUBLISHED" ? "Update" : "Publish"}

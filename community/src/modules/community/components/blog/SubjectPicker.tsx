@@ -93,9 +93,7 @@ export default function SubjectPicker({ value, onChange }: SubjectPickerProps) {
               <meta.Icon size={16} />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                {meta.label}
-              </p>
+              <p className="text-xs font-semibold text-slate-400">{meta.label}</p>
               <p className="text-sm font-semibold text-slate-800">{value.nameSnapshot}</p>
             </div>
           </div>
@@ -190,7 +188,7 @@ export default function SubjectPicker({ value, onChange }: SubjectPickerProps) {
         </p>
       )}
 
-      <p className="mt-2 text-[11px] text-slate-400">
+      <p className="mt-2 text-xs text-slate-400">
         Tournaments, venues, academies, coaches and experts are searchable — skip this if it&apos;s
         not about a specific one.
       </p>

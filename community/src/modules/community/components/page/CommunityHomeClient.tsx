@@ -25,7 +25,7 @@ export default function CommunityHomeClient({
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="absolute inset-0 flex flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+        className="bg-paper absolute inset-0 flex flex-col overflow-hidden"
       >
         <motion.div
           variants={shellVariants}

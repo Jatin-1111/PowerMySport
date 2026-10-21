@@ -154,7 +154,7 @@ export default function PrivacyPage() {
   if (isLoading) {
     return (
       <div className="community-page-shell">
-        <div className="community-content-wrap-narrow border-border rounded-3xl border bg-white p-5 shadow-sm sm:p-6">
+        <div className="community-content-wrap-narrow border-border rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
           <div className="h-6 w-44 animate-pulse rounded bg-slate-200" />
           <div className="mt-4 h-28 animate-pulse rounded-xl bg-slate-100" />
         </div>
@@ -186,7 +186,7 @@ export default function PrivacyPage() {
                 <button
                   onClick={() => void saveAlias()}
                   disabled={isSavingAlias || !aliasDraft.trim()}
-                  className="bg-power-orange-solid inline-flex min-h-11 items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
+                  className="bg-power-orange-solid inline-flex min-h-11 items-center justify-center rounded-md px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:opacity-50 sm:min-w-28"
                 >
                   {isSavingAlias ? "Saving" : "Save"}
                 </button>
@@ -287,7 +287,7 @@ export default function PrivacyPage() {
                               {user.isIdentityPublic ? "Identity visible" : "Anonymous profile"}
                             </p>
                             {user.role && (
-                              <span className="rounded-full border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                              <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-xs font-semibold text-slate-600">
                                 {user.role === "Coach" ? "Coach" : "Player"}
                               </span>
                             )}
@@ -296,7 +296,7 @@ export default function PrivacyPage() {
                         <button
                           onClick={() => void handleBlockUser(user.id)}
                           disabled={blocked || isBlocking}
-                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-2xl border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
+                          className="border-power-orange/40 text-power-orange hover:bg-power-orange/10 inline-flex min-h-10 items-center justify-center rounded-md border px-3 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {blocked ? "Blocked" : isBlocking ? "Blocking" : "Block"}
                         </button>

@@ -86,7 +86,7 @@ export const ConversationListItem = memo(function ConversationListItem({
       >
         <div className="flex items-center gap-3">
           {/* Avatar */}
-          <div className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-[14px] font-bold uppercase text-slate-700 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_1px_3px_rgba(0,0,0,0.05)]">
+          <div className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-[14px] font-semibold text-slate-700 shadow-[inset_0_1px_2px_rgba(255,255,255,0.5),0_1px_3px_rgba(0,0,0,0.05)]">
             {conversationPhotoUrl ? (
               <img
                 src={conversationPhotoUrl}
@@ -118,7 +118,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 {isPinned && <Pin size={11} className="shrink-0 fill-slate-400 text-slate-400" />}
                 {isMuted && <BellOff size={11} className="shrink-0 text-slate-400" />}
                 {conversation.status === "PENDING" && (
-                  <span className="shrink-0 rounded-full border border-orange-200/50 bg-orange-100/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-orange-700">
+                  <span className="shrink-0 rounded-md border border-orange-200/50 bg-orange-100/80 px-1.5 py-0.5 text-[9px] font-semibold text-orange-700">
                     New
                   </span>
                 )}
@@ -128,7 +128,7 @@ export const ConversationListItem = memo(function ConversationListItem({
               <div className="flex shrink-0 items-center gap-1.5">
                 {conversation.latestMessage?.createdAt && (
                   <span
-                    className={`text-[11px] font-medium tabular-nums leading-none ${
+                    className={`text-xs font-medium tabular-nums leading-none ${
                       conversation.unreadCount > 0 ? "text-power-orange" : "text-slate-400"
                     }`}
                   >
@@ -163,7 +163,7 @@ export const ConversationListItem = memo(function ConversationListItem({
                 <motion.span
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="from-power-orange inline-flex min-w-[18px] shrink-0 items-center justify-center rounded-full bg-gradient-to-b to-orange-600 px-1 py-0.5 text-[10px] font-bold text-white shadow-sm"
+                  className="bg-power-orange-solid inline-flex min-w-[18px] shrink-0 items-center justify-center rounded-md px-1 py-0.5 text-xs font-semibold text-white shadow-sm"
                 >
                   {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                 </motion.span>
@@ -173,9 +173,7 @@ export const ConversationListItem = memo(function ConversationListItem({
         </div>
 
         {/* Subtle separator line */}
-        {!isSelected && (
-          <div className="absolute bottom-0 left-[64px] right-0 h-px bg-gradient-to-r from-slate-100 to-transparent" />
-        )}
+        {!isSelected && <div className="bg-hairline absolute bottom-0 left-[64px] right-0 h-px" />}
       </div>
 
       {/* Context Menu */}
@@ -187,7 +185,7 @@ export const ConversationListItem = memo(function ConversationListItem({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -4 }}
             transition={{ duration: 0.12 }}
-            className="absolute right-3 top-1 z-30 w-40 overflow-hidden rounded-xl border border-slate-200/60 bg-white/95 shadow-[0_4px_24px_rgba(0,0,0,0.1)] backdrop-blur-xl"
+            className="absolute right-3 top-1 z-30 w-40 overflow-hidden rounded-xl border border-slate-200/60 bg-white shadow-[0_4px_24px_rgba(0,0,0,0.1)]"
           >
             <button
               onClick={(e) => {

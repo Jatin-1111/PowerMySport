@@ -15,7 +15,7 @@ interface BlogGridProps {
 
 function CardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-sm">
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm">
       <div className="aspect-[16/10] animate-pulse bg-slate-200/70" />
       <div className="space-y-3 p-5">
         <div className="h-4 w-3/4 animate-pulse rounded-full bg-slate-200" />
@@ -49,7 +49,7 @@ export default function BlogGrid({
 
   if (!isLoading && blogs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white/70 px-6 py-16 text-center">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
         <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
           <Newspaper size={26} />
         </span>

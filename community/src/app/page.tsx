@@ -4,10 +4,8 @@ import {
   BrainCircuit,
   Compass,
   MessageSquare,
-  MessageSquareQuote,
   Newspaper,
   ShieldCheck,
-  Users,
 } from "lucide-react";
 import Image from "next/image";
 import heroImage from "../../public/hero.png";
@@ -62,46 +60,59 @@ const valueProps: ValueProp[] = [
   },
 ];
 
+const SAFETY_POINTS = [
+  { icon: ShieldCheck, text: "Strict moderation to keep discussions helpful and respectful." },
+  { icon: BadgeCheck, text: "Expert responses are clearly badged, so you know who is answering." },
+  { icon: BrainCircuit, text: "AI synthesis summarises long debates into a few clear takeaways." },
+];
+
 function SectionHeading({
   eyebrow,
   title,
   description,
 }: {
-  /** Optional: a section whose heading already names it does not need an
-   *  eyebrow repeating the same words above it. */
+  /** Optional: a section whose heading already names it does not need a
+   *  kicker repeating the same words above it. */
   eyebrow?: string;
   title: string;
   description: string;
 }) {
   return (
     <div className="max-w-3xl">
-      {eyebrow ? (
-        <p className="text-power-orange mb-2 text-[11px] font-bold uppercase tracking-[0.26em]">
-          {eyebrow}
-        </p>
-      ) : null}
-      <h2 className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">{title}</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">{description}</p>
+      {eyebrow ? <p className="text-ink-muted mb-3 text-sm font-medium">{eyebrow}</p> : null}
+      <h2 className="font-editorial text-ink text-balance text-4xl font-light leading-[1.08] sm:text-5xl">
+        {title}
+      </h2>
+      <p className="text-ink-body mt-4 max-w-[56ch] text-pretty text-base leading-relaxed sm:text-lg">
+        {description}
+      </p>
     </div>
   );
 }
 
-function ValuePropCard({ title, description, href, cta, icon: Icon }: ValueProp) {
+/** A ruled row, not a card: hairline above, serif title, link that underlines
+ *  solid on hover. The three entry points read as a list of places to go. */
+function ValuePropRow({ title, description, href, cta, icon: Icon }: ValueProp) {
   return (
     <Link
       href={href}
-      className="hover:border-power-orange/40 focus-visible:ring-power-orange group flex h-full flex-col rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-900/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="border-hairline hover:border-ink group flex h-full flex-col border-t pt-6 transition-colors duration-200"
     >
-      <div className="text-power-orange flex h-12 w-12 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(233,115,22,0.14),rgba(245,158,11,0.16))]">
-        <Icon className="h-5 w-5" />
-      </div>
-      <h3 className="mt-4 text-balance text-lg font-semibold text-slate-900">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
-      {/* mt-auto pins the CTA to the card's bottom edge so a longer or shorter
-          description can't shift it out of line with the sibling cards. */}
-      <span className="text-power-orange mt-auto inline-flex items-center gap-1.5 pt-5 text-sm font-semibold">
+      <Icon className="text-ink h-6 w-6" strokeWidth={1.5} aria-hidden />
+      <h3 className="font-editorial text-ink mt-6 text-balance text-2xl font-normal leading-tight">
+        {title}
+      </h3>
+      <p className="text-ink-body mt-3 max-w-[40ch] text-pretty text-base leading-relaxed">
+        {description}
+      </p>
+      {/* mt-auto pins the link to the bottom so a longer description cannot
+          push it out of line with its neighbours. */}
+      <span className="text-ink decoration-ink/30 group-hover:decoration-ink mt-auto inline-flex items-center gap-1.5 pt-6 text-base font-semibold underline underline-offset-4 transition-colors duration-200">
         {cta}
-        <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+        <ArrowRight
+          className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5"
+          aria-hidden
+        />
       </span>
     </Link>
   );
@@ -109,21 +120,20 @@ function ValuePropCard({ title, description, href, cta, icon: Icon }: ValueProp)
 
 export default function CommunityLandingPage() {
   return (
-    <div className="flex min-h-full flex-col overflow-x-hidden">
+    <div className="bg-paper flex min-h-full flex-col overflow-x-hidden">
       <JsonLd data={[organizationSchema, websiteSchema]} />
-      <main className="relative isolate flex-1 overflow-hidden bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.10),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.08),transparent_22%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] text-slate-900">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.85),transparent_22%),radial-gradient(circle_at_80%_10%,rgba(255,255,255,0.55),transparent_18%)]" />
-        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-7 px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-7">
-          <section className="relative isolate overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950 shadow-xl shadow-slate-900/20">
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-7xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+          <section className="bg-ink relative isolate overflow-hidden rounded-3xl">
             {/* Hero photograph. `priority` because this is the largest element
-                above the fold on the landing page — lazy-loading it would show
+                above the fold on the landing page; lazy-loading it would show
                 a bare dark panel first and hurt LCP. */}
             {/* Imported rather than referenced as "/hero.png": with basePath
                 set, next/image prefixes the optimizer route but NOT its `url`
                 param, so a public/ path resolves against the wrong root and
                 the optimizer answers 400 "not a valid image". A static import
                 also gets a content-hashed filename, so this can be cached
-                immutably. The 2.2MB PNG never reaches a browser — the
+                immutably. The 2.2MB PNG never reaches a browser; the
                 optimizer re-encodes it to ~103KB of WebP. */}
             <Image
               src={heroImage}
@@ -131,152 +141,112 @@ export default function CommunityLandingPage() {
               aria-hidden
               fill
               priority
-              // The band is capped at max-w-7xl, so 100vw would make the
-              // optimizer serve a wider file than any viewport can show.
               sizes="(min-width: 1280px) 1216px, 100vw"
-              // The band is portrait below md, where object-cover shows the
-              // full height and only the central 35% of the width — which is
-              // empty field. Everything that carries the picture (parents at
-              // the left edge, coach and children at the right) falls outside
-              // it, so a phone got an empty ground and a clipped child. 88%
-              // frames the coach and the group instead. The parents are lost
-              // at that width; the meaning is on both edges and a focal point
-              // can only choose one.
-              className="-z-10 object-cover object-[88%_center] md:object-center"
+              // Portrait below md shows only the central 35% of the width,
+              // which is empty field; 88% frames the coach and the group.
+              className="-z-10 object-cover object-[88%_center] saturate-[0.7] md:object-center"
             />
 
-            {/* Overlay strength is solved, not guessed: for each row of text,
-                the minimum wash that keeps the 99th-percentile brightest pixel
-                behind it under the luminance its colour and size can tolerate.
-                Measured on the crop this band actually shows, inside the
-                centred text column rather than the full width.
+            {/* Overlay strength was solved against the brightest pixel behind
+                each row of text (badge 11px, headline 46px, paragraph 16px,
+                chips 13px) on the crop this band shows. Do not lighten it
+                without re-measuring: the sun haze sits behind the top rows. */}
+            <div className="bg-ink/80 pointer-events-none absolute inset-0 -z-10" />
 
-                  badge     orange-200 11px  0.60 for AA, 0.76 for AAA
-                  headline  white 46px       0.43
-                  paragraph slate-50 16px    0.51
-                  chips     slate-200 13px   0.31
-
-                Heaviest at the top because the sun haze sits there — the
-                brightest pixel in the centre column is (253,238,216), and the
-                badge is the smallest text on the panel, so it sets the top
-                stop. 0.80 rather than the 0.60 that AA needs buys AAA on every
-                row, on both crops, for 20% of visibility in the least
-                interesting part of the frame — the narrow crop below md swings
-                more sun haze behind the badge, and 0.76 left it at 6.93. Lightest at the bottom, which is already the darkest part
-                of the photo. The stops keep headroom over each figure so a
-                different viewport crop or a re-encode cannot quietly drop a
-                row below its target. */}
-            <div className="via-slate-950/64 to-slate-950/48 pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-slate-950/80" />
-
-            {/* Single column. The hero used to carry a three-step panel on
-                the right, which competed with the headline and repeated the
-                cards immediately below it. */}
-            <div className="relative px-5 py-9 sm:px-7 sm:py-12 lg:px-9 lg:py-16">
-              <div className="mx-auto max-w-3xl text-center">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur">
-                  <Users className="h-3.5 w-3.5" />
+            <div className="relative px-6 py-14 sm:px-10 sm:py-20 lg:px-16 lg:py-28">
+              <div className="max-w-3xl">
+                <p className="text-sm font-medium text-orange-200">
                   Parent-first youth sports community
-                </span>
-                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-4xl lg:text-[2.9rem] lg:leading-[1.08]">
+                </p>
+                <h1 className="mt-5 text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.04em] text-white sm:text-5xl lg:text-[3.9rem]">
                   Learn, connect, and plan your{" "}
-                  <span className="bg-[linear-gradient(100deg,#FB923C,#FCD34D)] bg-clip-text text-transparent">
+                  <span className="font-editorial text-[1.22em] font-light italic tracking-[-0.02em]">
                     child&apos;s sports journey.
                   </span>
                 </h1>
-                <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-7 text-slate-50 sm:text-base">
+                <p className="mt-6 max-w-[56ch] text-pretty text-base leading-7 text-white/90 sm:text-lg">
                   From choosing the right academy or coach to planning tournaments, exploring
-                  scholarships and careers, learn from parents who have already navigated the
-                  path—and share your own experiences to support the community.
+                  scholarships and careers, learn from parents who have already walked the path, and
+                  share your own experience to help the next family.
                 </p>
 
-                <HeroSearch />
+                <div className="mt-8 max-w-xl">
+                  <HeroSearch />
+                </div>
 
-                <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:justify-center">
-                  {/* White, not brand orange: `bg-power-orange` with white text
-                      measures 3.03:1, which fails AA for 14px. White is also the
-                      strongest affordance against a photograph. */}
+                <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
+                  {/* White on the photograph: `bg-power-orange` with white text
+                      measures 3.03:1 and fails AA. */}
                   <Link
                     href="/questions"
-                    className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-slate-950/20 transition hover:bg-slate-100"
+                    className="btn-motion text-ink hover:bg-paper-deep inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-white px-7 py-3.5 text-base font-semibold"
                   >
                     Ask a question
-                    <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                    <ArrowRight className="h-4 w-4" aria-hidden />
                   </Link>
                   <Link
                     href="/discover"
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                    className="inline-flex items-center gap-2 text-base font-semibold text-white underline decoration-white/40 underline-offset-4 transition-colors duration-200 hover:decoration-white"
                   >
-                    <Compass className="h-4 w-4" />
                     Find parents near you
+                    <ArrowRight className="h-4 w-4" aria-hidden />
                   </Link>
-                </div>
-
-                <div className="mt-5 flex flex-wrap justify-center gap-x-4 gap-y-2 text-[13px] font-medium text-slate-200">
-                  <span className="inline-flex items-center gap-1.5">
-                    <MessageSquareQuote className="text-power-orange h-4 w-4" />
-                    Parent-to-parent advice
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <BadgeCheck className="h-4 w-4 text-emerald-600" />
-                    Verified expert answers
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4 text-sky-600" />
-                    Moderated discussions
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className="space-y-6">
-            <SectionHeading
-              title="Why Join the Community"
-              description="Engage, Learn & Share experiences on Sports. Help your child with the right guidance."
-            />
-            <div className="grid gap-4 md:grid-cols-3">
-              {valueProps.map((prop) => (
-                <ValuePropCard key={prop.title} {...prop} />
-              ))}
-            </div>
-          </section>
-
-          <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="space-y-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5 sm:p-6">
-              <SectionHeading
-                eyebrow="Live community hub"
-                title="See what nearby parents are asking right now"
-                description="A forum-style feed surfaces trending local conversations, coaching tips, and the questions parents keep asking before booking."
-              />
-              <div className="mt-4">
-                <DynamicCommunityPosts />
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <DynamicFeaturedQA />
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/5">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                  Community safety layer
-                </p>
-                <div className="mt-4 grid gap-3 text-sm text-slate-600">
-                  <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
-                    <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
-                    <span>Strict moderation to ensure helpful, respectful discussions.</span>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
-                    <BadgeCheck className="text-power-orange mt-0.5 h-4 w-4" />
-                    <span>Expert responses are clearly badged for credibility.</span>
-                  </div>
-                  <div className="flex items-start gap-3 rounded-2xl bg-slate-50 p-3">
-                    <BrainCircuit className="mt-0.5 h-4 w-4 text-sky-600" />
-                    <span>AI synthesis helps summarize complex debates into clear takeaways.</span>
-                  </div>
                 </div>
               </div>
             </div>
           </section>
         </div>
+
+        <section className="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+          <SectionHeading
+            title="Why join the community"
+            description="Ask, read and share what you have learned about youth sport, so the next decision for your child is a better informed one."
+          />
+          <div className="mt-14 grid gap-x-8 gap-y-12 md:grid-cols-3">
+            {valueProps.map((prop) => (
+              <ValuePropRow key={prop.title} {...prop} />
+            ))}
+          </div>
+        </section>
+
+        <section className="bg-paper-deep">
+          <div className="mx-auto grid w-full max-w-7xl gap-14 px-4 py-24 sm:px-6 sm:py-32 lg:grid-cols-12 lg:px-8">
+            <div className="lg:col-span-7">
+              <SectionHeading
+                eyebrow="Live community hub"
+                title="See what nearby parents are asking right now"
+                description="A forum-style feed of local conversations, coaching tips and the questions parents keep asking before they book."
+              />
+              <div className="mt-10">
+                <DynamicCommunityPosts />
+              </div>
+            </div>
+
+            <div className="space-y-10 lg:col-span-5">
+              <DynamicFeaturedQA />
+              <div>
+                <h3 className="font-editorial text-ink text-2xl font-normal">
+                  How we keep it useful
+                </h3>
+                <ul className="mt-5">
+                  {SAFETY_POINTS.map(({ icon: Icon, text }) => (
+                    <li
+                      key={text}
+                      className="border-hairline text-ink-body flex items-start gap-3 border-t py-4 text-base leading-relaxed last:border-b"
+                    >
+                      <Icon
+                        className="text-ink mt-1 h-4 w-4 shrink-0"
+                        strokeWidth={1.5}
+                        aria-hidden
+                      />
+                      <span>{text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

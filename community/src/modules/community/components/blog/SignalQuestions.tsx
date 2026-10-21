@@ -35,9 +35,7 @@ export default function SignalQuestions({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-        A few quick questions
-      </p>
+      <p className="text-xs font-semibold text-slate-400">A few quick questions</p>
       <div className="mt-2.5 space-y-2.5">
         {keys.map((key) => (
           <div key={key} className="flex items-center justify-between gap-3">
@@ -66,7 +64,7 @@ export default function SignalQuestions({
       </div>
 
       <div className="mt-3 border-t border-slate-100 pt-3">
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <label className="mb-1 block text-xs font-semibold text-slate-400">
           When was this? (optional)
         </label>
         <input

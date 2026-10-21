@@ -184,7 +184,7 @@ export default function BlogDetailClient({
         <p className="text-slate-700">Experience not found.</p>
         <Link
           href="/experiences"
-          className="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+          className="mt-4 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
         >
           Back to Experiences
         </Link>
@@ -196,7 +196,7 @@ export default function BlogDetailClient({
   const coverUrl = blog.coverImageUrl || "";
 
   return (
-    <div className="relative min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#f5f8ff_0%,#ffffff_40%)]">
+    <div className="bg-paper relative min-h-[calc(100vh-5.5rem)]">
       <article className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
         {/* Top bar */}
         <div className="flex items-center justify-between gap-3">
@@ -208,7 +208,7 @@ export default function BlogDetailClient({
             Back to Experiences
           </Link>
           <span
-            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold ${topic.accent}`}
+            className={`inline-flex items-center gap-1 rounded-md border px-3 py-1 text-xs font-semibold ${topic.accent}`}
           >
             <topic.Icon size={13} />
             {topic.label}
@@ -224,7 +224,7 @@ export default function BlogDetailClient({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className={`mt-5 w-full overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 ${
+          className={`mt-5 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${
             coverUrl ? "" : "aspect-[16/9]"
           }`}
         >
@@ -242,7 +242,7 @@ export default function BlogDetailClient({
         </motion.div>
 
         {/* Title */}
-        <h1 className="font-title mt-6 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="font-title mt-6 text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl">
           {blog.title}
         </h1>
 
@@ -263,7 +263,7 @@ export default function BlogDetailClient({
             <div className="flex items-center gap-2">
               <Link
                 href={`/experiences/${blog.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 <Pencil size={14} />
                 Edit
@@ -271,7 +271,7 @@ export default function BlogDetailClient({
               <button
                 onClick={confirmDelete}
                 disabled={isDeleting}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
               >
                 <Trash2 size={14} />
                 Delete
@@ -280,7 +280,7 @@ export default function BlogDetailClient({
           ) : (
             <button
               onClick={() => handleOpenReportModal("EXPERIENCE", blog.id)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
             >
               <Flag size={13} />
               Report
@@ -299,7 +299,7 @@ export default function BlogDetailClient({
           />
           <button
             onClick={() => setCommentsOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-sky-200 hover:bg-sky-50/60 hover:text-sky-600"
+            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-sky-200 hover:bg-sky-50/60 hover:text-sky-600"
           >
             <MessageCircle size={18} />
             {blog.commentCount}
@@ -317,7 +317,7 @@ export default function BlogDetailClient({
             {blog.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
+                className="inline-flex rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
               >
                 #{tag}
               </span>
@@ -340,14 +340,14 @@ export default function BlogDetailClient({
           <div className="flex items-center gap-2">
             <button
               onClick={() => void copyLink()}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             >
               <LinkIcon size={16} />
               Copy Link
             </button>
             <button
               onClick={shareOnTwitter}
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600"
+              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600"
             >
               <Twitter size={16} />
               Share on Twitter

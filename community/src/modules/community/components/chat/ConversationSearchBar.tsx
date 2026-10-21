@@ -35,7 +35,7 @@ export default function ConversationSearchBar({
       animate={{ height: "auto", opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="z-10 shrink-0 overflow-hidden border-b border-slate-200/50 bg-white/95 backdrop-blur"
+      className="z-10 shrink-0 overflow-hidden border-b border-slate-200/50 bg-white"
     >
       <div className="flex items-center gap-2 px-3 py-2">
         <Search size={15} className="shrink-0 text-slate-400" />
@@ -54,7 +54,7 @@ export default function ConversationSearchBar({
           className="flex-1 bg-transparent text-[13px] text-slate-800 placeholder-slate-400 focus:outline-none"
         />
         {query.trim() && (
-          <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-500">
+          <span className="shrink-0 text-xs font-medium tabular-nums text-slate-500">
             {matchCount === 0 ? "No results" : `${currentMatchIndex + 1} / ${matchCount}`}
           </span>
         )}

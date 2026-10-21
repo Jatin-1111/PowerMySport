@@ -40,7 +40,7 @@ export default function BlogProfileView({
   })).filter((meta) => meta.value.trim().length > 0);
 
   return (
-    <div className="relative min-h-[calc(100vh-5.5rem)] bg-[linear-gradient(180deg,#eef4ff_0%,#f8fbff_45%,#fff6e9_100%)]">
+    <div className="bg-paper relative min-h-[calc(100vh-5.5rem)]">
       <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         <div className="flex items-center justify-between gap-3">
           <Link
@@ -53,7 +53,7 @@ export default function BlogProfileView({
           {isOwner ? (
             <Link
               href="/experiences/new"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+              className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
             >
               <PenLine size={15} />
               Write
@@ -66,7 +66,7 @@ export default function BlogProfileView({
           <section className="order-2 space-y-3 lg:order-1">
             <div className="flex items-center gap-2">
               <Newspaper size={18} className="text-power-orange" />
-              <h2 className="font-title text-xl font-bold tracking-tight text-slate-900">
+              <h2 className="font-title text-xl font-semibold tracking-tight text-slate-900">
                 {isOwner ? "Your experiences" : `Experiences by ${profile.name}`}
               </h2>
             </div>
@@ -76,7 +76,7 @@ export default function BlogProfileView({
                 <Loader2 size={22} className="animate-spin" />
               </div>
             ) : blogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-14 text-center">
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
                   <Newspaper size={22} />
                 </span>
@@ -89,7 +89,7 @@ export default function BlogProfileView({
                 {isOwner ? (
                   <Link
                     href="/experiences/new"
-                    className="bg-power-orange-solid mt-4 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white"
+                    className="bg-power-orange-solid mt-4 inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold text-white"
                   >
                     <PenLine size={15} />
                     Share your first experience
@@ -114,8 +114,8 @@ export default function BlogProfileView({
 
           {/* Section 2 — Account details */}
           <aside className="order-1 lg:sticky lg:top-24 lg:order-2 lg:h-fit">
-            <div className="overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm">
-              <div className="h-20 bg-[linear-gradient(120deg,#0f172a,#1e293b)]" />
+            <div className="overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm">
+              <div className="bg-ink h-20" />
               <div className="-mt-10 flex flex-col items-center px-6 pb-6 text-center">
                 <AuthorAvatar
                   name={profile.name}
@@ -123,7 +123,7 @@ export default function BlogProfileView({
                   size={80}
                   className="ring-4 ring-white"
                 />
-                <h1 className="font-title mt-3 text-xl font-bold tracking-tight text-slate-900">
+                <h1 className="font-title mt-3 text-xl font-semibold tracking-tight text-slate-900">
                   {profile.name}
                 </h1>
                 {profile.username ? (
@@ -132,21 +132,19 @@ export default function BlogProfileView({
 
                 <div className="mt-4 flex w-full items-center justify-center gap-3">
                   <div className="flex-1 rounded-2xl bg-slate-50 py-2.5">
-                    <p className="text-lg font-bold text-slate-900">
+                    <p className="text-lg font-semibold text-slate-900">
                       {formatCount(profile.blogCount)}
                     </p>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold text-slate-400">
                       {profile.blogCount === 1 ? "Experience" : "Experiences"}
                     </p>
                   </div>
                   <div className="flex-1 rounded-2xl bg-slate-50 py-2.5">
-                    <p className="inline-flex items-center gap-1 text-lg font-bold text-slate-900">
+                    <p className="inline-flex items-center gap-1 text-lg font-semibold text-slate-900">
                       <Heart size={15} className="fill-rose-500 text-rose-500" />
                       {formatCount(profile.totalLikes)}
                     </p>
-                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                      Likes
-                    </p>
+                    <p className="text-xs font-semibold text-slate-400">Likes</p>
                   </div>
                 </div>
 
@@ -180,7 +178,7 @@ export default function BlogProfileView({
                 {isOwner ? (
                   <button
                     onClick={onEditProfile}
-                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                   >
                     <Pencil size={15} />
                     Edit Profile

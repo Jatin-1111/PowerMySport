@@ -134,7 +134,7 @@ export default function EditCommunityModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[200] bg-slate-900/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[200] bg-slate-900/40"
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -148,7 +148,7 @@ export default function EditCommunityModal({
               <div className="relative border-b border-slate-100 bg-slate-50/50 px-6 py-5 sm:px-8 sm:py-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-title text-xl font-bold tracking-tight text-slate-900">
+                    <h2 className="font-title text-xl font-semibold tracking-tight text-slate-900">
                       Edit Community
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">
@@ -181,7 +181,7 @@ export default function EditCommunityModal({
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <div className="from-power-orange/20 to-power-orange/5 text-power-orange flex h-full w-full items-center justify-center bg-gradient-to-br text-3xl font-bold">
+                        <div className="text-power-orange bg-power-orange/20 flex h-full w-full items-center justify-center text-3xl font-semibold">
                           {name ? name.charAt(0).toUpperCase() : "?"}
                         </div>
                       )}
@@ -190,7 +190,7 @@ export default function EditCommunityModal({
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center gap-2 rounded-xl bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-100"
+                        className="inline-flex items-center gap-2 rounded-md bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-inset ring-slate-200 transition hover:bg-slate-100"
                       >
                         <Upload size={16} className="text-slate-400" />
                         Upload Logo
@@ -220,7 +220,7 @@ export default function EditCommunityModal({
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. Downtown Runners"
                       required
-                      className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-4"
+                      className="focus:border-power-orange/50 focus:ring-power-orange/10 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm transition focus:outline-none focus:ring-4"
                     />
                   </div>
 
@@ -262,7 +262,7 @@ export default function EditCommunityModal({
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       placeholder="e.g. New York, NY"
-                      className="w-full rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-blue-500/50 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm transition focus:border-blue-500/50 focus:outline-none focus:ring-4 focus:ring-blue-500/10"
                     />
                   </div>
 
@@ -277,7 +277,7 @@ export default function EditCommunityModal({
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="What is this community about?"
                       rows={3}
-                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white/80 px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm shadow-sm transition focus:border-purple-500/50 focus:outline-none focus:ring-4 focus:ring-purple-500/10"
                     />
                   </div>
 
@@ -299,9 +299,7 @@ export default function EditCommunityModal({
                               : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
                           }`}
                         >
-                          <span className="block text-xs font-semibold uppercase tracking-wide">
-                            {opt.label}
-                          </span>
+                          <span className="block text-xs font-semibold">{opt.label}</span>
                           <span
                             className={`mt-0.5 block text-xs ${
                               visibility === opt.value ? "text-white/70" : "text-slate-500"
@@ -336,7 +334,7 @@ export default function EditCommunityModal({
                   type="submit"
                   form="edit-community-form"
                   disabled={isSubmitting}
-                  className="bg-power-orange-solid shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="bg-power-orange-solid shadow-power-orange/20 focus:ring-power-orange/20 inline-flex min-w-[140px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] focus:outline-none focus:ring-4 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubmitting ? (
                     <>

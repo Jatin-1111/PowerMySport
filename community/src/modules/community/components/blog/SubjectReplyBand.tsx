@@ -28,7 +28,7 @@ export default function SubjectReplyBand({ blog, onReplyPosted }: SubjectReplyBa
   if (blog.subjectReply) {
     return (
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
           <MessageSquareQuote size={14} />
           Response from {blog.subject?.name || "the person named above"}
         </div>
@@ -69,7 +69,7 @@ export default function SubjectReplyBand({ blog, onReplyPosted }: SubjectReplyBa
 
   return (
     <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
+      <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
         <MessageSquareQuote size={14} />
         This is about you — you can post one reply
       </div>
@@ -82,13 +82,13 @@ export default function SubjectReplyBand({ blog, onReplyPosted }: SubjectReplyBa
         className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-amber-400"
       />
       <div className="mt-2 flex items-center justify-between">
-        <span className="text-[11px] text-amber-700">
+        <span className="text-xs text-amber-700">
           {content.length}/{REPLY_MAX_LENGTH}
         </span>
         <button
           onClick={() => void submit()}
           disabled={isSubmitting || !content.trim()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
         >
           <Send size={13} />
           Post reply

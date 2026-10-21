@@ -28,7 +28,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.28, ease: "easeOut" }}
       whileHover={{ y: -4 }}
-      className="hover:border-power-orange/30 group flex h-full flex-col overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-sm backdrop-blur-sm transition hover:shadow-xl hover:shadow-slate-900/5"
+      className="hover:border-power-orange/30 hover: group flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm transition hover:shadow-xl"
     >
       {/* Cover */}
       <Link
@@ -46,7 +46,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
         )}
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
           <span
-            className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-sm backdrop-blur-sm ${topic.accent}`}
+            className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold shadow-sm ${topic.accent}`}
           >
             <topic.Icon size={12} />
             {topic.label}
@@ -57,7 +57,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
       {/* Body */}
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <Link href={`/experiences/${blog.id}`} className="block">
-          <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg font-bold leading-snug text-slate-900 transition-colors">
+          <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg font-semibold leading-snug text-slate-900 transition-colors">
             {blog.title}
           </h3>
         </Link>
@@ -70,7 +70,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
             {blog.tags.slice(0, 3).map((tag) => (
               <span
                 key={`${blog.id}-${tag}`}
-                className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500"
+                className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
               >
                 #{tag}
               </span>
@@ -93,7 +93,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
               <span className="block truncate text-xs font-semibold text-slate-800">
                 {blog.author.name}
               </span>
-              <span className="block truncate text-[11px] text-slate-400">
+              <span className="block truncate text-xs text-slate-400">
                 {blog.author.username ? `@${blog.author.username}` : ""}
                 {blog.author.username ? " · " : ""}
                 {toRelativeTime(blog.createdAt)}
@@ -102,7 +102,7 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
           </Link>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500">
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-500">
               <MessageCircle size={13} />
               {blog.commentCount}
             </span>

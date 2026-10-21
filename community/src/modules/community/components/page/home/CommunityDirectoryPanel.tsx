@@ -43,7 +43,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       <div className="flex-none px-3 pb-1 pt-3">
         {/* Title Row */}
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-[17px] font-bold tracking-tight text-slate-900">Inbox</h2>
+          <h2 className="text-[17px] font-semibold tracking-tight text-slate-900">Inbox</h2>
           <div className="relative">
             <button
               onClick={() => setShowHeaderMenu(!showHeaderMenu)}
@@ -110,13 +110,13 @@ export default function CommunityDirectoryPanel({ page }: Props) {
           <div className="border-border shadow-xs flex w-full items-center gap-0.5 rounded-lg border bg-slate-50 p-0.5">
             <button
               onClick={() => setDirectoryView("CONTACTS")}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold transition ${directoryView === "CONTACTS" ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold transition ${directoryView === "CONTACTS" ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
             >
               <MessageSquare size={12} /> DMs
             </button>
             <button
               onClick={() => setDirectoryView("GROUPS")}
-              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold transition ${directoryView === "GROUPS" ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
+              className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold transition ${directoryView === "GROUPS" ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
             >
               <Users size={12} /> Groups
             </button>
@@ -135,7 +135,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
               <button
                 key={item.value}
                 onClick={() => setConversationMode(item.value as "ALL" | "UNREAD" | "REQUESTS")}
-                className={`rounded-md px-1 py-1 text-[10px] font-bold uppercase tracking-wider transition ${conversationMode === item.value ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
+                className={`rounded-md px-1 py-1 text-xs font-semibold transition ${conversationMode === item.value ? "shadow-xs bg-white text-slate-900" : "text-slate-500 hover:text-slate-800"}`}
               >
                 {item.label}
               </button>
@@ -147,7 +147,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Pinned section divider */}
           {managedConversations.some((c) => pinnedConversationIds.includes(c.id)) && (
-            <div className="bg-slate-50/50 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+            <div className="bg-slate-50/50 px-4 py-1.5 text-xs font-semibold tracking-[0.15em] text-slate-400">
               Pinned
             </div>
           )}
@@ -166,7 +166,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
             return (
               <div key={conversation.id}>
                 {showAllDivider && (
-                  <div className="bg-slate-50/50 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">
+                  <div className="bg-slate-50/50 px-4 py-1.5 text-xs font-semibold tracking-[0.15em] text-slate-400">
                     All Conversations
                   </div>
                 )}
@@ -230,7 +230,7 @@ export default function CommunityDirectoryPanel({ page }: Props) {
       {!page.selectChatsMode && (
         <button
           onClick={() => page.setShowAddChatModal(true)}
-          className="bg-power-orange-solid absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg shadow-orange-500/30 transition hover:scale-105 hover:bg-orange-600 active:scale-95"
+          className="bg-power-orange-solid absolute bottom-4 right-4 z-20 flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition hover:scale-105 hover:bg-orange-600 active:scale-95"
         >
           <Plus size={22} strokeWidth={2.5} />
         </button>

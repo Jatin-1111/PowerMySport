@@ -589,7 +589,7 @@ export default function QnAPostDetailClient({
         <p className="text-slate-700">Question not found.</p>
         <Link
           href="/questions"
-          className="mt-4 inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+          className="mt-4 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
         >
           Back to Feed
         </Link>
@@ -610,7 +610,7 @@ export default function QnAPostDetailClient({
         </Link>
         <button
           onClick={() => void reportTarget("POST", post.id)}
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+          className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
           title="Report this question"
         >
           <Flag size={14} />
@@ -633,7 +633,7 @@ export default function QnAPostDetailClient({
           >
             <ArrowBigUp size={16} />
           </button>
-          <span className="text-xs font-bold text-slate-700">{post.voteScore}</span>
+          <span className="text-xs font-semibold text-slate-700">{post.voteScore}</span>
           <button
             onClick={() => void vote("POST", post.id, -1)}
             disabled={isVotingKey === `POST:${post.id}`}
@@ -655,7 +655,7 @@ export default function QnAPostDetailClient({
               <input
                 value={postTitleDraft}
                 onChange={(event) => setPostTitleDraft(event.target.value)}
-                className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-lg font-bold text-slate-900 focus:outline-none focus:ring-1"
+                className="focus:border-power-orange focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-lg font-semibold text-slate-900 focus:outline-none focus:ring-1"
                 placeholder="Question title..."
               />
               <textarea
@@ -687,7 +687,7 @@ export default function QnAPostDetailClient({
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+              <h1 className="text-2xl font-semibold leading-tight text-slate-900 sm:text-3xl">
                 {post.title}
               </h1>
               <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-slate-700">
@@ -701,18 +701,18 @@ export default function QnAPostDetailClient({
             {post.tags.map((tag) => (
               <span
                 key={`${post.id}-tag-${tag}`}
-                className="inline-flex rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
+                className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
               >
                 {tag}
               </span>
             ))}
             {post.sport ? (
-              <span className="inline-flex rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+              <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
                 {post.sport}
               </span>
             ) : null}
             {post.city ? (
-              <span className="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+              <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
                 {post.city}
               </span>
             ) : null}
@@ -731,7 +731,7 @@ export default function QnAPostDetailClient({
                 {post.isAnonymous ? "Anonymous" : post.author.displayName}
               </span>
               {post.author.isVerifiedExpert ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                   ★ {post.author.expertTitle}
                 </span>
               ) : null}
@@ -745,7 +745,7 @@ export default function QnAPostDetailClient({
                 <MessageCircle size={13} /> {post.answerCount}
               </span>
               {post.status === "CLOSED" ? (
-                <span className="inline-flex rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                <span className="inline-flex rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
                   Closed
                 </span>
               ) : null}
@@ -758,7 +758,7 @@ export default function QnAPostDetailClient({
               {!isEditingPost ? (
                 <button
                   onClick={() => setIsEditingPost(true)}
-                  className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                  className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                 >
                   <Pencil size={13} /> Edit
                 </button>
@@ -766,14 +766,14 @@ export default function QnAPostDetailClient({
               <button
                 onClick={() => void removePost()}
                 disabled={isMutatingPost}
-                className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
               >
                 <Trash2 size={13} /> Delete
               </button>
               <button
                 onClick={() => void togglePostStatus()}
                 disabled={isMutatingPost}
-                className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
               >
                 {post.status === "OPEN" ? "Close Question" : "Reopen Question"}
               </button>
@@ -784,10 +784,8 @@ export default function QnAPostDetailClient({
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600">
-            Community Answers
-          </h3>
-          <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+          <h3 className="text-sm font-semibold text-slate-600">Community Answers</h3>
+          <span className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
             Most helpful first
           </span>
         </div>
@@ -824,7 +822,7 @@ export default function QnAPostDetailClient({
                 >
                   <ArrowBigUp size={16} />
                 </button>
-                <span className="text-xs font-bold text-slate-700">{answer.voteScore}</span>
+                <span className="text-xs font-semibold text-slate-700">{answer.voteScore}</span>
                 <button
                   onClick={() => void vote("ANSWER", answer.id, -1)}
                   disabled={isVotingKey === `ANSWER:${answer.id}`}
@@ -858,12 +856,12 @@ export default function QnAPostDetailClient({
                           {answer.isAnonymous ? "Anonymous" : answer.author.displayName}
                         </span>
                         {answer.author.isVerifiedExpert ? (
-                          <span className="inline-flex items-center gap-0.5 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                          <span className="inline-flex items-center gap-0.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
                             ★ {answer.author.expertTitle}
                           </span>
                         ) : null}
                         {index === 0 && answer.voteScore > 0 && !answer.isAccepted ? (
-                          <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">
+                          <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
                             Top Answer
                           </span>
                         ) : null}
@@ -923,7 +921,7 @@ export default function QnAPostDetailClient({
                 {/* Actions */}
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                   {answer.isAccepted ? (
-                    <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-700">
                       <CheckCircle2 size={13} /> Accepted answer
                     </span>
                   ) : null}
@@ -932,7 +930,7 @@ export default function QnAPostDetailClient({
                     <button
                       onClick={() => void toggleAccepted(answer)}
                       disabled={isAcceptingId === answer.id}
-                      className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${
+                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${
                         answer.isAccepted
                           ? "text-slate-600 hover:bg-slate-100"
                           : "text-emerald-700 hover:bg-emerald-50"
@@ -947,14 +945,14 @@ export default function QnAPostDetailClient({
                     <>
                       <button
                         onClick={() => startEditingAnswer(answer)}
-                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                        className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
                       >
                         <Pencil size={13} /> Edit
                       </button>
                       <button
                         onClick={() => void removeAnswer(answer)}
                         disabled={isMutatingAnswerId === answer.id}
-                        className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+                        className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
                       >
                         <Trash2 size={13} /> Delete
                       </button>
@@ -968,7 +966,7 @@ export default function QnAPostDetailClient({
                         return current === answer.id ? null : answer.id;
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                    className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
                   >
                     <MessageCircle size={13} />
                     {answer.comments?.length
@@ -1033,7 +1031,7 @@ export default function QnAPostDetailClient({
             <button
               onClick={() => void loadMoreAnswers()}
               disabled={isLoadingMoreAnswers}
-              className="border-border inline-flex items-center gap-2 rounded-lg border bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              className="border-border inline-flex items-center gap-2 rounded-md border bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
             >
               {isLoadingMoreAnswers ? (
                 <>
@@ -1050,7 +1048,7 @@ export default function QnAPostDetailClient({
 
       {/* Answer Form */}
       <section className="rounded-lg border border-slate-200 bg-white p-5 sm:p-6">
-        <h2 className="text-lg font-bold text-slate-900">Share Your Answer</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Share Your Answer</h2>
         <p className="mt-1 text-sm text-slate-600">
           Be specific and actionable. Share what worked, include context, and explain your
           reasoning.

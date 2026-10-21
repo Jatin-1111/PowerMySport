@@ -175,7 +175,7 @@ export default function BlogCommentsSidebar({
             {/* Header */}
             <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
               <div className="min-w-0">
-                <h2 className="font-title text-lg font-bold text-slate-900">Comments</h2>
+                <h2 className="font-title text-lg font-semibold text-slate-900">Comments</h2>
                 <p className="mt-0.5 line-clamp-1 text-sm text-slate-500">{blogTitle}</p>
               </div>
               <button
@@ -203,7 +203,7 @@ export default function BlogCommentsSidebar({
                   <button
                     onClick={() => void submitComment()}
                     disabled={submitting || !draft.trim()}
-                    className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d96610] disabled:opacity-50"
+                    className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d96610] disabled:opacity-50"
                   >
                     {submitting ? (
                       <Loader2 size={15} className="animate-spin" />
