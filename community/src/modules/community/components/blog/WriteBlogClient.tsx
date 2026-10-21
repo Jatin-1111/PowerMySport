@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, Eye, Loader2, Send } from "lucide-react";
+import { ChevronLeft, Eye } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
@@ -418,16 +418,21 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
   };
 
   const saveIndicator = useMemo(() => {
-    if (autosaveState === "saving") return "Saving…";
+    if (autosaveState === "saving") return "Saving";
     if (autosaveState === "saved" && !isDirty) return "Saved";
-    if (autosaveState === "error") return "Couldn't save — will retry";
+    if (autosaveState === "error") return "Could not save, retrying";
     return null;
   }, [autosaveState, isDirty]);
 
   if (isLoading) {
     return (
-      <div className="mx-auto flex max-w-3xl justify-center px-4 py-16 text-slate-400">
-        <Loader2 size={26} className="animate-spin" />
+      <div
+        aria-busy="true"
+        aria-label="Loading"
+        className="mx-auto w-full max-w-3xl space-y-4 px-4 py-12 sm:px-6"
+      >
+        <div className="bg-ink/10 h-10 w-3/4 animate-pulse rounded-sm" />
+        <div className="bg-ink/10 h-48 animate-pulse rounded-2xl" />
       </div>
     );
   }
@@ -439,52 +444,61 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
   }
 
   const categoryMeta = getExperienceCategory(category);
+  const label = "text-ink mb-2 block text-base font-semibold";
+  const fieldCls =
+    "text-ink placeholder:text-ink-muted w-full rounded-md border border-[#d9d3c8] bg-white px-4 text-base transition-colors duration-200 hover:border-ink/45 focus:border-ink focus:outline-none";
 
   return (
     <div className="bg-paper relative min-h-[calc(100vh-5.5rem)]">
       <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/experiences"
             onClick={handleBackClick}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
+            className="text-ink-body hover:text-ink inline-flex min-h-11 items-center gap-1.5 text-base font-medium transition-colors duration-200"
           >
-            <ChevronLeft size={16} />
-            Back to Experiences
+            <ChevronLeft size={18} strokeWidth={1.5} aria-hidden="true" />
+            All experiences
           </Link>
-          <div className="flex items-center gap-2">
-            {saveIndicator && (
-              <span
-                className={`text-xs font-medium ${
-                  autosaveState === "error" ? "text-amber-600" : "text-slate-400"
-                }`}
-              >
-                {saveIndicator}
+          <p className="text-ink-muted text-sm" aria-live="polite">
+            {saveIndicator ? (
+              <span className={autosaveState === "error" ? "font-medium text-red-700" : ""}>
+                {saveIndicator} ·{" "}
               </span>
-            )}
-            <span className="rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500">
-              {postStatus === "PUBLISHED"
-                ? "Editing experience"
-                : postStatus === "DRAFT"
-                  ? "Draft"
-                  : "Share your experience"}
-            </span>
-          </div>
+            ) : null}
+            {postStatus === "PUBLISHED"
+              ? "Editing a published experience"
+              : postStatus === "DRAFT"
+                ? "Draft"
+                : "New experience"}
+          </p>
         </div>
 
-        {/* Category chip — always changeable, never blocks editing */}
         <button
           type="button"
           onClick={() => setCategory("")}
-          className={`mt-4 inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold transition hover:opacity-80 ${categoryMeta.accent}`}
+          className="text-ink-body hover:text-ink mt-4 inline-flex min-h-11 items-center gap-2 text-base transition-colors duration-200"
         >
-          <categoryMeta.Icon size={13} />
-          {categoryMeta.label}
+          <categoryMeta.Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+          <span className="font-semibold">{categoryMeta.label}</span>
+          <span className="decoration-ink/30 underline underline-offset-4">Change</span>
         </button>
 
-        {/* Banner */}
-        <div className="mt-4">
+        <textarea
+          ref={titleRef}
+          value={title}
+          rows={1}
+          aria-label="Title"
+          onChange={(event) => {
+            setTitle(event.target.value);
+            event.target.style.height = "auto";
+            event.target.style.height = `${event.target.scrollHeight}px`;
+          }}
+          placeholder="Give it a title"
+          className="font-editorial text-ink placeholder:text-ink-ash mt-2 w-full resize-none bg-transparent text-4xl font-light leading-[1.1] outline-none sm:text-5xl"
+        />
+
+        <div className="mt-6">
           <ImageBlockUploader
             imageUrl={coverImageUrl}
             imageWidth={coverImageWidth}
@@ -509,42 +523,30 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           />
         </div>
 
-        {/* Title */}
-        <textarea
-          ref={titleRef}
-          value={title}
-          rows={1}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            event.target.style.height = "auto";
-            event.target.style.height = `${event.target.scrollHeight}px`;
-          }}
-          placeholder="Give it a title (optional)"
-          className="font-title mt-5 w-full resize-none bg-transparent text-3xl font-semibold leading-tight tracking-tight text-slate-900 outline-none placeholder:text-slate-300 sm:text-4xl"
-        />
-
-        {/* Excerpt / subtitle */}
-        <div className="mt-3">
+        <div className="mt-8">
+          <label htmlFor="write-excerpt" className={label}>
+            Short summary
+          </label>
           <textarea
+            id="write-excerpt"
             value={excerpt}
             rows={2}
             maxLength={EXCERPT_MAX_LENGTH}
             onChange={(event) => setExcerpt(event.target.value)}
-            placeholder="A one or two line subtitle — shown on cards and previews (optional, auto-generated from your content if left blank)"
-            className="focus:border-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-600 outline-none placeholder:text-slate-300"
+            placeholder="One or two lines shown on cards and previews. Left blank, we use the start of your text."
+            className={`${fieldCls} resize-none py-3 leading-relaxed`}
           />
-          <p className="mt-1 text-right text-xs text-slate-400">
-            {excerpt.length}/{EXCERPT_MAX_LENGTH}
+          <p className="text-ink-muted mt-2 text-sm tabular-nums">
+            {excerpt.length} of {EXCERPT_MAX_LENGTH} characters
           </p>
         </div>
 
-        {/* Subject anchor */}
-        <div className="mt-3">
+        <div className="mt-8">
           <SubjectPicker value={subject} onChange={handleSubjectChange} />
         </div>
 
         {subject && (
-          <div className="mt-3">
+          <div className="mt-4">
             <SignalQuestions
               subjectKind={subject.kind}
               values={signals}
@@ -555,16 +557,16 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
           </div>
         )}
 
-        {/* Sport + tags */}
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-400">
-              Sport (optional)
+            <label htmlFor="write-sport" className={label}>
+              Sport
             </label>
             <select
+              id="write-sport"
               value={sport}
               onChange={(event) => setSport(event.target.value)}
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
+              className={`${fieldCls} h-12`}
             >
               <option value="">Not sport-specific</option>
               {EXPERIENCE_SPORTS.map((option) => (
@@ -575,21 +577,22 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-slate-400">
-              Tags (comma separated)
+            <label htmlFor="write-tags" className={label}>
+              Tags
             </label>
             <input
+              id="write-tags"
               value={tagsInput}
               onChange={(event) => setTagsInput(event.target.value)}
-              placeholder="e.g. footwork, endurance"
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none"
+              placeholder="Separate with commas"
+              className={`${fieldCls} h-12`}
             />
           </div>
         </div>
 
-        <div className="my-5 h-px bg-slate-100" />
+        <div className="border-hairline my-8 border-t" />
 
-        {/* Rich text editor — seeded with the category's own question */}
+        <h2 className="font-editorial text-ink mb-4 text-2xl font-normal">Your story</h2>
         <RichTextCanvas
           initialContent={content}
           onChange={setContent}
@@ -597,33 +600,33 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
         />
       </div>
 
-      {/* Sticky action bar */}
-      <div className="sticky bottom-0 z-20 border-t border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-end gap-3 px-4 py-3 sm:px-6">
+      <div className="border-hairline bg-paper/95 sticky bottom-0 z-20 border-t backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-end gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <button
+            type="button"
             onClick={() => setPreviewOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="text-ink decoration-ink/30 hover:decoration-ink inline-flex min-h-11 items-center gap-2 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
           >
-            <Eye size={16} />
+            <Eye size={16} strokeWidth={1.5} aria-hidden="true" />
             Preview
           </button>
           {postStatus !== "PUBLISHED" && (
             <button
+              type="button"
               onClick={() => void saveDraft()}
               disabled={isSavingDraft || isPublishing}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              className="btn-motion border-ink text-ink hover:bg-ink inline-flex min-h-11 items-center rounded-md border px-5 text-base font-semibold hover:text-white disabled:opacity-60"
             >
-              {isSavingDraft ? <Loader2 size={16} className="animate-spin" /> : null}
-              Save draft
+              {isSavingDraft ? "Saving" : "Save draft"}
             </button>
           )}
           <button
+            type="button"
             onClick={() => void publish()}
             disabled={isPublishing || isSavingDraft}
-            className="bg-power-orange-solid shadow-power-orange/20 inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
+            className="btn-motion bg-power-orange-solid inline-flex min-h-11 items-center gap-2 rounded-md px-6 text-base font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            {postStatus === "PUBLISHED" ? "Update" : "Publish"}
+            {isPublishing ? "Publishing" : postStatus === "PUBLISHED" ? "Update" : "Publish"}
           </button>
         </div>
       </div>

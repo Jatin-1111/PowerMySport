@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { AtSign, Loader2, X } from "lucide-react";
+import { X } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile, SocialLinks } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
@@ -19,6 +19,11 @@ interface EditProfileModalProps {
 }
 
 const BIO_MAX = 300;
+const USERNAME_RE = /^[a-z0-9_]{3,30}$/;
+
+const fieldCls =
+  "text-ink placeholder:text-ink-muted hover:border-ink/45 focus:border-ink h-12 w-full rounded-md border border-[#d9d3c8] bg-white px-4 text-base transition-colors duration-200 focus:outline-none";
+const labelCls = "text-ink mb-2 block text-base font-semibold";
 
 export default function EditProfileModal({
   isOpen,
@@ -31,6 +36,7 @@ export default function EditProfileModal({
   const [bio, setBio] = useState(profile.bio);
   const [socials, setSocials] = useState<SocialLinks>(profile.socialLinks || {});
   const [saving, setSaving] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -41,14 +47,25 @@ export default function EditProfileModal({
       setUsername(profile.username);
       setBio(profile.bio);
       setSocials(profile.socialLinks || {});
+      setTouched(false);
     }
   }, [isOpen, profile]);
 
+  // Escape closes, like the other dialogs.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [isOpen, onClose]);
+
+  const usernameInvalid = touched && !USERNAME_RE.test(username.trim().toLowerCase());
+
   const save = async () => {
-    if (!/^[a-z0-9_]{3,30}$/.test(username.trim().toLowerCase())) {
-      toast.error("Username must be 3–30 chars: letters, numbers, underscores.");
-      return;
-    }
+    setTouched(true);
+    if (!USERNAME_RE.test(username.trim().toLowerCase())) return;
     setSaving(true);
     try {
       const updated = await blogService.updateProfile({
@@ -60,7 +77,7 @@ export default function EditProfileModal({
       onSaved(updated);
       onClose();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile");
+      toast.error(error instanceof Error ? error.message : "We could not update your profile");
     } finally {
       setSaving(false);
     }
@@ -77,94 +94,117 @@ export default function EditProfileModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[400] bg-slate-900/50"
+            className="bg-ink/50 fixed inset-0 z-[400]"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 20 }}
-            transition={{ type: "spring", damping: 26, stiffness: 300 }}
-            className="fixed inset-0 z-[401] flex items-center justify-center p-3 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-profile-title"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="fixed inset-0 z-[401] flex items-end justify-center sm:items-center sm:p-6"
+            onClick={onClose}
           >
-            <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                <h2 className="font-title text-lg font-semibold text-slate-900">Edit Profile</h2>
-                <button
-                  onClick={onClose}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200"
+            <div
+              onClick={(event) => event.stopPropagation()}
+              className="bg-paper flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl sm:rounded-3xl"
+            >
+              <div className="flex items-start justify-between gap-4 px-6 pt-7 sm:px-8 sm:pt-8">
+                <h2
+                  id="edit-profile-title"
+                  className="font-editorial text-ink text-4xl font-light leading-[1.08]"
                 >
-                  <X size={18} />
+                  Edit profile
+                </h2>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="text-ink-body hover:bg-paper-deep hover:text-ink -mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md transition-colors duration-200"
+                >
+                  <X size={20} strokeWidth={1.5} aria-hidden="true" />
                 </button>
               </div>
 
-              <div className="overflow-y-auto px-6 py-5">
-                {/* Avatar + non-editable identity */}
+              <div className="overflow-y-auto px-6 py-6 sm:px-8">
                 <div className="flex items-center gap-4">
                   <AuthorAvatar name={profile.name} photoUrl={profile.photoUrl} size={64} />
-                  <div className="grid flex-1 gap-2">
-                    <div>
-                      <label className="text-xs font-semibold text-slate-400">Name</label>
-                      <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                        {profile.name}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-slate-400">Email</label>
-                      <div className="truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                        {email || "—"}
-                      </div>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-ink text-lg font-semibold">{profile.name}</p>
+                    <p className="text-ink-body truncate text-base">
+                      {email || "No email on file"}
+                    </p>
+                    <p className="text-ink-muted text-sm">Name and email come from your account.</p>
                   </div>
                 </div>
 
-                {/* Username */}
-                <div className="mt-5">
-                  <label className="mb-1 block text-sm font-semibold text-slate-800">
+                <div className="mt-7">
+                  <label htmlFor="edit-username" className={labelCls}>
                     Username
                   </label>
-                  <div className="focus-within:border-power-orange flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-                    <AtSign size={16} className="text-slate-400" />
+                  <div className="relative">
+                    <span
+                      aria-hidden="true"
+                      className="text-ink-muted pointer-events-none absolute inset-y-0 left-4 flex items-center text-base"
+                    >
+                      @
+                    </span>
                     <input
+                      id="edit-username"
                       value={username}
                       onChange={(event) => setUsername(event.target.value.toLowerCase())}
+                      aria-invalid={usernameInvalid}
+                      aria-describedby="edit-username-hint"
                       placeholder="username"
-                      className="w-full bg-transparent text-sm text-slate-800 outline-none"
+                      className={`${fieldCls} pl-9 ${usernameInvalid ? "border-red-700" : ""}`}
                     />
                   </div>
+                  <p
+                    id="edit-username-hint"
+                    className={`mt-2 text-sm ${usernameInvalid ? "font-medium text-red-700" : "text-ink-muted"}`}
+                  >
+                    {usernameInvalid
+                      ? "Use 3 to 30 letters, numbers or underscores."
+                      : "3 to 30 letters, numbers or underscores."}
+                  </p>
                 </div>
 
-                {/* Bio */}
-                <div className="mt-4">
-                  <label className="mb-1 flex items-center justify-between text-sm font-semibold text-slate-800">
+                <div className="mt-6">
+                  <label htmlFor="edit-bio" className={labelCls}>
                     Bio
-                    <span className="text-xs font-normal text-slate-400">
-                      {bio.length}/{BIO_MAX}
-                    </span>
                   </label>
                   <textarea
+                    id="edit-bio"
                     value={bio}
                     maxLength={BIO_MAX}
                     rows={3}
                     onChange={(event) => setBio(event.target.value)}
-                    placeholder="Tell readers a little about yourself..."
-                    className="focus:border-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none"
+                    placeholder="Tell readers a little about yourself"
+                    className="text-ink placeholder:text-ink-muted hover:border-ink/45 focus:border-ink w-full resize-none rounded-md border border-[#d9d3c8] bg-white px-4 py-3 text-base leading-relaxed transition-colors duration-200 focus:outline-none"
                   />
+                  <p className="text-ink-muted mt-2 text-sm tabular-nums">
+                    {bio.length} of {BIO_MAX} characters
+                  </p>
                 </div>
 
-                {/* Socials */}
-                <div className="mt-4">
-                  <label className="mb-2 block text-sm font-semibold text-slate-800">
-                    Add your social handles
-                  </label>
-                  <div className="grid gap-2.5 sm:grid-cols-2">
+                <fieldset className="border-hairline mt-7 border-t pt-6">
+                  <legend className="text-ink-muted bg-paper px-2 text-sm font-medium">
+                    Social links, all optional
+                  </legend>
+                  <div className="mt-2 grid gap-4 sm:grid-cols-2">
                     {SOCIAL_META.map(({ key, label, Icon, placeholder }) => (
-                      <div
-                        key={key}
-                        className="focus-within:border-power-orange flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2"
-                      >
-                        <Icon size={16} className="shrink-0 text-slate-400" />
+                      <div key={key}>
+                        <label
+                          htmlFor={`edit-social-${key}`}
+                          className="text-ink mb-1.5 flex items-center gap-2 text-sm font-semibold"
+                        >
+                          <Icon size={14} strokeWidth={1.5} aria-hidden="true" />
+                          {label}
+                        </label>
                         <input
+                          id={`edit-social-${key}`}
                           value={socials[key] || ""}
                           onChange={(event) =>
                             setSocials((prev) => ({
@@ -172,30 +212,31 @@ export default function EditProfileModal({
                               [key]: event.target.value,
                             }))
                           }
-                          placeholder={`${label} ${placeholder}`}
-                          className="w-full bg-transparent text-sm text-slate-800 outline-none"
+                          placeholder={placeholder}
+                          className={fieldCls}
                         />
                       </div>
                     ))}
                   </div>
-                </div>
+                </fieldset>
               </div>
 
-              {/* Footer */}
-              <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4">
+              <div className="border-hairline flex flex-col-reverse items-stretch gap-3 border-t px-6 py-5 sm:flex-row sm:items-center sm:justify-end sm:gap-6 sm:px-8">
                 <button
+                  type="button"
                   onClick={onClose}
                   disabled={saving}
-                  className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-50"
+                  className="text-ink decoration-ink/30 hover:decoration-ink min-h-11 text-base font-semibold underline underline-offset-4 transition-colors duration-200 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={() => void save()}
                   disabled={saving}
-                  className="bg-power-orange-solid shadow-power-orange/20 inline-flex min-w-[120px] items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#d96610] disabled:opacity-60"
+                  className="btn-motion bg-power-orange-solid inline-flex min-h-12 min-w-[10rem] items-center justify-center rounded-md px-7 text-base font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
                 >
-                  {saving ? <Loader2 size={16} className="animate-spin" /> : "Save changes"}
+                  {saving ? "Saving" : "Save changes"}
                 </button>
               </div>
             </div>

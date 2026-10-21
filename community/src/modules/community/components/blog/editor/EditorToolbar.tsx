@@ -51,8 +51,8 @@ function ToolbarButton({
       disabled={disabled}
       onMouseDown={(event) => event.preventDefault()}
       onClick={onClick}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed disabled:opacity-30 ${
-        active ? "bg-power-orange/10 text-power-orange" : "text-slate-600 hover:bg-slate-100"
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-30 ${
+        active ? "bg-ink text-white" : "text-ink-body hover:bg-paper-deep hover:text-ink"
       }`}
     >
       {children}

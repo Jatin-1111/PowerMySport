@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImagePlus, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { ImagePlus, RefreshCw, Trash2 } from "lucide-react";
 import { uploadBlogImage } from "@/modules/community/hooks/useBlogImageUpload";
 import { toast } from "@/lib/toast";
 
@@ -30,7 +30,7 @@ export default function ImageBlockUploader({
   className = "aspect-[16/9]",
   maxHeightClassName = "max-h-[420px]",
   label = "Add an image",
-  hint = "Drag & drop or click — JPEG, PNG, WebP up to 10 MB",
+  hint = "Drag and drop, or click. JPEG, PNG or WebP, up to 10 MB",
 }: ImageBlockUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -78,7 +78,7 @@ export default function ImageBlockUploader({
     // image from being letterboxed once the height cap bites, and the intrinsic
     // width/height reserve the space so the form does not jump when it loads.
     return (
-      <div className="group relative w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      <div className="bg-paper-deep group relative w-full overflow-hidden rounded-2xl">
         <img
           src={resolvedUrl}
           alt="Upload preview"
@@ -86,29 +86,32 @@ export default function ImageBlockUploader({
           height={height}
           className={`mx-auto block h-auto w-auto max-w-full ${maxHeightClassName}`}
         />
-        <div className="absolute right-2 top-2 flex gap-1.5 opacity-0 transition group-hover:opacity-100">
+        <div className="absolute right-3 top-3 flex gap-2 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-slate-700 shadow-sm transition hover:bg-white"
+            className="text-ink hover:bg-paper inline-flex h-11 w-11 items-center justify-center rounded-md bg-white transition-colors duration-200"
             aria-label="Replace image"
           >
-            <RefreshCw size={15} />
+            <RefreshCw size={16} strokeWidth={1.5} aria-hidden="true" />
           </button>
           {onRemove ? (
             <button
               type="button"
               onClick={onRemove}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white text-rose-600 shadow-sm transition hover:bg-white"
+              className="hover:bg-paper inline-flex h-11 w-11 items-center justify-center rounded-md bg-white text-red-700 transition-colors duration-200"
               aria-label="Remove image"
             >
-              <Trash2 size={15} />
+              <Trash2 size={16} strokeWidth={1.5} aria-hidden="true" />
             </button>
           ) : null}
         </div>
         {uploading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40">
-            <Loader2 size={22} className="animate-spin text-white" />
+          <div
+            role="status"
+            className="bg-ink/50 absolute inset-0 flex items-center justify-center text-base font-medium text-white"
+          >
+            Uploading
           </div>
         ) : null}
         <input
@@ -132,21 +135,21 @@ export default function ImageBlockUploader({
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={onDrop}
-      className={`flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed transition ${className} ${
+      className={`flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-4 py-8 text-center transition-colors duration-200 ${className} ${
         dragging
-          ? "border-power-orange bg-power-orange/5"
-          : "border-slate-300 bg-slate-50/60 hover:border-slate-400 hover:bg-slate-50"
+          ? "border-ink bg-wash"
+          : "bg-paper-deep/60 hover:bg-paper-deep hover:border-ink/45 border-[#bfb8ab]"
       }`}
     >
       {uploading ? (
-        <Loader2 size={24} className="animate-spin text-slate-400" />
+        <span role="status" className="text-ink-body text-base font-medium">
+          Uploading
+        </span>
       ) : (
         <>
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-400 shadow-sm">
-            <ImagePlus size={22} />
-          </span>
-          <span className="text-sm font-semibold text-slate-700">{label}</span>
-          <span className="text-xs text-slate-400">{hint}</span>
+          <ImagePlus size={28} strokeWidth={1.25} className="text-ink" aria-hidden="true" />
+          <span className="text-ink text-base font-semibold">{label}</span>
+          <span className="text-ink-body max-w-[44ch] text-sm">{hint}</span>
         </>
       )}
       <input

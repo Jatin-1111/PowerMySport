@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loader2, MessageCircle, Send, X } from "lucide-react";
+import { X } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogComment } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
@@ -56,7 +56,7 @@ export default function BlogCommentsSidebar({
       const data = await blogService.listComments(blogId, 1, 50);
       setComments(data.items || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load comments");
+      toast.error(error instanceof Error ? error.message : "We could not load the comments");
     } finally {
       setIsLoading(false);
     }
@@ -164,87 +164,103 @@ export default function BlogCommentsSidebar({
     <AnimatePresence>
       {isOpen ? (
         <>
-          <div onClick={onClose} className="fixed inset-0 z-[300]" aria-hidden="true" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="bg-ink/30 fixed inset-0 z-[300]"
+            aria-hidden="true"
+          />
           <motion.aside
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="blog-comments-title"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 z-[301] flex h-dvh w-full max-w-md flex-col bg-white shadow-2xl"
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="bg-paper fixed right-0 top-0 z-[301] flex h-dvh w-full max-w-md flex-col"
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
+            <div className="border-hairline flex items-start justify-between gap-3 border-b px-6 py-5">
               <div className="min-w-0">
-                <h2 className="font-title text-lg font-semibold text-slate-900">Comments</h2>
-                <p className="mt-0.5 line-clamp-1 text-sm text-slate-500">{blogTitle}</p>
+                <h2
+                  id="blog-comments-title"
+                  className="font-editorial text-ink text-3xl font-light"
+                >
+                  Comments
+                </h2>
+                <p className="text-ink-muted mt-1 line-clamp-1 text-sm">{blogTitle}</p>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 aria-label="Close comments"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-700"
+                className="text-ink-body hover:bg-paper-deep hover:text-ink -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md transition-colors duration-200"
               >
-                <X size={18} />
+                <X size={20} strokeWidth={1.5} aria-hidden="true" />
               </button>
             </div>
 
-            {/* Composer */}
-            <div className="border-b border-slate-100 px-5 py-3">
-              <div className="focus-within:border-power-orange/50 rounded-2xl border border-slate-200 bg-slate-50/60 focus-within:bg-white">
+            <div className="border-hairline border-b px-6 py-4">
+              <label htmlFor="blog-comment-draft" className="sr-only">
+                Leave a comment
+              </label>
+              <div className="focus-within:border-ink hover:border-ink/45 rounded-md border border-[#d9d3c8] bg-white transition-colors duration-200">
                 <textarea
+                  id="blog-comment-draft"
                   ref={textareaRef}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  rows={2}
-                  placeholder="Leave a comment..."
-                  className="w-full resize-none bg-transparent px-3 pt-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                  rows={3}
+                  placeholder="Leave a comment"
+                  className="text-ink placeholder:text-ink-muted w-full resize-none bg-transparent px-4 pt-3 text-base outline-none"
                 />
-                <div className="flex items-center justify-between px-1.5 pb-1.5">
+                <div className="flex items-center justify-between px-2 pb-2">
                   <EmojiPicker onSelect={(emoji) => setDraft((prev) => prev + emoji)} />
                   <button
+                    type="button"
                     onClick={() => void submitComment()}
                     disabled={submitting || !draft.trim()}
-                    className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#d96610] disabled:opacity-50"
+                    className="btn-motion bg-power-orange-solid inline-flex min-h-10 items-center rounded-md px-5 text-base font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    {submitting ? (
-                      <Loader2 size={15} className="animate-spin" />
-                    ) : (
-                      <Send size={15} />
-                    )}
-                    Comment
+                    {submitting ? "Posting" : "Comment"}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* List */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
               {isLoading ? (
-                <div className="flex justify-center py-10 text-slate-400">
-                  <Loader2 size={22} className="animate-spin" />
+                <div aria-busy="true" aria-label="Loading comments" className="space-y-6">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="bg-ink/10 h-9 w-9 shrink-0 animate-pulse rounded-full" />
+                      <div className="flex-1 space-y-2">
+                        <div className="bg-ink/10 h-4 w-32 animate-pulse rounded-sm" />
+                        <div className="bg-ink/10 h-4 w-full animate-pulse rounded-sm" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : comments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-14 text-center">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-                    <MessageCircle size={22} />
-                  </span>
-                  <p className="mt-3 font-semibold text-slate-700">No comments yet</p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Be the first to share your thoughts.
+                <div className="py-10">
+                  <p className="font-editorial text-ink text-2xl font-normal">No comments yet.</p>
+                  <p className="text-ink-body mt-2 text-base leading-relaxed">
+                    Add what you would want another parent to know.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  <AnimatePresence initial={false}>
-                    {comments.map((comment) => (
-                      <CommentItem
-                        key={comment.id}
-                        comment={comment}
-                        onToggleLike={handleToggleLike}
-                        onReply={handleReply}
-                        onDelete={handleDelete}
-                      />
-                    ))}
-                  </AnimatePresence>
+                <div>
+                  {comments.map((comment) => (
+                    <CommentItem
+                      key={comment.id}
+                      comment={comment}
+                      onToggleLike={handleToggleLike}
+                      onReply={handleReply}
+                      onDelete={handleDelete}
+                    />
+                  ))}
                 </div>
               )}
             </div>

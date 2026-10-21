@@ -31,19 +31,19 @@ export function HeroSearch() {
     <form
       onSubmit={submit}
       role="search"
-      className="focus-within:border-power-orange/50 focus-within:ring-power-orange/10 mx-auto mt-6 flex w-full max-w-xl items-center gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm focus-within:ring-4"
+      className="focus-within:ring-ink flex w-full items-center gap-2 rounded-lg bg-white p-1.5 transition-shadow duration-200 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-offset-transparent"
     >
-      <Search className="ml-2 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+      <Search className="text-ink-muted ml-2.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Search questions and experiences..."
+        placeholder="Search questions and experiences"
         aria-label="Search questions and stories"
-        className="min-w-0 flex-1 bg-transparent py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+        className="text-ink placeholder:text-ink-muted min-w-0 flex-1 bg-transparent py-2.5 text-base focus:outline-none"
       />
       <button
         type="submit"
-        className="bg-power-orange-solid hover:bg-power-orange-solid/90 inline-flex min-h-9 shrink-0 items-center justify-center rounded-xl px-4 text-sm font-semibold text-white transition"
+        className="btn-motion bg-power-orange-solid inline-flex min-h-10 shrink-0 items-center justify-center rounded-md px-5 text-base font-semibold text-white hover:bg-indigo-700"
       >
         Search
       </button>

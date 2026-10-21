@@ -19,6 +19,7 @@ import {
   websiteSchema,
 } from "@/modules/community/components/seo/JsonLd";
 import { buildMetadata } from "@/lib/seo";
+import { getMainAppUrl } from "@/lib/auth/redirect";
 
 export const metadata = buildMetadata({
   title: "Youth Sports Community for Parents",
@@ -247,7 +248,65 @@ export default function CommunityLandingPage() {
             </div>
           </div>
         </section>
+
+        {/* The page's one orange moment (client/DESIGN.md). */}
+        <section className="mx-auto w-full max-w-7xl px-4 py-24 sm:px-6 sm:py-32 lg:px-8">
+          <div className="bg-power-orange-solid rounded-3xl px-6 py-16 sm:px-12 sm:py-24 lg:px-20">
+            <h2 className="font-editorial text-paper max-w-3xl text-balance text-5xl font-light leading-[1.05] sm:text-6xl lg:text-7xl">
+              Stuck on a decision about your child&apos;s sport?
+            </h2>
+            <p className="text-paper/90 mt-6 max-w-[48ch] text-pretty text-lg leading-relaxed">
+              Someone in this community has probably faced it. Ask, and read what they did.
+            </p>
+            <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+              <Link
+                href="/questions"
+                className="btn-motion bg-ink hover:bg-ink-hover inline-flex min-h-12 items-center gap-2 rounded-md px-7 py-3.5 text-base font-semibold text-white"
+              >
+                Ask a question
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link
+                href="/experiences"
+                className="text-paper decoration-paper/40 hover:decoration-paper inline-flex items-center gap-1.5 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+              >
+                Read parent experiences
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
+
+      <footer className="bg-paper-deep border-hairline border-t">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-8">
+          <p className="font-editorial text-ink text-[27px] font-medium leading-none">
+            Power<span className="text-power-orange">My</span>Sport
+            <span className="text-ink-muted ml-2 font-sans text-sm font-normal">Community</span>
+          </p>
+          <nav aria-label="Community footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            {[
+              { href: "/privacy", label: "Privacy" },
+              { href: "/safety", label: "Safety" },
+              { href: "/reports", label: "Reports" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-ink-body hover:text-ink transition-colors duration-200"
+              >
+                {label}
+              </Link>
+            ))}
+            <a
+              href={getMainAppUrl()}
+              className="text-ink-body hover:text-ink transition-colors duration-200"
+            >
+              PowerMySport main site
+            </a>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }

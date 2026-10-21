@@ -5,21 +5,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
-  AlertTriangle,
   ArrowBigDown,
   ArrowBigUp,
-  CalendarDays,
   CheckCircle2,
-  Dumbbell,
-  Filter,
-  LoaderCircle,
-  MapPin,
   MessageCircle,
   Plus,
   Search,
   SlidersHorizontal,
   Sparkles,
-  Trash2,
   Trophy,
   X,
 } from "lucide-react";
@@ -95,35 +88,19 @@ const getActivityLabel = (item: CommunityActivityItem): string => {
   return "Community activity";
 };
 
-const CAPSULE_TONES = {
-  violet: "border-violet-200 bg-violet-50 text-violet-700",
-  orange: "border-power-orange/30 bg-power-orange/10 text-power-orange",
-  blue: "border-blue-200 bg-blue-50 text-blue-700",
-  rose: "border-rose-200 bg-rose-50 text-rose-700",
-  slate: "border-slate-200 bg-slate-100 text-slate-700",
-} as const;
-
-function FilterCapsule({
-  label,
-  onRemove,
-  tone = "slate",
-}: {
-  label: string;
-  onRemove: () => void;
-  tone?: keyof typeof CAPSULE_TONES;
-}) {
+/** A removable filter, in ink on a hairline outline. One look for every kind
+ *  of filter: colour here used to code the kind, which only added noise. */
+function FilterCapsule({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold ${CAPSULE_TONES[tone]}`}
-    >
+    <span className="border-ink/30 text-ink inline-flex min-h-9 items-center gap-1 rounded-md border pl-3 text-sm font-medium">
       <span className="max-w-[10rem] truncate">{label}</span>
       <button
         type="button"
         onClick={onRemove}
-        className="rounded-full p-0.5 transition hover:bg-black/10"
-        title={`Remove ${label}`}
+        className="hover:bg-paper-deep flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-200"
+        aria-label={`Remove ${label}`}
       >
-        <X size={12} />
+        <X size={14} aria-hidden="true" />
       </button>
     </span>
   );
@@ -705,6 +682,160 @@ export default function QnAFeedClient() {
     }
   };
 
+  /** One thread as a ruled row: votes at the left, then a status line, serif
+   *  title, excerpt and a byline. The featured thread is the same row on a
+   *  wash tint with a larger title, so it reads as emphasis, not a new card. */
+  const renderThread = (post: CommunityPost, featured = false, topRule = false) => {
+    const authorName = post.isAnonymous ? "Anonymous" : post.author.displayName;
+    const place = [post.sport, post.city].filter(Boolean).join(" · ");
+    const isOwner = post.author.id === currentUserId;
+    const voteBtn =
+      "text-ink-muted hover:text-ink flex h-9 w-9 items-center justify-center rounded-md transition-colors duration-200 hover:bg-white/70 disabled:opacity-50";
+
+    return (
+      <li key={post.id}>
+        <article
+          onClick={() => router.push(`/questions/${post.id}`)}
+          className={`group flex cursor-pointer gap-4 transition-colors duration-200 sm:gap-6 ${
+            featured
+              ? "bg-wash my-6 rounded-3xl p-5 sm:p-8"
+              : `border-hairline hover:bg-paper-deep/60 -mx-3 border-b px-3 py-7 ${topRule ? "border-t" : ""}`
+          }`}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="flex w-9 shrink-0 flex-col items-center"
+          >
+            <button
+              type="button"
+              onClick={() => void vote(post, 1)}
+              disabled={voting.isLoading(post.id)}
+              aria-label="Upvote"
+              aria-pressed={post.myVote === 1}
+              className={`${voteBtn} ${post.myVote === 1 ? "text-power-orange-solid" : ""}`}
+            >
+              <ArrowBigUp
+                size={20}
+                strokeWidth={1.5}
+                className={post.myVote === 1 ? "fill-power-orange" : ""}
+              />
+            </button>
+            <span className="text-ink text-sm font-semibold tabular-nums">{post.voteScore}</span>
+            <button
+              type="button"
+              onClick={() => void vote(post, -1)}
+              disabled={voting.isLoading(post.id)}
+              aria-label="Downvote"
+              aria-pressed={post.myVote === -1}
+              className={`${voteBtn} ${post.myVote === -1 ? "text-ink" : ""}`}
+            >
+              <ArrowBigDown
+                size={20}
+                strokeWidth={1.5}
+                className={post.myVote === -1 ? "fill-ink" : ""}
+              />
+            </button>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-ink-muted text-sm">
+              {featured ? <span className="text-ink font-semibold">Featured · </span> : null}
+              {[
+                place,
+                post.category && post.category !== "General" ? post.category : "",
+                post.status === "CLOSED" ? "Closed" : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+
+            <Link
+              href={`/questions/${post.id}`}
+              className={`font-editorial text-ink decoration-ink/30 mt-2 block text-balance font-normal leading-tight underline-offset-4 group-hover:underline ${
+                featured ? "text-3xl sm:text-4xl" : "text-2xl"
+              }`}
+            >
+              {post.title}
+            </Link>
+
+            <p
+              className={`text-ink-body mt-3 max-w-[64ch] text-base leading-relaxed ${
+                featured ? "line-clamp-3" : "line-clamp-2"
+              }`}
+            >
+              {post.body}
+            </p>
+
+            {post.tags.length > 0 ? (
+              <p className="text-ink-muted mt-3 text-sm">
+                {post.tags.map((tag) => `#${tag.replace(/^#/, "")}`).join("  ")}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+              <div className="text-ink-body flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1 text-sm">
+                <AuthorAvatar
+                  author={
+                    post.isAnonymous ? { displayName: "Anonymous", photoUrl: null } : post.author
+                  }
+                  size={26}
+                />
+                <span className="text-ink font-semibold">{authorName}</span>
+                {post.author.isVerifiedExpert ? (
+                  <span className="text-ink-body">· {post.author.expertTitle} (verified)</span>
+                ) : null}
+                <span className="text-ink-muted">· {formatPostedDate(post.createdAt)}</span>
+              </div>
+
+              <div className="flex items-center gap-4 text-sm">
+                <span
+                  className="text-ink-muted inline-flex items-center gap-1.5 tabular-nums"
+                  title={`${post.answerCount} answers`}
+                >
+                  <MessageCircle size={15} strokeWidth={1.5} aria-hidden="true" />
+                  {post.answerCount}
+                </span>
+                {post.answerCount === 0 ? (
+                  <span className="text-power-orange-solid font-semibold">Needs an answer</span>
+                ) : post.acceptedAnswerId ? (
+                  <span className="inline-flex items-center gap-1 font-semibold text-green-700">
+                    <CheckCircle2 size={14} strokeWidth={1.5} aria-hidden="true" /> Solved
+                  </span>
+                ) : (
+                  <span className="text-ink-muted">Answered</span>
+                )}
+              </div>
+            </div>
+
+            {isOwner ? (
+              <div
+                onClick={(event) => event.stopPropagation()}
+                className="mt-4 flex gap-5 text-sm font-semibold"
+              >
+                <button
+                  type="button"
+                  onClick={() => void togglePostStatus(post)}
+                  disabled={postMutations.isLoading(post.id)}
+                  className="text-ink decoration-ink/30 hover:decoration-ink underline underline-offset-4 disabled:opacity-50"
+                >
+                  {post.status === "OPEN" ? "Close thread" : "Reopen thread"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deletePost(post)}
+                  disabled={postMutations.isLoading(post.id)}
+                  className="text-red-700 underline decoration-red-700/30 underline-offset-4 hover:decoration-red-700 disabled:opacity-50"
+                >
+                  Delete
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </article>
+      </li>
+    );
+  };
+
   return (
     <div className="bg-paper relative isolate min-h-[calc(100vh-5.5rem)]">
       <div className="mx-auto w-full max-w-7xl space-y-5 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6 lg:px-6">
@@ -754,8 +885,8 @@ export default function QnAFeedClient() {
           </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-          <div className="space-y-6">
+        <div className="grid gap-12 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
+          <div className="space-y-8">
             <AskQuestionModal
               isOpen={showAskForm}
               onClose={() => setShowAskForm(false)}
@@ -764,133 +895,127 @@ export default function QnAFeedClient() {
               initialSport={(urlSearchParams.get("sport") || "").trim() || undefined}
             />
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-              {/* Row 1: View toggle + Search + Filter button */}
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-                <div className="inline-flex shrink-0 items-center self-start rounded-xl border border-slate-200 bg-slate-50 p-1">
-                  <button
-                    onClick={() => setViewMode("ALL")}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                      viewMode === "ALL"
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-white"
-                    }`}
-                  >
-                    All Threads
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (!hasAuthToken()) {
-                        redirectToMainLogin();
-                        return;
-                      }
-                      setViewMode("MINE");
-                    }}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                      viewMode === "MINE"
-                        ? "bg-slate-900 text-white shadow-sm"
-                        : "text-slate-600 hover:bg-white"
-                    }`}
-                  >
-                    My Posts
-                  </button>
+            <section aria-label="Find a thread" className="space-y-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div
+                  role="tablist"
+                  aria-label="Threads"
+                  className="border-hairline flex gap-8 border-b"
+                >
+                  {(
+                    [
+                      { mode: "ALL", label: "All threads" },
+                      { mode: "MINE", label: "My posts" },
+                    ] as const
+                  ).map(({ mode, label }) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="tab"
+                      aria-selected={viewMode === mode}
+                      onClick={() => {
+                        if (mode === "MINE" && !hasAuthToken()) {
+                          redirectToMainLogin();
+                          return;
+                        }
+                        setViewMode(mode);
+                      }}
+                      className={`-mb-px min-h-12 border-b-2 text-base font-semibold transition-colors duration-200 ${
+                        viewMode === mode
+                          ? "border-ink text-ink"
+                          : "text-ink-muted hover:text-ink border-transparent"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="focus-within:border-power-orange flex flex-1 items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 transition focus-within:bg-white focus-within:shadow-sm">
-                  <Search size={16} className="shrink-0 text-slate-500" />
+                <div className="focus-within:border-ink hover:border-ink/45 flex w-full items-center rounded-md border border-[#d9d3c8] bg-white transition-colors duration-200 lg:max-w-sm">
+                  <Search
+                    size={18}
+                    className="text-ink-muted pointer-events-none ml-4 shrink-0"
+                    aria-hidden="true"
+                  />
                   <input
+                    type="search"
                     value={searchInput}
                     onChange={(event) => setSearchInput(event.target.value)}
-                    placeholder="Search questions, keywords, topics…"
-                    className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="Search questions"
+                    aria-label="Search questions"
+                    className="text-ink placeholder:text-ink-muted h-12 w-full bg-transparent px-3 text-base outline-none"
                   />
-                  <AnimatePresence>
-                    {searchInput ? (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.6 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.6 }}
-                        onClick={() => {
-                          setSearchInput("");
-                          setQ("");
-                        }}
-                        className="shrink-0 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
-                        title="Clear search"
-                      >
-                        <X size={14} />
-                      </motion.button>
-                    ) : null}
-                  </AnimatePresence>
+                  {searchInput ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchInput("");
+                        setQ("");
+                      }}
+                      aria-label="Clear search"
+                      className="text-ink-muted hover:text-ink flex h-12 w-12 shrink-0 items-center justify-center transition-colors duration-200"
+                    >
+                      <X size={16} aria-hidden="true" />
+                    </button>
+                  ) : null}
                 </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setShowFilterPanel((v) => !v)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-md border px-4 py-2.5 text-xs font-semibold transition ${
-                    showFilterPanel || hasActiveFilters
-                      ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
-                      : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
-                  }`}
-                >
-                  <motion.span
-                    animate={showFilterPanel ? { rotate: 180 } : { rotate: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    <Filter size={16} />
-                  </motion.span>
-                  <span className="hidden sm:inline">Filters</span>
-                  {hasActiveFilters && (
-                    <span className="bg-power-orange-solid flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-semibold text-white">
-                      {selectedSports.length +
-                        selectedCities.length +
-                        (categoryFilter ? 1 : 0) +
-                        (activeTag ? 1 : 0)}
-                    </span>
-                  )}
-                </motion.button>
               </div>
 
-              {/* Row 2: Quick filter capsules */}
-              <div className="mt-4 flex flex-wrap items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
                 {QUICK_FILTERS.map((option) => (
                   <button
                     key={option.value}
+                    type="button"
+                    aria-pressed={sort === option.value}
                     onClick={() => setSort(option.value)}
-                    className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition ${
+                    className={`btn-motion min-h-10 rounded-md border px-4 text-sm font-medium ${
                       sort === option.value
-                        ? "border-power-orange/50 bg-power-orange/10 text-power-orange"
-                        : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-white"
+                        ? "border-ink bg-ink text-white"
+                        : "border-hairline text-ink-body hover:border-ink/45 hover:text-ink"
                     }`}
                   >
                     {option.label}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setShowFilterPanel((v) => !v)}
+                  aria-expanded={showFilterPanel}
+                  className="text-ink decoration-ink/30 hover:decoration-ink ml-auto inline-flex items-center gap-2 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+                >
+                  <SlidersHorizontal size={16} strokeWidth={1.5} aria-hidden="true" />
+                  {showFilterPanel ? "Hide filters" : "More filters"}
+                  {hasActiveFilters ? (
+                    <span className="bg-ink inline-flex h-5 min-w-5 items-center justify-center rounded-sm px-1 text-xs font-semibold text-white">
+                      {selectedSports.length +
+                        selectedCities.length +
+                        (categoryFilter ? 1 : 0) +
+                        (activeTag ? 1 : 0)}
+                    </span>
+                  ) : null}
+                </button>
               </div>
 
-              {/* Collapsible advanced filter panel */}
               <AnimatePresence onExitComplete={() => setFilterPanelSettled(false)}>
                 {showFilterPanel && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                    animate={{ opacity: 1, height: "auto", marginTop: 12 }}
-                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                    transition={{ type: "spring", damping: 26, stiffness: 300 }}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
                     onAnimationComplete={() => setFilterPanelSettled(true)}
                     className={filterPanelSettled ? "overflow-visible" : "overflow-hidden"}
                   >
-                    <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                    <div className="bg-paper-deep rounded-2xl p-5">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <SelectDropdown
                           label="Sort"
-                          icon={<SlidersHorizontal size={14} className="text-slate-500" />}
                           options={SORT_DIRECTION_OPTIONS}
                           value={direction}
                           onChange={(value) => setDirection(value as CommunityFeedSortDirection)}
                         />
                         <MultiCheckboxDropdown
                           label="Sport"
-                          icon={<Dumbbell size={15} className="text-blue-500" />}
                           options={sportOptions}
                           selected={selectedSports}
                           onToggle={toggleSport}
@@ -898,14 +1023,13 @@ export default function QnAFeedClient() {
                         />
                         <MultiCheckboxDropdown
                           label="City"
-                          icon={<MapPin size={15} className="text-rose-500" />}
                           options={cityOptions}
                           selected={selectedCities}
                           onToggle={toggleCity}
                           emptyHint="No cities tagged yet"
                         />
                       </div>
-                      <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <SelectDropdown
                           label="Category"
                           options={categoryOptions}
@@ -922,10 +1046,10 @@ export default function QnAFeedClient() {
                               <button
                                 type="button"
                                 onClick={() => void toggleTopicFollow(value)}
-                                className={`shrink-0 rounded-md border px-2 py-1 text-xs font-semibold transition ${
+                                className={`shrink-0 rounded-md border px-2.5 py-1.5 text-sm font-semibold transition-colors duration-200 ${
                                   followedTopics.includes(value.toLowerCase())
-                                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                                    : "border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+                                    ? "border-ink bg-ink text-white"
+                                    : "border-hairline text-ink-body hover:border-ink/45"
                                 }`}
                               >
                                 {followedTopics.includes(value.toLowerCase())
@@ -941,30 +1065,20 @@ export default function QnAFeedClient() {
                 )}
               </AnimatePresence>
 
-              {/* Active filter capsules + Clear all */}
               {hasActiveFilters ? (
-                <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
-                  <span className="text-xs font-semibold text-slate-400">Active</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-ink-muted text-sm">Filtering by</span>
                   {categoryFilter ? (
-                    <FilterCapsule
-                      label={categoryFilter}
-                      onRemove={() => setCategoryFilter("")}
-                      tone="violet"
-                    />
+                    <FilterCapsule label={categoryFilter} onRemove={() => setCategoryFilter("")} />
                   ) : null}
                   {activeTag ? (
-                    <FilterCapsule
-                      label={`#${activeTag}`}
-                      onRemove={() => setActiveTag("")}
-                      tone="orange"
-                    />
+                    <FilterCapsule label={`#${activeTag}`} onRemove={() => setActiveTag("")} />
                   ) : null}
                   {selectedSports.map((sport) => (
                     <FilterCapsule
                       key={`sport-${sport}`}
                       label={sport}
                       onRemove={() => toggleSport(sport)}
-                      tone="blue"
                     />
                   ))}
                   {selectedCities.map((city) => (
@@ -972,7 +1086,6 @@ export default function QnAFeedClient() {
                       key={`city-${city}`}
                       label={city}
                       onRemove={() => toggleCity(city)}
-                      tone="rose"
                     />
                   ))}
                   {q ? (
@@ -982,14 +1095,13 @@ export default function QnAFeedClient() {
                         setSearchInput("");
                         setQ("");
                       }}
-                      tone="slate"
                     />
                   ) : null}
                   <button
+                    type="button"
                     onClick={clearAllFilters}
-                    className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                    className="text-ink decoration-ink/30 hover:decoration-ink ml-1 text-sm font-semibold underline underline-offset-4 transition-colors duration-200"
                   >
-                    <Trash2 size={13} />
                     Clear all
                   </button>
                 </div>
@@ -997,315 +1109,59 @@ export default function QnAFeedClient() {
             </section>
 
             {isLoading ? (
-              <div className="rounded-2xl border border-white/90 bg-white p-12 text-center text-slate-500 shadow-sm">
-                Loading questions...
+              <div
+                aria-busy="true"
+                aria-label="Loading questions"
+                className="border-hairline border-t"
+              >
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="border-hairline space-y-3 border-b py-8">
+                    <div className="bg-ink/10 h-3 w-24 animate-pulse rounded-sm" />
+                    <div className="bg-ink/10 h-6 w-3/4 animate-pulse rounded-sm" />
+                    <div className="bg-ink/10 h-4 w-full animate-pulse rounded-sm" />
+                  </div>
+                ))}
               </div>
             ) : posts.length === 0 ? (
-              <div className="border-border rounded-2xl border border-dashed bg-white p-12 text-center text-slate-600 shadow-sm">
-                {viewMode === "MINE"
-                  ? "You have not posted a question yet. Start your first knowledge thread."
-                  : "No knowledge threads found. Start one and invite answers."}
+              <div className="bg-paper-deep rounded-2xl px-6 py-16 text-center">
+                <p className="font-editorial text-ink text-3xl font-light">
+                  {viewMode === "MINE" ? "You have not asked anything yet." : "No threads found."}
+                </p>
+                <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+                  {viewMode === "MINE"
+                    ? "Your questions will collect here. Start one and parents who have been through it will answer."
+                    : hasActiveFilters
+                      ? "Nothing matches these filters. Clear them to see every thread, or ask the question yourself."
+                      : "Start the first thread and invite answers."}
+                </p>
+                {hasActiveFilters ? (
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="text-ink decoration-ink/30 hover:decoration-ink mt-5 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+                  >
+                    Clear all filters
+                  </button>
+                ) : null}
               </div>
             ) : (
-              <section className="space-y-4">
-                {featuredPost ? (
-                  <article
-                    onClick={() => router.push(`/questions/${featuredPost.id}`)}
-                    className="border-power-orange/30 hover:border-power-orange/50 group relative flex cursor-pointer gap-0 overflow-hidden rounded-xl border-2 bg-white shadow-lg transition-all hover:shadow-xl"
-                  >
-                    {/* Voting Sidebar */}
-                    <div
-                      onClick={(event) => event.stopPropagation()}
-                      className="border-power-orange/20 bg-power-orange/5 group-hover:bg-power-orange/10 flex w-16 shrink-0 flex-col items-center gap-0.5 border-r-2 px-2.5 py-4"
-                    >
-                      <button
-                        onClick={() => void vote(featuredPost, 1)}
-                        disabled={voting.isLoading(featuredPost.id)}
-                        className={`rounded-md p-1.5 transition-colors ${
-                          featuredPost.myVote === 1
-                            ? "text-power-orange bg-orange-100"
-                            : "hover:text-power-orange text-slate-400"
-                        } disabled:opacity-50`}
-                        title="Upvote"
-                      >
-                        <ArrowBigUp size={18} />
-                      </button>
-                      <span className="text-xs font-semibold text-slate-700">
-                        {featuredPost.voteScore}
-                      </span>
-                      <button
-                        onClick={() => void vote(featuredPost, -1)}
-                        disabled={voting.isLoading(featuredPost.id)}
-                        className={`rounded-md p-1.5 transition-colors ${
-                          featuredPost.myVote === -1
-                            ? "bg-red-100 text-red-600"
-                            : "text-slate-400 hover:text-red-600"
-                        } disabled:opacity-50`}
-                        title="Downvote"
-                      >
-                        <ArrowBigDown size={18} />
-                      </button>
-                    </div>
-
-                    {/* Featured Content */}
-                    <div className="flex-1 p-5 sm:p-6">
-                      <div className="border-power-orange/30 bg-power-orange/10 mb-3 inline-flex items-center gap-2 rounded-md border-2 px-3 py-1.5">
-                        <Trophy size={14} className="text-power-orange font-semibold" />
-                        <span className="text-power-orange text-xs font-semibold">
-                          Featured Thread
-                        </span>
-                      </div>
-
-                      <Link
-                        href={`/questions/${featuredPost.id}`}
-                        className="font-title hover:text-power-orange block text-2xl font-semibold leading-tight text-slate-900 transition-colors"
-                      >
-                        {featuredPost.title}
-                      </Link>
-
-                      <p className="mt-2.5 line-clamp-3 text-sm leading-relaxed text-slate-700">
-                        {featuredPost.body}
-                      </p>
-
-                      {/* Tags */}
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        {featuredPost.tags.map((tag) => (
-                          <span
-                            key={`${featuredPost.id}-${tag}`}
-                            className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {featuredPost.sport ? (
-                          <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                            {featuredPost.sport}
-                          </span>
-                        ) : null}
-                        {featuredPost.city ? (
-                          <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                            {featuredPost.city}
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {/* Footer */}
-                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/50 pt-4">
-                        <div className="flex items-center gap-2 text-xs text-slate-600">
-                          <AuthorAvatar
-                            author={
-                              featuredPost.isAnonymous
-                                ? { displayName: "Anonymous", photoUrl: null }
-                                : featuredPost.author
-                            }
-                            size={32}
-                          />
-                          <span className="font-semibold text-slate-900">
-                            {featuredPost.isAnonymous
-                              ? "Anonymous"
-                              : featuredPost.author.displayName}
-                          </span>
-                          {featuredPost.author.isVerifiedExpert ? (
-                            <span className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                              ★ {featuredPost.author.expertTitle}
-                            </span>
-                          ) : null}
-                          <span className="inline-flex items-center gap-1 text-slate-500">
-                            <CalendarDays size={12} className="text-slate-400" />
-                            {formatPostedDate(featuredPost.createdAt)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                            <MessageCircle size={13} /> {featuredPost.answerCount}
-                          </span>
-                          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700">
-                            <Trophy size={13} /> {featuredPost.upvoteCount}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ) : null}
-
-                <div className="space-y-2">
-                  {nonFeaturedPosts.map((post) => {
-                    return (
-                      <article
-                        key={post.id}
-                        onClick={() => router.push(`/questions/${post.id}`)}
-                        className="group relative flex cursor-pointer gap-0 overflow-hidden rounded-lg border border-slate-200 bg-white transition-all hover:border-slate-300 hover:shadow-md"
-                      >
-                        {/* Voting Sidebar - Reddit Style */}
-                        <div
-                          onClick={(event) => event.stopPropagation()}
-                          className="flex w-16 shrink-0 flex-col items-center gap-0.5 border-r border-slate-200 bg-slate-50 px-2.5 py-3 group-hover:bg-slate-100"
-                        >
-                          <button
-                            onClick={() => void vote(post, 1)}
-                            disabled={voting.isLoading(post.id)}
-                            title="Upvote"
-                            className={`rounded-md p-1.5 transition-colors ${
-                              post.myVote === 1
-                                ? "text-power-orange bg-orange-100"
-                                : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
-                            } disabled:opacity-50`}
-                          >
-                            <ArrowBigUp size={16} />
-                          </button>
-                          <span className="text-xs font-semibold text-slate-700">
-                            {post.voteScore}
-                          </span>
-                          <button
-                            onClick={() => void vote(post, -1)}
-                            disabled={voting.isLoading(post.id)}
-                            title="Downvote"
-                            className={`rounded-md p-1.5 transition-colors ${
-                              post.myVote === -1
-                                ? "bg-red-100 text-red-600"
-                                : "text-slate-400 hover:bg-slate-200 hover:text-slate-600"
-                            } disabled:opacity-50`}
-                          >
-                            <ArrowBigDown size={16} />
-                          </button>
-                        </div>
-
-                        {/* Main Content Area */}
-                        <div className="flex-1 overflow-hidden p-4 sm:p-5">
-                          {/* Title */}
-                          <Link
-                            href={`/questions/${post.id}`}
-                            className="font-title hover:text-power-orange block text-lg font-semibold text-slate-900 transition-colors"
-                          >
-                            {post.title}
-                          </Link>
-
-                          {/* Excerpt */}
-                          <p className="mt-1.5 line-clamp-2 text-sm text-slate-600">{post.body}</p>
-
-                          {/* Tags & Status */}
-                          <div className="mt-3 flex flex-wrap items-center gap-2">
-                            {post.category && post.category !== "General" ? (
-                              <span className="inline-flex rounded-md border border-violet-200 bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700">
-                                {post.category}
-                              </span>
-                            ) : null}
-                            {post.tags.map((tag) => (
-                              <span
-                                key={`${post.id}-${tag}`}
-                                className="inline-flex rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                            {post.sport ? (
-                              <span className="inline-flex rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
-                                {post.sport}
-                              </span>
-                            ) : null}
-                            {post.city ? (
-                              <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
-                                {post.city}
-                              </span>
-                            ) : null}
-                            {post.status === "CLOSED" ? (
-                              <span className="inline-flex rounded-md border border-slate-200 bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                                Closed
-                              </span>
-                            ) : null}
-                          </div>
-
-                          {/* Footer - Metadata & Actions */}
-                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                            <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <AuthorAvatar
-                                author={
-                                  post.isAnonymous
-                                    ? { displayName: "Anonymous", photoUrl: null }
-                                    : post.author
-                                }
-                                size={26}
-                              />
-                              <span className="font-medium text-slate-700">
-                                {post.isAnonymous ? "Anonymous" : post.author.displayName}
-                              </span>
-                              {post.author.isVerifiedExpert ? (
-                                <span className="inline-flex items-center gap-0.5 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-700">
-                                  ★ {post.author.expertTitle}
-                                </span>
-                              ) : null}
-                              <span className="inline-flex items-center gap-1 text-slate-400">
-                                <CalendarDays size={12} />
-                                {formatPostedDate(post.createdAt)}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                <MessageCircle size={13} /> {post.answerCount}
-                              </span>
-                              <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                <Trophy size={13} /> {post.upvoteCount}
-                              </span>
-                              {post.answerCount === 0 ? (
-                                <span className="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                                  Unanswered
-                                </span>
-                              ) : post.acceptedAnswerId ? (
-                                <span className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
-                                  <CheckCircle2 size={12} /> Solved
-                                </span>
-                              ) : (
-                                <span className="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                  Answered
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Owner Actions */}
-                          {post.author.id === currentUserId ? (
-                            <div
-                              onClick={(event) => event.stopPropagation()}
-                              className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3"
-                            >
-                              <button
-                                onClick={() => void togglePostStatus(post)}
-                                disabled={postMutations.isLoading(post.id)}
-                                className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-                              >
-                                {post.status === "OPEN" ? "Close" : "Reopen"}
-                              </button>
-                              <button
-                                onClick={() => void deletePost(post)}
-                                disabled={postMutations.isLoading(post.id)}
-                                className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:border-red-300 hover:bg-red-100 disabled:opacity-50"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
+              <section aria-label="Threads">
+                <ul className={featuredPost ? "" : "border-hairline border-t"}>
+                  {featuredPost ? renderThread(featuredPost, true) : null}
+                  {nonFeaturedPosts.map((post, index) =>
+                    renderThread(post, false, index === 0 && Boolean(featuredPost))
+                  )}
+                </ul>
 
                 {hasMore ? (
-                  <div className="pt-2 text-center">
+                  <div className="pt-10 text-center">
                     <button
+                      type="button"
                       onClick={() => void loadMore()}
                       disabled={isLoadingMore}
-                      className="border-border inline-flex min-h-10 items-center gap-2 rounded-md border bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                      className="btn-motion border-ink text-ink hover:bg-ink inline-flex min-h-12 items-center gap-2 rounded-md border px-7 text-base font-semibold hover:text-white disabled:opacity-60"
                     >
-                      {isLoadingMore ? (
-                        <>
-                          <LoaderCircle size={15} className="animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        "Load more questions"
-                      )}
+                      {isLoadingMore ? "Loading" : "Load more questions"}
                     </button>
                   </div>
                 ) : null}
@@ -1313,185 +1169,131 @@ export default function QnAFeedClient() {
             )}
           </div>
 
-          <aside className="space-y-4 xl:sticky xl:top-24 xl:h-fit">
-            {/* Stat tiles — 2x2 grid */}
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="grid grid-cols-2 gap-3"
-            >
-              {[
-                { label: "Total Points", value: summary.points },
-                { label: "Questions", value: summary.q },
-                { label: "Answers", value: summary.a },
-                { label: "Received Upvotes", value: summary.upvotes },
-              ].map((stat) => (
-                <motion.div
-                  key={stat.label}
-                  whileHover={{ y: -3 }}
-                  transition={{ duration: 0.18 }}
-                  className="rounded-2xl border border-white/85 bg-white p-4 shadow-sm"
-                >
-                  <p className="text-xs font-semibold text-slate-500">{stat.label}</p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-900">{stat.value}</p>
-                </motion.div>
-              ))}
-            </motion.section>
-
-            {/* Your Activity — scrollable feed */}
-            <motion.section
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut", delay: 0.05 }}
-              className="rounded-2xl border border-white/90 bg-white p-4 shadow-sm sm:p-5"
-            >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <h3 className="font-title text-lg font-semibold text-slate-900">Your Activity</h3>
-                <div className="flex items-center gap-2">
-                  <AnimatePresence>
-                    {activityUnreadCount > 0 ? (
-                      <motion.span
-                        initial={{ opacity: 0, scale: 0.7 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.7 }}
-                        className="bg-power-orange/10 text-power-orange rounded-md px-2.5 py-1 text-xs font-semibold"
-                      >
-                        {activityUnreadCount} unread
-                      </motion.span>
-                    ) : null}
-                  </AnimatePresence>
-                  <button
-                    onClick={() => void handleMarkAllActivityRead()}
-                    disabled={activityUnreadCount === 0 || isMarkingActivityRead}
-                    className="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isMarkingActivityRead ? "Marking..." : "Mark all read"}
-                  </button>
-                </div>
-              </div>
-
-              {isLoadingActivity ? (
-                <p className="text-sm text-slate-500">Loading activity...</p>
-              ) : activity.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  No recent activity yet. When players answer or upvote your content, it will show
-                  up here.
-                </p>
-              ) : (
-                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-                  <AnimatePresence initial={false}>
-                    {activity.map((item) => {
-                      const postLink = item.data?.postId ? `/questions/${item.data.postId}` : null;
-
-                      return (
-                        <motion.div
-                          key={item.id}
-                          layout
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          className={`rounded-2xl border p-3 ${
-                            item.isRead
-                              ? "border-slate-200 bg-white"
-                              : "border-power-orange/30 bg-power-orange/5"
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="text-xs font-semibold text-slate-500">
-                              {getActivityLabel(item)}
-                            </p>
-                            <span className="text-xs text-slate-500">
-                              {toRelativeTime(item.createdAt)} ago
-                            </span>
-                          </div>
-                          <p className="mt-1 text-sm text-slate-700">{item.message}</p>
-                          {postLink ? (
-                            <Link
-                              href={postLink}
-                              onClick={() => {
-                                void handleActivityOpen(item);
-                              }}
-                              className="text-power-orange mt-2 inline-flex text-xs font-semibold hover:underline"
-                            >
-                              Open thread
-                            </Link>
-                          ) : null}
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-              )}
-            </motion.section>
-
-            {/* Help Needed Now — highlighted, urgent */}
-            <AnimatePresence>
-              {urgentUnanswered.length > 0 ? (
-                <motion.section
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-                  className="relative overflow-hidden rounded-2xl border-2 border-amber-300/70 bg-white p-4 shadow-md sm:p-5"
-                >
-                  <motion.div
-                    aria-hidden="true"
-                    animate={{ opacity: [0.25, 0.5, 0.25] }}
-                    transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-                    className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-300/30 blur-2xl"
-                  />
-                  <div className="relative mb-2 flex items-center gap-1.5">
-                    <motion.span
-                      animate={{ scale: [1, 1.15, 1] }}
-                      transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-400/25 text-amber-700"
+          <aside className="space-y-12 xl:sticky xl:top-24 xl:h-fit">
+            {urgentUnanswered.length > 0 ? (
+              <section aria-labelledby="qna-help-needed" className="bg-wash rounded-3xl p-6 sm:p-8">
+                <h3 id="qna-help-needed" className="font-editorial text-ink text-2xl font-normal">
+                  These need an answer
+                </h3>
+                <ul className="mt-4">
+                  {urgentUnanswered.map((item) => (
+                    <li
+                      key={`urgent-${item.id}`}
+                      className="border-ink/15 border-t first:border-t-0"
                     >
-                      <AlertTriangle size={13} />
-                    </motion.span>
-                    <p className="text-xs font-semibold tracking-[0.16em] text-amber-800">
-                      Help Needed Now
-                    </p>
-                  </div>
-                  <div className="relative space-y-2">
-                    {urgentUnanswered.map((item) => (
                       <Link
-                        key={`urgent-${item.id}`}
                         href={`/questions/${item.id}`}
-                        className="block rounded-xl border border-amber-200/70 bg-white px-3 py-2 text-sm font-medium text-slate-800 transition hover:-translate-y-0.5 hover:border-amber-300 hover:bg-white hover:shadow-sm"
+                        className="text-ink hover:text-power-orange-solid block py-3 text-base font-medium transition-colors duration-200"
                       >
-                        <span className="line-clamp-1">{item.title}</span>
-                        <span className="mt-1 inline-flex items-center gap-2 text-xs font-semibold text-amber-700">
-                          <MessageCircle size={12} /> 0 answers
-                        </span>
+                        <span className="line-clamp-2">{item.title}</span>
                       </Link>
-                    ))}
-                  </div>
-                </motion.section>
-              ) : null}
-            </AnimatePresence>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-            {/* Knowledge Opportunities + Solved Discussions */}
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <motion.div
-                whileHover={{ y: -3 }}
-                className="rounded-2xl border border-blue-200 bg-blue-50/80 p-4"
-              >
-                <p className="text-xs font-semibold text-blue-700">Knowledge Opportunities</p>
-                <p className="mt-1 text-sm text-blue-900">
-                  {spotlight.unansweredCount} questions still need helpful answers.
-                </p>
-              </motion.div>
-              <motion.div
-                whileHover={{ y: -3 }}
-                className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4"
-              >
-                <p className="text-xs font-semibold text-emerald-700">Solved Discussions</p>
-                <p className="mt-1 text-sm text-emerald-900">
-                  {spotlight.answeredCount} questions already have shared solutions.
-                </p>
-              </motion.div>
-            </section>
+            {currentUserId ? (
+              <>
+                <section aria-labelledby="qna-your-numbers">
+                  <h3
+                    id="qna-your-numbers"
+                    className="font-editorial text-ink text-2xl font-normal"
+                  >
+                    Your numbers
+                  </h3>
+                  <dl className="border-hairline mt-4 grid grid-cols-2 border-t">
+                    {[
+                      { label: "Total points", value: summary.points },
+                      { label: "Questions", value: summary.q },
+                      { label: "Answers", value: summary.a },
+                      { label: "Upvotes received", value: summary.upvotes },
+                    ].map((stat) => (
+                      <div key={stat.label} className="border-hairline border-b py-5 pr-4">
+                        <dt className="text-ink-muted text-sm">{stat.label}</dt>
+                        <dd className="font-editorial text-ink mt-1 text-4xl font-light tabular-nums">
+                          {stat.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="text-ink-body mt-4 text-base leading-relaxed">
+                    {spotlight.unansweredCount} questions still need helpful answers.{" "}
+                    {spotlight.answeredCount} already have shared solutions.
+                  </p>
+                </section>
+
+                <section aria-labelledby="qna-activity">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 id="qna-activity" className="font-editorial text-ink text-2xl font-normal">
+                      Your activity
+                      {activityUnreadCount > 0 ? (
+                        <span className="text-power-orange-solid ml-2 font-sans text-sm font-semibold">
+                          {activityUnreadCount} new
+                        </span>
+                      ) : null}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => void handleMarkAllActivityRead()}
+                      disabled={activityUnreadCount === 0 || isMarkingActivityRead}
+                      className="text-ink decoration-ink/30 hover:decoration-ink text-sm font-semibold underline underline-offset-4 transition-colors duration-200 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+                    >
+                      {isMarkingActivityRead ? "Marking" : "Mark all read"}
+                    </button>
+                  </div>
+
+                  {isLoadingActivity ? (
+                    <p className="text-ink-muted mt-4 text-base">Loading activity</p>
+                  ) : activity.length === 0 ? (
+                    <p className="text-ink-body mt-4 text-base leading-relaxed">
+                      Nothing yet. When someone answers or upvotes your content, it shows up here.
+                    </p>
+                  ) : (
+                    <ul className="border-hairline mt-4 max-h-96 overflow-y-auto border-t">
+                      {activity.map((item) => {
+                        const postLink = item.data?.postId
+                          ? `/questions/${item.data.postId}`
+                          : null;
+                        return (
+                          <li key={item.id} className="border-hairline border-b py-4">
+                            <p className="text-ink-muted flex items-center gap-2 text-sm">
+                              {!item.isRead ? (
+                                <span
+                                  className="bg-power-orange-solid h-2 w-2 shrink-0 rounded-full"
+                                  aria-label="Unread"
+                                />
+                              ) : null}
+                              <span>{getActivityLabel(item)}</span>
+                              <span aria-hidden>·</span>
+                              <span>{toRelativeTime(item.createdAt)} ago</span>
+                            </p>
+                            <p
+                              className={`mt-1 text-base leading-relaxed ${
+                                item.isRead ? "text-ink-body" : "text-ink font-medium"
+                              }`}
+                            >
+                              {item.message}
+                            </p>
+                            {postLink ? (
+                              <Link
+                                href={postLink}
+                                onClick={() => {
+                                  void handleActivityOpen(item);
+                                }}
+                                className="text-ink decoration-ink/30 hover:decoration-ink mt-2 inline-block text-sm font-semibold underline underline-offset-4 transition-colors duration-200"
+                              >
+                                Open thread
+                              </Link>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </section>
+              </>
+            ) : null}
           </aside>
         </div>
       </div>

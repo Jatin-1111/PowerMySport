@@ -39,10 +39,9 @@ export default function LikeButton({
       }}
       disabled={disabled}
       aria-pressed={liked}
-      className={`inline-flex items-center rounded-full border font-semibold transition ${s.pad} ${s.text} ${
-        liked
-          ? "border-rose-200 bg-rose-50 text-rose-600"
-          : "border-slate-200 bg-white text-slate-600 hover:border-rose-200 hover:bg-rose-50/60 hover:text-rose-500"
+      aria-label={liked ? "Remove like" : "Like"}
+      className={`btn-motion inline-flex items-center rounded-md font-semibold ${s.pad} ${s.text} ${
+        liked ? "bg-wash text-indigo-700" : "text-ink-muted hover:bg-paper-deep hover:text-ink"
       } disabled:opacity-50 ${className}`}
     >
       <motion.span
@@ -52,7 +51,12 @@ export default function LikeButton({
         transition={{ duration: 0.28, ease: "easeOut" }}
         className="inline-flex"
       >
-        <Heart size={s.icon} className={liked ? "fill-rose-500 text-rose-500" : ""} />
+        <Heart
+          size={s.icon}
+          strokeWidth={1.5}
+          className={liked ? "fill-power-orange text-power-orange" : ""}
+          aria-hidden="true"
+        />
       </motion.span>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span

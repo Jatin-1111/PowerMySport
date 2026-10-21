@@ -25,9 +25,11 @@ export default function BlogHero({ totalBlogs }: BlogHeroProps) {
           <PenLine size={17} aria-hidden="true" />
           Share your experience
         </Link>
-        <p className="text-ink-muted text-sm">
-          {totalBlogs} {totalBlogs === 1 ? "experience" : "experiences"} shared so far
-        </p>
+        {totalBlogs > 0 ? (
+          <p className="text-ink-muted text-sm">
+            {totalBlogs} {totalBlogs === 1 ? "experience" : "experiences"} shared so far
+          </p>
+        ) : null}
       </div>
     </section>
   );

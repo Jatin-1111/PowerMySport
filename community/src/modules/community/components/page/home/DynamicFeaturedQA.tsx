@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Crown } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { communityService } from "@/modules/community/services/community";
 import { CommunityPostDetailResponse } from "@/modules/community/types";
 
+/** The best-voted answered question, as a wash-tinted callout. Renders nothing
+ *  when no question has an answer yet: an earlier version showed a made-up
+ *  "Priya recommends" exchange here, and invented parent quotes do not belong
+ *  on a community page. */
 export default function DynamicFeaturedQA() {
   const [data, setData] = useState<CommunityPostDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -12,17 +17,13 @@ export default function DynamicFeaturedQA() {
   useEffect(() => {
     async function loadFeaturedQA() {
       try {
-        const postsResponse = await communityService.listPosts(1, 10, {
-          sort: "TOP",
-        });
+        const postsResponse = await communityService.listPosts(1, 10, { sort: "TOP" });
         const topAnsweredPost = postsResponse.items?.find((p) => p.answerCount > 0);
-
         if (topAnsweredPost) {
-          const details = await communityService.getPostDetails(topAnsweredPost.id);
-          setData(details);
+          setData(await communityService.getPostDetails(topAnsweredPost.id));
         }
       } catch {
-        // Silent catch
+        // render nothing
       } finally {
         setIsLoading(false);
       }
@@ -32,69 +33,40 @@ export default function DynamicFeaturedQA() {
 
   if (isLoading) {
     return (
-      <div className="border-power-orange/20 relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm">
-        <div className="h-48 animate-pulse rounded-2xl bg-slate-200/50" />
+      <div className="bg-wash rounded-3xl p-8" aria-busy="true">
+        <div className="bg-ink/10 h-3 w-24 animate-pulse rounded-sm" />
+        <div className="bg-ink/10 mt-5 h-7 w-4/5 animate-pulse rounded-sm" />
+        <div className="bg-ink/10 mt-6 h-20 w-full animate-pulse rounded-sm" />
       </div>
     );
   }
 
-  if (!data || !data.answers || data.answers.length === 0) {
-    // Fallback if no answered posts exist in the community yet
-    return (
-      <div className="border-power-orange/20 relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm">
-        <div className="relative">
-          <div className="flex items-center gap-2">
-            <span className="bg-power-orange/10 text-power-orange inline-flex rounded-md px-2.5 py-1 text-xs font-semibold">
-              Featured Parent Q&A
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-              <Crown className="h-3.5 w-3.5 text-amber-500" />
-              Answered by a top-rated parent
-            </span>
-          </div>
-          <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-900">
-            What sport helps a shy 9-year-old build confidence fast?
-          </h3>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Priya recommends a low-pressure group setting with frequent small wins, simple drills,
-            and a coach who rewards effort before competition.
-          </p>
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs font-semibold tracking-[0.22em] text-slate-500">
-              Parent takeaway
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
-              Start with one session per week, pick a coach with strong parent reviews, and look for
-              venues that keep practice times predictable.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!data || !data.answers || data.answers.length === 0) return null;
 
   const { post, answers } = data;
-  const topAnswer = answers.sort((a, b) => b.voteScore - a.voteScore)[0];
+  const topAnswer = [...answers].sort((a, b) => b.voteScore - a.voteScore)[0];
 
   return (
-    <div className="border-power-orange/20 relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm">
-      <div className="relative">
-        <div className="flex items-center gap-2">
-          <span className="bg-power-orange/10 text-power-orange inline-flex rounded-md px-2.5 py-1 text-xs font-semibold">
-            Featured Parent Q&A
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
-            <Crown className="h-3.5 w-3.5 text-amber-500" />
-            Answered by {topAnswer.author.displayName}
-          </span>
-        </div>
-        <h3 className="mt-4 text-xl font-semibold tracking-tight text-slate-900">{post.title}</h3>
-        <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">{post.body}</p>
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
-          <p className="text-xs font-semibold tracking-[0.22em] text-slate-500">Coach takeaway</p>
-          <p className="mt-2 line-clamp-4 text-sm leading-6 text-slate-700">{topAnswer.content}</p>
-        </div>
-      </div>
-    </div>
+    <article className="bg-wash rounded-3xl p-7 sm:p-9">
+      <p className="text-ink-body text-sm font-medium">Most helpful answer</p>
+      <h3 className="font-editorial text-ink mt-3 text-balance text-3xl font-normal leading-tight">
+        {post.title}
+      </h3>
+      <blockquote className="border-ink mt-6 border-l-2 pl-5">
+        <p className="font-editorial text-ink line-clamp-5 text-xl font-light italic leading-relaxed">
+          {topAnswer.content}
+        </p>
+        <footer className="text-ink-body mt-3 text-sm">
+          Answered by {topAnswer.author.displayName}
+        </footer>
+      </blockquote>
+      <Link
+        href={`/questions/${post.id}`}
+        className="text-ink decoration-ink/30 hover:decoration-ink mt-6 inline-flex items-center gap-1.5 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+      >
+        Read the full thread
+        <ArrowRight className="h-4 w-4" aria-hidden />
+      </Link>
+    </article>
   );
 }

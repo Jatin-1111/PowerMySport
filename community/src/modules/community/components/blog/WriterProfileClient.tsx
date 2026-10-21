@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile, BlogListItem } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
@@ -48,22 +47,31 @@ export default function WriterProfileClient({ identifier }: { identifier: string
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[calc(100vh-5.5rem)] items-center justify-center text-slate-400">
-        <Loader2 size={26} className="animate-spin" />
+      <div
+        aria-busy="true"
+        aria-label="Loading writer"
+        className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6"
+      >
+        <div className="bg-ink/10 h-56 animate-pulse rounded-3xl" />
       </div>
     );
   }
 
   if (notFound || !profile) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-slate-700">Writer not found.</p>
-        <Link
-          href="/experiences"
-          className="mt-4 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-        >
-          Back to Experiences
-        </Link>
+      <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+        <div className="bg-paper-deep rounded-3xl px-6 py-16 text-center">
+          <p className="font-editorial text-ink text-4xl font-light">Writer not found.</p>
+          <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+            The link may be wrong, or the writer may have left.
+          </p>
+          <Link
+            href="/experiences"
+            className="btn-motion bg-power-orange-solid mt-7 inline-flex min-h-11 items-center rounded-md px-6 text-base font-semibold text-white hover:bg-indigo-700"
+          >
+            Back to experiences
+          </Link>
+        </div>
       </div>
     );
   }

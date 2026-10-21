@@ -15,19 +15,8 @@ import CreateCommunityModal from "@/modules/community/components/discover/Create
 import EditCommunityModal from "@/modules/community/components/discover/EditCommunityModal";
 import CommunityDetailsModal from "@/modules/community/components/discover/CommunityDetailsModal";
 import PlayerDetailsModal from "@/modules/community/components/discover/PlayerDetailsModal";
-import {
-  Search,
-  Users,
-  Trophy,
-  Loader2,
-  User,
-  Plus,
-  MessageSquare,
-  Eye,
-  Filter,
-  X,
-  LogIn,
-} from "lucide-react";
+import { Search, Users, User, Plus, MessageSquare, X, LogIn } from "lucide-react";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function DiscoverPageClient() {
@@ -176,7 +165,7 @@ export default function DiscoverPageClient() {
       }
     } catch (error) {
       console.error("Failed to delete group:", error);
-      alert("Failed to delete community. You must be an admin.");
+      toast.error("We could not delete this community. Only an admin can delete it.");
     }
   };
 
@@ -253,6 +242,14 @@ export default function DiscoverPageClient() {
     return true;
   });
 
+  const activeFilterCount = (selectedSport !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0);
+  const clearFilters = () => {
+    setSelectedSport("All");
+    setSelectedCity("All");
+  };
+  const selectClass =
+    "text-ink focus:border-ink h-11 w-full rounded-md border border-[#d9d3c8] bg-white px-3 text-base outline-none transition-colors duration-200 hover:border-ink/45 sm:w-52";
+
   return (
     <div className="community-page-shell">
       <div className="community-content-wrap">
@@ -263,216 +260,148 @@ export default function DiscoverPageClient() {
           size="lg"
         />
 
-        <div className="mt-8 flex flex-col gap-6">
-          {/* Search Bar & Filters Toggle */}
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
-            <div className="flex w-full gap-3">
-              <div className="group relative flex-1">
-                <div className="group-focus-within:text-power-orange pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition-colors duration-200 group-focus-within:scale-110">
-                  <Search size={18} />
+        <div className="mt-10 flex flex-col gap-10">
+          {/* Controls: tabs on the left, search on the right. Filters sit in
+              the open instead of behind a toggle, so a parent can see that
+              sport and city narrow the list without hunting for it. */}
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div
+                role="tablist"
+                aria-label="Browse"
+                className="border-hairline flex gap-8 border-b"
+              >
+                {(["COMMUNITIES", "PARENTS"] as const).map((tab) => {
+                  const isActive = activeTab === tab;
+                  const Icon = tab === "COMMUNITIES" ? Users : User;
+                  const label = tab === "COMMUNITIES" ? "Communities" : "Parents";
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => {
+                        if (tab !== "COMMUNITIES" && !hasAuthToken()) {
+                          redirectToMainLogin();
+                          return;
+                        }
+                        setActiveTab(tab);
+                      }}
+                      className={`-mb-px inline-flex min-h-12 items-center gap-2 border-b-2 text-base font-semibold transition-colors duration-200 ${
+                        isActive
+                          ? "border-ink text-ink"
+                          : "text-ink-muted hover:text-ink border-transparent"
+                      }`}
+                    >
+                      <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="group relative w-full lg:max-w-md">
+                <div className="text-ink-muted pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                  <Search size={18} aria-hidden="true" />
                 </div>
                 <input
-                  type="text"
-                  placeholder="Search communities and parents..."
+                  type="search"
+                  placeholder="Search communities and parents"
+                  aria-label="Search communities and parents"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="discover-search"
                 />
-                <AnimatePresence>
-                  {searchQuery && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.6 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.6 }}
-                      transition={{ duration: 0.15 }}
-                      onClick={() => setSearchQuery("")}
-                      className="hover:text-power-orange absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 transition-colors"
-                    >
-                      <X size={16} />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    aria-label="Clear search"
+                    className="text-ink-muted hover:text-ink absolute inset-y-0 right-0 flex w-11 items-center justify-center transition-colors duration-200"
+                  >
+                    <X size={16} aria-hidden="true" />
+                  </button>
+                )}
               </div>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setShowFilters(!showFilters)}
-                style={
-                  showFilters || selectedSport !== "All" || selectedCity !== "All"
-                    ? {
-                        border: "1px solid rgba(233, 115, 22, 0.35)",
-                        background: "rgba(233, 115, 22, 0.08)",
-                        color: "#E97316",
-                      }
-                    : {
-                        border: "1px solid rgba(226, 232, 240, 0.7)",
-                        background: "rgba(255, 255, 255, 0.85)",
-                        color: "#64748b",
-                      }
-                }
-                className="flex shrink-0 items-center gap-1.5 rounded-md px-4 py-3 text-[13px] font-semibold shadow-sm transition-colors duration-300 hover:shadow-md"
-              >
-                <motion.span
-                  animate={showFilters ? { rotate: 180 } : { rotate: 0 }}
-                  transition={{ duration: 0.25, ease: "easeOut" }}
-                >
-                  <Filter size={16} />
-                </motion.span>
-                <span className="hidden sm:inline">Filters</span>
-                <AnimatePresence>
-                  {(selectedSport !== "All" || selectedCity !== "All") && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.5 }}
-                      className="bg-power-orange/15 text-power-orange flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold"
-                    >
-                      {(selectedSport !== "All" ? 1 : 0) + (selectedCity !== "All" ? 1 : 0)}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </motion.button>
             </div>
 
-            <AnimatePresence>
-              {showFilters && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: "auto", marginTop: 8 }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="overflow-hidden"
-                >
-                  <div
-                    className="rounded-2xl p-5 shadow-sm"
-                    style={{
-                      border: "1px solid rgba(226, 232, 240, 0.6)",
-                      background: "rgba(255, 255, 255, 0.8)",
-                    }}
-                  >
-                    <div className="grid gap-6 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold text-slate-400">
-                          Sport
-                        </label>
-                        <select
-                          value={selectedSport}
-                          onChange={(e) => setSelectedSport(e.target.value)}
-                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:ring-2"
-                        >
-                          <option value="All">All Sports</option>
-                          {availableSports.map((s) => (
-                            <option key={s} value={s}>
-                              {s}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="mb-2 block text-xs font-semibold text-slate-400">
-                          City
-                        </label>
-                        <select
-                          value={selectedCity}
-                          onChange={(e) => setSelectedCity(e.target.value)}
-                          className="focus:border-power-orange/40 focus:ring-power-orange/10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors focus:ring-2"
-                        >
-                          <option value="All">All Cities</option>
-                          {availableCities.map((c) => (
-                            <option key={c} value={c}>
-                              {c}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    {(selectedSport !== "All" || selectedCity !== "All") && (
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          onClick={() => {
-                            setSelectedSport("All");
-                            setSelectedCity("All");
-                          }}
-                          className="text-power-orange/80 hover:text-power-orange text-xs font-semibold transition-colors"
-                        >
-                          Clear Filters
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Tabs */}
-          <div className="bg-paper-deep mx-auto flex w-full max-w-3xl rounded-lg p-1">
-            {["COMMUNITIES", "PARENTS"].map((tab) => {
-              const isActive = activeTab === tab;
-              const Icon = tab === "COMMUNITIES" ? Users : User;
-              const label = tab === "COMMUNITIES" ? "Communities" : "Parents";
-
-              return (
+            <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
+              <label className="sr-only" htmlFor="discover-sport">
+                Sport
+              </label>
+              <select
+                id="discover-sport"
+                value={selectedSport}
+                onChange={(e) => setSelectedSport(e.target.value)}
+                className={selectClass}
+              >
+                <option value="All">All sports</option>
+                {availableSports.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <label className="sr-only" htmlFor="discover-city">
+                City
+              </label>
+              <select
+                id="discover-city"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className={selectClass}
+              >
+                <option value="All">All cities</option>
+                {availableCities.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              {activeFilterCount > 0 && (
                 <button
-                  key={tab}
-                  onClick={() => {
-                    if (tab !== "COMMUNITIES" && !hasAuthToken()) {
-                      redirectToMainLogin();
-                      return;
-                    }
-                    setActiveTab(tab as any);
-                  }}
-                  className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 text-sm font-semibold transition-colors duration-200 ${
-                    isActive ? "text-ink" : "text-ink-muted hover:text-ink"
-                  }`}
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-ink decoration-ink/30 hover:decoration-ink col-span-2 w-fit text-base font-semibold underline underline-offset-4 transition-colors duration-200 sm:col-span-1"
                 >
-                  {isActive && (
-                    <motion.div
-                      layoutId="discoverTab"
-                      className="absolute inset-0 z-0 rounded-md bg-white"
-                      initial={false}
-                      transition={{ type: "spring", stiffness: 280, damping: 26, mass: 0.8 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon size={16} />
-                    <span className="hidden sm:inline">{label}</span>
-                    <span className="inline sm:hidden">{label.slice(0, 4)}.</span>
-                  </span>
+                  Clear filters
                 </button>
-              );
-            })}
+              )}
+            </div>
           </div>
 
           {loading ? (
-            <div className="flex h-64 items-center justify-center">
-              <Loader2 className="text-power-orange animate-spin" size={32} />
+            <div
+              aria-busy="true"
+              aria-label="Loading"
+              className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {[1, 2, 3].map((i) => (
+                <div key={i}>
+                  <div className="bg-ink/10 aspect-[4/3] w-full animate-pulse rounded-2xl" />
+                  <div className="bg-ink/10 mt-5 h-6 w-2/3 animate-pulse rounded-sm" />
+                  <div className="bg-ink/10 mt-3 h-4 w-full animate-pulse rounded-sm" />
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-12">
-              {/* Communities Section */}
+            <>
               {activeTab === "COMMUNITIES" && (
-                <motion.section
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <section aria-labelledby="discover-communities">
+                  <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
                     <div>
-                      <h2 className="community-section-title">Communities</h2>
-                      <div className="mt-1 flex items-center gap-2">
-                        <p className="text-sm leading-6 text-slate-500 sm:text-base">
-                          Groups and squads for your favorite sports
-                        </p>
-                        <span className="inline-flex items-center justify-center rounded-md border border-white bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
-                          {filteredCommunities.length}
-                        </span>
-                      </div>
+                      <h2 id="discover-communities" className="community-section-title">
+                        Communities
+                      </h2>
+                      <p className="text-ink-body mt-1 text-base tabular-nums">
+                        {filteredCommunities.length}{" "}
+                        {filteredCommunities.length === 1 ? "group" : "groups"} for parents and
+                        young players
+                      </p>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
                         if (!hasAuthToken()) {
                           redirectToMainLogin();
@@ -480,302 +409,242 @@ export default function DiscoverPageClient() {
                         }
                         setIsCreateModalOpen(true);
                       }}
-                      className="bg-power-orange-solid btn-motion inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+                      className="bg-power-orange-solid btn-motion inline-flex min-h-11 items-center gap-2 rounded-md px-5 text-base font-semibold text-white hover:bg-indigo-700"
                     >
-                      <Plus size={16} />
-                      <span className="hidden sm:inline">Create Community</span>
-                      <span className="inline sm:hidden">Create</span>
+                      <Plus size={16} aria-hidden="true" />
+                      Create community
                     </button>
                   </div>
 
                   {filteredCommunities.length === 0 ? (
-                    <div
-                      className="community-card flex flex-col items-center justify-center py-12 text-center"
-                      style={{
-                        background: "rgba(255, 255, 255, 0.5)",
-                        border: "1px solid rgba(255, 255, 255, 0.6)",
-                      }}
-                    >
-                      <Users size={32} className="text-slate-300" />
-                      <p className="mt-3 text-sm font-medium text-slate-900">
-                        No communities found
+                    <div className="bg-paper-deep rounded-2xl px-6 py-16 text-center">
+                      <p className="font-editorial text-ink text-3xl font-light">
+                        {activeFilterCount > 0 || searchQuery
+                          ? "No communities match."
+                          : "No communities yet."}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Try adjusting your search or filters.
+                      <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+                        {activeFilterCount > 0 || searchQuery
+                          ? "Try a different search, or clear the filters to see every group."
+                          : "Start the first one for your sport and city."}
                       </p>
+                      {activeFilterCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          className="text-ink decoration-ink/30 hover:decoration-ink mt-5 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+                        >
+                          Clear filters
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                      <AnimatePresence>
-                        {filteredCommunities.map((group, idx) => (
-                          <motion.div
-                            key={group.id}
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.3, delay: idx * 0.05 }}
-                            className="discover-card group flex flex-col p-4"
+                    <ul className="grid grid-cols-1 gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+                      {filteredCommunities.map((group) => (
+                        <li key={group.id} className="group flex flex-col">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCommunity(group);
+                              setIsCommunityModalOpen(true);
+                            }}
+                            aria-label={`View ${group.name}`}
+                            className="bg-paper-deep relative block aspect-[4/3] w-full overflow-hidden rounded-2xl"
                           >
-                            {/* Rectangular Logo/Cover */}
-                            <div
-                              className="relative mb-4 flex w-full shrink-0 items-center justify-center overflow-hidden rounded-xl"
-                              style={{
-                                aspectRatio: "5/3",
-                                background: "#efe7da",
-                              }}
-                            >
-                              <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5">
-                                {group.isMember && (
-                                  <span
-                                    className="discover-badge"
-                                    style={{
-                                      color: "#059669",
-                                      borderColor: "rgba(16,185,129,0.3)",
-                                      background: "rgba(236,253,245,0.92)",
-                                    }}
-                                  >
-                                    Joined
-                                  </span>
-                                )}
-                              </div>
+                            {group.profilePicture ? (
+                              <img
+                                src={group.profilePicture}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover saturate-[0.85] transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                              />
+                            ) : (
+                              <span className="font-editorial text-ink/15 absolute inset-0 flex items-center justify-center text-8xl font-light">
+                                {group.name.charAt(0)}
+                              </span>
+                            )}
+                            {group.isMember && (
+                              <span className="bg-paper text-ink absolute left-3 top-3 rounded-sm px-2 py-1 text-xs font-semibold">
+                                Joined
+                              </span>
+                            )}
+                          </button>
 
-                              {group.profilePicture ? (
-                                <img
-                                  src={group.profilePicture}
-                                  alt={group.name}
-                                  className="absolute inset-0 h-full w-full object-cover"
-                                />
+                          <div className="mt-5 flex flex-1 flex-col">
+                            <h3 className="font-editorial text-ink line-clamp-2 text-2xl font-normal leading-tight">
+                              {group.name}
+                            </h3>
+                            <p className="text-ink-muted mt-2 text-sm tabular-nums">
+                              {[
+                                group.sport,
+                                group.city,
+                                `${group.memberCount} ${group.memberCount === 1 ? "member" : "members"}`,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                            <p className="text-ink-body mt-3 line-clamp-2 text-base leading-relaxed">
+                              {group.description || "No description yet."}
+                            </p>
+
+                            {/* mt-auto lines the actions up across cards of
+                                different description length. */}
+                            <div className="mt-auto flex items-center gap-5 pt-5">
+                              {group.isMember ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCommunityChat(group.id)}
+                                  className="bg-power-orange-solid btn-motion inline-flex min-h-11 items-center gap-2 rounded-md px-5 text-base font-semibold text-white hover:bg-indigo-700"
+                                >
+                                  <MessageSquare size={16} aria-hidden="true" />
+                                  Open chat
+                                </button>
                               ) : (
-                                <span className="font-title text-power-orange/20 text-4xl font-semibold">
-                                  {group.name.charAt(0)}
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleJoinGroup(group.id)}
+                                  disabled={isJoiningCommunity}
+                                  className="bg-ink btn-motion hover:bg-ink-hover inline-flex min-h-11 items-center gap-2 rounded-md px-5 text-base font-semibold text-white disabled:opacity-60"
+                                >
+                                  <LogIn size={16} aria-hidden="true" />
+                                  Join
+                                </button>
                               )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCommunity(group);
+                                  setIsCommunityModalOpen(true);
+                                }}
+                                className="text-ink decoration-ink/30 hover:decoration-ink text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+                              >
+                                Details
+                              </button>
                             </div>
-
-                            <div className="flex flex-1 flex-col px-2 pb-2">
-                              <div className="w-full min-w-0 flex-1 text-left">
-                                <h3 className="font-title truncate text-base font-semibold text-slate-900">
-                                  {group.name}
-                                </h3>
-                                <p className="mt-1.5 line-clamp-2 min-h-[32px] text-xs leading-relaxed text-slate-500">
-                                  {group.description || "No description provided."}
-                                </p>
-                              </div>
-
-                              <div className="mt-4 flex w-full flex-col gap-3 border-t border-slate-100 pt-4">
-                                <div className="flex items-center gap-2 text-xs font-medium">
-                                  <div
-                                    className="flex items-center gap-1.5 rounded-md px-2.5 py-1"
-                                    style={{
-                                      border: "1px solid rgba(186,210,235,0.6)",
-                                      background: "rgba(240,249,255,0.6)",
-                                      color: "#0369a1",
-                                      fontSize: 11,
-                                      fontWeight: 500,
-                                    }}
-                                  >
-                                    <Users size={12} style={{ color: "#0ea5e9" }} />
-                                    {group.memberCount} members
-                                  </div>
-                                  {group.sport && (
-                                    <div
-                                      className="flex items-center gap-1.5 rounded-md px-2.5 py-1"
-                                      style={{
-                                        border: "1px solid rgba(252,211,77,0.6)",
-                                        background: "rgba(255,251,235,0.6)",
-                                        color: "#b45309",
-                                        fontSize: 11,
-                                        fontWeight: 500,
-                                      }}
-                                    >
-                                      <Trophy size={12} style={{ color: "#f59e0b" }} />
-                                      <span className="max-w-[80px] truncate">{group.sport}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex w-full gap-2">
-                                  <button
-                                    onClick={() => {
-                                      setSelectedCommunity(group);
-                                      setIsCommunityModalOpen(true);
-                                    }}
-                                    className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
-                                  >
-                                    <Eye size={14} /> Details
-                                  </button>
-                                  {group.isMember ? (
-                                    <button
-                                      onClick={() => handleCommunityChat(group.id)}
-                                      className="bg-power-orange-solid btn-motion inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
-                                    >
-                                      <MessageSquare size={14} /> Chat
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={() => handleJoinGroup(group.id)}
-                                      disabled={isJoiningCommunity}
-                                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md bg-slate-800 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-60"
-                                    >
-                                      <LogIn size={14} /> Join
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </motion.section>
+                </section>
               )}
 
-              {/* People Section */}
               {activeTab !== "COMMUNITIES" && (
-                <motion.section
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <h2 className="community-section-title">Sports Parents</h2>
-                      <p className="community-section-copy">Connect with other parents</p>
-                    </div>
-                    <span className="inline-flex items-center justify-center rounded-md border border-white bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-600 shadow-sm">
-                      {filteredPlayers.length}
-                    </span>
+                <section aria-labelledby="discover-parents">
+                  <div className="mb-8">
+                    <h2 id="discover-parents" className="community-section-title">
+                      Sports parents
+                    </h2>
+                    <p className="text-ink-body mt-1 text-base tabular-nums">
+                      {filteredPlayers.length} {filteredPlayers.length === 1 ? "parent" : "parents"}{" "}
+                      you can connect with
+                    </p>
                   </div>
 
                   {filteredPlayers.length === 0 ? (
-                    <div
-                      className="community-card flex flex-col items-center justify-center py-12 text-center"
-                      style={{
-                        background: "rgba(255, 255, 255, 0.5)",
-                        border: "1px solid rgba(255, 255, 255, 0.6)",
-                      }}
-                    >
-                      <User size={32} className="text-slate-300" />
-                      <p className="mt-3 text-sm font-medium text-slate-900">
-                        No {activeTab.toLowerCase()} found
+                    <div className="bg-paper-deep rounded-2xl px-6 py-16 text-center">
+                      <p className="font-editorial text-ink text-3xl font-light">
+                        No parents match.
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">Try a different search term.</p>
+                      <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+                        Try a different search, or clear the filters.
+                      </p>
+                      {activeFilterCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearFilters}
+                          className="text-ink decoration-ink/30 hover:decoration-ink mt-5 text-base font-semibold underline underline-offset-4 transition-colors duration-200"
+                        >
+                          Clear filters
+                        </button>
+                      )}
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      <AnimatePresence>
-                        {filteredPlayers.map((player, idx) => (
-                          <motion.div
+                    <ul className="border-hairline grid grid-cols-1 border-t lg:grid-cols-2 lg:gap-x-12">
+                      {filteredPlayers.map((player) => {
+                        const line = familyLine(player.dependents);
+                        const sports = player.sports ?? [];
+                        return (
+                          <li
                             key={player.id}
-                            initial={{ opacity: 0, y: 15 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            transition={{ duration: 0.3, delay: idx * 0.05 }}
-                            className="discover-card group flex flex-col items-center text-center"
-                            style={{ padding: "20px" }}
+                            className="border-hairline flex items-center gap-4 border-b py-5"
                           >
-                            <div
-                              className={`discover-avatar-ring mb-3 h-28 w-28 shrink-0 ${player.photoUrl ? "cursor-pointer transition-transform duration-200 hover:scale-105" : ""}`}
-                              onClick={() => {
-                                if (player.photoUrl)
-                                  setPhotoLightbox({
-                                    url: player.photoUrl,
-                                    name: player.displayName,
-                                  });
-                              }}
+                            <button
+                              type="button"
+                              disabled={!player.photoUrl}
+                              onClick={() =>
+                                player.photoUrl &&
+                                setPhotoLightbox({ url: player.photoUrl, name: player.displayName })
+                              }
+                              aria-label={
+                                player.photoUrl
+                                  ? `Enlarge photo of ${player.displayName}`
+                                  : undefined
+                              }
+                              className="bg-paper-deep text-ink-muted flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl disabled:cursor-default"
                             >
                               {player.photoUrl ? (
                                 <img
                                   src={player.photoUrl}
-                                  alt={player.displayName}
-                                  className="h-full w-full rounded-full object-cover"
+                                  alt=""
+                                  className="h-full w-full object-cover"
                                 />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center rounded-full bg-slate-100 text-slate-400">
-                                  <User size={40} />
-                                </div>
+                                <User size={26} strokeWidth={1.5} aria-hidden="true" />
                               )}
-                            </div>
-                            <h3 className="font-title line-clamp-1 text-base font-semibold text-slate-900">
-                              {player.displayName}
-                            </h3>
+                            </button>
 
-                            {/* One line, not the full list: the card is the
-                                shortlist and the Details modal is where a parent
-                                reads every child. "Boys U-14 · Chandigarh" beside
-                                the sport chips below is what makes a grid of
-                                strangers scannable. */}
-                            {(() => {
-                              const line = familyLine(player.dependents);
-                              return line ? (
-                                <p className="mt-1 line-clamp-1 text-xs font-medium text-slate-500">
-                                  {line}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-editorial text-ink line-clamp-1 text-xl font-normal">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedPlayerId(player.id);
+                                    setIsPlayerModalOpen(true);
+                                  }}
+                                  className="text-left hover:underline"
+                                >
+                                  {player.displayName}
+                                </button>
+                              </h3>
+                              {/* One line each, not the full list: the Details
+                                  dialog is where a parent reads every child. */}
+                              {line && <p className="text-ink-body line-clamp-1 text-sm">{line}</p>}
+                              {sports.length > 0 && (
+                                <p className="text-ink-muted line-clamp-1 text-sm">
+                                  {sports.slice(0, 3).join(" · ")}
+                                  {sports.length > 3 ? ` · +${sports.length - 3}` : ""}
                                 </p>
-                              ) : null;
-                            })()}
-
-                            <div className="mt-3 flex min-h-[24px] flex-wrap items-center justify-center gap-1.5">
-                              {player.sports?.slice(0, 2).map((s) => (
-                                <span
-                                  key={s}
-                                  style={{
-                                    display: "inline-flex",
-                                    borderRadius: 8,
-                                    background: "#f1f5f9",
-                                    padding: "2px 8px",
-                                    fontSize: 10,
-                                    fontWeight: 500,
-                                    color: "#475569",
-                                    border: "1px solid rgba(226,232,240,0.6)",
-                                  }}
-                                >
-                                  {s}
-                                </span>
-                              ))}
-                              {player.sports?.length > 2 && (
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    borderRadius: 8,
-                                    background: "#f1f5f9",
-                                    padding: "2px 8px",
-                                    fontSize: 10,
-                                    fontWeight: 500,
-                                    color: "#475569",
-                                    border: "1px solid rgba(226,232,240,0.6)",
-                                  }}
-                                >
-                                  +{player.sports.length - 2}
-                                </span>
                               )}
                             </div>
 
-                            <div className="mt-5 flex w-full gap-2 border-t border-slate-100/50 pt-4">
+                            <div className="flex shrink-0 items-center gap-4">
                               <button
+                                type="button"
                                 onClick={() => {
                                   setSelectedPlayerId(player.id);
                                   setIsPlayerModalOpen(true);
                                 }}
-                                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50"
+                                className="text-ink decoration-ink/30 hover:decoration-ink hidden text-base font-semibold underline underline-offset-4 transition-colors duration-200 sm:inline"
                               >
-                                <Eye size={12} /> Details
+                                Details
                               </button>
                               <button
+                                type="button"
                                 onClick={() => handlePlayerChat(player.id, player.displayName)}
-                                className="bg-power-orange-solid btn-motion inline-flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold text-white hover:bg-indigo-700"
+                                className="bg-power-orange-solid btn-motion inline-flex min-h-11 items-center gap-2 rounded-md px-4 text-base font-semibold text-white hover:bg-indigo-700"
                               >
-                                <MessageSquare size={12} /> Chat
+                                <MessageSquare size={16} aria-hidden="true" />
+                                Chat
                               </button>
                             </div>
-                          </motion.div>
-                        ))}
-                      </AnimatePresence>
-                    </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   )}
-                </motion.section>
+                </section>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
@@ -832,7 +701,7 @@ export default function DiscoverPageClient() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-4"
+                className="bg-ink/85 fixed inset-0 z-[200] flex items-center justify-center p-4"
                 onClick={() => setPhotoLightbox(null)}
               >
                 <motion.div
@@ -846,7 +715,7 @@ export default function DiscoverPageClient() {
                   <img
                     src={photoLightbox.url}
                     alt={photoLightbox.name}
-                    className="max-h-[78vh] max-w-[78vw] rounded-2xl object-contain shadow-2xl"
+                    className="max-h-[78vh] max-w-[78vw] rounded-2xl object-contain"
                   />
                   <p className="mt-3 text-sm font-semibold text-white/90">{photoLightbox.name}</p>
                 </motion.div>

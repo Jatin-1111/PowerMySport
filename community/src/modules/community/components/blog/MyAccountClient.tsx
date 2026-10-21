@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogAuthorProfile, BlogListItem } from "@/modules/community/types";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
@@ -34,7 +33,7 @@ export default function MyAccountClient() {
       const data = await blogService.listBlogs(1, 50, { mine: true });
       setBlogs(data.items || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to load account");
+      toast.error(error instanceof Error ? error.message : "We could not load your account");
     } finally {
       setIsLoading(false);
       setIsLoadingBlogs(false);
@@ -75,8 +74,12 @@ export default function MyAccountClient() {
 
   if (isLoading || !profile) {
     return (
-      <div className="flex min-h-[calc(100vh-5.5rem)] items-center justify-center text-slate-400">
-        <Loader2 size={26} className="animate-spin" />
+      <div
+        aria-busy="true"
+        aria-label="Loading your account"
+        className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6"
+      >
+        <div className="bg-ink/10 h-56 animate-pulse rounded-3xl" />
       </div>
     );
   }

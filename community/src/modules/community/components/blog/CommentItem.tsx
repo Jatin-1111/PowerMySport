@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { Fragment, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { CornerDownRight, Heart, Loader2, Trash2 } from "lucide-react";
+import { Heart } from "lucide-react";
 import { BlogComment } from "@/modules/community/types";
 import { toRelativeTime, formatCount } from "@/modules/community/utils/blogFormat";
 import AuthorAvatar from "./AuthorAvatar";
@@ -37,7 +36,7 @@ const renderContent = (text: string) => {
       <Link
         key={key++}
         href={`/experiences/by/${username}`}
-        className="text-power-orange font-semibold hover:underline"
+        className="text-power-orange-solid font-semibold hover:underline"
       >
         @{username}
       </Link>
@@ -49,6 +48,9 @@ const renderContent = (text: string) => {
   }
   return nodes;
 };
+
+const action =
+  "text-ink-muted hover:text-ink inline-flex min-h-9 items-center gap-1.5 text-sm font-medium transition-colors duration-200";
 
 export default function CommentItem({
   comment,
@@ -100,92 +102,97 @@ export default function CommentItem({
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={isReply ? "" : "border-b border-slate-100 pb-4"}
-    >
+    <div className={isReply ? "" : "border-hairline border-b py-5 first:pt-0"}>
       <div className="flex gap-3">
-        <Link href={authorHref(comment.author)} className="shrink-0">
+        <Link href={authorHref(comment.author)} className="shrink-0" tabIndex={-1} aria-hidden>
           <AuthorAvatar
             name={comment.author.name}
             photoUrl={comment.author.photoUrl}
-            size={isReply ? 30 : 36}
+            size={isReply ? 28 : 34}
           />
         </Link>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          <p className="flex flex-wrap items-baseline gap-x-2 text-sm">
             <Link
               href={authorHref(comment.author)}
-              className="hover:text-power-orange text-sm font-semibold text-slate-900"
+              className="text-ink text-base font-semibold hover:underline"
             >
               {comment.author.name}
             </Link>
-            {comment.author.username ? (
-              <span className="text-xs text-slate-400">@{comment.author.username}</span>
-            ) : null}
-            <span className="text-xs text-slate-400">· {toRelativeTime(comment.createdAt)}</span>
-          </div>
+            <span className="text-ink-muted">
+              {comment.author.username ? `@${comment.author.username} · ` : ""}
+              {toRelativeTime(comment.createdAt)}
+            </span>
+          </p>
 
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-700">
+          <p className="text-ink-body mt-1 whitespace-pre-wrap break-words text-base leading-relaxed">
             {renderContent(comment.content)}
           </p>
 
-          <div className="mt-1.5 flex items-center gap-3">
+          <div className="mt-1 flex items-center gap-4">
             <button
               type="button"
               onClick={() => onToggleLike(comment)}
-              className={`inline-flex items-center gap-1 text-xs font-semibold transition ${
-                comment.likedByMe ? "text-rose-600" : "text-slate-400 hover:text-rose-500"
-              }`}
+              aria-pressed={comment.likedByMe}
+              aria-label={comment.likedByMe ? "Remove like" : "Like comment"}
+              className={`${action} ${comment.likedByMe ? "text-indigo-700" : ""}`}
             >
-              <Heart size={13} className={comment.likedByMe ? "fill-rose-500 text-rose-500" : ""} />
+              <Heart
+                size={15}
+                strokeWidth={1.5}
+                className={comment.likedByMe ? "fill-power-orange text-power-orange" : ""}
+                aria-hidden="true"
+              />
               {comment.likeCount > 0 ? formatCount(comment.likeCount) : "Like"}
             </button>
             <button
               type="button"
               onClick={toggleReply}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-slate-700"
+              aria-expanded={showReply}
+              className={action}
             >
-              <CornerDownRight size={13} />
               Reply
             </button>
             {comment.isMine ? (
               <button
                 type="button"
                 onClick={() => onDelete(comment)}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 transition hover:text-rose-600"
+                className={`${action} hover:text-red-700`}
               >
-                <Trash2 size={13} />
+                Delete
               </button>
             ) : null}
           </div>
 
           {showReply ? (
-            <div className="mt-2 flex items-end gap-2">
+            <div className="mt-2 flex flex-col gap-3">
               <textarea
                 ref={replyRef}
                 value={replyText}
                 onChange={(event) => setReplyText(event.target.value)}
+                aria-label={`Reply to ${comment.author.name}`}
                 rows={2}
-                placeholder={`Reply to ${comment.author.name}...`}
-                className="focus:border-power-orange focus:ring-power-orange w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1"
+                placeholder={`Reply to ${comment.author.name}`}
+                className="text-ink placeholder:text-ink-muted hover:border-ink/45 focus:border-ink w-full resize-none rounded-md border border-[#d9d3c8] bg-white px-3 py-2.5 text-base transition-colors duration-200 focus:outline-none"
               />
-              <button
-                type="button"
-                onClick={() => void submitReply()}
-                disabled={submitting || !replyText.trim()}
-                className="inline-flex h-9 shrink-0 items-center gap-1 rounded-xl bg-slate-900 px-3 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
-              >
-                {submitting ? <Loader2 size={13} className="animate-spin" /> : "Send"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => void submitReply()}
+                  disabled={submitting || !replyText.trim()}
+                  className="btn-motion bg-ink hover:bg-ink-hover inline-flex min-h-10 items-center rounded-md px-5 text-base font-semibold text-white disabled:opacity-50"
+                >
+                  {submitting ? "Sending" : "Send reply"}
+                </button>
+                <button type="button" onClick={() => setShowReply(false)} className={action}>
+                  Cancel
+                </button>
+              </div>
             </div>
           ) : null}
 
-          {/* One-level replies */}
           {comment.replies && comment.replies.length > 0 ? (
-            <div className="mt-3 space-y-3 border-l-2 border-slate-100 pl-3">
+            <div className="border-ink/20 mt-4 space-y-4 border-l-2 pl-4">
               {comment.replies.map((reply) => (
                 <CommentItem
                   key={reply.id}
@@ -200,6 +207,6 @@ export default function CommentItem({
           ) : null}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

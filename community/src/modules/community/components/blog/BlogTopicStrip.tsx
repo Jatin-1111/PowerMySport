@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { LayoutGrid } from "lucide-react";
 import { ALL_TOPICS } from "@/modules/community/constants/experienceTaxonomy";
 
@@ -9,38 +8,43 @@ interface BlogTopicStripProps {
   onSelect: (topic: string) => void;
 }
 
+const chip =
+  "btn-motion inline-flex min-h-11 shrink-0 items-center gap-2 rounded-md border px-4 text-base font-medium";
+const idle = "border-hairline text-ink-body hover:border-ink/45 hover:text-ink bg-transparent";
+const on = "border-ink bg-ink text-white";
+
+/** Topic filter: hairline chips, the active one filled with ink. */
 export default function BlogTopicStrip({ activeTopic, onSelect }: BlogTopicStripProps) {
   const isAll = !activeTopic || activeTopic.toLowerCase() === "all";
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div
+      role="group"
+      aria-label="Filter by topic"
+      className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+    >
       <button
+        type="button"
+        aria-pressed={isAll}
         onClick={() => onSelect("")}
-        className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3.5 py-2 text-sm font-semibold transition ${
-          isAll
-            ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-            : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-        }`}
+        className={`${chip} ${isAll ? on : idle}`}
       >
-        <LayoutGrid size={15} />
+        <LayoutGrid size={16} strokeWidth={1.5} aria-hidden="true" />
         All
       </button>
       {ALL_TOPICS.map((topic) => {
         const active = activeTopic.toLowerCase() === topic.slug.toLowerCase();
         return (
-          <motion.button
+          <button
             key={topic.slug}
-            whileTap={{ scale: 0.95 }}
+            type="button"
+            aria-pressed={active}
             onClick={() => onSelect(active ? "" : topic.slug)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-3.5 py-2 text-sm font-semibold transition ${
-              active
-                ? "border-power-orange/40 bg-power-orange/10 text-power-orange shadow-sm"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-            }`}
+            className={`${chip} ${active ? on : idle}`}
           >
-            <topic.Icon size={15} />
+            <topic.Icon size={16} strokeWidth={1.5} aria-hidden="true" />
             {topic.label}
-          </motion.button>
+          </button>
         );
       })}
     </div>

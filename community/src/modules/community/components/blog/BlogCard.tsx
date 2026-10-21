@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
 import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
@@ -16,94 +15,69 @@ interface BlogCardProps {
   likePending?: boolean;
 }
 
+/** An editorial tile, not a boxed card: photograph, a plain topic label, a
+ *  serif headline, one meta line. Hover zooms the photo and underlines the
+ *  headline; nothing lifts or casts a shadow. */
 export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardProps) {
   const topic = getTopicMeta(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
+  const authorHref = `/experiences/by/${blog.author.username || blog.author.id}`;
 
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.28, ease: "easeOut" }}
-      whileHover={{ y: -4 }}
-      className="hover:border-power-orange/30 hover: group flex h-full flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm transition hover:shadow-xl"
-    >
-      {/* Cover */}
+    <article className="group flex h-full flex-col">
       <Link
         href={`/experiences/${blog.id}`}
-        className="relative block aspect-[16/10] overflow-hidden"
+        aria-label={blog.title}
+        tabIndex={-1}
+        className="bg-paper-deep relative block aspect-[16/10] overflow-hidden rounded-2xl"
       >
         {coverUrl ? (
           <img
             src={coverUrl}
-            alt={blog.title}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            alt=""
+            className="h-full w-full object-cover saturate-[0.85] transition-transform duration-700 ease-out group-hover:scale-[1.04]"
           />
         ) : (
           <BlogCoverFallback topic={blog.topic} />
         )}
-        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
-          <span
-            className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold shadow-sm ${topic.accent}`}
-          >
-            <topic.Icon size={12} />
-            {topic.label}
-          </span>
-        </div>
       </Link>
 
-      {/* Body */}
-      <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <Link href={`/experiences/${blog.id}`} className="block">
-          <h3 className="font-title group-hover:text-power-orange line-clamp-2 text-lg font-semibold leading-snug text-slate-900 transition-colors">
+      <div className="mt-5 flex flex-1 flex-col">
+        <p className="text-ink-muted inline-flex items-center gap-1.5 text-sm font-medium">
+          <topic.Icon size={14} strokeWidth={1.5} aria-hidden="true" />
+          {topic.label}
+        </p>
+        <Link href={`/experiences/${blog.id}`} className="mt-2 block">
+          <h3 className="font-editorial text-ink decoration-ink/30 line-clamp-2 text-balance text-2xl font-normal leading-tight underline-offset-4 group-hover:underline">
             {blog.title}
           </h3>
         </Link>
-        {blog.excerpt ? (
-          <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-500">{blog.excerpt}</p>
+        {blog.excerpt && blog.excerpt.trim() !== blog.title.trim() ? (
+          <p className="text-ink-body mt-3 line-clamp-2 text-base leading-relaxed">
+            {blog.excerpt}
+          </p>
         ) : null}
 
-        {blog.tags.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {blog.tags.slice(0, 3).map((tag) => (
-              <span
-                key={`${blog.id}-${tag}`}
-                className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        {/* Footer */}
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
-          <Link
-            href={
-              blog.author.username
-                ? `/experiences/by/${blog.author.username}`
-                : `/experiences/by/${blog.author.id}`
-            }
-            className="flex min-w-0 items-center gap-2"
-          >
-            <AuthorAvatar name={blog.author.name} photoUrl={blog.author.photoUrl} size={34} />
+        {/* mt-auto keeps the byline on one line across a row of tiles. */}
+        <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+          <Link href={authorHref} className="flex min-w-0 items-center gap-2.5">
+            <AuthorAvatar name={blog.author.name} photoUrl={blog.author.photoUrl} size={32} />
             <span className="min-w-0">
-              <span className="block truncate text-xs font-semibold text-slate-800">
+              <span className="text-ink block truncate text-sm font-semibold">
                 {blog.author.name}
               </span>
-              <span className="block truncate text-xs text-slate-400">
-                {blog.author.username ? `@${blog.author.username}` : ""}
-                {blog.author.username ? " · " : ""}
+              <span className="text-ink-muted block truncate text-sm">
                 {toRelativeTime(blog.createdAt)}
               </span>
             </span>
           </Link>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-500">
-              <MessageCircle size={13} />
+          <div className="flex shrink-0 items-center gap-1">
+            <span
+              className="text-ink-muted inline-flex items-center gap-1 px-2 text-sm tabular-nums"
+              title={`${blog.commentCount} comments`}
+            >
+              <MessageCircle size={15} strokeWidth={1.5} aria-hidden="true" />
               {blog.commentCount}
             </span>
             <LikeButton
@@ -116,6 +90,6 @@ export default function BlogCard({ blog, onToggleLike, likePending }: BlogCardPr
           </div>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }

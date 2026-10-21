@@ -161,11 +161,6 @@ export default function BlogLandingClient() {
 
   return (
     <div className="bg-paper relative isolate min-h-[calc(100vh-5.5rem)]">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-      ></div>
-
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         {/* Blog-tab account access (avatar + username) */}
         <div className="flex justify-end">
@@ -174,38 +169,45 @@ export default function BlogLandingClient() {
 
         <BlogHero totalBlogs={total} />
 
-        <section className="space-y-4">
-          {/* Search bar above the topics */}
-          <div className="focus-within:border-power-orange/40 mx-auto flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-white/70 bg-white px-4 py-3 shadow-sm focus-within:bg-white">
-            <Search size={18} className="text-slate-400" />
-            <input
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="Search experiences, topics, tags..."
-              className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-            />
-            {searchInput ? (
-              <button
-                onClick={() => setSearchInput("")}
-                className="text-xs font-semibold text-slate-400 transition hover:text-slate-600"
-              >
-                Clear
-              </button>
-            ) : null}
-          </div>
-
-          <div>
-            <h2 className="font-title text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-              Explore trending topics
-            </h2>
-            <p className="mt-0.5 text-sm text-slate-500">
-              Browse experiences by the sport or topic you care about.
-            </p>
+        <section className="space-y-6 pt-10">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h2 className="font-editorial text-ink text-3xl font-light sm:text-4xl">
+                Browse by topic
+              </h2>
+              <p className="text-ink-body mt-2 text-base">
+                Pick the sport or subject you are deciding on.
+              </p>
+            </div>
+            <div className="focus-within:border-ink hover:border-ink/45 relative flex w-full items-center rounded-md border border-[#d9d3c8] bg-white transition-colors duration-200 lg:max-w-md">
+              <Search
+                size={18}
+                className="text-ink-muted pointer-events-none ml-4"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search experiences"
+                aria-label="Search experiences"
+                className="text-ink placeholder:text-ink-muted h-12 w-full bg-transparent px-3 text-base outline-none"
+              />
+              {searchInput ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput("")}
+                  className="text-ink-muted hover:text-ink px-4 text-sm font-semibold transition-colors duration-200"
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
           </div>
           <BlogTopicStrip activeTopic={topic} onSelect={setTopic} />
         </section>
 
-        <section className="space-y-4">
+        <section className="space-y-10 pt-6">
           <BlogGrid
             blogs={blogs}
             isLoading={isLoading}
@@ -213,17 +215,17 @@ export default function BlogLandingClient() {
             likePendingId={likePendingId}
             emptyMessage={
               topic || q
-                ? "No experiences match this filter yet. Try another topic."
-                : "Be the first parent to share this."
+                ? "No experiences match this filter yet. Try another topic or clear the search."
+                : "Be the first parent to share one."
             }
           />
 
           {hasMore ? (
-            <div className="pt-2 text-center">
+            <div className="text-center">
               <button
                 onClick={() => void loadBlogs(page + 1, true)}
                 disabled={isLoadingMore}
-                className="inline-flex min-h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                className="btn-motion border-ink text-ink hover:bg-ink inline-flex min-h-12 items-center gap-2 rounded-md border px-7 text-base font-semibold hover:text-white disabled:opacity-60"
               >
                 {isLoadingMore ? "Loading..." : "Load more experiences"}
               </button>

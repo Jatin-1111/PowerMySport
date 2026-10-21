@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
-import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
 import { getTopicMeta } from "@/modules/community/constants/experienceTaxonomy";
 import { formatBlogDate, formatCount } from "@/modules/community/utils/blogFormat";
@@ -14,86 +13,77 @@ interface MyBlogListItemProps {
   onDelete?: (blog: BlogListItem) => void;
 }
 
+/** A writer's post as a ruled row: small photo, serif title, one meta line.
+ *  Owner actions are text links under the row. */
 export default function MyBlogListItem({ blog, owner, onDelete }: MyBlogListItemProps) {
   const topic = getTopicMeta(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      className="hover:border-power-orange/30 group flex gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition hover:shadow-md sm:gap-4 sm:p-4"
-    >
-      {/* Banner */}
+    <li className="border-hairline group flex gap-4 border-b py-6 sm:gap-6">
       <Link
         href={`/experiences/${blog.id}`}
-        className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-40"
+        aria-label={blog.title}
+        tabIndex={-1}
+        className="bg-paper-deep relative h-24 w-28 shrink-0 overflow-hidden rounded-xl sm:h-28 sm:w-44"
       >
         {coverUrl ? (
-          <img src={coverUrl} alt={blog.title} className="h-full w-full object-cover" />
+          <img
+            src={coverUrl}
+            alt=""
+            className="h-full w-full object-cover saturate-[0.85] transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+          />
         ) : (
           <BlogCoverFallback topic={blog.topic} />
         )}
       </Link>
 
-      {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <Link href={`/experiences/${blog.id}`} className="min-w-0">
-          <h3 className="font-title group-hover:text-power-orange truncate text-base font-semibold text-slate-900 transition sm:text-lg">
+        <p className="text-ink-muted inline-flex items-center gap-1.5 text-sm">
+          <topic.Icon size={13} strokeWidth={1.5} aria-hidden="true" />
+          {topic.label}
+          {blog.status === "DRAFT" ? <span className="text-ink font-semibold">· Draft</span> : null}
+        </p>
+        <Link href={`/experiences/${blog.id}`} className="mt-1 min-w-0">
+          <h3 className="font-editorial text-ink decoration-ink/30 line-clamp-2 text-xl font-normal leading-tight underline-offset-4 group-hover:underline sm:text-2xl">
             {blog.title}
           </h3>
         </Link>
-        {blog.excerpt ? (
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{blog.excerpt}</p>
+        {blog.excerpt && blog.excerpt.trim() !== blog.title.trim() ? (
+          <p className="text-ink-body mt-2 line-clamp-2 text-base leading-relaxed max-sm:hidden">
+            {blog.excerpt}
+          </p>
         ) : null}
 
-        <div className="mt-auto flex flex-wrap items-center gap-2 pt-2">
-          {blog.status === "DRAFT" ? (
-            <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-              Draft
-            </span>
-          ) : null}
-          <span
-            className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold ${topic.accent}`}
-          >
-            <topic.Icon size={12} />
-            {topic.label}
+        <div className="text-ink-muted mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 text-sm tabular-nums">
+          <span>{formatBlogDate(blog.createdAt)}</span>
+          <span>
+            {formatCount(blog.likeCount)} {blog.likeCount === 1 ? "like" : "likes"}
           </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600">
-            <Heart size={12} className="fill-rose-500 text-rose-500" />
-            {formatCount(blog.likeCount)}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-md bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
-            <MessageCircle size={12} />
+          <span className="inline-flex items-center gap-1">
+            <MessageCircle size={14} strokeWidth={1.5} aria-hidden="true" />
             {blog.commentCount}
-          </span>
-          <span className="ml-auto hidden text-xs text-slate-400 sm:block">
-            {formatBlogDate(blog.createdAt)}
           </span>
         </div>
 
         {owner ? (
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-5 text-sm font-semibold">
             <Link
               href={`/experiences/${blog.id}/edit`}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+              className="text-ink decoration-ink/30 hover:decoration-ink underline underline-offset-4 transition-colors duration-200"
             >
-              <Pencil size={12} />
               Edit
             </Link>
             <button
               type="button"
               onClick={() => onDelete?.(blog)}
-              className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-600 transition hover:bg-rose-100"
+              className="text-red-700 underline decoration-red-700/30 underline-offset-4 transition-colors duration-200 hover:decoration-red-700"
             >
-              <Trash2 size={12} />
               Delete
             </button>
           </div>
         ) : null}
       </div>
-    </motion.div>
+    </li>
   );
 }

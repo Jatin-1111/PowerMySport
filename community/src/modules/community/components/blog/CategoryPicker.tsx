@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { EXPERIENCE_CATEGORIES } from "@/modules/community/constants/experienceTaxonomy";
 
 interface CategoryPickerProps {
@@ -8,42 +7,42 @@ interface CategoryPickerProps {
 }
 
 /**
- * The composer's first screen. Not a blank page and not a title field — a
+ * The composer's first screen. Not a blank page and not a title field: a
  * question. This is the single biggest lever on "write a story sounds like
  * homework": picking a category hands the editor a real prompt instead of a
  * blinking cursor.
  */
 export default function CategoryPicker({ onSelect }: CategoryPickerProps) {
   return (
-    <div className="mx-auto flex min-h-[calc(100vh-5.5rem)] max-w-2xl flex-col justify-center px-4 py-10 sm:px-6">
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="text-center"
-      >
-        <h1 className="font-title text-2xl font-semibold text-slate-900 sm:text-3xl">
-          What&apos;s this about?
-        </h1>
-        <p className="mt-2 text-sm text-slate-500">Pick the closest one — two lines is plenty.</p>
-      </motion.div>
+    <div className="mx-auto flex min-h-[calc(100vh-5.5rem)] max-w-3xl flex-col justify-center px-4 py-12 sm:px-6">
+      <h1 className="font-editorial text-ink text-balance text-5xl font-light leading-[1.05] sm:text-6xl">
+        What is this about?
+      </h1>
+      <p className="text-ink-body mt-4 max-w-[48ch] text-lg leading-relaxed">
+        Pick the closest one. Two lines is plenty, and we will give you a question to start from.
+      </p>
 
-      <div className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        {EXPERIENCE_CATEGORIES.map((category, index) => (
-          <motion.button
-            key={category.slug}
-            type="button"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: index * 0.02 }}
-            onClick={() => onSelect(category.slug)}
-            className={`flex flex-col items-center gap-2 rounded-2xl border px-3 py-4 text-center transition hover:-translate-y-0.5 hover:shadow-md ${category.accent}`}
-          >
-            <category.Icon size={20} />
-            <span className="text-xs font-semibold leading-tight">{category.label}</span>
-          </motion.button>
+      <ul className="border-hairline mt-10 grid grid-cols-1 border-t sm:grid-cols-2 sm:gap-x-10">
+        {EXPERIENCE_CATEGORIES.map((category) => (
+          <li key={category.slug} className="border-hairline border-b">
+            <button
+              type="button"
+              onClick={() => onSelect(category.slug)}
+              className="hover:bg-paper-deep/60 group -mx-3 flex min-h-14 w-[calc(100%+1.5rem)] items-center gap-4 px-3 py-4 text-left transition-colors duration-200"
+            >
+              <category.Icon
+                size={20}
+                strokeWidth={1.5}
+                className="text-ink shrink-0"
+                aria-hidden="true"
+              />
+              <span className="font-editorial text-ink decoration-ink/30 text-xl font-normal underline-offset-4 group-hover:underline">
+                {category.label}
+              </span>
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

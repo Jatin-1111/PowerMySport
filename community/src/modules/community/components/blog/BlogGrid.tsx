@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import { LoaderCircle, Newspaper } from "lucide-react";
 import { BlogListItem } from "@/modules/community/types";
 import BlogCard from "./BlogCard";
 
@@ -15,17 +14,11 @@ interface BlogGridProps {
 
 function CardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl border border-white/70 bg-white shadow-sm">
-      <div className="aspect-[16/10] animate-pulse bg-slate-200/70" />
-      <div className="space-y-3 p-5">
-        <div className="h-4 w-3/4 animate-pulse rounded-full bg-slate-200" />
-        <div className="h-3 w-full animate-pulse rounded-full bg-slate-100" />
-        <div className="h-3 w-2/3 animate-pulse rounded-full bg-slate-100" />
-        <div className="flex items-center gap-2 pt-2">
-          <div className="h-8 w-8 animate-pulse rounded-full bg-slate-200" />
-          <div className="h-3 w-24 animate-pulse rounded-full bg-slate-100" />
-        </div>
-      </div>
+    <div aria-hidden="true">
+      <div className="bg-ink/10 aspect-[16/10] animate-pulse rounded-2xl" />
+      <div className="bg-ink/10 mt-5 h-3 w-20 animate-pulse rounded-sm" />
+      <div className="bg-ink/10 mt-3 h-6 w-3/4 animate-pulse rounded-sm" />
+      <div className="bg-ink/10 mt-3 h-4 w-full animate-pulse rounded-sm" />
     </div>
   );
 }
@@ -39,7 +32,7 @@ export default function BlogGrid({
 }: BlogGridProps) {
   if (isLoading && blogs.length === 0) {
     return (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <CardSkeleton key={index} />
         ))}
@@ -49,18 +42,17 @@ export default function BlogGrid({
 
   if (!isLoading && blogs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-          <Newspaper size={26} />
-        </span>
-        <p className="mt-4 font-semibold text-slate-700">Nothing here yet</p>
-        <p className="mt-1 max-w-sm text-sm text-slate-500">{emptyMessage}</p>
+      <div className="bg-paper-deep rounded-2xl px-6 py-16 text-center">
+        <p className="font-editorial text-ink text-3xl font-light">Nothing here yet.</p>
+        <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+          {emptyMessage}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
       <AnimatePresence mode="popLayout">
         {blogs.map((blog) => (
           <BlogCard
@@ -72,9 +64,9 @@ export default function BlogGrid({
         ))}
       </AnimatePresence>
       {isLoading ? (
-        <div className="col-span-full flex justify-center py-6 text-slate-400">
-          <LoaderCircle size={20} className="animate-spin" />
-        </div>
+        <p role="status" className="text-ink-muted col-span-full py-4 text-center text-sm">
+          Updating
+        </p>
       ) : null}
     </div>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { MessageSquareQuote, Send } from "lucide-react";
 import { blogService } from "@/modules/community/services/blog";
 import { BlogDetail } from "@/modules/community/types";
 import { toast } from "@/lib/toast";
@@ -27,19 +26,20 @@ export default function SubjectReplyBand({ blog, onReplyPosted }: SubjectReplyBa
 
   if (blog.subjectReply) {
     return (
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <MessageSquareQuote size={14} />
+      <aside className="bg-wash mt-12 rounded-3xl p-6 sm:p-8">
+        <p className="text-ink-body text-sm font-medium">
           Response from {blog.subject?.name || "the person named above"}
-        </div>
-        <p className="mt-2 whitespace-pre-wrap text-sm text-slate-700">
-          {blog.subjectReply.content}
         </p>
-        <p className="mt-2 text-xs text-slate-400">
+        <blockquote className="border-ink mt-4 border-l-2 pl-5">
+          <p className="font-editorial text-ink whitespace-pre-wrap text-xl font-light italic leading-relaxed">
+            {blog.subjectReply.content}
+          </p>
+        </blockquote>
+        <p className="text-ink-body mt-4 text-sm">
           {blog.subjectReply.authorName ? `${blog.subjectReply.authorName} · ` : ""}
           {formatBlogDate(blog.subjectReply.createdAt)}
         </p>
-      </div>
+      </aside>
     );
   }
 
@@ -61,39 +61,43 @@ export default function SubjectReplyBand({ blog, onReplyPosted }: SubjectReplyBa
       }
       toast.success("Your reply is posted");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to post your reply");
+      toast.error(error instanceof Error ? error.message : "We could not post your reply");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-      <div className="flex items-center gap-2 text-xs font-semibold text-amber-700">
-        <MessageSquareQuote size={14} />
-        This is about you — you can post one reply
-      </div>
+    <aside className="bg-wash mt-12 rounded-3xl p-6 sm:p-8">
+      <h2 className="font-editorial text-ink text-2xl font-normal">This is about you</h2>
+      <p className="text-ink-body mt-2 max-w-[56ch] text-base leading-relaxed">
+        You can post one reply. It is shown next to the experience and cannot be edited later.
+      </p>
+      <label htmlFor="subject-reply" className="sr-only">
+        Your reply
+      </label>
       <textarea
+        id="subject-reply"
         value={content}
         onChange={(event) => setContent(event.target.value)}
         maxLength={REPLY_MAX_LENGTH}
-        rows={3}
-        placeholder="Share your side — this is shown alongside the experience, and can only be posted once."
-        className="mt-2 w-full resize-none rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-amber-400"
+        rows={4}
+        placeholder="Share your side"
+        className="text-ink placeholder:text-ink-muted hover:border-ink/45 focus:border-ink mt-5 w-full resize-none rounded-md border border-[#d9d3c8] bg-white px-4 py-3 text-base leading-relaxed transition-colors duration-200 focus:outline-none"
       />
-      <div className="mt-2 flex items-center justify-between">
-        <span className="text-xs text-amber-700">
-          {content.length}/{REPLY_MAX_LENGTH}
-        </span>
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
         <button
+          type="button"
           onClick={() => void submit()}
           disabled={isSubmitting || !content.trim()}
-          className="inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+          className="btn-motion bg-ink hover:bg-ink-hover inline-flex min-h-11 items-center rounded-md px-6 text-base font-semibold text-white disabled:opacity-50"
         >
-          <Send size={13} />
-          Post reply
+          {isSubmitting ? "Posting" : "Post reply"}
         </button>
+        <span className="text-ink-body text-sm tabular-nums">
+          {content.length} of {REPLY_MAX_LENGTH}
+        </span>
       </div>
-    </div>
+    </aside>
   );
 }

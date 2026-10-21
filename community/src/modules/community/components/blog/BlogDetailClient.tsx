@@ -3,12 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
 import {
   ChevronLeft,
   Flag,
   Link as LinkIcon,
-  Loader2,
   MessageCircle,
   Pencil,
   Trash2,
@@ -153,7 +151,7 @@ export default function BlogDetailClient({
   const shareOnTwitter = () => {
     if (!blog) return;
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const text = `${blog.title} — on PowerMySport`;
+    const text = `${blog.title} on PowerMySport`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
       text
     )}&url=${encodeURIComponent(url)}`;
@@ -172,59 +170,110 @@ export default function BlogDetailClient({
 
   if (isLoading) {
     return (
-      <div className="mx-auto flex max-w-3xl justify-center px-4 py-16 text-slate-400">
-        <Loader2 size={26} className="animate-spin" />
+      <div
+        aria-busy="true"
+        aria-label="Loading experience"
+        className="mx-auto w-full max-w-3xl space-y-4 px-4 py-12 sm:px-6"
+      >
+        <div className="bg-ink/10 h-3 w-28 animate-pulse rounded-sm" />
+        <div className="bg-ink/10 h-12 w-4/5 animate-pulse rounded-sm" />
+        <div className="bg-ink/10 mt-8 aspect-[16/9] animate-pulse rounded-2xl" />
       </div>
     );
   }
 
   if (!blog) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-slate-700">Experience not found.</p>
-        <Link
-          href="/experiences"
-          className="mt-4 inline-flex rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-        >
-          Back to Experiences
-        </Link>
+      <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+        <div className="bg-paper-deep rounded-3xl px-6 py-16 text-center">
+          <p className="font-editorial text-ink text-4xl font-light">Experience not found.</p>
+          <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+            It may have been deleted, or the link may be wrong.
+          </p>
+          <Link
+            href="/experiences"
+            className="btn-motion bg-power-orange-solid mt-7 inline-flex min-h-11 items-center rounded-md px-6 text-base font-semibold text-white hover:bg-indigo-700"
+          >
+            Back to experiences
+          </Link>
+        </div>
       </div>
     );
   }
 
   const topic = getTopicMeta(blog.topic);
   const coverUrl = blog.coverImageUrl || "";
+  const textLink =
+    "text-ink decoration-ink/30 hover:decoration-ink inline-flex min-h-11 items-center gap-1.5 text-base font-semibold underline underline-offset-4 transition-colors duration-200 disabled:opacity-50";
 
   return (
     <div className="bg-paper relative min-h-[calc(100vh-5.5rem)]">
       <article className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-10">
-        {/* Top bar */}
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            href="/experiences"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
-          >
-            <ChevronLeft size={16} />
-            Back to Experiences
-          </Link>
-          <span
-            className={`inline-flex items-center gap-1 rounded-md border px-3 py-1 text-xs font-semibold ${topic.accent}`}
-          >
-            <topic.Icon size={13} />
-            {topic.label}
-          </span>
-        </div>
+        <Link
+          href="/experiences"
+          className="text-ink-body hover:text-ink inline-flex min-h-11 items-center gap-1.5 text-base font-medium transition-colors duration-200"
+        >
+          <ChevronLeft size={18} strokeWidth={1.5} aria-hidden="true" />
+          All experiences
+        </Link>
 
-        {/* Cover — shown whole, not cropped to a banner.
-            A 16/9 box with object-cover cut the bottom off anything portrait,
-            which for the documents people actually post (certificates, result
-            sheets) removed the part they uploaded it for. The fallback keeps a
-            fixed ratio because it is generated art with nothing to lose. */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          className={`mt-5 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 ${
+        <header className="mt-6">
+          <p className="text-ink-muted inline-flex items-center gap-1.5 text-sm font-medium">
+            <topic.Icon size={14} strokeWidth={1.5} aria-hidden="true" />
+            {topic.label}
+          </p>
+          <h1 className="font-editorial text-ink mt-3 text-balance text-4xl font-light leading-[1.08] sm:text-5xl lg:text-6xl">
+            {blog.title}
+          </h1>
+
+          <div className="border-hairline mt-8 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-y py-5">
+            <Link href={authorHref(blog.author)} className="flex items-center gap-3">
+              <AuthorAvatar name={blog.author.name} photoUrl={blog.author.photoUrl} size={44} />
+              <span>
+                <span className="text-ink block text-base font-semibold">{blog.author.name}</span>
+                <span className="text-ink-muted block text-sm">
+                  {blog.author.username ? `@${blog.author.username} · ` : ""}
+                  {formatBlogDate(blog.createdAt)}
+                </span>
+              </span>
+            </Link>
+
+            {blog.isMine ? (
+              <div className="flex items-center gap-5">
+                <Link href={`/experiences/${blog.id}/edit`} className={textLink}>
+                  <Pencil size={14} strokeWidth={1.5} aria-hidden="true" />
+                  Edit
+                </Link>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="inline-flex min-h-11 items-center gap-1.5 text-base font-semibold text-red-700 underline decoration-red-700/30 underline-offset-4 transition-colors duration-200 hover:decoration-red-700 disabled:opacity-50"
+                >
+                  <Trash2 size={14} strokeWidth={1.5} aria-hidden="true" />
+                  Delete
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleOpenReportModal("EXPERIENCE", blog.id)}
+                className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center gap-1.5 text-sm font-medium transition-colors duration-200"
+              >
+                <Flag size={14} strokeWidth={1.5} aria-hidden="true" />
+                Report
+              </button>
+            )}
+          </div>
+        </header>
+
+        {/* Cover, shown whole rather than cropped to a banner. A 16/9 box with
+            object-cover cut the bottom off anything portrait, which for the
+            documents people actually post (certificates, result sheets) removed
+            the part they uploaded it for. The fallback keeps a fixed ratio
+            because it is generated art with nothing to lose. */}
+        <div
+          className={`bg-paper-deep mt-8 w-full overflow-hidden rounded-2xl ${
             coverUrl ? "" : "aspect-[16/9]"
           }`}
         >
@@ -239,93 +288,19 @@ export default function BlogDetailClient({
           ) : (
             <BlogCoverFallback topic={blog.topic} />
           )}
-        </motion.div>
-
-        {/* Title */}
-        <h1 className="font-title mt-6 text-3xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-4xl">
-          {blog.title}
-        </h1>
-
-        {/* Author + date */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-5">
-          <Link href={authorHref(blog.author)} className="flex items-center gap-3">
-            <AuthorAvatar name={blog.author.name} photoUrl={blog.author.photoUrl} size={44} />
-            <span>
-              <span className="block text-sm font-semibold text-slate-900">{blog.author.name}</span>
-              <span className="block text-xs text-slate-400">
-                {blog.author.username ? `@${blog.author.username} · ` : ""}
-                Published on {formatBlogDate(blog.createdAt)}
-              </span>
-            </span>
-          </Link>
-
-          {blog.isMine ? (
-            <div className="flex items-center gap-2">
-              <Link
-                href={`/experiences/${blog.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
-              >
-                <Pencil size={14} />
-                Edit
-              </Link>
-              <button
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 transition hover:bg-rose-100 disabled:opacity-50"
-              >
-                <Trash2 size={14} />
-                Delete
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => handleOpenReportModal("EXPERIENCE", blog.id)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
-            >
-              <Flag size={13} />
-              Report
-            </button>
-          )}
         </div>
 
-        {/* Reactions bar */}
-        <div className="mt-4 flex items-center gap-2.5">
-          <LikeButton
-            liked={blog.likedByMe}
-            count={blog.likeCount}
-            onToggle={handleToggleLike}
-            disabled={likePending}
-            size="lg"
-          />
-          <button
-            onClick={() => setCommentsOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-sky-200 hover:bg-sky-50/60 hover:text-sky-600"
-          >
-            <MessageCircle size={18} />
-            {blog.commentCount}
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="mt-7">
+        <div className="mt-10">
           <BlogContentRenderer content={blog.content} />
         </div>
 
-        {/* Tags */}
         {blog.tags.length > 0 ? (
-          <div className="mt-8 flex flex-wrap gap-2">
-            {blog.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex rounded-md bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
+          <p className="text-ink-muted mt-10 text-sm">
+            {blog.tags.map((tag) => `#${tag}`).join("  ")}
+          </p>
         ) : null}
 
-        {/* Right of reply — a coach or expert named in `subject` can post one
+        {/* Right of reply: a coach or expert named in `subject` can post one
             response to what was written about them. */}
         {blog.subject ? (
           <SubjectReplyBand
@@ -334,23 +309,33 @@ export default function BlogDetailClient({
           />
         ) : null}
 
-        {/* Share */}
-        <div className="mt-8 flex items-center justify-between gap-3 border-t border-slate-100 pt-6">
-          <p className="text-sm text-slate-500">Useful to another parent? Share it.</p>
-          <div className="flex items-center gap-2">
+        <div className="border-hairline mt-12 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 border-t pt-6">
+          <div className="flex items-center gap-3">
+            <LikeButton
+              liked={blog.likedByMe}
+              count={blog.likeCount}
+              onToggle={handleToggleLike}
+              disabled={likePending}
+              size="lg"
+            />
             <button
-              onClick={() => void copyLink()}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              type="button"
+              onClick={() => setCommentsOpen(true)}
+              className="btn-motion text-ink-muted hover:bg-paper-deep hover:text-ink inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold tabular-nums"
             >
-              <LinkIcon size={16} />
-              Copy Link
+              <MessageCircle size={18} strokeWidth={1.5} aria-hidden="true" />
+              {blog.commentCount} {blog.commentCount === 1 ? "comment" : "comments"}
             </button>
-            <button
-              onClick={shareOnTwitter}
-              className="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600"
-            >
-              <Twitter size={16} />
-              Share on Twitter
+          </div>
+
+          <div className="flex items-center gap-5">
+            <button type="button" onClick={() => void copyLink()} className={textLink}>
+              <LinkIcon size={15} strokeWidth={1.5} aria-hidden="true" />
+              Copy link
+            </button>
+            <button type="button" onClick={shareOnTwitter} className={textLink}>
+              <Twitter size={15} strokeWidth={1.5} aria-hidden="true" />
+              Share on X
             </button>
           </div>
         </div>

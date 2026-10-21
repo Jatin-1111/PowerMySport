@@ -66,10 +66,10 @@ export default function RichTextCanvas({
   const readTimeMin = Math.max(1, Math.round(wordCount / AVERAGE_READING_WPM));
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <div className="border-hairline overflow-hidden rounded-2xl border bg-white">
       <EditorToolbar editor={editor} />
       <EditorContent editor={editor} />
-      <div className="flex items-center justify-end border-t border-slate-100 px-4 py-2 text-xs text-slate-400 sm:px-6">
+      <div className="border-hairline text-ink-muted flex items-center justify-end border-t px-4 py-3 text-sm tabular-nums sm:px-6">
         {wordCount} {wordCount === 1 ? "word" : "words"} · {readTimeMin} min read
       </div>
     </div>
