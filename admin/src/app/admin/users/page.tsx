@@ -425,14 +425,6 @@ function AdminUsersPageContent() {
           render: (u) =>
             u.role === "Player" ? <span className="text-slate-700">{u.sportsCount}</span> : null,
         },
-        {
-          key: "dependents",
-          header: "Dependents",
-          render: (u) =>
-            u.role === "Player" ? (
-              <span className="text-slate-700">{u.dependentsCount}</span>
-            ) : null,
-        },
         joinedCol,
         activityCol,
       ];
@@ -511,10 +503,6 @@ function AdminUsersPageContent() {
         {
           header: "Sports Count",
           value: (u: UsersRow) => (u.role === "Player" ? u.sportsCount : ""),
-        },
-        {
-          header: "Dependents",
-          value: (u: UsersRow) => (u.role === "Player" ? u.dependentsCount : ""),
         },
         { header: "Created At", value: (u: UsersRow) => u.createdAt },
         { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
@@ -739,7 +727,6 @@ function AdminUsersPageContent() {
                   label="Sports"
                   value={selectedUser.sports.length ? selectedUser.sports.join(", ") : "—"}
                 />
-                <DetailRow label="Dependents" value={selectedUser.dependentsCount} />
               </DetailSection>
             )}
 

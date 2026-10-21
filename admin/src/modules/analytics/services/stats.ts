@@ -77,7 +77,6 @@ export interface PlayerUserRow {
   sports: string[];
   sportsCount: number;
   hasSportsProfile: boolean;
-  dependentsCount: number;
 }
 
 export interface CoachUserRow {

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import { Coach } from "../../../client/models/Coach";
 import { User } from "../../../client/models/User";
 import { Player } from "../../../client/models/Player";
@@ -42,6 +43,23 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response): Pro
   });
 });
 
+/**
+ * How many children each of these parents has, and nothing else about them.
+ *
+ * The admin list shows a number, not a name, birth date or profile: support needs to
+ * know a parent has two children, not who they are. Only profiles of type DEPENDENT
+ * count; a parent's own athlete row is not a child.
+ */
+export const childCountsFor = async (
+  userIds: Array<Types.ObjectId | string>
+): Promise<Map<string, number>> => {
+  const rows = await Player.aggregate<{ _id: Types.ObjectId; count: number }>([
+    { $match: { type: "DEPENDENT", userId: { $in: userIds.map((id) => new Types.ObjectId(id)) } } },
+    { $group: { _id: "$userId", count: { $sum: 1 } } },
+  ]);
+  return new Map(rows.map((row) => [row._id.toString(), row.count]));
+};
+
 const makeRoleUsersHandler = (role: AdminUserRole) =>
   asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { page, limit, skip } = getPaginationParams(req.query.page, req.query.limit, 15, 100);
@@ -54,9 +72,12 @@ const makeRoleUsersHandler = (role: AdminUserRole) =>
         .limit(limit)
         .lean(),
     ]);
+    const childCounts =
+      role === "Parent" ? await childCountsFor(users.map((user) => user._id)) : null;
     const transformedUsers = users.map((user) => ({
       ...user,
       id: user._id.toString(),
+      ...(childCounts ? { dependentsCount: childCounts.get(user._id.toString()) ?? 0 } : {}),
     }));
     res.status(200).json({
       success: true,
@@ -212,21 +233,9 @@ export const getPlayersUsers = asyncHandler(async (req: Request, res: Response):
     const userProfiles = profilesByUserId.get(user._id.toString()) || [];
 
     const selfProfile = userProfiles.find((p) => p.type === "SELF");
-    const dependentsProfiles = userProfiles.filter((p) => p.type === "DEPENDENT");
-
     const sports = selfProfile?.sportsFocus || [];
     const sportsCount = sports.length;
-    const dependentsCount = dependentsProfiles.length;
     const hasSportsProfile = sportsCount > 0;
-
-    const dependents = dependentsProfiles.map((d) => ({
-      id: d._id.toString(),
-      name: d.name,
-      age: d.age,
-      gender: d.gender,
-      sports: d.sportsFocus || [],
-      skillLevel: d.skillLevel,
-    }));
 
     return {
       id: user._id.toString(),
@@ -240,8 +249,6 @@ export const getPlayersUsers = asyncHandler(async (req: Request, res: Response):
       sports,
       sportsCount,
       hasSportsProfile,
-      dependents,
-      dependentsCount,
     };
   });
 
