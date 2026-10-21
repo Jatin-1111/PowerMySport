@@ -179,13 +179,6 @@ export const finalizeAccountDeletion = async (userId: string): Promise<void> => 
       async () => (await import("../../models/PlanCheckIn")).PlanCheckIn.deleteMany({ userId }),
     ],
     [
-      "UserPathwayProfile",
-      async () =>
-        (await import("../../models/UserPathwayProfile")).UserPathwayProfile.deleteMany({
-          userId,
-        }),
-    ],
-    [
       "SeasonPlan",
       async () =>
         (await import("../../../client/models/SeasonPlan")).SeasonPlan.deleteMany({ userId }),

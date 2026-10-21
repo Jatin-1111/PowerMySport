@@ -364,14 +364,6 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
   // should not be told the deletion failed.
   const cleanups: Array<[string, () => Promise<unknown>]> = [
     [
-      "pathway profile",
-      async () =>
-        (await import("../../models/UserPathwayProfile")).UserPathwayProfile.deleteMany({
-          userId,
-          dependentId,
-        }),
-    ],
-    [
       // A check-in has a queued email behind it; removing only the check-in
       // would leave an email asking how a deleted child's sport is going.
       "plan check-ins",

@@ -23,7 +23,6 @@ const { deleteDependent } = require("../shared/services/AuthService/dependents")
 const { finalizeAccountDeletion } = require("../shared/services/AuthService/accountDeletion");
 const { Player } = require("../client/models/Player");
 const { User } = require("../client/models/User");
-const { UserPathwayProfile } = require("../shared/models/UserPathwayProfile");
 const { PlanCheckIn } = require("../shared/models/PlanCheckIn");
 const { ScheduledNotification } = require("../client/models/ScheduledNotification");
 const { GuidanceSubmission } = require("../client/models/GuidanceSubmission");
@@ -50,7 +49,6 @@ after(async () => {
 const COLLECTIONS = [
   Player,
   User,
-  UserPathwayProfile,
   PlanCheckIn,
   ScheduledNotification,
   GuidanceSubmission,
@@ -87,8 +85,6 @@ const seedChild = async (userId: any, name: string) => {
 
 /** One of everything that names a child, for this child. */
 const seedChildRecords = async (userId: any, childId: any, label: string) => {
-  await UserPathwayProfile.collection.insertOne({ userId, dependentId: childId });
-
   const checkInId = oid();
   await PlanCheckIn.collection.insertOne({
     _id: checkInId,
@@ -133,7 +129,6 @@ const seedChildRecords = async (userId: any, childId: any, label: string) => {
 };
 
 const countsFor = async (childId: any) => ({
-  pathway: await UserPathwayProfile.collection.countDocuments({ dependentId: childId }),
   checkIns: await PlanCheckIn.collection.countDocuments({ dependentId: childId }),
   submissions: await GuidanceSubmission.collection.countDocuments({
     "request.dependent_id": childId,
@@ -152,13 +147,11 @@ describe("deleteDependent", () => {
     await deleteDependent(String(userId), String(aarav));
 
     assert.deepEqual(await countsFor(aarav), {
-      pathway: 0,
       checkIns: 0,
       submissions: 0,
       screenings: 0,
     });
     assert.deepEqual(await countsFor(meera), {
-      pathway: 1,
       checkIns: 1,
       submissions: 1,
       screenings: 1,
