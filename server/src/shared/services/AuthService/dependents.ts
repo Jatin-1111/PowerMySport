@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 import { Booking } from "../../../client/models/Booking";
-import { ExpertSession } from "../../../client/models/ExpertBooking";
 import { Player, QuizAnswers } from "../../../client/models/Player";
 import { User, UserDocument } from "../../../client/models/User";
 import { resolveChildAge } from "../../../utils/childAge";
 import { MAX_DEPENDENTS_PER_PARENT } from "../../../middleware/schemas";
 import { AppError } from "../../../utils/AppError";
 import { sendWelcomeEmail } from "../../../utils/email";
+import { CHILD_RECORDS } from "./childRecords";
 import { log, PARENTAL_CONSENT_VERSION } from "./shared";
 
 export interface GraduateDependentPayload {
@@ -328,125 +328,26 @@ export const deleteDependent = async (userId: string, dependentId: string): Prom
     throw new Error("Dependent not found");
   }
 
-  const bookingCount = await Booking.countDocuments({
-    participantId: dependentId,
-  });
-
-  if (bookingCount > 0) {
-    throw new Error(
-      `Cannot delete dependent with ${bookingCount} active booking(s). Please cancel or complete these bookings first.`
-    );
+  // What happens to everything that names this child is decided in one place, the
+  // registry. Protections first, so a refusal leaves the child exactly as it was.
+  const context = { userId, child: dependent };
+  for (const rule of CHILD_RECORDS) {
+    if (rule.action === "protect") await rule.check(context);
   }
-
-  // An expert session still ahead of us is about this child: the expert reads the
-  // profile to prepare, and a paid session cannot lose who it was for. Once it is
-  // completed or cancelled the parent may delete.
-  const openSessions = await ExpertSession.countDocuments({
-    playerId: dependent._id,
-    $or: [
-      { status: { $in: ["PAID", "SCHEDULED"] } },
-      { status: "PENDING_PAYMENT", holdExpiresAt: { $gt: new Date() } },
-    ],
-  });
-  if (openSessions > 0) {
-    throw new AppError(
-      `Cannot delete ${dependent.name} while ${openSessions} expert session(s) for them are still open. Delete the profile after they are completed or cancelled.`,
-      409
-    );
+  for (const rule of CHILD_RECORDS) {
+    if (rule.action === "protect" && rule.settle) await rule.settle(context);
   }
-
-  // The sessions that are over keep the child's name and age, and lose the link: the
-  // profile is about to go, and the history should still say who it was for. Done
-  // before the delete so a failure here leaves the child in place.
-  await ExpertSession.updateMany(
-    { playerId: dependent._id },
-    {
-      $set: { playerSnapshot: { name: dependent.name, age: resolveChildAge(dependent) } },
-      $unset: { playerId: "" },
-    }
-  );
 
   await Player.deleteOne({ _id: dependentId });
 
-  // A ranking link outlives nothing: it names a child who no longer has a
-  // profile here, and it would keep that registration number locked against a
-  // later, legitimate claim. Not fatal if it fails — the profile is already
-  // gone, and leaving the caller with an error would suggest otherwise.
-  try {
-    const { RankingClaimService } = await import("../../../client/services/RankingClaimService");
-    await RankingClaimService.removeForDependent(dependentId);
-  } catch (error) {
-    log.error("Failed to remove ranking links for deleted dependent:", error);
-  }
-
-  // Likewise the plan: it names a child who no longer has a profile here, and
-  // its unique key would block a plan for a profile created later.
-  try {
-    const { SeasonPlanService } = await import("../../../client/services/SeasonPlanService");
-    await SeasonPlanService.removeForDependent(dependentId);
-  } catch (error) {
-    log.error("Failed to remove season plan for deleted dependent:", error);
-  }
-
-  // Everything else that names this child. Each is tried on its own so one
-  // failure leaves the rest cleaned: the profile is already gone, so the caller
-  // should not be told the deletion failed.
-  const cleanups: Array<[string, () => Promise<unknown>]> = [
-    [
-      // A check-in has a queued email behind it; removing only the check-in
-      // would leave an email asking how a deleted child's sport is going.
-      "plan check-ins",
-      async () => {
-        const { PlanCheckIn } = await import("../../models/PlanCheckIn");
-        const { ScheduledNotification } =
-          await import("../../../client/models/ScheduledNotification");
-        const checkIns = await PlanCheckIn.find({ userId, dependentId }).select("_id").lean();
-        const ids = checkIns.map((checkIn) => checkIn._id.toString());
-        if (ids.length > 0) {
-          await ScheduledNotification.deleteMany({
-            userId,
-            type: "PLAN_CHECKIN",
-            status: "PENDING",
-            "data.checkInId": { $in: ids },
-          });
-        }
-        return PlanCheckIn.deleteMany({ userId, dependentId });
-      },
-    ],
-    [
-      // The stored questionnaire carries the child's age, gender and the
-      // parent's own words; the follow-up chat on it goes with it.
-      "guidance submissions",
-      async () => {
-        const { GuidanceSubmission } = await import("../../../client/models/GuidanceSubmission");
-        const { GuidanceChatSession } = await import("../../../client/models/GuidanceChatSession");
-        const submissions = await GuidanceSubmission.find({
-          userId,
-          "request.dependent_id": dependentId,
-        })
-          .select("_id")
-          .lean();
-        const ids = submissions.map((submission) => submission._id);
-        if (ids.length > 0) {
-          await GuidanceChatSession.deleteMany({ userId, submissionId: { $in: ids } });
-        }
-        return GuidanceSubmission.deleteMany({ userId, "request.dependent_id": dependentId });
-      },
-    ],
-    [
-      "screening requests",
-      async () =>
-        (await import("../../../client/models/ScreeningRequest")).ScreeningRequest.deleteMany({
-          dependentId,
-        }),
-    ],
-  ];
-
-  for (const [label, run] of cleanups) {
+  // Each removal is tried on its own so one failure leaves the rest cleaned: the
+  // profile is already gone, so the caller should not be told the deletion failed.
+  for (const rule of CHILD_RECORDS) {
+    if (rule.action !== "remove") continue;
     try {
-      await run();
+      await rule.run(context);
     } catch (error) {
-      log.error(`Failed to remove ${label} for deleted dependent:`, error);
+      log.error(`Failed to remove ${rule.model} for deleted dependent:`, error);
     }
   }
 };
