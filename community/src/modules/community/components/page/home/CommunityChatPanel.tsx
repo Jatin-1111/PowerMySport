@@ -299,6 +299,19 @@ export default function CommunityChatPanel({ page }: Props) {
   const isSomeoneTyping = currentlyTypingUsers.length > 0;
   const isGroup = selectedConversation?.conversationType === "GROUP";
 
+  // The typing bubble sits below the last message. If the reader is following
+  // the conversation, bring it into view; if they scrolled up, leave them be.
+  useEffect(() => {
+    if (!isSomeoneTyping) return;
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom < 160) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [isSomeoneTyping, scrollContainerRef, messagesEndRef]);
+
   // The group's shared pin, with the local mirror taking precedence so the
   // banner reacts to this user's own pin before the conversation refetches.
   const pinnedMessageId =

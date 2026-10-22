@@ -16,6 +16,7 @@ import {
   MessageReaction,
 } from "@/modules/community/types";
 import { isWithinMessageEditWindow } from "@/modules/community/utils/chatUtils";
+import { insertByCreatedAt, mergeServerMessages } from "@/modules/community/utils/mergeMessages";
 import {
   CONVERSATION_PAGE_SIZE,
   DISCONNECTED_POLL_BASE_MS,
@@ -90,6 +91,12 @@ export function useCommunityMessaging({
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const isInitialMessageLoadRef = useRef<boolean>(false);
+  // The jump to the newest message must outlive the empty and cached renders and
+  // land once the server page is in, or the thread opens at the top.
+  const initialLoadSettledRef = useRef<boolean>(false);
+  // Height of the thread after the last render, to tell where the reader was
+  // before a new message pushed the bottom away.
+  const prevScrollHeightRef = useRef<number>(0);
   const disconnectedPollDelayRef = useRef(DISCONNECTED_POLL_BASE_MS);
 
   useEffect(() => {
@@ -127,7 +134,7 @@ export function useCommunityMessaging({
     setMessages((current) => {
       const safeCurrent = Array.isArray(current) ? current : [];
       if (safeCurrent.some((m) => m.id === incoming.id)) return safeCurrent;
-      const newMessages = [...safeCurrent, incoming];
+      const newMessages = insertByCreatedAt(safeCurrent, incoming);
       void setCachedMessages(incoming.conversationId, newMessages);
       return newMessages;
     });
@@ -185,17 +192,24 @@ export function useCommunityMessaging({
       try {
         // Signal that this is a fresh load — auto-scroll to bottom on first render
         isInitialMessageLoadRef.current = true;
+        initialLoadSettledRef.current = false;
 
         // Optimistically load from IndexedDB
         const cached = await getCachedMessages(conversationId);
         if (cached && cached.length > 0) {
-          setMessages(cached);
+          setMessages((current) =>
+            mergeServerMessages(Array.isArray(current) ? current : [], cached)
+          );
         }
 
         const response = await communityService.getMessages(conversationId, 1);
         const serverMessages = Array.isArray(response.messages) ? response.messages : [];
-        setMessages(serverMessages);
-        void setCachedMessages(conversationId, serverMessages);
+        initialLoadSettledRef.current = true;
+        setMessages((current) => {
+          const merged = mergeServerMessages(Array.isArray(current) ? current : [], serverMessages);
+          void setCachedMessages(conversationId, merged);
+          return merged;
+        });
 
         setMessagePage(1);
         if (response.pagination) {
@@ -262,8 +276,13 @@ export function useCommunityMessaging({
     }
   }, [selectedConversationId, messagePage, hasMoreMessages, isLoadingMoreMessages]);
 
+  // Depend on whether the conversation exists, not on the object itself: every
+  // list refresh builds a new object, and reloading the thread each time made it
+  // race the live updates (ticks flipping back, a sent message disappearing).
+  const hasSelectedConversation = Boolean(selectedConversation);
+
   useEffect(() => {
-    if (!selectedConversationId || !selectedConversation) {
+    if (!selectedConversationId || !hasSelectedConversation) {
       setMessages([]);
       return;
     }
@@ -274,7 +293,7 @@ export function useCommunityMessaging({
     }
 
     loadMessages(selectedConversationId);
-  }, [loadMessages, selectedConversation, selectedConversationId, selectedConversationIdRef]);
+  }, [loadMessages, hasSelectedConversation, selectedConversationId, selectedConversationIdRef]);
 
   useEffect(() => {
     setMobileActionMessageId(null);
@@ -290,12 +309,15 @@ export function useCommunityMessaging({
         safeConversationsRef.current.find((c) => c.id === currentConversationId)
       ) {
         joinConversationRoom(currentConversationId);
+        // Events may have been missed while disconnected, so skip the cache.
+        void communityService.clearMessagesCache(currentConversationId);
         void loadMessages(currentConversationId);
       }
       void refreshConversationsNow();
     };
     const handleDisconnect = () => setIsSocketConnected(false);
     const handleNewMessage = (message: ConversationMessage) => {
+      void communityService.clearMessagesCache(message.conversationId);
       if (message.senderId !== profileUserIdRef.current) {
         socket.emit("community:markConversationAsDelivered", {
           conversationId: message.conversationId,
@@ -323,6 +345,7 @@ export function useCommunityMessaging({
       readerId: string;
       messageIds: string[];
     }) => {
+      void communityService.clearMessagesCache(payload.conversationId);
       if (payload.conversationId !== selectedConversationIdRef.current) return;
       setMessages((current) => {
         const updated = (Array.isArray(current) ? current : []).map((m) => {
@@ -340,6 +363,7 @@ export function useCommunityMessaging({
       readerId: string;
       messageIds: string[];
     }) => {
+      void communityService.clearMessagesCache(payload.conversationId);
       if (payload.conversationId !== selectedConversationIdRef.current) return;
       setMessages((current) => {
         const updated = (Array.isArray(current) ? current : []).map((m) => {
@@ -359,6 +383,7 @@ export function useCommunityMessaging({
       queueConversationRefresh(100);
     };
     const handleMessageEdited = (message: ConversationMessage) => {
+      void communityService.clearMessagesCache(message.conversationId);
       if (message.conversationId !== selectedConversationIdRef.current) {
         queueConversationRefresh();
         return;
@@ -382,6 +407,7 @@ export function useCommunityMessaging({
       }));
     };
     const handleMessageDeleted = (message: ConversationMessage) => {
+      void communityService.clearMessagesCache(message.conversationId);
       if (message.conversationId !== selectedConversationIdRef.current) {
         queueConversationRefresh();
         return;
@@ -489,7 +515,12 @@ export function useCommunityMessaging({
             communityService.getMessages(selectedConversationId),
             communityService.listConversations(1, CONVERSATION_PAGE_SIZE),
           ]);
-          setMessages(Array.isArray(messageResponse.messages) ? messageResponse.messages : []);
+          setMessages((current) =>
+            mergeServerMessages(
+              Array.isArray(current) ? current : [],
+              Array.isArray(messageResponse.messages) ? messageResponse.messages : []
+            )
+          );
           applyConversationPage(conversationResponse, {
             preserveSelection: true,
           });
@@ -519,24 +550,30 @@ export function useCommunityMessaging({
 
     // On initial load of a conversation, always jump to the bottom instantly
     if (isInitialMessageLoadRef.current) {
-      isInitialMessageLoadRef.current = false;
-      messagesEndRef.current?.scrollIntoView({
-        behavior: "instant",
-        block: "end",
-      });
+      // Nothing to scroll to yet: keep the jump pending until content renders.
+      if (messages.length === 0) return;
+      const jumpToEnd = () =>
+        messagesEndRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+      jumpToEnd();
+      // Layout (fonts, images) can still grow after this render; settle once more.
+      requestAnimationFrame(jumpToEnd);
+      if (initialLoadSettledRef.current) isInitialMessageLoadRef.current = false;
+      if (container) prevScrollHeightRef.current = container.scrollHeight;
       return;
     }
 
     // On new messages: only auto-scroll if the user is already near the bottom (within 120px)
     if (container) {
-      const distanceFromBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight;
-      if (distanceFromBottom < 120) {
-        messagesEndRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "end",
-        });
+      // Measure against the height BEFORE this render: the new message has
+      // already grown the thread, and during a burst a smooth scroll is still
+      // catching up, so measuring now said "far from the bottom" and stopped
+      // following after the first message.
+      const previousHeight = prevScrollHeightRef.current || container.scrollHeight;
+      const distanceBefore = previousHeight - container.scrollTop - container.clientHeight;
+      if (distanceBefore < 120) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
       }
+      prevScrollHeightRef.current = container.scrollHeight;
     }
   }, [messages, selectedConversationId]);
 

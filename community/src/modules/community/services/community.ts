@@ -195,6 +195,11 @@ export const communityService = {
     clearCacheByPrefixes(["community-notifications", "community-unread-count"]);
   },
 
+  /** Forget cached message pages for a conversation, so the next load is fresh. */
+  async clearMessagesCache(conversationId: string): Promise<void> {
+    clearCacheByPrefixes([buildMessagesKey(conversationId)]);
+  },
+
   /** Drop the cached unread-chats count so the next read reflects the server. */
   async clearUnreadConversationCache(): Promise<void> {
     clearCacheByPrefixes(["conversations-unread-count"]);
