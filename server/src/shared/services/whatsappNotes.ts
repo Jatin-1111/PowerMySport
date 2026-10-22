@@ -5,6 +5,7 @@ import {
   type NoteChild,
 } from "../../client/models/WhatsAppNote";
 import { isCanonicalState, normalizeStateName } from "../../constants/indianStates";
+import { Player } from "../../client/models/Player";
 
 /**
  * Notes about a parent's children, from what they told the WhatsApp assistant.
@@ -140,6 +141,14 @@ export async function saveChildNote(phoneHash: string, input: NoteInput): Promis
       ? { saved: true, created: false, child: raced }
       : { saved: false, reason: "limit_reached" };
   }
+}
+
+/** The lower-cased first names of the children already on an account. */
+export async function childNamesOnAccount(userId: string): Promise<Set<string>> {
+  const players = await Player.find({ userId }).select("name").lean();
+  return new Set(
+    players.map((player) => (cleanFirstName(player.name) ?? "").toLowerCase()).filter(Boolean)
+  );
 }
 
 export async function getNotes(phoneHash: string): Promise<NoteChild[]> {

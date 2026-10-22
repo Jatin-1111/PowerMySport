@@ -87,7 +87,7 @@ export const FIRST_CONTACT_NOTICE =
 
 /** First message from a number on an account: nothing is noted, the account is what is read. */
 export const FIRST_CONTACT_NOTICE_MEMBER =
-  "Hi, I'm PowerMySport's AI assistant. I can see the children on your PowerMySport account, so ask me about tournaments, your plan, rankings or experts. I keep this chat for 90 days. Send STOP at any time and I will delete it.";
+  "Hi, I'm PowerMySport's AI assistant. I can see the children on your PowerMySport account, so ask me about tournaments, your plan, rankings or experts. If you tell me about a child who is not on it yet, I can note the basics and send a link to add them. I keep this chat for 90 days and any notes for a year. Send STOP at any time and I will delete everything.";
 
 export const OPT_OUT_REPLY =
   "Done. I have deleted this chat and anything I had noted about your children, and I will not message you again unless you write to us. You can start a new chat any time.";

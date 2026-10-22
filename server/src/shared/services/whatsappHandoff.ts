@@ -1,12 +1,11 @@
 import type { ChildAmbition, ChildExperienceLevel, ChildGender } from "@powermysport/shared-types";
 import crypto from "crypto";
 import { WhatsAppNote, type NoteChild } from "../../client/models/WhatsAppNote";
-import { Player } from "../../client/models/Player";
 import { User } from "../../client/models/User";
 import { AppError } from "../../utils/AppError";
 import { log as __rootLog } from "../../utils/logger";
 import { addDependent, hasCurrentParentalConsent } from "./AuthService/dependents";
-import { cleanFirstName, describeAge } from "./whatsappNotes";
+import { childNamesOnAccount, describeAge } from "./whatsappNotes";
 
 const log = __rootLog.child("whatsappHandoff");
 
@@ -283,11 +282,7 @@ export async function claimForUser(
     throw new AppError(PROBLEM_MESSAGE[resolved.problem], PROBLEM_STATUS[resolved.problem]);
   }
 
-  const onAccount = new Set(
-    (await Player.find({ userId }).select("name").lean()).map((player) =>
-      (cleanFirstName(player.name) ?? "").toLowerCase()
-    )
-  );
+  const onAccount = await childNamesOnAccount(userId);
 
   const result: ClaimResult = { created: [], skipped: [], missing: [], failed: [], remaining: 0 };
 

@@ -11,6 +11,7 @@ const { MongoMemoryServer } = require("mongodb-memory-server");
 const { WhatsAppNote } = require("../client/models/WhatsAppNote");
 const { WhatsAppConversation } = require("../client/models/WhatsAppConversation");
 const { User } = require("../client/models/User");
+const { Player } = require("../client/models/Player");
 const notes = require("../shared/services/whatsappNotes");
 const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
 const {
@@ -40,6 +41,7 @@ beforeEach(async () => {
     WhatsAppNote.deleteMany({}),
     WhatsAppConversation.deleteMany({}),
     User.deleteMany({}),
+    Player.deleteMany({}),
   ]);
 });
 
@@ -199,17 +201,61 @@ describe("the three tools", () => {
     );
   });
 
-  it("save nothing for a number that has an account, and say where to add a child", async () => {
-    for (const [name, args] of [
-      ["note_child_details", { childName: "Aarav" }],
-      ["get_my_notes", {}],
-      ["forget_child_note", { everything: true }],
-    ] as const) {
-      const out = await tool(name).execute(args, { userId: "u1", phoneHash: HASH });
-      assert.equal(out.reason, "has_account");
-      assert.match(out.instruction, /dashboard/);
-    }
-    assert.deepEqual(await notes.getNotes(HASH), []);
+  describe("for a number that has an account", () => {
+    const parentWith = async (...children: string[]) => {
+      const parent = await User.create({
+        name: "Meera Kapoor",
+        email: `known-${Math.random().toString(36).slice(2)}@example.com`,
+        phone: `98${Math.floor(10000000 + Math.random() * 89999999)}`,
+        password: "Passw0rd!x",
+        role: "Parent",
+      });
+      for (const name of children) {
+        await Player.create({ userId: parent._id, name, sportsFocus: [] });
+      }
+      return String(parent._id);
+    };
+
+    it("notes a child the profile does not list, and never writes to the profile", async () => {
+      const userId = await parentWith("Aarav Kapoor");
+      const out = await tool("note_child_details").execute(
+        { childName: "Riya", age: 9, sports: ["Swimming"] },
+        { userId, phoneHash: HASH }
+      );
+      assert.equal(out.saved, true);
+      assert.deepEqual(
+        (await notes.getNotes(HASH)).map((c: { key: string }) => c.key),
+        ["riya"]
+      );
+      const names = (await Player.find({ userId }).lean()).map((p: { name: string }) => p.name);
+      assert.deepEqual(names, ["Aarav Kapoor"], "the profile is untouched");
+    });
+
+    it("does not note a child who is already on the profile, whatever the surname or case", async () => {
+      const userId = await parentWith("Aarav Kapoor");
+      for (const spoken of ["Aarav", "aarav", "Aarav Sharma"]) {
+        const out = await tool("note_child_details").execute(
+          { childName: spoken, age: 13 },
+          { userId, phoneHash: HASH }
+        );
+        assert.equal(out.saved, false);
+        assert.equal(out.reason, "already_on_account");
+      }
+      assert.deepEqual(await notes.getNotes(HASH), []);
+    });
+
+    it("lets the parent see and remove what was noted", async () => {
+      const userId = await parentWith();
+      const ctx = { userId, phoneHash: HASH };
+      await tool("note_child_details").execute({ childName: "Riya" }, ctx);
+      const seen = await tool("get_my_notes").execute({}, ctx);
+      assert.deepEqual(
+        seen.children.map((c: { child: string }) => c.child),
+        ["Riya"]
+      );
+      await tool("forget_child_note").execute({ childName: "Riya" }, ctx);
+      assert.deepEqual(await notes.getNotes(HASH), []);
+    });
   });
 
   it("do nothing outside a WhatsApp chat", async () => {
@@ -276,8 +322,12 @@ describe("in the WhatsApp assistant", () => {
     assert.match(seen[0]!.systemPrompt, /goal: state level/);
   });
 
-  it("does not put notes in the prompt of a parent who has an account", async () => {
-    await notes.saveChildNote(hashPhone(PHONE), { childName: "Vikrant" });
+  it("gives a parent with an account both their profile and the child they mentioned but have not added", async () => {
+    await notes.saveChildNote(hashPhone(PHONE), {
+      childName: "Riya",
+      age: 9,
+      sports: ["Swimming"],
+    });
     await User.create({
       name: "Meera Kapoor",
       email: "notes-parent@example.com",
@@ -287,8 +337,31 @@ describe("in the WhatsApp assistant", () => {
     });
     const seen: Seen[] = [];
     const answer = await answerWhatsAppMessage(msg("hello"), stub(seen));
-    assert.ok(!seen[0]!.systemPrompt.includes("What this parent has already told you"));
+
+    const prompt = seen[0]!.systemPrompt;
     assert.equal(answer.known, true);
+    assert.match(prompt, /What this parent's account shows/);
+    assert.match(prompt, /A child who is not on the profile yet/);
+    assert.match(prompt, /you must never say you did/);
+    assert.match(prompt, /What this parent has already told you/);
+    assert.match(prompt, /Riya: 9 years old; plays or is considering Swimming/);
+    // The rules for a brand-new parent are not the ones a known parent is given.
+    assert.ok(!prompt.includes("may not have an account yet"));
+  });
+
+  it("hands a known number's tools both the account and the chat", async () => {
+    await User.create({
+      name: "Meera Kapoor",
+      email: "notes-parent2@example.com",
+      phone: "9812345678",
+      password: "Passw0rd!x",
+      role: "Parent",
+    });
+    const seen: Seen[] = [];
+    await answerWhatsAppMessage(msg("hello"), stub(seen));
+    const ctx = seen[0]!.toolContext as { userId?: string; phoneHash?: string };
+    assert.match(String(ctx.userId), /^[a-f0-9]{24}$/);
+    assert.equal(ctx.phoneHash, hashPhone(PHONE));
   });
 
   it("deletes the notes together with the chat on STOP", async () => {

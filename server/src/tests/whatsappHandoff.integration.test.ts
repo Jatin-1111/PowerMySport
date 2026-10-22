@@ -153,9 +153,16 @@ describe("the create_profile_link tool", () => {
     assert.equal(out.reason, "nothing_noted");
   });
 
-  it("is not offered to a number with an account, or outside WhatsApp", async () => {
-    assert.equal((await tool.execute({}, { userId: "u1", phoneHash: HASH })).reason, "has_account");
+  it("works for a number with an account too, carrying a new child to the profile by link", async () => {
+    await notes.saveChildNote(HASH, { childName: "Riya", age: 9 });
+    const out = await tool.execute({}, { userId: "u1", phoneHash: HASH });
+    assert.equal(out.created, true);
+    assert.match(out.link, /\/start\?t=/);
+  });
+
+  it("is not offered outside a WhatsApp chat", async () => {
     assert.equal((await tool.execute({}, {})).reason, "no_chat");
+    assert.equal((await tool.execute({}, { userId: "u1" })).reason, "no_chat");
   });
 });
 

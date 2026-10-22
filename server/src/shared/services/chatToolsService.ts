@@ -12,6 +12,8 @@ import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
 import { createProfileLink } from "./whatsappHandoff";
 import {
+  childNamesOnAccount,
+  cleanFirstName,
   forgetAllNotes,
   forgetChild,
   getNotes,
@@ -491,22 +493,18 @@ const getMySessionsTool: ChatToolDefinition = {
 
 // ─── note_child_details / get_my_notes / forget_child_note ──────────────────────
 
-const NOTES_HAS_ACCOUNT = {
-  saved: false,
-  reason: "has_account",
-  instruction:
-    "This parent already has a PowerMySport account, so their children are kept there and cannot be added from WhatsApp yet. Say so, and that they can add or change a child at https://powermysport.com/dashboard. To read what the account holds, use get_my_children.",
-} as const;
-
 const NOTES_NO_CHAT = {
   saved: false,
   reason: "no_chat",
   instruction: "Notes are only kept in a WhatsApp chat. Do not offer to remember anything here.",
 } as const;
 
-/** Why notes cannot be used in this conversation, or null when they can. */
-const notesUnavailable = (context?: ChatToolContext) =>
-  context?.userId ? NOTES_HAS_ACCOUNT : context?.phoneHash ? null : NOTES_NO_CHAT;
+/**
+ * Why notes cannot be used in this conversation, or null when they can. A number with an
+ * account may keep notes too: they are never written to the account, only carried to it by the
+ * link, which the parent confirms while signed in on the website.
+ */
+const notesUnavailable = (context?: ChatToolContext) => (context?.phoneHash ? null : NOTES_NO_CHAT);
 
 const noteChildDetailsTool: ChatToolDefinition = {
   name: "note_child_details",
@@ -516,7 +514,7 @@ const noteChildDetailsTool: ChatToolDefinition = {
   promptNote:
     "Call it only when the parent has clearly said something about a child, never to guess. Then say in one short sentence what you noted and invite a correction. Never ask for a surname, date of birth, school or anything medical, and never save those.",
   description:
-    "Save what the parent just told you about one child, for a parent who has no PowerMySport account. Pass the child's FIRST name and only the facts the parent actually stated: age in years, the sports, a level (such as beginner, intermediate or advanced), a goal in their words, and the Indian state they live in. Calling it again for the same first name updates that child and keeps what was not mentioned. Pass the full current list of sports each time. Do not pass a surname, date of birth, school or medical detail. Up to four children can be noted.",
+    "Save what the parent just told you about one child who is not yet on their PowerMySport profile (a parent with no account, or a child the account does not list). It is kept as a note, never added to the profile directly; the parent adds it from a link. Pass the child's FIRST name and only the facts the parent actually stated: age in years, the sports, a level (such as beginner, intermediate or advanced), a goal in their words, and the Indian state they live in. Calling it again for the same first name updates that child and keeps what was not mentioned. Pass the full current list of sports each time. Do not pass a surname, date of birth, school or medical detail. Up to four children can be noted.",
   parametersJsonSchema: {
     type: "object",
     properties: {
@@ -539,6 +537,18 @@ const noteChildDetailsTool: ChatToolDefinition = {
   execute: async (args, context) => {
     const blocked = notesUnavailable(context);
     if (blocked) return blocked;
+    // A child the account already lists needs no note. Checked here, not left to the prompt, so
+    // a link never carries a child the parent already has.
+    if (context!.userId) {
+      const name = cleanFirstName(args.childName);
+      if (name && (await childNamesOnAccount(context!.userId)).has(name.toLowerCase())) {
+        return {
+          saved: false,
+          reason: "already_on_account",
+          instruction: `${name} is already on this parent's profile, so there is nothing to note. Say so. To read what the profile holds, use get_my_children.`,
+        };
+      }
+    }
     const result = await saveChildNote(context!.phoneHash!, {
       childName: String(args.childName ?? ""),
       age: args.age,

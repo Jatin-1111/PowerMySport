@@ -58,7 +58,10 @@ This WhatsApp number belongs to a PowerMySport account. This replaces what the i
 export const UNKNOWN_NUMBER_ADDENDUM = `
 
 ## This parent is not identified
-This WhatsApp number is not tied to a single PowerMySport account, so your tools return public data only and you cannot see anyone's children or rankings. If they ask for their child's ranking or a list made for their child, say plainly that this number is not linked to an account, and that signing in at https://powermysport.com/planner shows it. Do not claim the information is private or that you are unable to look it up.
+This WhatsApp number is not tied to a single PowerMySport account, so your tools return public data only and you cannot see anyone's children or rankings. If they ask for their child's ranking or a list made for their child, say plainly that this number is not linked to an account, and that signing in at https://powermysport.com/planner shows it. Do not claim the information is private or that you are unable to look it up.`;
+
+/** How notes work for a number with no account: it is often a new parent. */
+const NOTES_RULES = `
 
 ## Remembering what they tell you
 A parent here is often new and may not have an account yet. You can keep the basics they tell you about a child, so they never repeat them, here or when they create a profile on the website.
@@ -67,6 +70,19 @@ A parent here is often new and may not have an account yet. You can keep the bas
 - If they ask what you remember, use get_my_notes. If they ask you to forget a child or everything, use forget_child_note and say exactly what was removed.
 - Once you know a child's name, age and sport, you may offer once to carry this onto a PowerMySport profile so they never repeat it: "Want me to send a link so this is ready when you create your profile?" Only if they say yes, call create_profile_link and send the link. Do not offer again if they decline or ignore it.
 - Do not push. Ask at most one gentle question in a reply, only when a missing detail would help answer what they asked, and let them skip it.`;
+
+/**
+ * How notes work for a number with an account. The assistant never changes the profile from
+ * here: a new child is noted, and the parent adds them from a link while signed in on the website.
+ */
+const KNOWN_NOTES_ADDENDUM = `
+
+## A child who is not on the profile yet
+You cannot add or change a child on their profile from WhatsApp, and you must never say you did.
+- If they tell you about a child the account list above does not show, call note_child_details, then say you noted it and offer once: "Want me to send a link so you can add them to your profile?" Only if they say yes, call create_profile_link and send the link. Tell them they confirm on the website, where they add a date of birth.
+- If the child is already on the account list, say so and do not note them.
+- Note only what was said: first name, age, sport, level, goal and state. Never ask for or save a surname, date of birth, school or anything medical.
+- If they ask what you have noted or want it removed, use get_my_notes or forget_child_note.`;
 
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
@@ -105,25 +121,27 @@ async function identify(
   phone: string,
   phoneHash: string
 ): Promise<{ toolContext: ChatToolContext; parent: ParentContext | null; notes: NoteChild[] }> {
-  const toolContext: ChatToolContext = { phoneHash };
+  let userId: string | undefined;
+  let parent: ParentContext | null = null;
   try {
-    const userId = await findUserIdByPhone(phone);
+    userId = await findUserIdByPhone(phone);
     if (userId) {
-      const parent = await getParentContext(userId).catch((err) => {
+      parent = await getParentContext(userId).catch((err) => {
         log.error("could not read the parent's account", err);
         return null;
       });
-      return { toolContext: { ...toolContext, userId }, parent, notes: [] };
     }
   } catch (err) {
     log.error("could not look up the account for a WhatsApp number", err);
   }
-  // No account: what this number told us in an earlier chat, so it is never asked twice.
+  // What this number told us in an earlier chat and has not yet moved onto a profile, so it is
+  // never asked twice. A parent with an account can have notes too: a child they mentioned that
+  // the profile does not list yet.
   const notes = await getNotes(phoneHash).catch((err) => {
     log.error("could not read the notes for a WhatsApp number", err);
     return [] as NoteChild[];
   });
-  return { toolContext, parent: null, notes };
+  return { toolContext: userId ? { phoneHash, userId } : { phoneHash }, parent, notes };
 }
 
 /**
@@ -136,8 +154,11 @@ export function identityAddendum(
   notes: NoteChild[] = []
 ): string {
   return known
-    ? KNOWN_PARENT_ADDENDUM + accountAddendum(parent)
-    : UNKNOWN_NUMBER_ADDENDUM + formatNotesForPrompt(notes);
+    ? KNOWN_PARENT_ADDENDUM +
+        accountAddendum(parent) +
+        KNOWN_NOTES_ADDENDUM +
+        formatNotesForPrompt(notes)
+    : UNKNOWN_NUMBER_ADDENDUM + NOTES_RULES + formatNotesForPrompt(notes);
 }
 
 /** What the account shows, and how to use it. Empty when the account could not be read. */
