@@ -70,7 +70,7 @@ describe("file and voice messages", () => {
     const sent = await CommunityService.sendMessage(
       a,
       conversationId,
-      "chats/abc/files/generated-uuid.pdf",
+      `chats/${conversationId}/files/generated-uuid.pdf`,
       {
         type: "FILE",
         metadata: {
@@ -96,7 +96,7 @@ describe("file and voice messages", () => {
     const sent = await CommunityService.sendMessage(
       a,
       conversationId,
-      "chats/abc/voice/generated-uuid.webm",
+      `chats/${conversationId}/voice/generated-uuid.webm`,
       {
         type: "VOICE",
         metadata: { durationMs: 4200, mimeType: "audio/webm" },
@@ -107,15 +107,59 @@ describe("file and voice messages", () => {
     assert.equal(sent.metadata.durationMs, 4200);
   });
 
+  it("refuses an attachment key from another conversation or outside the chat prefix", async () => {
+    const a = await createUser("Ana");
+    const b = await createUser("Ben");
+    const conversationId = await openConversation(a, b);
+    const otherConversationId = String(new mongoose.Types.ObjectId());
+
+    for (const content of [
+      `chats/${otherConversationId}/files/stolen.pdf`,
+      "documents/private/passport.pdf",
+      `chats/${conversationId}/../${otherConversationId}/files/x.pdf`,
+      `chats/${conversationId}/`,
+      "https://example.com/tracker.png",
+    ]) {
+      await assert.rejects(
+        CommunityService.sendMessage(a, conversationId, content, { type: "FILE" }),
+        /does not belong to this conversation/,
+        content
+      );
+    }
+    assert.equal(await CommunityMessage.countDocuments({ conversationId }), 0);
+  });
+
+  it("does not let an attachment be edited into something else", async () => {
+    const a = await createUser("Ana");
+    const b = await createUser("Ben");
+    const conversationId = await openConversation(a, b);
+    const sent = await CommunityService.sendMessage(
+      a,
+      conversationId,
+      `chats/${conversationId}/files/real.pdf`,
+      { type: "FILE", metadata: { fileName: "real.pdf" } }
+    );
+
+    await assert.rejects(
+      CommunityService.editMessage(a, sent.id, "chats/other/files/swapped.pdf"),
+      /Only text messages can be edited/
+    );
+  });
+
   it("keeps metadata on the way back out", async () => {
     const a = await createUser("Ana");
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    await CommunityService.sendMessage(a, conversationId, "chats/abc/files/generated-uuid.pdf", {
-      type: "FILE",
-      metadata: { fileName: "form.pdf", fileSize: 100, mimeType: "application/pdf" },
-    });
+    await CommunityService.sendMessage(
+      a,
+      conversationId,
+      `chats/${conversationId}/files/generated-uuid.pdf`,
+      {
+        type: "FILE",
+        metadata: { fileName: "form.pdf", fileSize: 100, mimeType: "application/pdf" },
+      }
+    );
 
     const page = await CommunityService.getMessages(b, conversationId);
     assert.equal(page.messages[0].type, "FILE");
@@ -130,13 +174,13 @@ describe("file and voice messages", () => {
     const file = await CommunityService.sendMessage(
       a,
       conversationId,
-      "chats/abc/files/secret-object-key.pdf",
+      `chats/${conversationId}/files/secret-object-key.pdf`,
       { type: "FILE", metadata: { fileName: "roster.pdf" } }
     );
     const voice = await CommunityService.sendMessage(
       a,
       conversationId,
-      "chats/abc/voice/secret-voice-key.webm",
+      `chats/${conversationId}/voice/secret-voice-key.webm`,
       { type: "VOICE", metadata: { durationMs: 3000 } }
     );
 
@@ -161,7 +205,7 @@ describe("file and voice messages", () => {
     const file = await CommunityService.sendMessage(
       a,
       conversationId,
-      "chats/abc/files/secret-object-key.pdf",
+      `chats/${conversationId}/files/secret-object-key.pdf`,
       { type: "FILE", metadata: { fileName: "roster.pdf" } }
     );
     await CommunityService.sendMessage(b, conversationId, "Got it", {
@@ -183,10 +227,15 @@ describe("file and voice messages", () => {
     const b = await createUser("Ben");
     const conversationId = await openConversation(a, b);
 
-    await CommunityService.sendMessage(a, conversationId, "chats/abc/files/secret-object-key.pdf", {
-      type: "FILE",
-      metadata: { fileName: "roster.pdf" },
-    });
+    await CommunityService.sendMessage(
+      a,
+      conversationId,
+      `chats/${conversationId}/files/secret-object-key.pdf`,
+      {
+        type: "FILE",
+        metadata: { fileName: "roster.pdf" },
+      }
+    );
 
     const list = await CommunityService.listConversations(b, 1, 10);
     const row = list.items.find((item: { id: string }) => item.id === conversationId);

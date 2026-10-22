@@ -305,6 +305,23 @@ export const messagesService = {
     }
 
     const messageType = options?.type || "TEXT";
+    // An attachment message stores a storage key, and every reader's client
+    // turns that key into a URL on the chat bucket. Only keys the upload
+    // endpoints issued for THIS conversation are acceptable; otherwise a sender
+    // could point the message at another chat's file, or at any path in the
+    // bucket, and have it rendered to the recipient.
+    if (messageType !== "TEXT") {
+      const expectedPrefix = `chats/${conversationId}/`;
+      const key = content;
+      if (
+        !key.startsWith(expectedPrefix) ||
+        key.length === expectedPrefix.length ||
+        key.includes("..") ||
+        /\s/.test(key)
+      ) {
+        throw new Error("That attachment does not belong to this conversation");
+      }
+    }
     const messageDoc: Record<string, unknown> = {
       conversationId,
       senderId: userId,
@@ -464,6 +481,10 @@ export const messagesService = {
 
     if (message.isDeleted) {
       throw new Error("Deleted messages cannot be edited");
+    }
+
+    if (message.type !== "TEXT") {
+      throw new Error("Only text messages can be edited");
     }
 
     if (Date.now() - message.createdAt.getTime() > MESSAGE_EDIT_DELETE_WINDOW_MS) {

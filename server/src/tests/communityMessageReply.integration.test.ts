@@ -164,7 +164,7 @@ describe("replying to a message", () => {
     const image = await CommunityService.sendMessage(
       a,
       conversationId,
-      "community/chat/secret-object-key.jpg",
+      `chats/${conversationId}/secret-object-key.jpg`,
       { type: "IMAGE" }
     );
     const reply = await CommunityService.sendMessage(b, conversationId, "Nice shot", {
