@@ -28,7 +28,12 @@
 import crypto from "crypto";
 import express from "express";
 import { answerWhatsAppMessage } from "../services/whatsappAssistantService";
-import { FIRST_CONTACT_NOTICE, PILOT_REPLY, claimInboundMessage } from "../services/whatsappPilot";
+import {
+  FIRST_CONTACT_NOTICE,
+  FIRST_CONTACT_NOTICE_MEMBER,
+  PILOT_REPLY,
+  claimInboundMessage,
+} from "../services/whatsappPilot";
 import { mayUseAssistant } from "../services/whatsappPilotNumbers";
 import {
   extractInboundMessages,
@@ -70,7 +75,12 @@ async function handleInboundMessage(message: InboundWhatsAppMessage): Promise<vo
   const answer = await answerWhatsAppMessage(message);
   // First time we hear from this number: say what this is and how to stop it,
   // before the answer, as its own message.
-  if (answer.firstContact) await sendWhatsAppText(message.from, FIRST_CONTACT_NOTICE);
+  if (answer.firstContact) {
+    await sendWhatsAppText(
+      message.from,
+      answer.known ? FIRST_CONTACT_NOTICE_MEMBER : FIRST_CONTACT_NOTICE
+    );
+  }
   await sendWhatsAppText(message.from, answer.reply);
 }
 

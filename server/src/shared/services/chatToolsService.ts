@@ -10,6 +10,13 @@ import {
 } from "../../client/services/PlannerChatContext";
 import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
+import {
+  forgetAllNotes,
+  forgetChild,
+  getNotes,
+  presentChild,
+  saveChildNote,
+} from "./whatsappNotes";
 import { getChildrenDetail, getSeasonPlans } from "./parentContext";
 import { findEditionsForChat, getUpcomingEditions } from "./tournamentEditionQueries";
 
@@ -20,6 +27,12 @@ import { findEditionsForChat, getUpcomingEditions } from "./tournamentEditionQue
  */
 export interface ChatToolContext {
   userId?: string;
+  /**
+   * Keyed hash of the WhatsApp number in this chat, set by the WhatsApp service from the
+   * webhook. A tool that keeps notes uses this and never a value the model supplies, so a
+   * model (or a message that talks it into it) cannot read or write another number's notes.
+   */
+  phoneHash?: string;
 }
 
 export interface ChatToolDefinition {
@@ -475,6 +488,155 @@ const getMySessionsTool: ChatToolDefinition = {
   },
 };
 
+// ─── note_child_details / get_my_notes / forget_child_note ──────────────────────
+
+const NOTES_HAS_ACCOUNT = {
+  saved: false,
+  reason: "has_account",
+  instruction:
+    "This parent already has a PowerMySport account, so their children are kept there and cannot be added from WhatsApp yet. Say so, and that they can add or change a child at https://powermysport.com/dashboard. To read what the account holds, use get_my_children.",
+} as const;
+
+const NOTES_NO_CHAT = {
+  saved: false,
+  reason: "no_chat",
+  instruction: "Notes are only kept in a WhatsApp chat. Do not offer to remember anything here.",
+} as const;
+
+/** Why notes cannot be used in this conversation, or null when they can. */
+const notesUnavailable = (context?: ChatToolContext) =>
+  context?.userId ? NOTES_HAS_ACCOUNT : context?.phoneHash ? null : NOTES_NO_CHAT;
+
+const noteChildDetailsTool: ChatToolDefinition = {
+  name: "note_child_details",
+  summary:
+    "remember the basics a new parent tells you about their child (first name, age, sport, level, goal, state) so they never have to repeat them, here or on the website",
+  example: "my son Vikrant is 14 and plays tennis",
+  promptNote:
+    "Call it only when the parent has clearly said something about a child, never to guess. Then say in one short sentence what you noted and invite a correction. Never ask for a surname, date of birth, school or anything medical, and never save those.",
+  description:
+    "Save what the parent just told you about one child, for a parent who has no PowerMySport account. Pass the child's FIRST name and only the facts the parent actually stated: age in years, the sports, a level (such as beginner, intermediate or advanced), a goal in their words, and the Indian state they live in. Calling it again for the same first name updates that child and keeps what was not mentioned. Pass the full current list of sports each time. Do not pass a surname, date of birth, school or medical detail. Up to four children can be noted.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      childName: { type: "string", description: "The child's first name, as the parent said it." },
+      age: { type: "number", description: "Age in years, only if stated." },
+      sports: {
+        type: "array",
+        items: { type: "string" },
+        description: "Every sport the parent named for this child (at most three).",
+      },
+      level: {
+        type: "string",
+        description: "How experienced the child is, in a word or two, only if stated.",
+      },
+      goal: { type: "string", description: "What the parent wants for the child, in their words." },
+      state: { type: "string", description: "The Indian state they live in, only if stated." },
+    },
+    required: ["childName"],
+  },
+  execute: async (args, context) => {
+    const blocked = notesUnavailable(context);
+    if (blocked) return blocked;
+    const result = await saveChildNote(context!.phoneHash!, {
+      childName: String(args.childName ?? ""),
+      age: args.age,
+      sports: args.sports,
+      level: args.level,
+      goal: args.goal,
+      state: args.state,
+    });
+    if (!result.saved) {
+      return {
+        saved: false,
+        reason: result.reason,
+        instruction:
+          result.reason === "no_name"
+            ? "Not saved. Ask for the child's first name."
+            : "Not saved: only four children can be noted for one number. Say so, and that the others can be added when they create their profile on https://powermysport.com.",
+      };
+    }
+    return {
+      saved: true,
+      created: result.created,
+      noted: presentChild(result.child),
+      instruction:
+        "Tell the parent in one short sentence what you noted, and that they can correct it. Do not read back anything that was not saved.",
+    };
+  },
+};
+
+const getMyNotesTool: ChatToolDefinition = {
+  name: "get_my_notes",
+  summary: "show a parent what you have noted about their children so far",
+  example: "what do you remember about my son",
+  description:
+    "Read back what has been noted about this parent's children in this WhatsApp chat. Use when the parent asks what you remember or know about their child or children. It returns only what the parent told you.",
+  parametersJsonSchema: { type: "object", properties: {} },
+  execute: async (_args, context) => {
+    const blocked = notesUnavailable(context);
+    if (blocked) return blocked;
+    const children = (await getNotes(context!.phoneHash!)).map((child) => presentChild(child));
+    if (children.length === 0) {
+      return {
+        children: [],
+        instruction:
+          "Nothing has been noted yet. Say so, and that if they tell you about their child you will remember the basics.",
+      };
+    }
+    return {
+      children,
+      instruction: 'Read these back briefly. Say they can ask you to "forget" a child any time.',
+    };
+  },
+};
+
+const forgetChildNoteTool: ChatToolDefinition = {
+  name: "forget_child_note",
+  summary: "remove what you noted about one child, or everything, when the parent asks",
+  example: "forget Vikrant",
+  promptNote:
+    "Call it only on a clear request to forget or remove. Removing is permanent, so say exactly what was removed.",
+  description:
+    "Delete what was noted about one child (pass childName) or about all children (pass everything true). Call it only when the parent clearly asks to forget, remove or delete. If they ask to stop everything and delete the chat, that is a separate instruction (STOP) that they send themselves.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      childName: { type: "string", description: "First name of the child to forget." },
+      everything: {
+        type: "boolean",
+        description: "True only when the parent asked to forget every child.",
+      },
+    },
+  },
+  execute: async (args, context) => {
+    const blocked = notesUnavailable(context);
+    if (blocked) return blocked;
+    const phoneHash = context!.phoneHash!;
+    if (args.everything === true) {
+      const removed = await forgetAllNotes(phoneHash);
+      return {
+        removed: removed > 0 ? "everything" : "nothing",
+        instruction:
+          removed > 0
+            ? "Tell the parent everything you had noted is deleted."
+            : "Nothing had been noted. Say so.",
+      };
+    }
+    const name = typeof args.childName === "string" ? args.childName : "";
+    if (!name.trim()) {
+      return { removed: "nothing", instruction: "Ask which child they want removed." };
+    }
+    const removed = await forgetChild(phoneHash, name);
+    return removed > 0
+      ? { removed: name, instruction: `Tell the parent you have removed ${name} and nothing else.` }
+      : {
+          removed: "nothing",
+          instruction: "No child by that name was noted. Say so, and offer to show what you have.",
+        };
+  },
+};
+
 // ─── get_tournament_details ─────────────────────────────────────────────────────
 
 const CHAT_SITE = "https://powermysport.com";
@@ -633,6 +795,9 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getMySeasonPlanTool,
   getMyGuidancePlanTool,
   getMySessionsTool,
+  noteChildDetailsTool,
+  getMyNotesTool,
+  forgetChildNoteTool,
   getTournamentDetailsTool,
   requestTeamFollowupTool,
 ];

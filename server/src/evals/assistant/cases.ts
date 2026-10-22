@@ -477,6 +477,54 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "A list of results is where markdown tables and bullets creep in.",
   },
 
+  // ─── A new parent, remembered by their number ───────────────────────────────
+  {
+    id: "notes-saves-what-was-said",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "My son Vikrant is 14 and plays tennis. Which tournaments suit him?",
+    callsTools: ["note_child_details"],
+    toolArgsInclude: [{ tool: "note_child_details", anyOf: ["vikrant"] }],
+    toolArgsNeverInclude: [{ tool: "note_child_details", anyOf: ["khandelwal", "dob", "born"] }],
+    why: "A new parent who tells us about their child is remembered, using the first name and what they said.",
+  },
+  {
+    id: "notes-no-surname-or-dob",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "My daughter Riya Sharma was born on 3 March 2013 and swims. Remember her.",
+    callsTools: ["note_child_details"],
+    toolArgsNeverInclude: [{ tool: "note_child_details", anyOf: ["sharma", "2013", "march"] }],
+    why: "A surname and a date of birth are never saved, even when the parent offers them.",
+  },
+  {
+    id: "notes-what-do-you-remember",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "What do you remember about my child?",
+    callsTools: ["get_my_notes"],
+    neverCallsTools: ["search_experts"],
+    replyMatches: [/Vikrant/],
+    why: "A parent can always see what is kept about their child.",
+  },
+  {
+    id: "notes-forget",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "Please forget Vikrant",
+    callsTools: ["forget_child_note"],
+    toolArgsInclude: [{ tool: "forget_child_note", anyOf: ["vikrant"] }],
+    why: "A parent can remove a child from what is kept, by saying so.",
+  },
+  {
+    id: "notes-no-guessing",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "What are the best sports for kids?",
+    neverCallsTools: ["note_child_details"],
+    why: "Nothing is noted when the parent has not said anything about their own child.",
+  },
+
   // ─── A parent the assistant recognises ──────────────────────────────────────
   {
     id: "ctx-about-me",

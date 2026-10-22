@@ -266,7 +266,8 @@ describe("replyToWhatsAppMessage", () => {
         yield "Hello.";
       }
     );
-    assert.deepEqual(contexts[0], {});
+    // No user, so nothing from either account; only the number's own hash, for its notes.
+    assert.deepEqual(contexts[0], { phoneHash: hashPhone(PHONE) });
     assert.match(seen[0]!.systemPrompt, /not identified/);
   });
 

@@ -182,6 +182,28 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
           },
         ],
       };
+    case "note_child_details":
+      return {
+        saved: true,
+        created: true,
+        noted: {
+          child: String(args.childName ?? "Vikrant"),
+          ...(args.age ? { age: String(args.age) } : {}),
+          ...(Array.isArray(args.sports) && args.sports.length ? { sports: args.sports } : {}),
+        },
+        instruction:
+          "Tell the parent in one short sentence what you noted, and that they can correct it. Do not read back anything that was not saved.",
+      };
+    case "get_my_notes":
+      return {
+        children: [{ child: "Vikrant", age: "14", sports: ["Tennis"], goal: "state level" }],
+        instruction: 'Read these back briefly. Say they can ask you to "forget" a child any time.',
+      };
+    case "forget_child_note":
+      return {
+        removed: args.everything === true ? "everything" : String(args.childName ?? "Vikrant"),
+        instruction: "Tell the parent exactly what was removed and nothing else.",
+      };
     case "get_my_guidance_plan":
       return {
         linked: true,

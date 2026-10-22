@@ -4,7 +4,9 @@ import { buildAssistantChatSystemPrompt } from "./assistantChatService";
 import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticChatService";
 import { ASSISTANT_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
 import { formatParentContext, getParentContext, type ParentContext } from "./parentContext";
+import type { NoteChild } from "../../client/models/WhatsAppNote";
 import { findUserIdByPhone } from "./whatsappIdentity";
+import { forgetAllNotes, formatNotesForPrompt, getNotes } from "./whatsappNotes";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
 import { withdrawConsentForPhone } from "./whatsappConsent";
@@ -56,7 +58,14 @@ This WhatsApp number belongs to a PowerMySport account. This replaces what the i
 export const UNKNOWN_NUMBER_ADDENDUM = `
 
 ## This parent is not identified
-This WhatsApp number is not tied to a single PowerMySport account, so your tools return public data only and you cannot see anyone's children or rankings. If they ask for their child's ranking or a list made for their child, say plainly that this number is not linked to an account, and that signing in at https://powermysport.com/planner shows it. Do not claim the information is private or that you are unable to look it up.`;
+This WhatsApp number is not tied to a single PowerMySport account, so your tools return public data only and you cannot see anyone's children or rankings. If they ask for their child's ranking or a list made for their child, say plainly that this number is not linked to an account, and that signing in at https://powermysport.com/planner shows it. Do not claim the information is private or that you are unable to look it up.
+
+## Remembering what they tell you
+A parent here is often new and may not have an account yet. You can keep the basics they tell you about a child, so they never repeat them, here or when they create a profile on the website.
+- When a parent clearly tells you about a child, call note_child_details, then say in one short sentence what you noted and that they can correct it. Do this as part of answering, not instead of it.
+- Note only what was said: the first name, age, sport, level, goal and state. Never guess, and never ask for or save a surname, date of birth, school or anything medical.
+- If they ask what you remember, use get_my_notes. If they ask you to forget a child or everything, use forget_child_note and say exactly what was removed.
+- Do not push. Ask at most one gentle question in a reply, only when a missing detail would help answer what they asked, and let them skip it.`;
 
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
@@ -92,28 +101,42 @@ const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, to
  * public data.
  */
 async function identify(
-  phone: string
-): Promise<{ toolContext: ChatToolContext; parent: ParentContext | null }> {
+  phone: string,
+  phoneHash: string
+): Promise<{ toolContext: ChatToolContext; parent: ParentContext | null; notes: NoteChild[] }> {
+  const toolContext: ChatToolContext = { phoneHash };
   try {
     const userId = await findUserIdByPhone(phone);
-    if (!userId) return { toolContext: {}, parent: null };
-    const parent = await getParentContext(userId).catch((err) => {
-      log.error("could not read the parent's account", err);
-      return null;
-    });
-    return { toolContext: { userId }, parent };
+    if (userId) {
+      const parent = await getParentContext(userId).catch((err) => {
+        log.error("could not read the parent's account", err);
+        return null;
+      });
+      return { toolContext: { ...toolContext, userId }, parent, notes: [] };
+    }
   } catch (err) {
     log.error("could not look up the account for a WhatsApp number", err);
-    return { toolContext: {}, parent: null };
   }
+  // No account: what this number told us in an earlier chat, so it is never asked twice.
+  const notes = await getNotes(phoneHash).catch((err) => {
+    log.error("could not read the notes for a WhatsApp number", err);
+    return [] as NoteChild[];
+  });
+  return { toolContext, parent: null, notes };
 }
 
 /**
  * The part of the prompt that depends on who is asking. One function for production and for
  * the eval, so the eval tests the prompt a parent really gets.
  */
-export function identityAddendum(known: boolean, parent: ParentContext | null): string {
-  return known ? KNOWN_PARENT_ADDENDUM + accountAddendum(parent) : UNKNOWN_NUMBER_ADDENDUM;
+export function identityAddendum(
+  known: boolean,
+  parent: ParentContext | null,
+  notes: NoteChild[] = []
+): string {
+  return known
+    ? KNOWN_PARENT_ADDENDUM + accountAddendum(parent)
+    : UNKNOWN_NUMBER_ADDENDUM + formatNotesForPrompt(notes);
 }
 
 /** What the account shows, and how to use it. Empty when the account could not be read. */
@@ -134,6 +157,8 @@ export interface WhatsAppAnswer {
   reply: string;
   /** No earlier conversation was found for this number, so the parent has not seen the notice. */
   firstContact: boolean;
+  /** The number belongs to one account, which changes what the first-message notice can promise. */
+  known?: boolean;
 }
 
 /**
@@ -156,6 +181,8 @@ export async function answerWhatsAppMessage(
   // who has used their messages can still take their data back.
   if (isOptOutMessage(text)) {
     await WhatsAppConversation.deleteOne({ phoneHash });
+    // What was noted about their children goes with the chat: STOP means everything.
+    await forgetAllNotes(phoneHash);
     // Also off the list for booking messages. A failure here must not stop the reply.
     await withdrawConsentForPhone(message.from).catch((err) =>
       log.error("could not withdraw WhatsApp consent", err)
@@ -183,12 +210,12 @@ export async function answerWhatsAppMessage(
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const { toolContext, parent } = await identify(message.from);
+    const { toolContext, parent, notes } = await identify(message.from, phoneHash);
     const chunks = await retrieveRelevantChunks(userMessage);
     const systemPrompt =
       buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) +
       CHANNEL_ADDENDUM +
-      identityAddendum(Boolean(toolContext.userId), parent);
+      identityAddendum(Boolean(toolContext.userId), parent, notes);
 
     let reply = "";
     for await (const piece of generate(systemPrompt, history, userMessage, toolContext)) {
@@ -220,7 +247,7 @@ export async function answerWhatsAppMessage(
       { upsert: true }
     );
 
-    return { reply, firstContact };
+    return { reply, firstContact, known: Boolean(toolContext.userId) };
   } catch (err) {
     log.error("could not produce a reply", err);
     await decrementDailyMessageCount(limiterKey);

@@ -81,11 +81,16 @@ export function isOptOutMessage(text: string | null | undefined): boolean {
   return OPT_OUT_WORDS.has(cleaned);
 }
 
+/** First message from a number that is not on an account: it also says what is remembered. */
 export const FIRST_CONTACT_NOTICE =
-  "Hi, I'm PowerMySport's AI assistant. I answer questions about youth sports pathways, tournaments and experts. I keep this chat for 90 days so I can follow the thread. Send STOP at any time and I will delete it.";
+  "Hi, I'm PowerMySport's AI assistant. Ask me anything about youth sports: tournaments, pathways, experts or choosing a sport. If you tell me about your child, I'll remember the basics (first name, age, sport, goal) so you don't have to repeat them. I keep this chat for 90 days and these notes for a year. Say \"what do you remember\" to see them, \"forget\" to remove them, or STOP to delete everything.";
+
+/** First message from a number on an account: nothing is noted, the account is what is read. */
+export const FIRST_CONTACT_NOTICE_MEMBER =
+  "Hi, I'm PowerMySport's AI assistant. I can see the children on your PowerMySport account, so ask me about tournaments, your plan, rankings or experts. I keep this chat for 90 days. Send STOP at any time and I will delete it.";
 
 export const OPT_OUT_REPLY =
-  "Done. I have deleted this chat and will not message you again unless you write to us. You can start a new chat any time.";
+  "Done. I have deleted this chat and anything I had noted about your children, and I will not message you again unless you write to us. You can start a new chat any time.";
 
 export const PILOT_REPLY =
   "Hi, this is PowerMySport. Our WhatsApp assistant is being tested with a small group for now. You can ask the same question on https://powermysport.com/ask in the meantime.";
