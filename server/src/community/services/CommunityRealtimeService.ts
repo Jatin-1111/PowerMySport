@@ -84,6 +84,39 @@ const emitToRooms = (
     });
 };
 
+export type CommunityMessageEventName =
+  "community:newMessage" | "community:messageEdited" | "community:messageDeleted";
+
+/**
+ * Tell a conversation about a message change made over HTTP. The socket
+ * handlers do this themselves; the HTTP routes (used as the fallback when the
+ * socket is down, and for the outbox retry) did not, so the other side only saw
+ * the message after a manual refresh. The payload is the service result as-is,
+ * the same shape the socket handlers emit.
+ */
+export const emitCommunityMessageEvent = (
+  eventName: CommunityMessageEventName,
+  message: {
+    conversationId: string;
+    conversationType?: string;
+    participantIds: string[];
+  }
+): void => {
+  if (!socketInstance) {
+    return;
+  }
+
+  const namespace = socketInstance.of("/community");
+  namespace.to(`conversation:${message.conversationId}`).emit(eventName, message);
+
+  for (const participantId of message.participantIds) {
+    namespace.to(`user:${participantId}`).emit("community:conversationUpdated", {
+      conversationId: message.conversationId,
+      conversationType: message.conversationType || "DM",
+    });
+  }
+};
+
 export const emitCommunityQnaEvent = (
   eventName: CommunityQnaEventName,
   payload: Record<string, unknown>,

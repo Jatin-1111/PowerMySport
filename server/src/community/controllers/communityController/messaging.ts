@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { CommunityService } from "../../services/CommunityService";
-import { emitCommunityGroupEvent } from "../../services/CommunityRealtimeService";
+import {
+  emitCommunityGroupEvent,
+  emitCommunityMessageEvent,
+} from "../../services/CommunityRealtimeService";
 import { s3Service } from "../../../shared/services/S3Service";
 import { getUserId, toAppError } from "./shared";
 import { asyncHandler } from "../../../middleware/asyncHandler";
@@ -148,6 +151,8 @@ export const sendMessage = asyncHandler(async (req: Request, res: Response): Pro
       ...(replyToId ? { replyToId } : {}),
     });
 
+    emitCommunityMessageEvent("community:newMessage", data);
+
     res.status(201).json({
       success: true,
       message: "Message sent",
@@ -168,6 +173,8 @@ export const editMessage = asyncHandler(async (req: Request, res: Response): Pro
     const { content } = req.body as { content: string };
     const data = await CommunityService.editMessage(getUserId(req), messageId, content);
 
+    emitCommunityMessageEvent("community:messageEdited", data);
+
     res.status(200).json({
       success: true,
       message: "Message updated",
@@ -186,6 +193,8 @@ export const deleteMessage = asyncHandler(async (req: Request, res: Response): P
     }
 
     const data = await CommunityService.deleteMessage(getUserId(req), messageId);
+
+    emitCommunityMessageEvent("community:messageDeleted", data);
 
     res.status(200).json({
       success: true,
