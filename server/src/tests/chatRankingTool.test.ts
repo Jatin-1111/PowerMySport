@@ -56,11 +56,19 @@ describe("get_child_ranking", () => {
     assert.equal(read, false);
   });
 
-  it("says no ranking is linked when the account has none for that child", async () => {
-    RankingClaimService.list = async () => [claim("Aarav Sharma", "tennis", [standing])];
+  it("says no ranking is linked when the account has none at all", async () => {
+    RankingClaimService.list = async () => [];
     const out = await tool.execute({ childName: "Zoya" }, { userId: "u1" });
     assert.equal(out.linked, false);
     assert.equal(out.reason, "no_ranking_linked");
+  });
+
+  it("names who is on the account when the name asked for is not, instead of saying nothing is linked", async () => {
+    RankingClaimService.list = async () => [claim("Jatin Sharma", "tennis", [standing])];
+    const out = await tool.execute({ childName: "Vikrant" }, { userId: "u1" });
+    assert.equal(out.linked, false);
+    assert.equal(out.reason, "child_not_on_account");
+    assert.deepEqual(out.childrenOnAccount, [{ child: "Jatin", sport: "tennis" }]);
   });
 
   it("returns rank, points and movement with a first name only", async () => {

@@ -184,6 +184,13 @@ const getUpcomingTournamentsTool: ChatToolDefinition = {
 
     // Only events a parent can still enter: a list of closed ones answers "what should we
     // play" with something they can no longer do.
+    // A known parent whose ranking is already linked must not be told to link one: the
+    // personal list is simply not switched on (PLANNER_CHAT), so send them to the page.
+    const rankingAlreadyLinked = context?.userId
+      ? (await RankingClaimService.list(context.userId).catch(() => [])).some(
+          (claim) => claim.sportSlug === sportSlug && claim.standings.length > 0
+        )
+      : false;
     const upcoming = await getUpcomingEditions(sportSlug, 5, { openEntriesOnly: true });
     if (upcoming.length === 0) {
       return {
@@ -195,7 +202,9 @@ const getUpcomingTournamentsTool: ChatToolDefinition = {
       // Said to the model so it can say it to the parent: this list is not
       // judged against anyone's age or rank.
       personalised: false,
-      note: "This is the general calendar, not filtered for any child's age group or rank. Say so, and mention that linking a ranking at /planner shows which events a child can actually enter.",
+      note: rankingAlreadyLinked
+        ? "This is the general calendar, not filtered for the child's age group or rank. Say so. The parent's ranking is already linked, so do not ask them to link one: send them to https://powermysport.com/planner, which shows which events their child can actually enter."
+        : "This is the general calendar, not filtered for any child's age group or rank. Say so, and mention that linking a ranking at /planner shows which events a child can actually enter.",
       tournaments: upcoming.map((t) => ({
         name: t.name,
         startDate: t.startDate,
@@ -249,6 +258,24 @@ const getChildRankingTool: ChatToolDefinition = {
         (!sport || claim.sportSlug === sport) &&
         (!wanted || (claim.dependentName ?? "").toLowerCase().startsWith(wanted))
     );
+
+    if (claims.length === 0 && wanted) {
+      // A name the parent said, or an old message carried over, that is not on the account:
+      // show who is, rather than reporting that nothing is linked.
+      const onAccount = await RankingClaimService.list(context.userId);
+      if (onAccount.length > 0) {
+        return {
+          linked: false,
+          reason: "child_not_on_account",
+          childrenOnAccount: onAccount.map((claim) => ({
+            child: (claim.dependentName ?? "").split(/\s+/)[0] || "a child",
+            sport: claim.sportSlug,
+          })),
+          instruction:
+            "No child with that name has a linked ranking on this account. Say who does, by first name, and ask whether they mean one of them. Do not say that no ranking is linked at all.",
+        };
+      }
+    }
 
     if (claims.length === 0) {
       return {

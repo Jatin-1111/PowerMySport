@@ -228,6 +228,8 @@ describe("replyToWhatsAppMessage", () => {
 
     assert.match(String((contexts[0] as { userId?: string }).userId), /^[a-f0-9]{24}$/);
     assert.match(seen[0]!.systemPrompt, /This parent is known/);
+    // No ranking linked on this account, so the prompt says that instead of leaving it out.
+    assert.match(seen[0]!.systemPrompt, /No child on this account has a ranking linked/);
     assert.match(seen[0]!.systemPrompt, /Never explain how you work inside/);
   });
 

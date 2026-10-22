@@ -3,6 +3,7 @@ import { WhatsAppConversation } from "../../client/models/WhatsAppConversation";
 import { buildAssistantChatSystemPrompt } from "./assistantChatService";
 import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticChatService";
 import { ASSISTANT_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
+import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { findUserIdByPhone } from "./whatsappIdentity";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
@@ -48,7 +49,7 @@ export const KNOWN_PARENT_ADDENDUM = `
 This WhatsApp number belongs to a PowerMySport account, and your tools return that parent's own children, linked rankings and tournament verdicts. So:
 - Do not ask which sport or which child when the tools can tell you. Call the tool first.
 - Never say you cannot see their account, ranking or children. If a tool returns nothing personal, say that no ranking is linked for that child yet and point to https://powermysport.com/planner.
-- Say the child's first name, nothing else from the account.`;
+- Say the child's first name, nothing else from the account. If asked what you know about them, say you can see the children with a linked ranking on their account (by first name) and nothing else, not that you know nothing.`;
 
 /** No account, or more than one, holds this number, so nothing personal is available. */
 export const UNKNOWN_NUMBER_ADDENDUM = `
@@ -85,17 +86,38 @@ const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, to
   streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS, toolContext);
 
 /**
- * Whose number this is, as far as the account is known. A lookup failure is the same as
- * no match: the parent still gets an answer from public data.
+ * Whose number this is, as far as the account is known, and the children on it that have a
+ * linked ranking. A lookup failure is the same as no match: the parent still gets an answer
+ * from public data.
  */
-async function identify(phone: string): Promise<ChatToolContext> {
+async function identify(
+  phone: string
+): Promise<{ toolContext: ChatToolContext; children: string[] }> {
   try {
     const userId = await findUserIdByPhone(phone);
-    return userId ? { userId } : {};
+    if (!userId) return { toolContext: {}, children: [] };
+    const claims = await RankingClaimService.list(userId).catch(() => []);
+    const children = [
+      ...new Set(
+        claims.map(
+          (claim) =>
+            `${(claim.dependentName ?? "").split(/\s+/)[0] || "a child"} (${claim.sportSlug})`
+        )
+      ),
+    ];
+    return { toolContext: { userId }, children };
   } catch (err) {
     log.error("could not look up the account for a WhatsApp number", err);
-    return {};
+    return { toolContext: {}, children: [] };
   }
+}
+
+/** Who is on the account, by first name, so a name the parent says is never searched as an expert. */
+function childrenAddendum(children: string[]): string {
+  if (children.length === 0) {
+    return "\n- No child on this account has a ranking linked yet, so a ranking question gets that answer and a pointer to https://powermysport.com/planner.";
+  }
+  return `\n- Children on this account with a linked ranking: ${children.join(", ")}. When the parent says "my son", "my child" or one of these names, they mean one of these children: use get_child_ranking, never search_experts for a child's name. If an earlier message in this chat named a different child, the account's list is what you can look up: say who is on the account.`;
 }
 
 export interface WhatsAppAnswer {
@@ -151,12 +173,14 @@ export async function answerWhatsAppMessage(
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const toolContext = await identify(message.from);
+    const { toolContext, children } = await identify(message.from);
     const chunks = await retrieveRelevantChunks(userMessage);
     const systemPrompt =
       buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) +
       CHANNEL_ADDENDUM +
-      (toolContext.userId ? KNOWN_PARENT_ADDENDUM : UNKNOWN_NUMBER_ADDENDUM);
+      (toolContext.userId
+        ? KNOWN_PARENT_ADDENDUM + childrenAddendum(children)
+        : UNKNOWN_NUMBER_ADDENDUM);
 
     let reply = "";
     for await (const piece of generate(systemPrompt, history, userMessage, toolContext)) {
