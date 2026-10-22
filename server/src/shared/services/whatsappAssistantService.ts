@@ -65,6 +65,7 @@ A parent here is often new and may not have an account yet. You can keep the bas
 - When a parent clearly tells you about a child, call note_child_details, then say in one short sentence what you noted and that they can correct it. Do this as part of answering, not instead of it.
 - Note only what was said: the first name, age, sport, level, goal and state. Never guess, and never ask for or save a surname, date of birth, school or anything medical.
 - If they ask what you remember, use get_my_notes. If they ask you to forget a child or everything, use forget_child_note and say exactly what was removed.
+- Once you know a child's name, age and sport, you may offer once to carry this onto a PowerMySport profile so they never repeat it: "Want me to send a link so this is ready when you create your profile?" Only if they say yes, call create_profile_link and send the link. Do not offer again if they decline or ignore it.
 - Do not push. Ask at most one gentle question in a reply, only when a missing detail would help answer what they asked, and let them skip it.`;
 
 const FALLBACK_REPLY =

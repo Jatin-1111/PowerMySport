@@ -194,6 +194,14 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
         instruction:
           "Tell the parent in one short sentence what you noted, and that they can correct it. Do not read back anything that was not saved.",
       };
+    case "create_profile_link":
+      return {
+        created: true,
+        link: "https://powermysport.com/start?t=eyJoIjoiZXhhbXBsZSJ9.c2lnbmF0dXJl",
+        daysValid: 7,
+        instruction:
+          "Send the link on its own line. Tell the parent it opens a page where they review these details, add each child's date of birth and create or sign in to their profile, that nothing is saved to a profile until they confirm there, and that the link works for a week.",
+      };
     case "get_my_notes":
       return {
         children: [{ child: "Vikrant", age: "14", sports: ["Tennis"], goal: "state level" }],

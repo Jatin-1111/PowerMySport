@@ -10,6 +10,7 @@ import {
 } from "../../client/services/PlannerChatContext";
 import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
+import { createProfileLink } from "./whatsappHandoff";
 import {
   forgetAllNotes,
   forgetChild,
@@ -566,6 +567,38 @@ const noteChildDetailsTool: ChatToolDefinition = {
   },
 };
 
+const createProfileLinkTool: ChatToolDefinition = {
+  name: "create_profile_link",
+  summary:
+    "send a new parent a one-time link that carries what they told you about their child onto their PowerMySport profile, so they do not repeat it",
+  example: "yes, send me the link to save this on my profile",
+  promptNote:
+    "Call it only after the parent says yes to saving their details on a profile. Send the link on its own line, say nothing is saved to a profile until they confirm on the website, and that the link works for a week. Never call it for a parent who has nothing noted.",
+  description:
+    "Make a one-time link, valid for seven days, that opens the PowerMySport website with the details noted in this chat ready to review and add to a new profile. Call it only when the parent has agreed. It returns the link to send. A newer link replaces the older one. If nothing has been noted yet it says so; note the child first.",
+  parametersJsonSchema: { type: "object", properties: {} },
+  execute: async (_args, context) => {
+    const blocked = notesUnavailable(context);
+    if (blocked) return blocked;
+    const result = await createProfileLink(context!.phoneHash!);
+    if (!result.created) {
+      return {
+        created: false,
+        reason: result.reason,
+        instruction:
+          "Nothing has been noted yet, so there is nothing to carry over. Ask about their child first, and offer the link once you have a name, an age and a sport.",
+      };
+    }
+    return {
+      created: true,
+      link: result.url,
+      daysValid: result.days,
+      instruction:
+        "Send the link on its own line. Tell the parent it opens a page where they review these details, add each child's date of birth and create or sign in to their profile, that nothing is saved to a profile until they confirm there, and that the link works for a week.",
+    };
+  },
+};
+
 const getMyNotesTool: ChatToolDefinition = {
   name: "get_my_notes",
   summary: "show a parent what you have noted about their children so far",
@@ -796,6 +829,7 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getMyGuidancePlanTool,
   getMySessionsTool,
   noteChildDetailsTool,
+  createProfileLinkTool,
   getMyNotesTool,
   forgetChildNoteTool,
   getTournamentDetailsTool,

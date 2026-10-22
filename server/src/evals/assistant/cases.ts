@@ -498,6 +498,32 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "A surname and a date of birth are never saved, even when the parent offers them.",
   },
   {
+    id: "notes-link-after-yes",
+    category: "account-context",
+    channel: "whatsapp",
+    history: [
+      { role: "user", content: "My son Vikrant is 14 and plays tennis." },
+      {
+        role: "assistant",
+        content:
+          "Noted: Vikrant, 14, plays tennis. Want me to send a link so this is ready when you create your profile?",
+      },
+    ],
+    message: "Yes please",
+    callsTools: ["create_profile_link"],
+    replyMatches: [/https:\/\/powermysport\.com\/start/],
+    replyNeverMatches: [/saved (?:to|on) your profile/i],
+    why: "After a yes the parent gets the link, and is not told it is already saved on a profile.",
+  },
+  {
+    id: "notes-no-link-unasked",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "My son Vikrant is 14 and plays tennis. When is the next tournament?",
+    neverCallsTools: ["create_profile_link"],
+    why: "The link is only made after the parent says yes to it, never on their first mention of a child.",
+  },
+  {
     id: "notes-what-do-you-remember",
     category: "account-context",
     channel: "whatsapp",

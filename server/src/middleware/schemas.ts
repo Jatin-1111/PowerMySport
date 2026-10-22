@@ -1556,3 +1556,27 @@ export const addDependentSchema = z
 
 /** Every field optional on update; an existing profile may already be 18 or older. */
 export const updateDependentSchema = z.object(childFields).partial();
+
+/**
+ * Confirming what a parent told the WhatsApp assistant. Each child needs a date of birth
+ * (WhatsApp only heard an age); the rest are the site's own fixed answers, which the parent
+ * has seen and chosen. The under-18 rule is enforced in the service, where it also puts the
+ * child back in the note.
+ */
+export const claimWhatsAppNotesSchema = z.object({
+  token: z.string().min(10).max(600),
+  parentalConsent: z.boolean().optional(),
+  children: z
+    .array(
+      z.object({
+        key: z.string().trim().min(1).max(40),
+        dob: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use the YYYY-MM-DD format"),
+        gender: z.enum(["MALE", "FEMALE", "OTHER"]).optional(),
+        relation: z.string().trim().max(40).optional(),
+        ambition: z.enum(CHILD_AMBITIONS).optional(),
+        experienceLevel: z.enum(CHILD_EXPERIENCE_LEVELS).optional(),
+      })
+    )
+    .min(1)
+    .max(4),
+});

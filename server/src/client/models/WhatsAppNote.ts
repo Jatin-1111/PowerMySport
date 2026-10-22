@@ -39,6 +39,13 @@ export interface NoteChild {
 export interface WhatsAppNoteDocument extends Document {
   phoneHash: string;
   children: NoteChild[];
+  /**
+   * The one live "continue on the website" link for this number. The link itself is a signed
+   * token that names this nonce, so issuing a new link replaces the old one and finishing the
+   * import (or STOP, which deletes the note) ends it. Kept here so no new index is needed.
+   */
+  linkNonce?: string;
+  linkExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +69,8 @@ const whatsAppNoteSchema = new Schema<WhatsAppNoteDocument>(
   {
     phoneHash: { type: String, required: true, unique: true },
     children: { type: [noteChildSchema], default: [] },
+    linkNonce: { type: String },
+    linkExpiresAt: { type: Date },
   },
   { timestamps: true }
 );
