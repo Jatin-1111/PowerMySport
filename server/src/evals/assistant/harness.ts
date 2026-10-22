@@ -2,6 +2,8 @@ import { buildAssistantChatSystemPrompt } from "../../shared/services/assistantC
 import type { ChatToolDefinition } from "../../shared/services/chatToolsService";
 import {
   CHANNEL_ADDENDUM,
+  KNOWN_PARENT_ADDENDUM,
+  UNKNOWN_NUMBER_ADDENDUM,
   type ReplyGenerator,
 } from "../../shared/services/whatsappAssistantService";
 import { clipReply, formatForWhatsApp } from "../../shared/services/whatsappFormat";
@@ -62,7 +64,11 @@ export async function runCase(
   const calls: ToolCall[] = [];
   const tools = stubTools(realTools, calls);
   const whatsapp = c.channel === "whatsapp";
-  const systemPrompt = buildAssistantChatSystemPrompt(tools) + (whatsapp ? CHANNEL_ADDENDUM : "");
+  const systemPrompt =
+    buildAssistantChatSystemPrompt(tools) +
+    (whatsapp
+      ? CHANNEL_ADDENDUM + (c.knownParent ? KNOWN_PARENT_ADDENDUM : UNKNOWN_NUMBER_ADDENDUM)
+      : "");
 
   const started = Date.now();
   let rawReply = "";

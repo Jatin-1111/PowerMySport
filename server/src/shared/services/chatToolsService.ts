@@ -8,6 +8,7 @@ import {
   loadPlannerChatContext,
   PLANNER_CHAT_RULES,
 } from "../../client/services/PlannerChatContext";
+import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { findEditionsForChat, getUpcomingEditions } from "./tournamentEditionQueries";
 
 /**
@@ -206,6 +207,81 @@ const getUpcomingTournamentsTool: ChatToolDefinition = {
   },
 };
 
+// ─── get_child_ranking ──────────────────────────────────────────────────────────
+
+const getChildRankingTool: ChatToolDefinition = {
+  name: "get_child_ranking",
+  summary:
+    "tell a signed-in parent their child's current ranking, points and movement in each list the child is ranked in",
+  example: "what is my son's ranking",
+  promptNote:
+    "Quote the rank with its list and the date the list was published, and say which way it moved. A child who is not ranked yet, or whose ranking is not linked, is not an error: say that, and point to https://powermysport.com/planner to link a ranking. Never repeat a registration number or date of birth.",
+  description:
+    "Look up the current ranking of the parent's own child from the ranking linked to their PowerMySport account: the rank and points in each list they appear in, the list's publication date and how far they moved since the last list. Use whenever a parent asks about their child's ranking, rank, points or whether they moved up. Works only for a parent whose account is known; otherwise it says so.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      childName: {
+        type: "string",
+        description:
+          "First name of the child, when the parent names one. Omit to cover every child with a linked ranking.",
+      },
+      sportSlug: {
+        type: "string",
+        description: "URL slug for the sport when it is known, e.g. 'tennis'. Omit to cover all.",
+      },
+    },
+  },
+  execute: async (args, context) => {
+    if (!context?.userId) {
+      return {
+        linked: false,
+        reason: "number_not_linked",
+        instruction:
+          "This WhatsApp number is not tied to a PowerMySport account, so no ranking can be read. Say that plainly (not that it is private), and that signing in at https://powermysport.com/planner shows and links a child's ranking.",
+      };
+    }
+
+    const wanted = typeof args.childName === "string" ? args.childName.trim().toLowerCase() : "";
+    const sport = typeof args.sportSlug === "string" ? args.sportSlug.trim().toLowerCase() : "";
+    const claims = (await RankingClaimService.list(context.userId)).filter(
+      (claim) =>
+        (!sport || claim.sportSlug === sport) &&
+        (!wanted || (claim.dependentName ?? "").toLowerCase().startsWith(wanted))
+    );
+
+    if (claims.length === 0) {
+      return {
+        linked: false,
+        reason: "no_ranking_linked",
+        instruction:
+          "No ranking is linked for that child yet. Say so, and that linking one at https://powermysport.com/planner shows the rank and the tournaments the child can enter.",
+      };
+    }
+
+    // First name, lists, ranks and dates only. The registration number and birth year are
+    // on the claim and are left out on purpose: nothing here is something a parent
+    // would not expect the assistant to say, and nothing that identifies the child to a stranger.
+    return {
+      linked: true,
+      children: claims.slice(0, 3).map((claim) => ({
+        child: (claim.dependentName ?? "").split(/\s+/)[0] || "Your child",
+        sport: claim.sportSlug,
+        lists:
+          claim.standings.length === 0
+            ? "not in any current list (dropped off or not ranked yet)"
+            : claim.standings.map((s) => ({
+                list: `${s.category} ${s.subcategory}`,
+                rank: s.rank,
+                points: s.totalPoints,
+                listPublished: dateOnly(s.asOnDate),
+                movedUpPlaces: s.rankDelta,
+              })),
+      })),
+    };
+  },
+};
+
 // ─── get_tournament_details ─────────────────────────────────────────────────────
 
 const CHAT_SITE = "https://powermysport.com";
@@ -359,6 +435,7 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   searchExpertsTool,
   getPathwayStageTool,
   getUpcomingTournamentsTool,
+  getChildRankingTool,
   getTournamentDetailsTool,
   requestTeamFollowupTool,
 ];

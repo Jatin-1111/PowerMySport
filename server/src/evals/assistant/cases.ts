@@ -29,6 +29,8 @@ export interface AssistantCase {
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   /** The channel the parent is on. WhatsApp adds the channel rules and the reply formatter. */
   channel?: "web" | "whatsapp";
+  /** WhatsApp only: the number is tied to one account, as in production, so the tools answer for that parent. */
+  knownParent?: boolean;
   /** Tools that must be called. */
   callsTools?: string[];
   /** Tools that must not be called. */
@@ -149,6 +151,19 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     callsTools: ["get_upcoming_tournaments"],
     neverCallsTools: ["get_tournament_details"],
     why: "A list of what is coming up is not a lookup of one event, and the two tools must not be mixed up.",
+  },
+  {
+    id: "tool-child-ranking",
+    category: "tool-routing",
+    channel: "whatsapp",
+    knownParent: true,
+    message: "Can you check his ranking for me?",
+    callsTools: ["get_child_ranking"],
+    replyMatches: [/212/],
+    replyNeverMatches: [
+      /cannot (?:directly )?check|can't (?:directly )?check|personal and linked/i,
+    ],
+    why: "A ranking question is answered from the linked ranking, never refused as private (the WhatsApp reply that started this).",
   },
   {
     id: "tool-none-needed",

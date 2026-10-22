@@ -104,6 +104,25 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
           },
         ],
       };
+    case "get_child_ranking":
+      return {
+        linked: true,
+        children: [
+          {
+            child: "Aarav",
+            sport: "tennis",
+            lists: [
+              {
+                list: "Boys U-14",
+                rank: 212,
+                points: 96,
+                listPublished: "2026-10-12",
+                movedUpPlaces: 9,
+              },
+            ],
+          },
+        ],
+      };
     case "get_tournament_details":
       return {
         found: true,
