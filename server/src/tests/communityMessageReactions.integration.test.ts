@@ -88,6 +88,30 @@ describe("reacting to a message", () => {
     assert.equal(result.reactions[0].reactedByMe, true);
   });
 
+  it("refuses a reaction that is really a message, on first use and on replace", async () => {
+    const { b, message } = await setup();
+    const essay = "X".repeat(300);
+
+    await assert.rejects(CommunityService.reactToMessage(b, message.id, essay), /cannot be longer/);
+
+    await CommunityService.reactToMessage(b, message.id, "👍");
+    await assert.rejects(CommunityService.reactToMessage(b, message.id, essay), /cannot be longer/);
+
+    const stored = await CommunityMessageReaction.find({ messageId: message.id }).lean();
+    assert.deepEqual(
+      stored.map((row: { emoji: string }) => row.emoji),
+      ["👍"]
+    );
+  });
+
+  it("still accepts a long multi-codepoint emoji", async () => {
+    const { b, message } = await setup();
+
+    const result = await CommunityService.reactToMessage(b, message.id, "👨‍👩‍👧‍👦");
+
+    assert.equal(result.reactions[0].emoji, "👨‍👩‍👧‍👦");
+  });
+
   it("clears the reaction when the same emoji is sent again", async () => {
     const { b, message } = await setup();
 

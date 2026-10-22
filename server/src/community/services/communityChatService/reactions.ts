@@ -6,6 +6,11 @@ import { CommunityMessageReaction } from "../../models/CommunityMessageReaction"
 import { isGroupAdmin } from "../communityGroupMembership";
 import { assertConversationAccess } from "../communityShared";
 
+/** Mirrors `maxlength` on the model. The model only enforces it on `save()`;
+ *  the replace path below uses `updateOne`, which skips validators, so a long
+ *  string went straight in and turned a reaction into a second message body. */
+export const REACTION_MAX_LENGTH = 16;
+
 export const reactionsService = {
   /**
    * Sets, replaces or clears this user's reaction to a message. One reaction
@@ -16,6 +21,9 @@ export const reactionsService = {
     const trimmed = (emoji || "").trim();
     if (!trimmed) {
       throw new Error("An emoji is required");
+    }
+    if (trimmed.length > REACTION_MAX_LENGTH) {
+      throw new Error(`A reaction cannot be longer than ${REACTION_MAX_LENGTH} characters`);
     }
 
     const message = await CommunityMessage.findById(messageId)
