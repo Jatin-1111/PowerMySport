@@ -16,6 +16,8 @@ const {
   hashPhone,
   replyToWhatsAppMessage,
 } = require("../shared/services/whatsappAssistantService");
+const { User } = require("../client/models/User");
+const { findUserIdByPhone } = require("../shared/services/whatsappIdentity");
 const redis = require("../config/redis").default;
 const {
   up: createIndexes,
@@ -37,6 +39,7 @@ after(async () => {
 
 beforeEach(async () => {
   await WhatsAppConversation.deleteMany({});
+  await User.deleteMany({});
 });
 
 const PHONE = "919876543210";
@@ -199,6 +202,82 @@ describe("replyToWhatsAppMessage", () => {
     const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
     const tool = ASSISTANT_CHAT_TOOLS.find((t: { name: string }) => t.name === "search_experts");
     assert.match(tool.description, /NOT coaches for regular training/);
+  });
+
+  it("recognises a parent by number and passes their account to the tools", async () => {
+    await User.create({
+      name: "Jatin",
+      email: "parent-wa@example.com",
+      phone: "+91 98765 43210",
+      password: "Passw0rd!x",
+      role: "Parent",
+    });
+    const contexts: unknown[] = [];
+    const seen: Seen[] = [];
+    const generate = async function* (
+      systemPrompt: string,
+      history: unknown[],
+      userMessage: string,
+      toolContext: unknown
+    ) {
+      contexts.push(toolContext);
+      seen.push({ systemPrompt, history, userMessage });
+      yield "Hello.";
+    };
+    await replyToWhatsAppMessage(msg("check his ranking"), generate);
+
+    assert.match(String((contexts[0] as { userId?: string }).userId), /^[a-f0-9]{24}$/);
+    assert.match(seen[0]!.systemPrompt, /This parent is known/);
+    assert.match(seen[0]!.systemPrompt, /Never explain how you work inside/);
+  });
+
+  it("treats a number held by two accounts as unknown", async () => {
+    // The phone index is unique on the exact text, so the same number typed two ways is
+    // how two accounts end up sharing one.
+    for (const [email, phone] of [
+      ["a-wa@example.com", "9876543210"],
+      ["b-wa@example.com", "+91 98765 43210"],
+    ]) {
+      await User.create({
+        name: "Shared",
+        email,
+        phone,
+        password: "Passw0rd!x",
+        role: "Parent",
+      });
+    }
+    assert.equal(await findUserIdByPhone(PHONE), undefined);
+
+    const contexts: unknown[] = [];
+    const seen: Seen[] = [];
+    await replyToWhatsAppMessage(
+      msg("check his ranking"),
+      async function* (
+        systemPrompt: string,
+        history: unknown[],
+        userMessage: string,
+        toolContext: unknown
+      ) {
+        contexts.push(toolContext);
+        seen.push({ systemPrompt, history, userMessage });
+        yield "Hello.";
+      }
+    );
+    assert.deepEqual(contexts[0], {});
+    assert.match(seen[0]!.systemPrompt, /not identified/);
+  });
+
+  it("does not identify a number nobody holds, or one whose account is closed", async () => {
+    assert.equal(await findUserIdByPhone(PHONE), undefined);
+    await User.create({
+      name: "Gone",
+      email: "gone-wa@example.com",
+      phone: "9876543210",
+      password: "Passw0rd!x",
+      role: "Parent",
+      deletionRequestedAt: new Date(),
+    });
+    assert.equal(await findUserIdByPhone(PHONE), undefined);
   });
 
   it("hashPhone is stable and differs per number", () => {

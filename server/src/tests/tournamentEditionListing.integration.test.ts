@@ -47,6 +47,7 @@ const seedEdition = (options: {
   kind?: string;
   federationSlug?: string;
   mergedInto?: string;
+  registrationDeadlineDate?: Date;
 }) => {
   seq += 1;
   const startDate = options.startDate ?? nextMonthDay(1, 5);
@@ -64,6 +65,9 @@ const seedEdition = (options: {
     ...(options.kind ? { kind: options.kind } : {}),
     ...(options.federationSlug ? { federationSlug: options.federationSlug } : {}),
     ...(options.mergedInto ? { mergedInto: options.mergedInto } : {}),
+    ...(options.registrationDeadlineDate
+      ? { registrationDeadlineDate: options.registrationDeadlineDate }
+      : {}),
   });
 };
 
@@ -243,6 +247,26 @@ describe("merged duplicates on the other read paths", () => {
       upcoming.map((e: { name: string }) => e.name),
       ["AITA CS7 (Delhi)"]
     );
+  });
+});
+
+describe("the chat's open-entries list", () => {
+  const day = 24 * 60 * 60 * 1000;
+  const inDays = (n: number) => new Date(Date.now() + n * day);
+
+  it("leaves out events whose entry deadline has passed, and keeps unknown deadlines", async () => {
+    await cs("Closed event", { registrationDeadlineDate: inDays(-3) });
+    await cs("Open event", { registrationDeadlineDate: inDays(5) });
+    await cs("No deadline published");
+
+    const all = await getUpcomingEditions("tennis", 5);
+    assert.equal(all.length, 3);
+
+    const open = await getUpcomingEditions("tennis", 5, { openEntriesOnly: true });
+    assert.deepEqual(open.map((e: { name: string }) => e.name).sort(), [
+      "No deadline published",
+      "Open event",
+    ]);
   });
 });
 

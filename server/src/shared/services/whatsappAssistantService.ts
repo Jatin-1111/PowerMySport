@@ -2,7 +2,8 @@ import crypto from "crypto";
 import { WhatsAppConversation } from "../../client/models/WhatsAppConversation";
 import { buildAssistantChatSystemPrompt } from "./assistantChatService";
 import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticChatService";
-import { ASSISTANT_CHAT_TOOLS } from "./chatToolsService";
+import { ASSISTANT_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
+import { findUserIdByPhone } from "./whatsappIdentity";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
 import { withdrawConsentForPhone } from "./whatsappConsent";
@@ -33,7 +34,27 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 - You are an AI assistant. If asked whether you are a person or a bot, say you are an AI assistant.
 - Never ask for a child's medical details, ID numbers, payment details or passwords, and tell a parent not to send them here.
 - Write fees in rupees with the symbol and the unit, for example ₹1,000 per session, never a bare number.
-- If a parent wants to talk to a person, say the PowerMySport team can help. Offer to pass their question on, which needs their name and an email address, and also give https://powermysport.com/contact`;
+- If a parent wants to talk to a person, say the PowerMySport team can help. Offer to pass their question on, which needs their name and an email address, and also give https://powermysport.com/contact
+
+## How to behave
+- Never explain how you work inside: do not say which tool you used or "a different tool". If an earlier answer of yours was wrong or incomplete, say so in one short sentence, give the corrected answer, and move on.
+- Use what the parent already told you in this chat (the child's name, the sport, the tournaments you just listed). Do not ask again for something they said. When they say "all of them", "that one" or "the first", it means what you listed last.
+- Never suggest a tournament whose entries have closed. Tell the parent plainly if the only events left are closed, and offer to look for ones still open.`;
+
+/** The number is tied to exactly one account, so the tools return that parent's own data. */
+export const KNOWN_PARENT_ADDENDUM = `
+
+## This parent is known
+This WhatsApp number belongs to a PowerMySport account, and your tools return that parent's own children, linked rankings and tournament verdicts. So:
+- Do not ask which sport or which child when the tools can tell you. Call the tool first.
+- Never say you cannot see their account, ranking or children. If a tool returns nothing personal, say that no ranking is linked for that child yet and point to https://powermysport.com/planner.
+- Say the child's first name, nothing else from the account.`;
+
+/** No account, or more than one, holds this number, so nothing personal is available. */
+export const UNKNOWN_NUMBER_ADDENDUM = `
+
+## This parent is not identified
+This WhatsApp number is not tied to a single PowerMySport account, so your tools return public data only and you cannot see anyone's children or rankings. If they ask for their child's ranking or a list made for their child, say plainly that this number is not linked to an account, and that signing in at https://powermysport.com/planner shows it. Do not claim the information is private or that you are unable to look it up.`;
 
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
@@ -56,11 +77,26 @@ export function hashPhone(phone: string): string {
 export type ReplyGenerator = (
   systemPrompt: string,
   history: ChatHistoryMessage[],
-  userMessage: string
+  userMessage: string,
+  toolContext?: ChatToolContext
 ) => AsyncIterable<string>;
 
-const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage) =>
-  streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS);
+const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, toolContext) =>
+  streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS, toolContext);
+
+/**
+ * Whose number this is, as far as the account is known. A lookup failure is the same as
+ * no match: the parent still gets an answer from public data.
+ */
+async function identify(phone: string): Promise<ChatToolContext> {
+  try {
+    const userId = await findUserIdByPhone(phone);
+    return userId ? { userId } : {};
+  } catch (err) {
+    log.error("could not look up the account for a WhatsApp number", err);
+    return {};
+  }
+}
 
 export interface WhatsAppAnswer {
   reply: string;
@@ -115,12 +151,15 @@ export async function answerWhatsAppMessage(
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
+    const toolContext = await identify(message.from);
     const chunks = await retrieveRelevantChunks(userMessage);
     const systemPrompt =
-      buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) + CHANNEL_ADDENDUM;
+      buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) +
+      CHANNEL_ADDENDUM +
+      (toolContext.userId ? KNOWN_PARENT_ADDENDUM : UNKNOWN_NUMBER_ADDENDUM);
 
     let reply = "";
-    for await (const piece of generate(systemPrompt, history, userMessage)) {
+    for await (const piece of generate(systemPrompt, history, userMessage, toolContext)) {
       reply += piece;
     }
     reply = reply.trim();

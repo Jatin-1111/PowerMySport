@@ -9,7 +9,12 @@ import { TournamentEdition } from "../models/TournamentEdition";
 /** The chat-facing query: next upcoming editions for a sport, soonest first. */
 export async function getUpcomingEditions(
   sportSlug: string,
-  limit: number = 3
+  limit: number = 3,
+  /**
+   * Leave out events whose entry deadline has passed. A deadline that is not published
+   * stays in: an unknown deadline is not a closed one.
+   */
+  options: { openEntriesOnly?: boolean } = {}
 ): Promise<
   Array<{
     name: string;
@@ -33,6 +38,15 @@ export async function getUpcomingEditions(
     // Merged duplicates only redirect; without this the chat can name the same
     // tournament twice in a three-item answer.
     mergedInto: { $in: [null, undefined] },
+    // Compared as a calendar day, as everywhere else: a deadline on the 12th is live all day.
+    ...(options.openEntriesOnly
+      ? {
+          $or: [
+            { registrationDeadlineDate: null },
+            { registrationDeadlineDate: { $gte: startOfToday } },
+          ],
+        }
+      : {}),
   })
     .sort({ startDate: 1 })
     .limit(limit)

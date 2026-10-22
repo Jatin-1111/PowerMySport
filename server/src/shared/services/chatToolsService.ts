@@ -181,9 +181,14 @@ const getUpcomingTournamentsTool: ChatToolDefinition = {
       }
     }
 
-    const upcoming = await getUpcomingEditions(sportSlug, 5);
+    // Only events a parent can still enter: a list of closed ones answers "what should we
+    // play" with something they can no longer do.
+    const upcoming = await getUpcomingEditions(sportSlug, 5, { openEntriesOnly: true });
     if (upcoming.length === 0) {
-      return { message: "No upcoming tournaments found in the calendar for this sport." };
+      return {
+        message:
+          "No tournaments with entries still open were found in the calendar for this sport. Say so plainly; do not list events whose entries have closed.",
+      };
     }
     return {
       // Said to the model so it can say it to the parent: this list is not
@@ -195,6 +200,7 @@ const getUpcomingTournamentsTool: ChatToolDefinition = {
         startDate: t.startDate,
         city: t.city,
         ageGroups: t.ageGroups,
+        entriesClose: dateOnly(t.registrationDeadlineDate) ?? "not published",
       })),
     };
   },
