@@ -238,7 +238,13 @@ export const setupCommunitySocket = (io: Server): void => {
         const result = await CommunityService.markConversationRead(userId, conversationId);
 
         if (result.messageIds.length) {
-          communityNamespace.to(`conversation:${conversationId}`).emit("community:messagesRead", {
+          // A reader with read receipts off must not tell the other side they
+          // read: the event goes only to their own tabs (so their unread badge
+          // still updates), not to the conversation room.
+          const readTarget = result.readReceiptsShared
+            ? `conversation:${conversationId}`
+            : `user:${userId}`;
+          communityNamespace.to(readTarget).emit("community:messagesRead", {
             conversationId,
             readerId: userId,
             messageIds: result.messageIds,

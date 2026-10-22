@@ -584,6 +584,13 @@ export const conversationsService = {
       throw new Error("Access denied");
     }
 
+    // Whether this reader lets others see that they read. The stored `readBy`
+    // is filtered by it on the way out; the realtime event has to honour it too.
+    const readerProfile = await CommunityProfile.findOne({ userId })
+      .select("readReceiptsEnabled")
+      .lean();
+    const readReceiptsShared = readerProfile?.readReceiptsEnabled !== false;
+
     const unreadMessages = await CommunityMessage.find({
       conversationId,
       senderId: { $ne: new mongoose.Types.ObjectId(userId) },
@@ -598,6 +605,7 @@ export const conversationsService = {
         participantIds: conversation.participants.map((participantId) => String(participantId)),
         readerId: userId,
         messageIds: [] as string[],
+        readReceiptsShared,
       };
     }
 
@@ -615,6 +623,7 @@ export const conversationsService = {
       participantIds: conversation.participants.map((participantId) => String(participantId)),
       readerId: userId,
       messageIds: unreadMessages.map((message) => String(message._id)),
+      readReceiptsShared,
     };
   },
 
