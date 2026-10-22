@@ -5,6 +5,10 @@ import { CommunityGroup } from "../../models/CommunityGroup";
 import { CommunityMessage } from "../../models/CommunityMessage";
 import { CommunityProfile } from "../../models/CommunityProfile";
 import {
+  CommunityRequestDecline,
+  REQUEST_DECLINE_COOLDOWN_DAYS,
+} from "../../models/CommunityRequestDecline";
+import {
   COMMUNITY_INTERACTION_POLICY,
   ROLE_LABEL,
   isCrossRoleInteraction,
@@ -81,6 +85,21 @@ export const conversationsService = {
     }
 
     const initialStatus = targetProfile.messagePrivacy === "REQUEST_ONLY" ? "PENDING" : "ACTIVE";
+
+    // A declined request deletes its conversation, so the decline is remembered
+    // separately; asking the same person again straight away is the pattern
+    // the decline was meant to stop.
+    if (initialStatus === "PENDING") {
+      const recentDecline = await CommunityRequestDecline.exists({
+        requesterId: userId,
+        declinedById: targetUserId,
+      });
+      if (recentDecline) {
+        throw new Error(
+          `You cannot send this person a new request for ${REQUEST_DECLINE_COOLDOWN_DAYS} days after they declined.`
+        );
+      }
+    }
 
     // Checked before anything is created, so a request refused for want of a
     // message leaves no empty conversation behind.
@@ -239,6 +258,11 @@ export const conversationsService = {
     await Promise.all([
       CommunityMessage.deleteMany({ conversationId: conversation._id }),
       CommunityConversation.deleteOne({ _id: conversation._id }),
+      CommunityRequestDecline.updateOne(
+        { requesterId: requester, declinedById: userId },
+        { $set: { createdAt: new Date() } },
+        { upsert: true }
+      ),
     ]);
 
     return { rejected: true };

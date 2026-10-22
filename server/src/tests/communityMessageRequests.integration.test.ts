@@ -28,6 +28,7 @@ const { User } = require("../client/models/User");
 const { CommunityProfile } = require("../community/models/CommunityProfile");
 const { CommunityConversation } = require("../community/models/CommunityConversation");
 const { CommunityMessage } = require("../community/models/CommunityMessage");
+const { CommunityRequestDecline } = require("../community/models/CommunityRequestDecline");
 const redis = require("../config/redis").default;
 
 const oid = () => new mongoose.Types.ObjectId();
@@ -196,7 +197,7 @@ describe("community DM requests", () => {
     assert.equal(followUp.status, 201, "the sender is no longer capped once accepted");
   });
 
-  it("lets a sender try again after being declined", async () => {
+  it("lets a sender try again only once the decline cooldown is over", async () => {
     const sender = await signedInAs();
     const recipient = await signedInAs();
     const first = await startConversation(sender.token, recipient.userId.toString());
@@ -206,6 +207,13 @@ describe("community DM requests", () => {
     // Declining deletes the conversation, so a fresh request is a clean slate
     // rather than a conversation whose one-message budget is already spent.
     assert.equal(await CommunityConversation.countDocuments({}), 0);
+
+    const tooSoon = await startConversation(sender.token, recipient.userId.toString());
+    assert.equal(tooSoon.status, 400, "the decline is remembered during the cooldown");
+    assert.equal(await CommunityConversation.countDocuments({}), 0);
+
+    // Mongo's TTL index removes the row once the cooldown is over.
+    await CommunityRequestDecline.deleteMany({});
 
     const second = await startConversation(sender.token, recipient.userId.toString());
     assert.equal(second.status, 200);

@@ -7,6 +7,7 @@ import { CommunityMessage, type CommunityMessageType } from "../../models/Commun
 import { CommunityMessageReaction } from "../../models/CommunityMessageReaction";
 import { CommunityProfile } from "../../models/CommunityProfile";
 import { getMemberRole } from "../communityGroupMembership";
+import { consumeSendAllowance } from "./sendRateLimit";
 import {
   MESSAGE_EDIT_DELETE_WINDOW_MS,
   describeNonTextMessage,
@@ -240,6 +241,8 @@ export const messagesService = {
       replyToId?: string;
     }
   ) {
+    consumeSendAllowance(userId);
+
     const conversation = await CommunityConversation.findById(conversationId);
     if (!conversation) {
       throw new Error("Conversation not found");
