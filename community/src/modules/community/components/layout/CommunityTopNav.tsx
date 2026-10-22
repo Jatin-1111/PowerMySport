@@ -82,15 +82,29 @@ export default function CommunityTopNav() {
     void loadUnreadChatsCount();
 
     const socket = getCommunitySocket();
+    // A burst of messages persists a notification each; refetch once, not per event.
+    let notificationRefreshTimer: ReturnType<typeof setTimeout> | null = null;
     const handleNewNotification = () => {
-      void communityService.clearNotificationCache();
-      void loadUnreadCount();
+      if (notificationRefreshTimer) clearTimeout(notificationRefreshTimer);
+      notificationRefreshTimer = setTimeout(() => {
+        notificationRefreshTimer = null;
+        void communityService.clearNotificationCache();
+        void loadUnreadCount();
+      }, 300);
     };
     // The count is cached client-side, so a socket event has to drop the cache
     // first or the refetch just returns the number from before the change.
+    // One message fires newMessage, conversationUpdated and messagesRead within
+    // a few hundred ms, and a burst fires them in dozens: collapse them into a
+    // single refetch so clearing the cache does not become one request each.
+    let chatsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
     const handleChatsChanged = () => {
-      void communityService.clearUnreadConversationCache();
-      void loadUnreadChatsCount();
+      if (chatsRefreshTimer) clearTimeout(chatsRefreshTimer);
+      chatsRefreshTimer = setTimeout(() => {
+        chatsRefreshTimer = null;
+        void communityService.clearUnreadConversationCache();
+        void loadUnreadChatsCount();
+      }, 300);
     };
 
     socket.on("notification:new", handleNewNotification);
@@ -106,6 +120,8 @@ export default function CommunityTopNav() {
     window.addEventListener("community:notificationsRead", handleLocalRead);
 
     return () => {
+      if (chatsRefreshTimer) clearTimeout(chatsRefreshTimer);
+      if (notificationRefreshTimer) clearTimeout(notificationRefreshTimer);
       socket.off("notification:new", handleNewNotification);
       socket.off("community:newMessage", handleChatsChanged);
       socket.off("community:messagesRead", handleChatsChanged);
