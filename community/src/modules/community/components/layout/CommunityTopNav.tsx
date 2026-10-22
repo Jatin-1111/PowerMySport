@@ -86,13 +86,17 @@ export default function CommunityTopNav() {
       void communityService.clearNotificationCache();
       void loadUnreadCount();
     };
+    // The count is cached client-side, so a socket event has to drop the cache
+    // first or the refetch just returns the number from before the change.
     const handleChatsChanged = () => {
+      void communityService.clearUnreadConversationCache();
       void loadUnreadChatsCount();
     };
 
     socket.on("notification:new", handleNewNotification);
     socket.on("community:newMessage", handleChatsChanged);
     socket.on("community:messagesRead", handleChatsChanged);
+    socket.on("community:conversationUpdated", handleChatsChanged);
     if (!socket.connected) socket.connect();
 
     // Also update badge when notifications are marked read locally
@@ -105,6 +109,7 @@ export default function CommunityTopNav() {
       socket.off("notification:new", handleNewNotification);
       socket.off("community:newMessage", handleChatsChanged);
       socket.off("community:messagesRead", handleChatsChanged);
+      socket.off("community:conversationUpdated", handleChatsChanged);
       window.removeEventListener("community:notificationsRead", handleLocalRead);
     };
   }, []);

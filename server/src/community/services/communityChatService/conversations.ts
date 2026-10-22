@@ -259,6 +259,7 @@ export const conversationsService = {
       {
         $match: {
           conversationId: { $in: conversations.map((c) => c._id) },
+          isDeleted: false,
           senderId: { $ne: new mongoose.Types.ObjectId(userId) },
           readBy: { $ne: new mongoose.Types.ObjectId(userId) },
         },
@@ -335,6 +336,7 @@ export const conversationsService = {
         {
           $match: {
             conversationId: { $in: idOnly.map((c) => c._id) },
+            isDeleted: false,
             senderId: { $ne: new mongoose.Types.ObjectId(userId) },
             readBy: { $ne: new mongoose.Types.ObjectId(userId) },
           },
@@ -423,6 +425,7 @@ export const conversationsService = {
           conversationId: {
             $in: conversations.map((conversation) => conversation._id),
           },
+          isDeleted: false,
           senderId: { $ne: new mongoose.Types.ObjectId(userId) },
           readBy: { $ne: new mongoose.Types.ObjectId(userId) },
         },

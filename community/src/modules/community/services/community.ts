@@ -195,6 +195,11 @@ export const communityService = {
     clearCacheByPrefixes(["community-notifications", "community-unread-count"]);
   },
 
+  /** Drop the cached unread-chats count so the next read reflects the server. */
+  async clearUnreadConversationCache(): Promise<void> {
+    clearCacheByPrefixes(["conversations-unread-count"]);
+  },
+
   async ensureSession(): Promise<AuthBridgeSession> {
     const response = await axiosInstance.get<ApiResponse<AuthBridgeSession>>("/auth/bridge");
     return response.data.data;
