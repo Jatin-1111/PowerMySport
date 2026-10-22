@@ -182,7 +182,9 @@ describe("when a personal answer is not allowed or not possible", () => {
     const result = await tool.execute({ sportSlug: "tennis" }, { userId: String(parent._id) });
 
     assert.equal(result.personalised, false);
-    assert.match(result.note, /not filtered for any child/);
+    // Their ranking is linked, so they are sent to the page and not asked to link one.
+    assert.match(result.note, /not filtered for the child/);
+    assert.match(result.note, /already linked, so do not ask them to link one/);
   });
 
   it("answers from the general calendar, and says so, when there is no account behind it", async () => {

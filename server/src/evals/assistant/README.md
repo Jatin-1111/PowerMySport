@@ -77,5 +77,8 @@ means the prompt's WhatsApp rules need strengthening even though parents see cle
 
 Whether an answer is warm, accurate in detail or well judged needs a person. The report prints
 every reply for exactly that reason. The questions that need a signed-in parent (their child's
-ranking, their plan) are not covered, because WhatsApp has no account behind the chat yet. When
-account linking exists, add cases for it.
+ranking, their plan) are covered by the `knownParent` cases: the run builds the same prompt a
+recognised parent gets (`identityAddendum`) with an invented account block from
+`FIXTURE_PARENT_CONTEXT`, and the tools answer from fixtures. What it cannot check is the
+number-to-account match itself or real data; those have their own tests
+(`parentContext.integration.test.ts`, `whatsappAssistant.integration.test.ts`).

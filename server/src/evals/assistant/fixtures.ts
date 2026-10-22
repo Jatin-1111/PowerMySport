@@ -7,6 +7,28 @@
  * change in the assistant, not in the data.
  */
 
+import type { ParentContext } from "../../shared/services/parentContext";
+
+/** The account block a known parent's prompt carries in a "knownParent" case. */
+export const FIXTURE_PARENT_CONTEXT: ParentContext = {
+  parent: { firstName: "Meera", city: "Pune" },
+  children: [
+    {
+      firstName: "Aarav",
+      age: 13,
+      sports: ["Tennis"],
+      yearsPlaying: 3,
+      level: "intermediate",
+      ambition: "competitive",
+      state: "Maharashtra",
+      ranking: { sport: "tennis", list: "Boys U-14", rank: 212 },
+    },
+  ],
+  moreChildren: 0,
+  plannedEvents: 2,
+  upcomingSessions: 1,
+};
+
 const EXPERTS = [
   {
     name: "Asha Verma",

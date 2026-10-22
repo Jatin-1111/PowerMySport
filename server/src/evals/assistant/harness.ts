@@ -2,13 +2,12 @@ import { buildAssistantChatSystemPrompt } from "../../shared/services/assistantC
 import type { ChatToolDefinition } from "../../shared/services/chatToolsService";
 import {
   CHANNEL_ADDENDUM,
-  KNOWN_PARENT_ADDENDUM,
-  UNKNOWN_NUMBER_ADDENDUM,
+  identityAddendum,
   type ReplyGenerator,
 } from "../../shared/services/whatsappAssistantService";
 import { clipReply, formatForWhatsApp } from "../../shared/services/whatsappFormat";
 import { ASSISTANT_CASES, validateCases, type AssistantCase } from "./cases";
-import { fixtureFor } from "./fixtures";
+import { FIXTURE_PARENT_CONTEXT, fixtureFor } from "./fixtures";
 
 /** WhatsApp's own limit with a margin, the same as production. */
 const MAX_REPLY_CHARS = 3800;
@@ -67,7 +66,8 @@ export async function runCase(
   const systemPrompt =
     buildAssistantChatSystemPrompt(tools) +
     (whatsapp
-      ? CHANNEL_ADDENDUM + (c.knownParent ? KNOWN_PARENT_ADDENDUM : UNKNOWN_NUMBER_ADDENDUM)
+      ? CHANNEL_ADDENDUM +
+        identityAddendum(Boolean(c.knownParent), c.knownParent ? FIXTURE_PARENT_CONTEXT : null)
       : "");
 
   const started = Date.now();
