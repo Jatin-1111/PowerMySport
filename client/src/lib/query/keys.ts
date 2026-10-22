@@ -141,4 +141,9 @@ export const queryKeys = {
     venue: (id: string) => ["discovery", "venue", id] as const,
     coach: (id: string) => ["discovery", "coach", id] as const,
   },
+
+  /** What the WhatsApp assistant kept about a parent's children, behind a link's token. */
+  whatsappHandoff: {
+    preview: (token: string) => ["whatsapp-handoff", "preview", token] as const,
+  },
 } as const;
