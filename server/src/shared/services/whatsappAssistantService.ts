@@ -3,7 +3,7 @@ import { WhatsAppConversation } from "../../client/models/WhatsAppConversation";
 import { buildAssistantChatSystemPrompt } from "./assistantChatService";
 import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticChatService";
 import { ASSISTANT_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
-import { RankingClaimService } from "../../client/services/RankingClaimService";
+import { formatParentContext, getParentContext, type ParentContext } from "./parentContext";
 import { findUserIdByPhone } from "./whatsappIdentity";
 import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitService";
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
@@ -46,10 +46,11 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 export const KNOWN_PARENT_ADDENDUM = `
 
 ## This parent is known
-This WhatsApp number belongs to a PowerMySport account, and your tools return that parent's own children, linked rankings and tournament verdicts. So:
+This WhatsApp number belongs to a PowerMySport account. This replaces what the instructions above say about having no prior context and about personal advice needing another page: for this parent you can read their own children, linked rankings, season plans, AI plan and expert sessions, and you answer questions about them from that data. Advice that goes beyond what the account holds still follows the limits above (no medical advice, no invented plans). So:
 - Do not ask which sport or which child when the tools can tell you. Call the tool first.
+- To read back what they already have, use get_my_children, get_my_season_plan, get_my_guidance_plan and get_my_sessions. To see which tournaments they can still enter, use get_upcoming_tournaments, and for a ranking, get_child_ranking.
 - Never say you cannot see their account, ranking or children. If a tool returns nothing personal, say that no ranking is linked for that child yet and point to https://powermysport.com/planner.
-- Say the child's first name, nothing else from the account. If asked what you know about them, say you can see the children with a linked ranking on their account (by first name) and nothing else, not that you know nothing.`;
+- Say only what the account block below or a tool shows. Never repeat a surname, date of birth, registration number, phone number, email or address, even if asked, and say you do not have those. Never say you know nothing about them.`;
 
 /** No account, or more than one, holds this number, so nothing personal is available. */
 export const UNKNOWN_NUMBER_ADDENDUM = `
@@ -86,38 +87,47 @@ const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, to
   streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS, toolContext);
 
 /**
- * Whose number this is, as far as the account is known, and the children on it that have a
- * linked ranking. A lookup failure is the same as no match: the parent still gets an answer
- * from public data.
+ * Whose number this is, as far as the account is known, and what the account shows about
+ * them. A lookup failure is the same as no match: the parent still gets an answer from
+ * public data.
  */
 async function identify(
   phone: string
-): Promise<{ toolContext: ChatToolContext; children: string[] }> {
+): Promise<{ toolContext: ChatToolContext; parent: ParentContext | null }> {
   try {
     const userId = await findUserIdByPhone(phone);
-    if (!userId) return { toolContext: {}, children: [] };
-    const claims = await RankingClaimService.list(userId).catch(() => []);
-    const children = [
-      ...new Set(
-        claims.map(
-          (claim) =>
-            `${(claim.dependentName ?? "").split(/\s+/)[0] || "a child"} (${claim.sportSlug})`
-        )
-      ),
-    ];
-    return { toolContext: { userId }, children };
+    if (!userId) return { toolContext: {}, parent: null };
+    const parent = await getParentContext(userId).catch((err) => {
+      log.error("could not read the parent's account", err);
+      return null;
+    });
+    return { toolContext: { userId }, parent };
   } catch (err) {
     log.error("could not look up the account for a WhatsApp number", err);
-    return { toolContext: {}, children: [] };
+    return { toolContext: {}, parent: null };
   }
 }
 
-/** Who is on the account, by first name, so a name the parent says is never searched as an expert. */
-function childrenAddendum(children: string[]): string {
-  if (children.length === 0) {
-    return "\n- No child on this account has a ranking linked yet, so a ranking question gets that answer and a pointer to https://powermysport.com/planner.";
-  }
-  return `\n- Children on this account with a linked ranking: ${children.join(", ")}. When the parent says "my son", "my child" or one of these names, they mean one of these children: use get_child_ranking, never search_experts for a child's name. If an earlier message in this chat named a different child, the account's list is what you can look up: say who is on the account.`;
+/**
+ * The part of the prompt that depends on who is asking. One function for production and for
+ * the eval, so the eval tests the prompt a parent really gets.
+ */
+export function identityAddendum(known: boolean, parent: ParentContext | null): string {
+  return known ? KNOWN_PARENT_ADDENDUM + accountAddendum(parent) : UNKNOWN_NUMBER_ADDENDUM;
+}
+
+/** What the account shows, and how to use it. Empty when the account could not be read. */
+function accountAddendum(parent: ParentContext | null): string {
+  if (!parent) return "";
+  return `
+
+## What this parent's account shows
+${formatParentContext(parent)}
+
+How to use it:
+- Greet them by first name once, at the start of a conversation, not in every reply. Use these facts to answer, and do not recite them back unless asked. If they ask what you know about them, summarise it in a sentence or two.
+- When they say "my son", "my child" or a name from this list, they mean that child: use the tools below, and never search_experts for a child's name. If an earlier message in this chat named a different child, the account's list is what you can look up: say who is on it.
+- Say only what is listed here or returned by a tool. Do not guess a child's level, plan or schedule.`;
 }
 
 export interface WhatsAppAnswer {
@@ -173,14 +183,12 @@ export async function answerWhatsAppMessage(
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const { toolContext, children } = await identify(message.from);
+    const { toolContext, parent } = await identify(message.from);
     const chunks = await retrieveRelevantChunks(userMessage);
     const systemPrompt =
       buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) +
       CHANNEL_ADDENDUM +
-      (toolContext.userId
-        ? KNOWN_PARENT_ADDENDUM + childrenAddendum(children)
-        : UNKNOWN_NUMBER_ADDENDUM);
+      identityAddendum(Boolean(toolContext.userId), parent);
 
     let reply = "";
     for await (const piece of generate(systemPrompt, history, userMessage, toolContext)) {

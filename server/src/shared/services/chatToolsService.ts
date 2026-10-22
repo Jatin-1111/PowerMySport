@@ -9,6 +9,8 @@ import {
   PLANNER_CHAT_RULES,
 } from "../../client/services/PlannerChatContext";
 import { RankingClaimService } from "../../client/services/RankingClaimService";
+import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
+import { getChildrenDetail, getSeasonPlans } from "./parentContext";
 import { findEditionsForChat, getUpcomingEditions } from "./tournamentEditionQueries";
 
 /**
@@ -309,6 +311,170 @@ const getChildRankingTool: ChatToolDefinition = {
   },
 };
 
+// ─── get_my_children / get_my_season_plan ───────────────────────────────────────
+
+const NOT_LINKED = {
+  linked: false,
+  reason: "number_not_linked",
+  instruction:
+    "This WhatsApp number is not tied to a PowerMySport account, so nothing about a child can be read. Say that plainly (not that it is private), and that signing in at https://powermysport.com shows their children and plans.",
+} as const;
+
+const NAME_NOT_ON_ACCOUNT =
+  "No child with that name is on this account. Say who is, by first name, and ask whether they mean one of them.";
+
+const childNameParam = {
+  type: "string",
+  description:
+    "First name of the child, when the parent names one. Omit to cover every child on the account.",
+} as const;
+
+const getMyChildrenTool: ChatToolDefinition = {
+  name: "get_my_children",
+  summary:
+    "tell a signed-in parent what their account holds about each child: age, the sport chosen or being considered, how the assessment scored sports, experience and goals",
+  example: "which sport did the assessment suggest for my daughter",
+  promptNote:
+    "Quote only what the result holds. A child with no assessment has empty matches: say they have not taken it and point to https://powermysport.com/assessment/discover, never guess a fit.",
+  description:
+    "Read the parent's own children from their PowerMySport account: age, the sport they chose, the sports in focus or being considered, the top sports the assessment scored for them and how well each fits, years playing, experience level, ambition, weekly hours and state. Use when the parent asks about their child's profile, what the assessment suggested, or what you already know about the child. First names only; there is no surname, date of birth or contact detail.",
+  parametersJsonSchema: { type: "object", properties: { childName: childNameParam } },
+  execute: async (args, context) => {
+    if (!context?.userId) return NOT_LINKED;
+    const result = await getChildrenDetail(
+      context.userId,
+      typeof args.childName === "string" ? args.childName : undefined
+    );
+    if (!result.found) {
+      return {
+        linked: true,
+        childrenOnAccount: result.childrenOnAccount,
+        instruction: NAME_NOT_ON_ACCOUNT,
+      };
+    }
+    if (result.items.length === 0) {
+      return {
+        linked: true,
+        children: [],
+        instruction:
+          "No child has been added to this account yet. Say so, and that adding one at https://powermysport.com/dashboard lets you help with their sport.",
+      };
+    }
+    return { linked: true, children: result.items };
+  },
+};
+
+const getMySeasonPlanTool: ChatToolDefinition = {
+  name: "get_my_season_plan",
+  summary:
+    "show a signed-in parent the tournaments on their child's season plan, with dates, status, their goal and blocked dates",
+  example: "what is on my son's season plan",
+  promptNote:
+    "Costs are not returned: for what a season will cost, send the parent to https://powermysport.com/planner. A parent with no plan has not started one: say so and point there.",
+  description:
+    "Read the season plans the parent built on the PowerMySport planner: for each child and sport, the tournaments they shortlisted, entered or played, soonest first, plus the plan's goal (points, experience or home) and any dates they blocked, such as exams. Use when a parent asks what is on their plan, what they have already entered, or which dates are blocked. For events the child can still enter, use get_upcoming_tournaments instead.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      childName: childNameParam,
+      sportSlug: {
+        type: "string",
+        description: "URL slug for the sport, e.g. 'tennis'. Omit for all.",
+      },
+    },
+  },
+  execute: async (args, context) => {
+    if (!context?.userId) return NOT_LINKED;
+    const sportSlug =
+      typeof args.sportSlug === "string" && args.sportSlug.trim()
+        ? args.sportSlug.trim().toLowerCase()
+        : undefined;
+    const result = await getSeasonPlans(context.userId, {
+      ...(typeof args.childName === "string" ? { childName: args.childName } : {}),
+      ...(sportSlug ? { sportSlug } : {}),
+    });
+    if (!result.found) {
+      return {
+        linked: true,
+        childrenOnAccount: result.childrenOnAccount,
+        instruction: NAME_NOT_ON_ACCOUNT,
+      };
+    }
+    if (result.items.length === 0) {
+      return {
+        linked: true,
+        plans: [],
+        instruction:
+          "There is no season plan yet. Say so, and that they can start one at https://powermysport.com/planner.",
+      };
+    }
+    return { linked: true, plans: result.items };
+  },
+};
+
+// ─── get_my_guidance_plan / get_my_sessions ─────────────────────────────────────
+
+const getMyGuidancePlanTool: ChatToolDefinition = {
+  name: "get_my_guidance_plan",
+  summary:
+    "read back the AI development plan a parent already generated for their child: goal verdict, weekly blueprint, journey phases and recommended sports",
+  example: "what was the plan you made for my son",
+  promptNote:
+    "This is the plan the parent already has, written by an AI on the guidance page. Quote it, do not rewrite it, and give its cost lines as the plan's estimates. For a new or updated plan, point to https://powermysport.com/guidance. A child with no plan has not made one yet: say so.",
+  description:
+    "Read the parent's most recent AI development plan for each child: the goal and the verdict on it, the weekly training blueprint, the journey phases, recommended sports, burnout risk and the plan's own cost estimates. Use when a parent asks what their plan says, what the weekly blueprint was, or what was recommended. It returns only plans already made; to make a new one the parent uses https://powermysport.com/guidance.",
+  parametersJsonSchema: { type: "object", properties: { childName: childNameParam } },
+  execute: async (args, context) => {
+    if (!context?.userId) return NOT_LINKED;
+    const result = await getGuidancePlans(
+      context.userId,
+      typeof args.childName === "string" ? args.childName : undefined
+    );
+    if (!result.found) {
+      return {
+        linked: true,
+        childrenOnAccount: result.childrenOnAccount,
+        instruction: NAME_NOT_ON_ACCOUNT,
+      };
+    }
+    if (result.items.length === 0) {
+      return {
+        linked: true,
+        plans: [],
+        instruction:
+          "No AI plan has been made yet. Say so, and that they can make one at https://powermysport.com/guidance.",
+      };
+    }
+    return { linked: true, plans: result.items };
+  },
+};
+
+const getMySessionsTool: ChatToolDefinition = {
+  name: "get_my_sessions",
+  summary:
+    "tell a signed-in parent about their booked expert consultations: who with, for which child, when, online or in person, and whether the expert has confirmed",
+  example: "when is my next expert session",
+  promptNote:
+    "Times are Indian time. The meeting link, address and payment details are not returned: for those, send the parent to their dashboard at https://powermysport.com/dashboard. An expert who has not confirmed yet has not accepted the time, so say it is not confirmed.",
+  description:
+    "Read the parent's own expert consultations: upcoming sessions soonest first and the last few that ended or were cancelled, each with the expert's first name, the child it is for, the date and time in Indian time, the length, online or in person, and whether the expert has confirmed. Use when a parent asks about their booked sessions, when the next one is, or whether an expert accepted. These are one-to-one consultations, not regular coaching.",
+  parametersJsonSchema: { type: "object", properties: {} },
+  execute: async (_args, context) => {
+    if (!context?.userId) return NOT_LINKED;
+    const overview = await getSessionsOverview(context.userId);
+    if (overview.upcoming.length === 0 && overview.recent.length === 0) {
+      return {
+        linked: true,
+        upcoming: [],
+        recent: [],
+        instruction:
+          "No expert session has been booked on this account. Say so, and that they can find an expert at https://powermysport.com/experts.",
+      };
+    }
+    return { linked: true, ...overview };
+  },
+};
+
 // ─── get_tournament_details ─────────────────────────────────────────────────────
 
 const CHAT_SITE = "https://powermysport.com";
@@ -463,6 +629,10 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getPathwayStageTool,
   getUpcomingTournamentsTool,
   getChildRankingTool,
+  getMyChildrenTool,
+  getMySeasonPlanTool,
+  getMyGuidancePlanTool,
+  getMySessionsTool,
   getTournamentDetailsTool,
   requestTeamFollowupTool,
 ];

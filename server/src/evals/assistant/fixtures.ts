@@ -123,6 +123,78 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
           },
         ],
       };
+    case "get_my_children":
+      return {
+        linked: true,
+        children: [
+          {
+            child: "Aarav",
+            age: 13,
+            committedSport: "Tennis",
+            sportsInFocus: ["Tennis"],
+            consideringSports: ["Badminton", "Squash"],
+            assessmentMatches: [
+              { sport: "Tennis", fit: "Strong fit" },
+              { sport: "Badminton", fit: "Good fit" },
+            ],
+            yearsPlaying: 3,
+            level: "intermediate",
+            ambition: "competitive",
+            state: "Maharashtra",
+          },
+        ],
+      };
+    case "get_my_season_plan":
+      return {
+        linked: true,
+        plans: [
+          {
+            child: "Aarav",
+            sport: "tennis",
+            goal: "points",
+            datesBlocked: [{ from: "2026-12-01", to: "2026-12-15", label: "Board exams" }],
+            tournaments: [
+              { name: "AITA CS7 (Pune)", starts: "2026-11-14", status: "entered" },
+              { name: "AITA CS6 (Mumbai)", starts: "2027-01-09", status: "shortlisted" },
+            ],
+          },
+        ],
+      };
+    case "get_my_guidance_plan":
+      return {
+        linked: true,
+        plans: [
+          {
+            child: "Aarav",
+            sport: "Tennis",
+            madeOn: "2026-10-02",
+            goal: { stated: "Play state level", verdict: "Ambitious" },
+            weeklyBlueprint: {
+              trainingHours: "6 hours of structured training",
+              freePlayHours: "2 hours of free play",
+              restDays: "1 full rest day",
+            },
+            recommendedSports: ["Tennis", "Badminton"],
+            burnoutRisk: { level: "medium", message: "Keep one full rest day each week." },
+            journey: [{ title: "Build the base", timeframe: "0 to 6 months" }],
+          },
+        ],
+      };
+    case "get_my_sessions":
+      return {
+        linked: true,
+        upcoming: [
+          {
+            with: "Rohan",
+            forChild: "Aarav",
+            when: "28 Oct 2026, 6:00 PM",
+            minutes: 45,
+            mode: "online",
+            status: "confirmed by the expert",
+          },
+        ],
+        recent: [],
+      };
     case "get_tournament_details":
       return {
         found: true,
