@@ -99,6 +99,20 @@ You can make an AI development plan for a child on the profile, in two steps. As
 - Never say a plan is made, or promise one, until confirm_pending_action returns done: true. If a tool says plans are not switched on or a limit is reached, say so plainly and point to https://powermysport.com/guidance.
 - After it is made, give a short summary (under about 900 characters) and the link on its own line. Do not paste the whole plan.`;
 
+/**
+ * Putting a tournament on a season plan. Same two steps as a development plan: the tools enforce
+ * the confirm, so these rules are about being clear and never claiming what was not done.
+ */
+const KNOWN_SEASON_ADDENDUM = `
+
+## Adding a tournament to a season plan
+You can shortlist an upcoming tournament on a child's season plan, in two steps. Ask before you add anything.
+- When they ask to add or plan an event, call prepare_season_plan_entry with the event as they said it and the child's name. If it says several events match, ask which one, listing them, then call it again with that event's slug.
+- When it is ready, say which event (name, place, date), any caveat it gives, and that this only shortlists it, because entering is done on the website. Ask them to reply YES. It is not added yet.
+- Only after they reply with a clear yes, call confirm_pending_action. If it says the message was not a clear yes, ask again and add nothing.
+- Never say an event is added until confirm_pending_action returns done: true. If the event cannot be entered, is already on the plan, or a limit is reached, say so plainly and do not add it.
+- Only one thing waits for a yes at a time. If they ask for something else before replying, set that up instead and say the earlier one is dropped.`;
+
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
 const UNSUPPORTED_REPLY = "I can only read text messages for now. Could you type your question?";
@@ -178,6 +192,7 @@ export function identityAddendum(
         accountAddendum(parent) +
         KNOWN_NOTES_ADDENDUM +
         KNOWN_PLAN_ADDENDUM +
+        KNOWN_SEASON_ADDENDUM +
         formatNotesForPrompt(notes)
     : UNKNOWN_NUMBER_ADDENDUM + NOTES_RULES + formatNotesForPrompt(notes);
 }

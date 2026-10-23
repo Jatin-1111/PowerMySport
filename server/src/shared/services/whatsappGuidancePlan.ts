@@ -10,7 +10,7 @@ import {
 import { log as __rootLog } from "../../utils/logger";
 import type { ChatToolContext } from "./chatToolsService";
 import { summariseGuidance } from "./parentAccountLookups";
-import { firstName, pickChildren } from "./parentContext";
+import { chooseChild, firstName } from "./parentContext";
 import {
   registerPendingExecutor,
   storePendingAction,
@@ -154,38 +154,9 @@ export async function prepareGuidancePlan(
   const { userId, phoneHash } = context;
 
   const players = await Player.find({ userId }).sort({ createdAt: 1 }).lean();
-  if (players.length === 0) {
-    return {
-      ready: false,
-      reason: "no_children",
-      instruction:
-        "No child is on this profile yet, so there is nobody to make a plan for. Say so, and offer to note the child and send a link to add them.",
-    };
-  }
-
-  const childName = typeof args.childName === "string" ? args.childName : undefined;
-  let chosen = players[0]!;
-  if (childName?.trim()) {
-    const picked = pickChildren(players, childName);
-    if (!picked.found || picked.items.length === 0) {
-      return {
-        ready: false,
-        reason: "child_not_on_account",
-        childrenOnAccount: players.map((p) => firstName(p.name, "a child")),
-        instruction:
-          "No child with that name is on this profile. Say who is, by first name, and ask which one the plan is for.",
-      };
-    }
-    chosen = picked.items[0]!;
-  } else if (players.length > 1) {
-    return {
-      ready: false,
-      reason: "which_child",
-      children: players.map((p) => firstName(p.name, "a child")),
-      instruction:
-        "Ask which child the plan is for, naming them. Then call this again with the name.",
-    };
-  }
+  const picked = chooseChild(players, args.childName, "the plan");
+  if ("reply" in picked) return picked.reply;
+  const chosen = picked.child;
 
   const name = firstName(chosen.name, "your child");
   const input = buildPlanInput(profileOf(chosen), cleanAnswers(args), now);

@@ -296,3 +296,52 @@ export async function getSeasonPlans(
     }));
   return { found: true, items };
 }
+
+/**
+ * Which of the parent's children an assistant action is for: the one they named, the only one
+ * there is, or the question that settles it. `what` finishes the sentence "ask which one ... is
+ * for", so each tool words it its own way ("the plan", "the event").
+ */
+export function chooseChild<T extends { name: string }>(
+  players: T[],
+  childName: unknown,
+  what: string
+): { child: T } | { reply: Record<string, unknown> } {
+  if (players.length === 0) {
+    return {
+      reply: {
+        ready: false,
+        reason: "no_children",
+        instruction: `No child is on this profile yet, so there is nobody to do this for. Say so, and offer to note the child and send a link to add them.`,
+      },
+    };
+  }
+
+  const name = typeof childName === "string" ? childName : undefined;
+  if (name?.trim()) {
+    const picked = pickChildren(players, name);
+    if (!picked.found || picked.items.length === 0) {
+      return {
+        reply: {
+          ready: false,
+          reason: "child_not_on_account",
+          childrenOnAccount: players.map((p) => firstName(p.name, "a child")),
+          instruction: `No child with that name is on this profile. Say who is, by first name, and ask which one ${what} is for.`,
+        },
+      };
+    }
+    return { child: picked.items[0]! };
+  }
+
+  if (players.length > 1) {
+    return {
+      reply: {
+        ready: false,
+        reason: "which_child",
+        children: players.map((p) => firstName(p.name, "a child")),
+        instruction: `Ask which child ${what} is for, naming them. Then call this again with the name.`,
+      },
+    };
+  }
+  return { child: players[0]! };
+}

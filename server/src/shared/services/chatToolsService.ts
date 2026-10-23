@@ -12,6 +12,7 @@ import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
 import { planToolEnabled, prepareGuidancePlan } from "./whatsappGuidancePlan";
 import { confirmPendingAction } from "./whatsappPendingAction";
+import { prepareSeasonEntry } from "./whatsappSeasonPlan";
 import { createProfileLink } from "./whatsappHandoff";
 import {
   childNamesOnAccount,
@@ -727,6 +728,34 @@ const prepareGuidancePlanTool: ChatToolDefinition = {
   execute: async (args, context) => prepareGuidancePlan(context, args),
 };
 
+const prepareSeasonPlanEntryTool: ChatToolDefinition = {
+  name: "prepare_season_plan_entry",
+  summary:
+    "set up putting a tournament on a child's season plan, checking it against what the child can enter, before adding it",
+  example: "add the Pune tournament to my son's season plan",
+  promptNote:
+    "This only prepares: it adds nothing. Say back which event and any caveats it returns, say it only shortlists (entering is done on the website), and ask the parent to reply YES. Never say it is added until confirm_pending_action says done.",
+  description:
+    "Start adding an upcoming tournament to one of the parent's children's season plans. Pass the tournament's name or place as the parent said it, and childName when they name a child. It finds the one event (or tells you to ask which of up to three), refuses an event the child cannot enter or that is already on the plan, and notes anything to check, such as playing up or no linked ranking. When it is ready it saves what it would do and tells you to ask the parent to reply YES. It only ever shortlists; it never marks an event entered. It never adds anything itself: confirm_pending_action does, after the parent says yes.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      tournament: {
+        type: "string",
+        description:
+          "The tournament's name or place as the parent said it, or its slug when you are passing back the one they chose.",
+      },
+      childName: { type: "string", description: "First name of the child, when named." },
+      note: {
+        type: "string",
+        description: "A short note for the entry, only if the parent asked for one.",
+      },
+    },
+    required: ["tournament"],
+  },
+  execute: async (args, context) => prepareSeasonEntry(context, args),
+};
+
 const confirmPendingActionTool: ChatToolDefinition = {
   name: "confirm_pending_action",
   summary: "carry out what you set up for the parent, once they have replied YES",
@@ -734,7 +763,7 @@ const confirmPendingActionTool: ChatToolDefinition = {
   promptNote:
     "Call it only in your reply to the parent's YES, never in the same reply that set the action up. If it says the message was not a clear yes, ask again and do nothing. Say what was done in a few short lines; never claim anything was done until it says so.",
   description:
-    "Do the action that a prepare tool (such as prepare_guidance_plan) set up and the parent has since agreed to. Call it only after the parent has replied with a clear yes to your question. It checks their message itself and refuses otherwise, so do not call it to find out. What it does, and what it returns, depends on what was set up: for a development plan it makes and saves the plan (about half a minute, using the daily plan allowance) and returns a short summary and the link to the full plan.",
+    "Do the action that a prepare tool (prepare_guidance_plan or prepare_season_plan_entry) set up and the parent has since agreed to. Call it only after the parent has replied with a clear yes to your question. It checks their message itself and refuses otherwise, so do not call it to find out. What it does depends on what was set up: for a development plan it makes and saves the plan (about half a minute, using the daily plan allowance) and returns a short summary and the link to the full plan; for a season-plan entry it shortlists the tournament and returns the link to the planner. Only one action waits at a time.",
   parametersJsonSchema: { type: "object", properties: {} },
   execute: async (_args, context) => confirmPendingAction(context),
 };
@@ -898,6 +927,7 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getMyGuidancePlanTool,
   getMySessionsTool,
   prepareGuidancePlanTool,
+  prepareSeasonPlanEntryTool,
   confirmPendingActionTool,
   noteChildDetailsTool,
   createProfileLinkTool,

@@ -212,6 +212,15 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
         instruction:
           "Tell the parent what you are about to make: a development plan for Aarav in Tennis, assuming a moderate budget (they can correct any of these). Say it takes about half a minute and is saved to their account. Ask them to reply YES to go ahead. Do NOT call confirm_pending_action until they have replied.",
       };
+    case "prepare_season_plan_entry":
+      return {
+        ready: true,
+        child: "Aarav",
+        event: { name: "AITA CS7 (Pune)", starts: "2026-11-14", where: "Pune, Maharashtra" },
+        caveats: [],
+        instruction:
+          "Tell the parent you are about to shortlist AITA CS7 (Pune) in Pune, Maharashtra, starting 2026-11-14, on Aarav's season plan. Say that this only shortlists it; entering is done on the website. Ask them to reply YES to go ahead. It is NOT added yet. Do NOT call confirm_pending_action until they have replied.",
+      };
     case "confirm_pending_action":
       return {
         done: true,
