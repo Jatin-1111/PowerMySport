@@ -47,7 +47,7 @@ export const firstName = (full: string | null | undefined, fallback: string): st
   (full ?? "").trim().split(/\s+/)[0] || fallback;
 
 /** From the date of birth when there is one, otherwise the age the parent entered. */
-function ageOf(player: { dob?: Date; age?: number }, now: Date): number | undefined {
+export function ageOf(player: { dob?: Date; age?: number }, now: Date): number | undefined {
   if (player.dob) {
     const born = new Date(player.dob);
     let years = now.getUTCFullYear() - born.getUTCFullYear();
