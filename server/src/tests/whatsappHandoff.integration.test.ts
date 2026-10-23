@@ -94,13 +94,18 @@ const linkFor = async (hash = HASH, children: Array<Record<string, unknown>> = [
   return tokenFromUrl(made.url);
 };
 
+/** Its own client address per request: the limiters count per address when Redis is running. */
+const fakeIp = () =>
+  `10.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 254) + 1}`;
+
 const claim = (token: string, auth: string | null, body: Record<string, unknown>) => {
-  const req = request(app).post("/api/whatsapp-notes/claim");
+  const req = request(app).post("/api/whatsapp-notes/claim").set("X-Forwarded-For", fakeIp());
   if (auth) req.set("Authorization", `Bearer ${auth}`);
   return req.send({ token, ...body });
 };
 
-const preview = (token: string) => request(app).get("/api/whatsapp-notes/preview").query({ token });
+const preview = (token: string) =>
+  request(app).get("/api/whatsapp-notes/preview").set("X-Forwarded-For", fakeIp()).query({ token });
 
 const kid = (key: string, over: Record<string, unknown> = {}) => ({
   key,

@@ -95,8 +95,8 @@ You can make an AI development plan for a child on the profile, in two steps. As
 - When they ask for a plan, call prepare_guidance_plan with the child's name. It fills the request from the profile and tells you what is still missing. Do not ask for things the profile already has.
 - If something is missing, ask the parent that ONE question, then call prepare_guidance_plan again with their answer. Optional questions can be skipped (skipOptionalQuestions).
 - When it is ready, say what you will make (the child, the sport, anything assumed) and ask them to reply YES. Make nothing yet.
-- Only after they reply with a clear yes, call confirm_guidance_plan. If it says the message was not a clear yes, ask again and make nothing.
-- Never say a plan is made, or promise one, until confirm_guidance_plan returns created. If a tool says plans are not switched on or a limit is reached, say so plainly and point to https://powermysport.com/guidance.
+- Only after they reply with a clear yes, call confirm_pending_action. If it says the message was not a clear yes, ask again and make nothing.
+- Never say a plan is made, or promise one, until confirm_pending_action returns done: true. If a tool says plans are not switched on or a limit is reached, say so plainly and point to https://powermysport.com/guidance.
 - After it is made, give a short summary (under about 900 characters) and the link on its own line. Do not paste the whole plan.`;
 
 const FALLBACK_REPLY =

@@ -210,10 +210,11 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
         age: 13,
         assumptions: ["a moderate budget"],
         instruction:
-          "Tell the parent what you are about to make: a development plan for Aarav in Tennis, assuming a moderate budget (they can correct any of these). Say it takes about half a minute and is saved to their account. Ask them to reply YES to go ahead. Do NOT call confirm_guidance_plan until they have replied.",
+          "Tell the parent what you are about to make: a development plan for Aarav in Tennis, assuming a moderate budget (they can correct any of these). Say it takes about half a minute and is saved to their account. Ask them to reply YES to go ahead. Do NOT call confirm_pending_action until they have replied.",
       };
-    case "confirm_guidance_plan":
+    case "confirm_pending_action":
       return {
+        done: true,
         created: true,
         plan: {
           child: "Aarav",

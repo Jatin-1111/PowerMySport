@@ -16,7 +16,7 @@ const { WhatsAppConversation } = require("../client/models/WhatsAppConversation"
 const { PlanCheckIn } = require("../shared/models/PlanCheckIn");
 const guidanceAi = require("../shared/services/guidanceAiService");
 const { ASSISTANT_CHAT_TOOLS } = require("../shared/services/chatToolsService");
-const { isAffirmative } = require("../shared/services/whatsappGuidancePlan");
+const { isAffirmative } = require("../shared/services/whatsappPendingAction");
 const {
   answerWhatsAppMessage,
   hashPhone,
@@ -121,10 +121,10 @@ const nextTurn = () =>
 
 const prepare = (c: Record<string, unknown>, args: Record<string, unknown> = {}) =>
   tool("prepare_guidance_plan").execute(args, c);
-const confirm = (c: Record<string, unknown>) => tool("confirm_guidance_plan").execute({}, c);
+const confirm = (c: Record<string, unknown>) => tool("confirm_pending_action").execute({}, c);
 
 const pendingOf = async () =>
-  (await WhatsAppConversation.findOne({ phoneHash: HASH }).lean())?.pendingPlan;
+  (await WhatsAppConversation.findOne({ phoneHash: HASH }).lean())?.pendingAction;
 
 describe("is this message a yes", () => {
   it("accepts a clear yes in English, Hinglish and Devanagari", () => {
@@ -208,11 +208,11 @@ describe("step one: prepare", () => {
     assert.equal(out.sport, "Tennis");
     assert.deepEqual(out.assumptions, []);
     assert.match(out.instruction, /reply YES/);
-    assert.match(out.instruction, /Do NOT call confirm_guidance_plan/);
+    assert.match(out.instruction, /Do NOT call confirm_pending_action/);
 
     const pending = await pendingOf();
-    assert.equal(pending.request.dependent_id, String(children[0]._id));
-    assert.equal(pending.request.sport, "Tennis");
+    assert.equal(pending.payload.request.dependent_id, String(children[0]._id));
+    assert.equal(pending.payload.request.sport, "Tennis");
     assert.equal(generated.length, 0, "the model is not called");
     assert.equal(await GuidanceSubmission.countDocuments({}), 0);
   });
@@ -259,7 +259,7 @@ describe("step one: prepare", () => {
 
     const answered = await prepare(ctx(userId), { gender: "girl" });
     assert.equal(answered.ready, true);
-    assert.equal((await pendingOf()).request.child_gender, "female");
+    assert.equal((await pendingOf()).payload.request.child_gender, "female");
   });
 
   it("lets the parent skip the optional questions and says what it assumed", async () => {
@@ -296,7 +296,7 @@ describe("step one: prepare", () => {
   it("carries the parent's own words into the plan request, as plain text", async () => {
     const { userId } = await parentWith(fullChild);
     await prepare(ctx(userId), { question: "He gets nervous <b>before</b> matches" });
-    const request = (await pendingOf()).request;
+    const request = (await pendingOf()).payload.request;
     assert.equal(request.plan_horizon, "auto");
     assert.ok(!request.parent_specific_question.includes("<"));
   });
@@ -305,7 +305,7 @@ describe("step one: prepare", () => {
     const { userId } = await parentWith(fullChild);
     await prepare(ctx(userId), { question: "first" });
     await prepare(ctx(userId), { question: "second" });
-    assert.equal((await pendingOf()).request.parent_specific_question, "second");
+    assert.equal((await pendingOf()).payload.request.parent_specific_question, "second");
   });
 });
 
@@ -321,7 +321,7 @@ describe("step two: confirm", () => {
     const { userId } = await prepared();
     for (const text of ["tell me more", "yes but add cricket", "no", ""]) {
       const out = await confirm(ctx(userId, text));
-      assert.equal(out.created, false, text);
+      assert.equal(out.done, false, text);
       assert.equal(out.reason, "not_confirmed", text);
     }
     assert.ok(await pendingOf(), "still waiting");
@@ -334,7 +334,7 @@ describe("step two: confirm", () => {
     await prepare(ctx(userId));
     // No new message has arrived: the model is trying to prepare and confirm in one reply.
     const out = await confirm(ctx(userId, "yes"));
-    assert.equal(out.created, false);
+    assert.equal(out.done, false);
     assert.equal(out.reason, "not_confirmed");
     assert.equal(generated.length, 0);
     assert.ok(await pendingOf());
@@ -381,7 +381,7 @@ describe("step two: confirm", () => {
     await nextTurn();
     await WhatsAppConversation.updateOne(
       { phoneHash: HASH },
-      { $set: { "pendingPlan.createdAt": new Date(Date.now() - 16 * 60_000) } }
+      { $set: { "pendingAction.createdAt": new Date(Date.now() - 16 * 60_000) } }
     );
     const late = await confirm(ctx(userId, "yes"));
     assert.equal(late.reason, "nothing_pending");
@@ -404,6 +404,66 @@ describe("step two: confirm", () => {
     await nextTurn();
     assert.equal((await confirm(ctx(userId, "yes"))).created, true);
     assert.equal(await GuidanceSubmission.countDocuments({}), 1);
+  });
+});
+
+describe("the shared confirm step", () => {
+  it("adds `done` to every reply, so there is one thing to check whatever was set up", async () => {
+    const parent = await parentWith(fullChild);
+    await prepare(ctx(parent.userId));
+    await nextTurn();
+    assert.equal((await confirm(ctx(parent.userId, "no"))).done, false);
+    assert.equal((await confirm(ctx(parent.userId, "yes"))).done, true);
+
+    // Nothing waiting now: still a `done`.
+    assert.equal((await confirm(ctx(parent.userId, "yes"))).done, false);
+  });
+
+  it("keeps the plan-specific fields on a plan's reply alongside `done`", async () => {
+    const parent = await parentWith(fullChild);
+    await prepare(ctx(parent.userId));
+    await nextTurn();
+    const out = await confirm(ctx(parent.userId, "yes"));
+    assert.equal(out.done, true);
+    assert.equal(out.created, true);
+    assert.equal(out.link, "https://site.example.test/guidance");
+  });
+
+  it("does nothing for a waiting action of a kind it does not know, and leaves it waiting", async () => {
+    const parent = await parentWith(fullChild);
+    await WhatsAppConversation.create({
+      phoneHash: HASH,
+      totalMessageCount: 3,
+      pendingAction: { kind: "from_the_future", payload: {}, turn: 1, createdAt: new Date() },
+    });
+    const out = await confirm(ctx(parent.userId, "yes"));
+    assert.equal(out.done, false);
+    assert.equal(out.reason, "unavailable");
+    assert.ok(await pendingOf(), "not consumed");
+    assert.equal(generated.length, 0);
+  });
+
+  it("says plainly that nothing was changed when the action throws, and keeps it for a retry", async () => {
+    const parent = await parentWith(fullChild);
+    await prepare(ctx(parent.userId));
+    await nextTurn();
+    // An unexpected failure inside the executor (not the model call, which it handles itself).
+    const original = GuidanceSubmission.create;
+    GuidanceSubmission.create = async () => {
+      throw new Error("database down");
+    };
+    try {
+      const out = await confirm(ctx(parent.userId, "yes"));
+      assert.equal(out.done, false);
+      assert.ok(await pendingOf(), "put back");
+    } finally {
+      GuidanceSubmission.create = original;
+    }
+  });
+
+  it("describes the tool as covering whatever was set up, not only a plan", () => {
+    assert.match(tool("confirm_pending_action").description, /a prepare tool/);
+    assert.equal(tool("confirm_guidance_plan"), undefined, "the old name is gone");
   });
 });
 
@@ -498,7 +558,7 @@ describe("in the WhatsApp assistant", () => {
     assert.match(known, /prepare_guidance_plan/);
     assert.match(
       known,
-      /Never say a plan is made, or promise one, until confirm_guidance_plan returns created/
+      /Never say a plan is made, or promise one, until confirm_pending_action returns done: true/
     );
     assert.ok(!identityAddendum(false, null, []).includes("Making a development plan"));
   });
@@ -509,7 +569,7 @@ describe("in the WhatsApp assistant", () => {
     const phoneHash = hashPhone(PHONE);
     await prepare({ userId, phoneHash, userMessage: "plan" });
     assert.ok(
-      (await WhatsAppConversation.findOne({ phoneHash }).lean())?.pendingPlan,
+      (await WhatsAppConversation.findOne({ phoneHash }).lean())?.pendingAction,
       "a plan is waiting"
     );
 
@@ -520,7 +580,7 @@ describe("in the WhatsApp assistant", () => {
 
   it("registers both tools, described to the model", () => {
     assert.ok(tool("prepare_guidance_plan"));
-    assert.ok(tool("confirm_guidance_plan"));
-    assert.match(tool("confirm_guidance_plan").description, /checks their message itself/);
+    assert.ok(tool("confirm_pending_action"));
+    assert.match(tool("confirm_pending_action").description, /checks their message itself/);
   });
 });

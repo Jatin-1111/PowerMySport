@@ -16,17 +16,16 @@ export interface WhatsAppConversationDocument extends Document {
   messages: ChatMessage[];
   totalMessageCount: number;
   /**
-   * A development plan the parent has been asked to confirm and has not yet. It lives here, with
-   * the chat, so STOP deletes it with everything else and nothing outlives the conversation.
-   * `turn` is the message count when it was prepared: a plan can only be confirmed on a later
-   * message, so the assistant cannot prepare and confirm inside one reply.
+   * Something the assistant has set up for the parent and is waiting for their yes before doing
+   * (a development plan, a season-plan entry). It lives here, with the chat, so STOP deletes it
+   * with everything else and nothing outlives the conversation. `kind` says which executor runs it
+   * and `payload` is what that executor needs, already built and checked. `turn` is the message
+   * count when it was prepared: it can only be confirmed on a later message, so the assistant
+   * cannot prepare and confirm inside one reply.
    */
-  pendingPlan?: {
-    /** The plan request, already built and checked; the model is not asked to rebuild it. */
-    request: Record<string, unknown>;
-    /** What was assumed, said back to the parent when they were asked to confirm. */
-    assumptions: string[];
-    childName: string;
+  pendingAction?: {
+    kind: string;
+    payload: Record<string, unknown>;
     turn: number;
     createdAt: Date;
   };
@@ -48,12 +47,11 @@ const whatsAppConversationSchema = new Schema<WhatsAppConversationDocument>(
     phoneHash: { type: String, required: true, unique: true },
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
-    pendingPlan: {
+    pendingAction: {
       type: new Schema(
         {
-          request: { type: Schema.Types.Mixed, required: true },
-          assumptions: { type: [String], default: [] },
-          childName: { type: String, required: true },
+          kind: { type: String, required: true },
+          payload: { type: Schema.Types.Mixed, required: true },
           turn: { type: Number, required: true },
           createdAt: { type: Date, required: true },
         },

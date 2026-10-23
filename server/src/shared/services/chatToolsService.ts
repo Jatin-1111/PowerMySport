@@ -10,7 +10,8 @@ import {
 } from "../../client/services/PlannerChatContext";
 import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
-import { confirmGuidancePlan, planToolEnabled, prepareGuidancePlan } from "./whatsappGuidancePlan";
+import { planToolEnabled, prepareGuidancePlan } from "./whatsappGuidancePlan";
+import { confirmPendingAction } from "./whatsappPendingAction";
 import { createProfileLink } from "./whatsappHandoff";
 import {
   childNamesOnAccount,
@@ -687,7 +688,7 @@ const forgetChildNoteTool: ChatToolDefinition = {
   },
 };
 
-// ─── prepare_guidance_plan / confirm_guidance_plan ──────────────────────────────
+// ─── prepare_guidance_plan / confirm_pending_action ─────────────────────────────
 
 const prepareGuidancePlanTool: ChatToolDefinition = {
   name: "prepare_guidance_plan",
@@ -695,9 +696,9 @@ const prepareGuidancePlanTool: ChatToolDefinition = {
     "set up a personalised development plan for a child from their profile, asking only for what is missing, before making it",
   example: "can you make a development plan for my son",
   promptNote:
-    "This only prepares: it makes nothing and costs nothing. Ask the parent one question at a time, say back what you will make and what you assumed, and ask them to reply YES. Never say a plan is made until confirm_guidance_plan says created.",
+    "This only prepares: it makes nothing and costs nothing. Ask the parent one question at a time, say back what you will make and what you assumed, and ask them to reply YES. Never say a plan is made until confirm_pending_action says created.",
   description:
-    "Start making an AI development plan (training blueprint, journey phases, goal verdict, burnout check) for one of the parent's children. It fills the request from the child's profile and tells you what is still missing: ask the parent ONE of those questions, then call this again with the answer in the matching field. When nothing is missing it saves the request and tells you to ask the parent to reply YES. Pass childName when they name a child. It never makes the plan itself.",
+    "Start making an AI development plan (training blueprint, journey phases, goal verdict, burnout check) for one of the parent's children. It fills the request from the child's profile and tells you what is still missing: ask the parent ONE of those questions, then call this again with the answer in the matching field. When nothing is missing it saves the request and tells you to ask the parent to reply YES. Pass childName when they name a child. It never makes the plan itself: confirm_pending_action does, after the parent says yes.",
   parametersJsonSchema: {
     type: "object",
     properties: {
@@ -726,16 +727,16 @@ const prepareGuidancePlanTool: ChatToolDefinition = {
   execute: async (args, context) => prepareGuidancePlan(context, args),
 };
 
-const confirmGuidancePlanTool: ChatToolDefinition = {
-  name: "confirm_guidance_plan",
-  summary: "make the prepared development plan once the parent has replied YES",
+const confirmPendingActionTool: ChatToolDefinition = {
+  name: "confirm_pending_action",
+  summary: "carry out what you set up for the parent, once they have replied YES",
   example: "yes, go ahead",
   promptNote:
-    "Call it only in your reply to the parent's YES, never in the same reply that prepared the plan. If it says the message was not a clear yes, ask again and make nothing. Summarise the result in a few lines; do not paste the whole plan.",
+    "Call it only in your reply to the parent's YES, never in the same reply that set the action up. If it says the message was not a clear yes, ask again and do nothing. Say what was done in a few short lines; never claim anything was done until it says so.",
   description:
-    "Make and save the development plan that prepare_guidance_plan set up. Call it only after the parent has replied with a clear yes to your question. It checks their message itself and refuses otherwise, so do not call it to find out. It takes about half a minute and uses the parent's daily plan allowance (one per child, three per account). Returns a short plan summary and the link to the full plan.",
+    "Do the action that a prepare tool (such as prepare_guidance_plan) set up and the parent has since agreed to. Call it only after the parent has replied with a clear yes to your question. It checks their message itself and refuses otherwise, so do not call it to find out. What it does, and what it returns, depends on what was set up: for a development plan it makes and saves the plan (about half a minute, using the daily plan allowance) and returns a short summary and the link to the full plan.",
   parametersJsonSchema: { type: "object", properties: {} },
-  execute: async (_args, context) => confirmGuidancePlan(context),
+  execute: async (_args, context) => confirmPendingAction(context),
 };
 
 // ─── get_tournament_details ─────────────────────────────────────────────────────
@@ -897,7 +898,7 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getMyGuidancePlanTool,
   getMySessionsTool,
   prepareGuidancePlanTool,
-  confirmGuidancePlanTool,
+  confirmPendingActionTool,
   noteChildDetailsTool,
   createProfileLinkTool,
   getMyNotesTool,

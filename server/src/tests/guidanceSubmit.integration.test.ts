@@ -103,8 +103,16 @@ const valid = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+/**
+ * A client address of its own for every request. The guest limiter and the API limiter count per
+ * address in Redis when one is running, so a shared address would make these tests depend on what
+ * an earlier run left behind. `trust proxy` is on, so the forwarded address is the one counted.
+ */
+const fakeIp = () =>
+  `10.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 254) + 1}`;
+
 const post = (body: Record<string, unknown>, token?: string) => {
-  const req = request(app).post("/api/guidance");
+  const req = request(app).post("/api/guidance").set("X-Forwarded-For", fakeIp());
   if (token) req.set("Authorization", `Bearer ${token}`);
   return req.send(body);
 };
