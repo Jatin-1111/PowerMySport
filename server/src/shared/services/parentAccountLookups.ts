@@ -21,7 +21,7 @@ const MAX_RECENT = 3;
 const MAX_PHASES = 5;
 
 /** Long AI text trimmed at a word, so the reply stays short and never ends mid-word. */
-const brief = (text: string | undefined, max: number): string | undefined => {
+export const brief = (text: string | undefined, max: number): string | undefined => {
   const clean = (text ?? "").replace(/\s+/g, " ").trim();
   if (!clean) return undefined;
   if (clean.length <= max) return clean;

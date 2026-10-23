@@ -12,6 +12,7 @@ import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
 import { planToolEnabled, prepareGuidancePlan } from "./whatsappGuidancePlan";
 import { confirmPendingAction } from "./whatsappPendingAction";
+import { getExpertDetailsForChat, expertProfileUrl } from "./whatsappExperts";
 import { prepareSeasonEntry } from "./whatsappSeasonPlan";
 import { createProfileLink } from "./whatsappHandoff";
 import {
@@ -73,7 +74,7 @@ const searchExpertsTool: ChatToolDefinition = {
     "find verified sports experts for one-to-one consultations by sport and city, with their fee per session and rating",
   example: "find me a badminton coach in Bangalore",
   promptNote:
-    "Its results are 1:1 expert consultations, not regular coaching: point to /experts for more, never to /booking. A parent who asks for a coach is not asking for a consultation: tell them plainly that regular coaching is coming soon, then offer an expert consultation as the closest option for now.",
+    "Its results are 1:1 expert consultations, not regular coaching: point to https://powermysport.com/experts for more, never to /booking. A parent who asks for a coach is not asking for a consultation: tell them plainly that regular coaching is coming soon, then offer an expert consultation as the closest option for now. Give the profileUrl of any expert the parent shows interest in, on its own line; for fuller detail and open times use get_expert_details. Booking and payment are on the website: you cannot book.",
   description:
     "Search PowerMySport's verified sports experts by sport and/or free-text (city, expertise, style). Experts give one-to-one consultations (guidance sessions, online or in person); they are NOT coaches for regular training, and regular coaching on PowerMySport is coming soon. Returns up to 5 matches with fee per session, rating, and city. Use when a parent asks for an expert or consultation, or asks for a coach: in that case say first that regular coaching is coming soon, then offer these as the closest option for now.",
   parametersJsonSchema: {
@@ -103,12 +104,39 @@ const searchExpertsTool: ChatToolDefinition = {
         city: e.city,
         sports: e.sports,
         sessionFee: e.sessionFee,
+        sessionMinutes: e.sessionDurationMinutes,
         sessionMode: e.sessionMode,
+        languages: e.languages,
         rating: e.rating,
         reviewCount: e.reviewCount,
+        // Where the parent opens the expert and books. Booking and payment are on the website.
+        profileUrl: expertProfileUrl(e.id),
       })),
     };
   },
+};
+
+const getExpertDetailsTool: ChatToolDefinition = {
+  name: "get_expert_details",
+  summary:
+    "tell a parent more about one expert (what they help with, fee per session, languages, next open times) and give the link to book",
+  example: "tell me more about Asha Verma and how do I book her",
+  promptNote:
+    "Give the expert's profile link on its own line: booking and payment happen on the website, and you cannot book, hold a slot or take a payment. Open times are open now but not held. These are one-to-one consultations, not regular coaching.",
+  description:
+    "Look up one expert's public listing: their bio, expertise, fee per session in rupees, session length, online or in person, languages, city, rating and the next open times in Indian time, with the profile link where the parent books. Pass the expert's name as the parent said it, or the id from an earlier search. Use when a parent asks about a specific expert, their availability or how to book. If several experts match it returns them for you to ask which. It cannot book anything.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      expert: {
+        type: "string",
+        description: "The expert's name as the parent said it, or an id from search_experts.",
+      },
+      sport: { type: "string", description: "Sport to narrow a name search, only if known." },
+    },
+    required: ["expert"],
+  },
+  execute: async (args) => getExpertDetailsForChat(args),
 };
 
 // ─── get_pathway_stage ─────────────────────────────────────────────────────────
@@ -919,6 +947,7 @@ const requestTeamFollowupTool: ChatToolDefinition = {
 
 export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   searchExpertsTool,
+  getExpertDetailsTool,
   getPathwayStageTool,
   getUpcomingTournamentsTool,
   getChildRankingTool,

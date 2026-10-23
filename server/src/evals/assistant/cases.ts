@@ -210,6 +210,17 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "A booked session comes from the parent's bookings, not from searching for experts.",
   },
   {
+    id: "tool-expert-details-and-link",
+    category: "tool-routing",
+    channel: "whatsapp",
+    message: "Tell me more about Asha Verma, and how do I book her?",
+    callsTools: ["get_expert_details"],
+    toolArgsInclude: [{ tool: "get_expert_details", anyOf: ["asha"] }],
+    replyMatches: [/https:\/\/powermysport\.com\/experts\//],
+    replyNeverMatches: [/I(?:'ve| have) booked/i, MARKETPLACE],
+    why: "A parent who wants to book an expert is given the profile link where booking happens, and is never told the assistant booked it.",
+  },
+  {
     id: "tool-none-needed",
     category: "tool-routing",
     message: "Is it OK for a 6 year old to try several sports at once?",

@@ -32,6 +32,7 @@ export const FIXTURE_PARENT_CONTEXT: ParentContext = {
 const EXPERTS = [
   {
     name: "Asha Verma",
+    profileUrl: "https://powermysport.com/experts/64b000000000000000000001",
     city: "Bangalore",
     sports: ["Badminton"],
     sessionFee: 800,
@@ -41,6 +42,7 @@ const EXPERTS = [
   },
   {
     name: "Rohit Menon",
+    profileUrl: "https://powermysport.com/experts/64b000000000000000000002",
     city: "Pune",
     sports: ["Football", "Fitness"],
     sessionFee: 600,
@@ -50,6 +52,7 @@ const EXPERTS = [
   },
   {
     name: "Kavya Nair",
+    profileUrl: "https://powermysport.com/experts/64b000000000000000000003",
     city: "Mumbai",
     sports: ["Tennis"],
     sessionFee: 1200,
@@ -90,6 +93,28 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
       const experts = hits.length > 0 ? hits : EXPERTS;
       return { totalMatches: experts.length, experts };
     }
+    case "get_expert_details":
+      return {
+        found: true,
+        expert: {
+          name: "Asha Verma",
+          city: "Bangalore",
+          sports: ["Badminton"],
+          expertise: ["Junior development", "Match psychology"],
+          about:
+            "Former state-level player who coaches juniors on technique and match temperament.",
+          feePerSessionRupees: 800,
+          sessionMinutes: 45,
+          mode: "online",
+          languages: ["English", "Hindi", "Kannada"],
+          rating: 4.8,
+          reviewCount: 31,
+        },
+        nextOpenSlots: ["28 Oct 2026, 6:00 PM", "29 Oct 2026, 7:00 PM"],
+        profileUrl: "https://powermysport.com/experts/64b000000000000000000001",
+        instruction:
+          "Summarise the expert in a few short lines. List the next open times in Indian time and say they are open now but not held. Give the profile link on its own line and say booking and payment happen there: you cannot book, hold a slot or take a payment. This is a one-to-one consultation, not regular coaching.",
+      };
     case "get_pathway_stage": {
       const sportName = String(args.sportSlug ?? "the sport");
       if (args.stage != null) {
