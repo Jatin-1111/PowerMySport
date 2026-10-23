@@ -84,6 +84,21 @@ You cannot add or change a child on their profile from WhatsApp, and you must ne
 - Note only what was said: first name, age, sport, level, goal and state. Never ask for or save a surname, date of birth, school or anything medical.
 - If they ask what you have noted or want it removed, use get_my_notes or forget_child_note.`;
 
+/**
+ * Making a development plan. The tools enforce the confirm step, so these rules are about being
+ * useful: ask little, say back what will be made, and never claim a plan that was not made.
+ */
+const KNOWN_PLAN_ADDENDUM = `
+
+## Making a development plan
+You can make an AI development plan for a child on the profile, in two steps. Ask before you make anything.
+- When they ask for a plan, call prepare_guidance_plan with the child's name. It fills the request from the profile and tells you what is still missing. Do not ask for things the profile already has.
+- If something is missing, ask the parent that ONE question, then call prepare_guidance_plan again with their answer. Optional questions can be skipped (skipOptionalQuestions).
+- When it is ready, say what you will make (the child, the sport, anything assumed) and ask them to reply YES. Make nothing yet.
+- Only after they reply with a clear yes, call confirm_guidance_plan. If it says the message was not a clear yes, ask again and make nothing.
+- Never say a plan is made, or promise one, until confirm_guidance_plan returns created. If a tool says plans are not switched on or a limit is reached, say so plainly and point to https://powermysport.com/guidance.
+- After it is made, give a short summary (under about 900 characters) and the link on its own line. Do not paste the whole plan.`;
+
 const FALLBACK_REPLY =
   "Sorry, I couldn't put an answer together just now. Please try again in a minute, or ask on https://powermysport.com/ask";
 const UNSUPPORTED_REPLY = "I can only read text messages for now. Could you type your question?";
@@ -119,7 +134,8 @@ const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, to
  */
 async function identify(
   phone: string,
-  phoneHash: string
+  phoneHash: string,
+  userMessage: string
 ): Promise<{ toolContext: ChatToolContext; parent: ParentContext | null; notes: NoteChild[] }> {
   let userId: string | undefined;
   let parent: ParentContext | null = null;
@@ -141,7 +157,11 @@ async function identify(
     log.error("could not read the notes for a WhatsApp number", err);
     return [] as NoteChild[];
   });
-  return { toolContext: userId ? { phoneHash, userId } : { phoneHash }, parent, notes };
+  return {
+    toolContext: userId ? { phoneHash, userId, userMessage } : { phoneHash, userMessage },
+    parent,
+    notes,
+  };
 }
 
 /**
@@ -157,6 +177,7 @@ export function identityAddendum(
     ? KNOWN_PARENT_ADDENDUM +
         accountAddendum(parent) +
         KNOWN_NOTES_ADDENDUM +
+        KNOWN_PLAN_ADDENDUM +
         formatNotesForPrompt(notes)
     : UNKNOWN_NUMBER_ADDENDUM + NOTES_RULES + formatNotesForPrompt(notes);
 }
@@ -232,7 +253,7 @@ export async function answerWhatsAppMessage(
       .slice(-HISTORY_MESSAGES)
       .map((m) => ({ role: m.role, content: m.content }));
 
-    const { toolContext, parent, notes } = await identify(message.from, phoneHash);
+    const { toolContext, parent, notes } = await identify(message.from, phoneHash, userMessage);
     const chunks = await retrieveRelevantChunks(userMessage);
     const systemPrompt =
       buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) +

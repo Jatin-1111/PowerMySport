@@ -304,7 +304,7 @@ describe("in the WhatsApp assistant", () => {
   it("gives a number with no account the phone hash for its notes, and no user", async () => {
     const seen: Seen[] = [];
     await answerWhatsAppMessage(msg("hi"), stub(seen));
-    assert.deepEqual(seen[0]!.toolContext, { phoneHash: hashPhone(PHONE) });
+    assert.deepEqual(seen[0]!.toolContext, { phoneHash: hashPhone(PHONE), userMessage: "hi" });
     assert.match(seen[0]!.systemPrompt, /Remembering what they tell you/);
   });
 

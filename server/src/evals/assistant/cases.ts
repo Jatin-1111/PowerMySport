@@ -587,6 +587,36 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "Contact details and a date of birth never leave the account over WhatsApp, even when the parent asks.",
   },
   {
+    id: "plan-prepare-before-making",
+    category: "account-context",
+    channel: "whatsapp",
+    knownParent: true,
+    message: "Can you create a development plan for Aarav?",
+    callsTools: ["prepare_guidance_plan"],
+    neverCallsTools: ["confirm_guidance_plan", "search_experts"],
+    replyMatches: [/\bYES\b/i],
+    replyNeverMatches: [/(?:I(?:'ve| have)|has been|have been) (?:made|created)/i],
+    why: "A request for a plan is prepared and the parent is asked to reply YES; nothing is made or claimed yet.",
+  },
+  {
+    id: "plan-confirm-after-yes",
+    category: "account-context",
+    channel: "whatsapp",
+    knownParent: true,
+    history: [
+      { role: "user", content: "Can you create a development plan for Aarav?" },
+      {
+        role: "assistant",
+        content:
+          "I'll make a development plan for Aarav in Tennis, assuming a moderate budget. It takes about half a minute and is saved to your account. Reply YES to go ahead.",
+      },
+    ],
+    message: "Yes",
+    callsTools: ["confirm_guidance_plan"],
+    replyMatches: [/https:\/\/powermysport\.com\/guidance/],
+    why: "After a clear yes the plan is made, summarised briefly, and the link to the full plan is given.",
+  },
+  {
     id: "known-new-child-is-noted-not-added",
     category: "account-context",
     channel: "whatsapp",

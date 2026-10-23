@@ -10,6 +10,7 @@ import {
 } from "../../client/services/PlannerChatContext";
 import { RankingClaimService } from "../../client/services/RankingClaimService";
 import { getGuidancePlans, getSessionsOverview } from "./parentAccountLookups";
+import { confirmGuidancePlan, planToolEnabled, prepareGuidancePlan } from "./whatsappGuidancePlan";
 import { createProfileLink } from "./whatsappHandoff";
 import {
   childNamesOnAccount,
@@ -36,6 +37,11 @@ export interface ChatToolContext {
    * model (or a message that talks it into it) cannot read or write another number's notes.
    */
   phoneHash?: string;
+  /**
+   * What the parent actually sent in this turn, set by the WhatsApp service. A tool that must
+   * not act on the model's say-so (making a plan, which costs model calls) checks this instead.
+   */
+  userMessage?: string;
 }
 
 export interface ChatToolDefinition {
@@ -438,7 +444,7 @@ const getMyGuidancePlanTool: ChatToolDefinition = {
   promptNote:
     "This is the plan the parent already has, written by an AI on the guidance page. Quote it, do not rewrite it, and give its cost lines as the plan's estimates. For a new or updated plan, point to https://powermysport.com/guidance. A child with no plan has not made one yet: say so.",
   description:
-    "Read the parent's most recent AI development plan for each child: the goal and the verdict on it, the weekly training blueprint, the journey phases, recommended sports, burnout risk and the plan's own cost estimates. Use when a parent asks what their plan says, what the weekly blueprint was, or what was recommended. It returns only plans already made; to make a new one the parent uses https://powermysport.com/guidance.",
+    "Read the parent's most recent AI development plan for each child: the goal and the verdict on it, the weekly training blueprint, the journey phases, recommended sports, burnout risk and the plan's own cost estimates. Use when a parent asks what their plan says, what the weekly blueprint was, or what was recommended. It returns only plans already made; to make a new one use prepare_guidance_plan, or the parent can use https://powermysport.com/guidance.",
   parametersJsonSchema: { type: "object", properties: { childName: childNameParam } },
   execute: async (args, context) => {
     if (!context?.userId) return NOT_LINKED;
@@ -457,8 +463,9 @@ const getMyGuidancePlanTool: ChatToolDefinition = {
       return {
         linked: true,
         plans: [],
-        instruction:
-          "No AI plan has been made yet. Say so, and that they can make one at https://powermysport.com/guidance.",
+        instruction: planToolEnabled()
+          ? "No AI plan has been made yet. Say so, and offer to make one here: use prepare_guidance_plan, which asks for anything still missing and then for a YES. They can also make one at https://powermysport.com/guidance."
+          : "No AI plan has been made yet. Say so, and that they can make one at https://powermysport.com/guidance.",
       };
     }
     return { linked: true, plans: result.items };
@@ -680,6 +687,57 @@ const forgetChildNoteTool: ChatToolDefinition = {
   },
 };
 
+// ─── prepare_guidance_plan / confirm_guidance_plan ──────────────────────────────
+
+const prepareGuidancePlanTool: ChatToolDefinition = {
+  name: "prepare_guidance_plan",
+  summary:
+    "set up a personalised development plan for a child from their profile, asking only for what is missing, before making it",
+  example: "can you make a development plan for my son",
+  promptNote:
+    "This only prepares: it makes nothing and costs nothing. Ask the parent one question at a time, say back what you will make and what you assumed, and ask them to reply YES. Never say a plan is made until confirm_guidance_plan says created.",
+  description:
+    "Start making an AI development plan (training blueprint, journey phases, goal verdict, burnout check) for one of the parent's children. It fills the request from the child's profile and tells you what is still missing: ask the parent ONE of those questions, then call this again with the answer in the matching field. When nothing is missing it saves the request and tells you to ask the parent to reply YES. Pass childName when they name a child. It never makes the plan itself.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      childName: { type: "string", description: "First name of the child, when named." },
+      sport: { type: "string", description: "The sport, only if the parent named it." },
+      gender: { type: "string", description: "'boy' or 'girl', only if the parent said." },
+      ambition: {
+        type: "string",
+        description: "'fun', 'competitive', 'national' or 'career', only if the parent said.",
+      },
+      experienceLevel: {
+        type: "string",
+        description: "'beginner', 'intermediate' or 'competitive', only if the parent said.",
+      },
+      weeklyHours: { type: "number", description: "Hours a week they train, only if stated." },
+      question: {
+        type: "string",
+        description: "What the parent wants the plan to help with, in their words.",
+      },
+      skipOptionalQuestions: {
+        type: "boolean",
+        description: "True only when the parent said to skip the optional questions.",
+      },
+    },
+  },
+  execute: async (args, context) => prepareGuidancePlan(context, args),
+};
+
+const confirmGuidancePlanTool: ChatToolDefinition = {
+  name: "confirm_guidance_plan",
+  summary: "make the prepared development plan once the parent has replied YES",
+  example: "yes, go ahead",
+  promptNote:
+    "Call it only in your reply to the parent's YES, never in the same reply that prepared the plan. If it says the message was not a clear yes, ask again and make nothing. Summarise the result in a few lines; do not paste the whole plan.",
+  description:
+    "Make and save the development plan that prepare_guidance_plan set up. Call it only after the parent has replied with a clear yes to your question. It checks their message itself and refuses otherwise, so do not call it to find out. It takes about half a minute and uses the parent's daily plan allowance (one per child, three per account). Returns a short plan summary and the link to the full plan.",
+  parametersJsonSchema: { type: "object", properties: {} },
+  execute: async (_args, context) => confirmGuidancePlan(context),
+};
+
 // ─── get_tournament_details ─────────────────────────────────────────────────────
 
 const CHAT_SITE = "https://powermysport.com";
@@ -838,6 +896,8 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getMySeasonPlanTool,
   getMyGuidancePlanTool,
   getMySessionsTool,
+  prepareGuidancePlanTool,
+  confirmGuidancePlanTool,
   noteChildDetailsTool,
   createProfileLinkTool,
   getMyNotesTool,

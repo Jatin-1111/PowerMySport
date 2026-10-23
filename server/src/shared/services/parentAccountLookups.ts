@@ -1,6 +1,9 @@
 import { Expert } from "../../client/models/ExpertProfile";
 import { ExpertSession } from "../../client/models/ExpertBooking";
-import { GuidanceSubmission } from "../../client/models/GuidanceSubmission";
+import {
+  GuidanceSubmission,
+  type GuidanceSubmissionDocument,
+} from "../../client/models/GuidanceSubmission";
 import { Player } from "../../client/models/Player";
 import { dateOnly, firstName, pickChildren, type ChildLookup } from "./parentContext";
 import { formatIstDateTime } from "./whatsappTemplates";
@@ -41,6 +44,88 @@ export interface GuidancePlanSummary {
   estimatedCosts?: { coaching?: string; equipment?: string; tournaments?: string };
 }
 
+/** One saved plan, trimmed to what fits a WhatsApp reply. Used for reading a plan back and for a new one. */
+export function summariseGuidance(
+  submission: Pick<GuidanceSubmissionDocument, "request" | "response" | "createdAt">,
+  child: string
+): GuidancePlanSummary {
+  const { response, request } = submission;
+  return {
+    child,
+    ...(request?.sport ? { sport: request.sport } : {}),
+    madeOn: dateOnly(submission.createdAt)!,
+    ...(response.goalAssessment?.statedGoal || response.goalAssessment?.verdict
+      ? {
+          goal: {
+            ...(response.goalAssessment.statedGoal
+              ? { stated: response.goalAssessment.statedGoal }
+              : {}),
+            ...(response.goalAssessment.verdict
+              ? { verdict: response.goalAssessment.verdict }
+              : {}),
+            ...(brief(response.goalAssessment.rationale, 300)
+              ? { why: brief(response.goalAssessment.rationale, 300)! }
+              : {}),
+          },
+        }
+      : {}),
+    ...(brief(response.profileAnalysis, 500)
+      ? { profileAnalysis: brief(response.profileAnalysis, 500)! }
+      : {}),
+    ...(brief(response.idealCoachingStyle, 250)
+      ? { coachingStyle: brief(response.idealCoachingStyle, 250)! }
+      : {}),
+    weeklyBlueprint: {
+      trainingHours: response.weeklyBlueprint.trainingHours,
+      freePlayHours: response.weeklyBlueprint.freePlayHours,
+      restDays: response.weeklyBlueprint.restDays,
+    },
+    recommendedSports: response.recommendedSports ?? [],
+    ...(response.burnoutRisk?.level
+      ? {
+          burnoutRisk: {
+            level: response.burnoutRisk.level,
+            ...(brief(response.burnoutRisk.message, 200)
+              ? { message: brief(response.burnoutRisk.message, 200)! }
+              : {}),
+          },
+        }
+      : {}),
+    journey: (response.journeyPhases ?? []).slice(0, MAX_PHASES).map((phase) => ({
+      ...(phase.title ? { title: phase.title } : {}),
+      ...(phase.timeframe ? { timeframe: phase.timeframe } : {}),
+      ...(brief(phase.focus, 160) ? { focus: brief(phase.focus, 160)! } : {}),
+    })),
+    ...(response.shortTermPlan?.durationWeeks || response.shortTermPlan?.successCheck
+      ? {
+          shortTermPlan: {
+            ...(response.shortTermPlan.durationWeeks
+              ? { weeks: response.shortTermPlan.durationWeeks }
+              : {}),
+            ...(brief(response.shortTermPlan.successCheck, 200)
+              ? { successCheck: brief(response.shortTermPlan.successCheck, 200)! }
+              : {}),
+          },
+        }
+      : {}),
+    ...(response.costBreakdown
+      ? {
+          estimatedCosts: {
+            ...(response.costBreakdown.monthlyCoaching
+              ? { coaching: response.costBreakdown.monthlyCoaching }
+              : {}),
+            ...(response.costBreakdown.equipment
+              ? { equipment: response.costBreakdown.equipment }
+              : {}),
+            ...(response.costBreakdown.tournaments
+              ? { tournaments: response.costBreakdown.tournaments }
+              : {}),
+          },
+        }
+      : {}),
+  };
+}
+
 /** The newest AI plan for each child, so "what was his plan" does not return a stale one. */
 export async function getGuidancePlans(
   userId: string,
@@ -67,81 +152,12 @@ export async function getGuidancePlans(
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const { response, request } = submission;
-    items.push({
-      child: dependentId ? firstName(nameOf.get(dependentId), "your child") : "your child",
-      ...(request?.sport ? { sport: request.sport } : {}),
-      madeOn: dateOnly(submission.createdAt)!,
-      ...(response.goalAssessment?.statedGoal || response.goalAssessment?.verdict
-        ? {
-            goal: {
-              ...(response.goalAssessment.statedGoal
-                ? { stated: response.goalAssessment.statedGoal }
-                : {}),
-              ...(response.goalAssessment.verdict
-                ? { verdict: response.goalAssessment.verdict }
-                : {}),
-              ...(brief(response.goalAssessment.rationale, 300)
-                ? { why: brief(response.goalAssessment.rationale, 300)! }
-                : {}),
-            },
-          }
-        : {}),
-      ...(brief(response.profileAnalysis, 500)
-        ? { profileAnalysis: brief(response.profileAnalysis, 500)! }
-        : {}),
-      ...(brief(response.idealCoachingStyle, 250)
-        ? { coachingStyle: brief(response.idealCoachingStyle, 250)! }
-        : {}),
-      weeklyBlueprint: {
-        trainingHours: response.weeklyBlueprint.trainingHours,
-        freePlayHours: response.weeklyBlueprint.freePlayHours,
-        restDays: response.weeklyBlueprint.restDays,
-      },
-      recommendedSports: response.recommendedSports ?? [],
-      ...(response.burnoutRisk?.level
-        ? {
-            burnoutRisk: {
-              level: response.burnoutRisk.level,
-              ...(brief(response.burnoutRisk.message, 200)
-                ? { message: brief(response.burnoutRisk.message, 200)! }
-                : {}),
-            },
-          }
-        : {}),
-      journey: (response.journeyPhases ?? []).slice(0, MAX_PHASES).map((phase) => ({
-        ...(phase.title ? { title: phase.title } : {}),
-        ...(phase.timeframe ? { timeframe: phase.timeframe } : {}),
-        ...(brief(phase.focus, 160) ? { focus: brief(phase.focus, 160)! } : {}),
-      })),
-      ...(response.shortTermPlan?.durationWeeks || response.shortTermPlan?.successCheck
-        ? {
-            shortTermPlan: {
-              ...(response.shortTermPlan.durationWeeks
-                ? { weeks: response.shortTermPlan.durationWeeks }
-                : {}),
-              ...(brief(response.shortTermPlan.successCheck, 200)
-                ? { successCheck: brief(response.shortTermPlan.successCheck, 200)! }
-                : {}),
-            },
-          }
-        : {}),
-      ...(response.costBreakdown
-        ? {
-            estimatedCosts: {
-              ...(response.costBreakdown.monthlyCoaching
-                ? { coaching: response.costBreakdown.monthlyCoaching }
-                : {}),
-              ...(response.costBreakdown.equipment
-                ? { equipment: response.costBreakdown.equipment }
-                : {}),
-              ...(response.costBreakdown.tournaments
-                ? { tournaments: response.costBreakdown.tournaments }
-                : {}),
-            },
-          }
-        : {}),
-    });
+    items.push(
+      summariseGuidance(
+        submission,
+        dependentId ? firstName(nameOf.get(dependentId), "your child") : "your child"
+      )
+    );
     if (items.length >= MAX_PLANS) break;
   }
   return { found: true, items };

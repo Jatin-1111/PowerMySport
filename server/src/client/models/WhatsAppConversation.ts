@@ -15,6 +15,21 @@ export interface WhatsAppConversationDocument extends Document {
   /** Only the most recent turns are kept; older ones add cost and no context worth having. */
   messages: ChatMessage[];
   totalMessageCount: number;
+  /**
+   * A development plan the parent has been asked to confirm and has not yet. It lives here, with
+   * the chat, so STOP deletes it with everything else and nothing outlives the conversation.
+   * `turn` is the message count when it was prepared: a plan can only be confirmed on a later
+   * message, so the assistant cannot prepare and confirm inside one reply.
+   */
+  pendingPlan?: {
+    /** The plan request, already built and checked; the model is not asked to rebuild it. */
+    request: Record<string, unknown>;
+    /** What was assumed, said back to the parent when they were asked to confirm. */
+    assumptions: string[];
+    childName: string;
+    turn: number;
+    createdAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +48,19 @@ const whatsAppConversationSchema = new Schema<WhatsAppConversationDocument>(
     phoneHash: { type: String, required: true, unique: true },
     messages: { type: [chatMessageSchema], default: [] },
     totalMessageCount: { type: Number, default: 0 },
+    pendingPlan: {
+      type: new Schema(
+        {
+          request: { type: Schema.Types.Mixed, required: true },
+          assumptions: { type: [String], default: [] },
+          childName: { type: String, required: true },
+          turn: { type: Number, required: true },
+          createdAt: { type: Date, required: true },
+        },
+        { _id: false }
+      ),
+      required: false,
+    },
   },
   { timestamps: true }
 );

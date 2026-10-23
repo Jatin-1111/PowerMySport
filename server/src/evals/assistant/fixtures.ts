@@ -202,6 +202,38 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
         instruction:
           "Send the link on its own line. Tell the parent it opens a page where they review these details, add each child's date of birth and create or sign in to their profile, that nothing is saved to a profile until they confirm there, and that the link works for a week.",
       };
+    case "prepare_guidance_plan":
+      return {
+        ready: true,
+        child: "Aarav",
+        sport: "Tennis",
+        age: 13,
+        assumptions: ["a moderate budget"],
+        instruction:
+          "Tell the parent what you are about to make: a development plan for Aarav in Tennis, assuming a moderate budget (they can correct any of these). Say it takes about half a minute and is saved to their account. Ask them to reply YES to go ahead. Do NOT call confirm_guidance_plan until they have replied.",
+      };
+    case "confirm_guidance_plan":
+      return {
+        created: true,
+        plan: {
+          child: "Aarav",
+          sport: "Tennis",
+          madeOn: "2026-10-23",
+          goal: { verdict: "Ambitious" },
+          weeklyBlueprint: {
+            trainingHours: "6 hours of structured training",
+            freePlayHours: "2 hours of free play",
+            restDays: "1 full rest day",
+          },
+          recommendedSports: ["Tennis"],
+          burnoutRisk: { level: "low" },
+          journey: [{ title: "Build the base", timeframe: "0 to 6 months" }],
+        },
+        assumptions: ["a moderate budget"],
+        link: "https://powermysport.com/guidance",
+        instruction:
+          "The plan is made and saved to their account. Summarise it in a few short lines: the verdict on the goal, the weekly blueprint, the first phase or two, and the burnout note. Say the full plan, with its PDF, is saved in their plan history at the link, on its own line. Do not paste the whole plan.",
+      };
     case "get_my_notes":
       return {
         children: [{ child: "Vikrant", age: "14", sports: ["Tennis"], goal: "state level" }],

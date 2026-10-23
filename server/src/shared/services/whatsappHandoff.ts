@@ -25,7 +25,7 @@ const log = __rootLog.child("whatsappHandoff");
 export const LINK_LIFETIME_DAYS = 7;
 const LINK_LIFETIME_MS = LINK_LIFETIME_DAYS * 24 * 3600 * 1000;
 
-const siteUrl = (): string =>
+export const siteUrl = (): string =>
   (process.env.FRONTEND_URL?.trim() || "https://powermysport.com").replace(/\/+$/, "");
 
 // ─── The token ───────────────────────────────────────────────────────────────
