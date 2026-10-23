@@ -2,72 +2,15 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import PDFDocument from "pdfkit";
 import {
-  generateYouthSportsGuidance,
   guidanceRequestSchema,
   diagnosisRequestSchema,
   generateGuidanceDiagnosis,
 } from "../../shared/services/guidanceAiService";
 import { GuidanceSubmission } from "../models/GuidanceSubmission";
-import { AnalyticsEvent } from "../../admin/models/AnalyticsEvent";
-import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
-import { isSupportedSport, SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
-import { log as __rootLog } from "../../utils/logger";
+import { createGuidancePlan } from "../services/GuidancePlanService";
+import { SUPPORTED_SPORTS } from "../../shared/constants/supportedSports";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
-const log = __rootLog.child("guidance");
-
-// ─── Rule-based burnout risk — zero AI cost ───────────────────────────────────
-
-const BURNOUT_THRESHOLDS: Array<{
-  maxAge: number;
-  medium: number;
-  high: number;
-}> = [
-  { maxAge: 7, medium: 5, high: 8 },
-  { maxAge: 9, medium: 8, high: 12 },
-  { maxAge: 11, medium: 10, high: 15 },
-  { maxAge: 13, medium: 14, high: 20 },
-  { maxAge: 15, medium: 18, high: 25 },
-  { maxAge: 21, medium: 22, high: 30 },
-];
-
-function calculateBurnoutRisk(age: number, weeklyHours: number) {
-  const bracket =
-    BURNOUT_THRESHOLDS.find((t) => age <= t.maxAge) ??
-    BURNOUT_THRESHOLDS[BURNOUT_THRESHOLDS.length - 1]!;
-
-  if (weeklyHours >= bracket.high) {
-    return {
-      level: "high" as const,
-      message: `${weeklyHours} hours/week is very high for a ${age}-year-old. Research shows this significantly raises the risk of burnout, overuse injuries, and early sport dropout.`,
-      recommendations: [
-        "Cap structured sport at 3–4 days/week with a certified coach",
-        "Ensure at least 2 full rest days with zero sport activity",
-        "Replace 20–30% of training with unstructured free play the child controls",
-        "Watch for: loss of enthusiasm, persistent fatigue, unexplained pain, sleep problems",
-        "Consult a sports physiotherapist to review the current training load",
-      ],
-    };
-  }
-
-  if (weeklyHours >= bracket.medium) {
-    return {
-      level: "medium" as const,
-      message: `${weeklyHours} hours/week is on the higher end for a ${age}-year-old. Monitor closely for fatigue and enjoyment levels.`,
-      recommendations: [
-        "Ensure at least 1–2 complete rest days per week",
-        "Balance structured training with free, child-directed play",
-        "Do a weekly check-in: ask your child if they're enjoying training, not just performing",
-      ],
-    };
-  }
-
-  return {
-    level: "low" as const,
-    message: `${weeklyHours} hours/week is age-appropriate for a ${age}-year-old — a healthy foundation.`,
-    recommendations: [],
-  };
-}
 
 export const submitGuidance = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const parsed = guidanceRequestSchema.safeParse(req.body);
@@ -81,62 +24,32 @@ export const submitGuidance = asyncHandler(async (req: Request, res: Response): 
     return;
   }
 
-  const requestedSport = parsed.data.sport?.trim();
-  if (requestedSport && !isSupportedSport(requestedSport)) {
-    AnalyticsEvent.create({
-      eventName: "unsupported_sport_search",
-      metadata: { sport: requestedSport, source: "guidance" },
-      source: "WEB",
-      ...(req.user ? { userId: req.user.id } : {}),
-    }).catch(() => {});
+  const result = await createGuidancePlan(parsed.data, {
+    userId: req.user?.id,
+    source: "WEB",
+  });
 
+  if (result.status === "not_supported") {
     res.status(200).json({
       success: false,
       status: "not_supported",
-      sport: requestedSport,
+      sport: result.sport,
       supportedSports: SUPPORTED_SPORTS,
-      message: `We're building the ${requestedSport} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
+      message: `We're building the ${result.sport} pathway — our team is working on it! In the meantime, explore one of our 10 supported sports.`,
     });
     return;
   }
 
-  const guidance = await generateYouthSportsGuidance(parsed.data);
-
-  // Enrich with server-computed fields (zero AI cost)
-  const burnoutRisk = calculateBurnoutRisk(
-    parsed.data.child_age,
-    parsed.data.weekly_time_commitment
-  );
-  const enrichedGuidance = { ...guidance, burnoutRisk };
-
-  const createPayload: any = {
-    request: parsed.data,
-    response: enrichedGuidance,
-  };
-  if (req.user?.id) {
-    createPayload.userId = req.user.id;
-  }
-  const guidanceSubmission = await GuidanceSubmission.create(createPayload);
-
-  // Fire-and-forget — a scheduling failure shouldn't fail the guidance
-  // response the parent is actively waiting on.
-  PlanCheckInService.scheduleFromGuidance({
-    userId: req.user?.id,
-    dependentId: parsed.data.dependent_id,
-    sourceId: guidanceSubmission._id.toString(),
-    sport: parsed.data.sport || "General",
-    response: enrichedGuidance,
-  }).catch((err) => log.error("Failed to schedule plan check-in:", err));
-
+  const { submission, response } = result;
   res.status(201).json({
     success: true,
     message: "Guidance generated and saved",
     data: {
-      id: guidanceSubmission._id.toString(),
-      query: guidanceSubmission.request,
-      response: enrichedGuidance,
-      createdAt: guidanceSubmission.createdAt,
-      updatedAt: guidanceSubmission.updatedAt,
+      id: submission._id.toString(),
+      query: submission.request,
+      response,
+      createdAt: submission.createdAt,
+      updatedAt: submission.updatedAt,
     },
   });
 });
