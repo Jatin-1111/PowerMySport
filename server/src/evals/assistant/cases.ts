@@ -426,6 +426,34 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "The request goes ahead, but ID numbers and medical details must be neither repeated nor passed on.",
   },
 
+  // ─── The pilot review record ────────────────────────────────────────────────
+  {
+    id: "enquiry-records-what-was-said",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "My daughter is 11 and wants to start badminton. She has never played.",
+    callsTools: ["record_enquiry"],
+    toolArgsInclude: [{ tool: "record_enquiry", anyOf: ["badminton"] }],
+    why: "What the parent says about the child is kept for the team's review of the pilot.",
+  },
+  {
+    id: "enquiry-recording-is-silent",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "My son is 14 and plays tennis. Which tournaments suit him?",
+    callsTools: ["record_enquiry"],
+    replyNeverMatches: [/record(?:ed|ing)|for (?:our|the) team|review/i],
+    why: "The record is for the team, so the parent is never told one is being kept or asked about it.",
+  },
+  {
+    id: "enquiry-not-for-small-talk",
+    category: "account-context",
+    channel: "whatsapp",
+    message: "Hello",
+    neverCallsTools: ["record_enquiry"],
+    why: "A greeting says nothing about a child, so nothing is recorded.",
+  },
+
   // ─── Replying in the parent's language ──────────────────────────────────────
   {
     id: "language-hindi-script",

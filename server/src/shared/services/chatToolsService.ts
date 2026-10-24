@@ -1,3 +1,4 @@
+import { log as __rootLog } from "../../utils/logger";
 import { listActiveExperts } from "../../client/services/ExpertsService";
 import {
   createHandoffTicket,
@@ -24,8 +25,11 @@ import {
   presentChild,
   saveChildNote,
 } from "./whatsappNotes";
+import { markFollowUpRequested, updateEnquiry } from "./whatsappEnquiries";
 import { getChildrenDetail, getSeasonPlans } from "./parentContext";
 import { findEditionsForChat, getUpcomingEditions } from "./tournamentEditionQueries";
+
+const log = __rootLog.child("chatTools");
 
 /**
  * Who is asking, when that is known. Absent for a channel that has no account
@@ -935,11 +939,79 @@ const requestTeamFollowupTool: ChatToolDefinition = {
       userId: context?.userId,
     });
     if (!result.ok) return { sent: false, instruction: HANDOFF_REFUSALS[result.reason] };
+    // The enquiry record is for the pilot review: it must never undo a request that was sent.
+    let reference: string | undefined;
+    if (context?.phoneHash) {
+      try {
+        reference = await markFollowUpRequested(context.phoneHash, context.userMessage ?? "", {
+          summary: args.summary,
+          ticketId: result.ticketId,
+        });
+      } catch (error) {
+        log.error("could not record the follow-up on the enquiry", error);
+      }
+    }
     return {
       sent: true,
-      instruction:
-        "Passed on. Tell the parent the team will reply to the email they gave, usually within 24 hours. Do not promise anything more.",
+      ...(reference ? { reference } : {}),
+      instruction: `Passed on. Tell the parent the team will reply to the email they gave, usually within 24 hours.${
+        reference ? ` Give them the reference ${reference} to quote.` : ""
+      } Do not promise anything more.`,
     };
+  },
+};
+
+// ─── record_enquiry ─────────────────────────────────────────────────────────────
+
+const recordEnquiryTool: ChatToolDefinition = {
+  name: "record_enquiry",
+  summary:
+    "keep a short record of what this parent is asking about, for the PowerMySport team's review (never shown to the parent)",
+  example: "my daughter is 11 and wants to start badminton",
+  promptNote:
+    "Call it quietly, without telling the parent, whenever they give or change the child's age, sport or level, say what they want, ask for coaches, tournaments, an expert or the team, say thanks or that it did not help, or say they are done. Pass only what they actually said. It returns nothing to read out, so carry on with your answer.",
+  description:
+    "Record, for the team's review of the WhatsApp pilot, what this parent is asking about on the current topic. Pass only facts the parent stated: the child's age in years, the sport, a level in a word or two, what they want in a short phrase, which kinds of help they asked for (coach, tournaments, expert, team, other), whether the answer helped (helpful or not_helpful) and closed true when they say they are done. Fields you leave out keep their value. It is not shown to the parent and needs no mention.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      childAge: { type: "number", description: "The child's age in years, only if stated." },
+      sport: { type: "string", description: "The sport, in one or two words." },
+      level: { type: "string", description: "The child's level, only if stated." },
+      objective: {
+        type: "string",
+        description: "What the parent wants, in a short phrase of their words.",
+      },
+      assistance: {
+        type: "array",
+        items: { type: "string", enum: ["coach", "tournaments", "expert", "team", "other"] },
+        description: "Kinds of help the parent asked for.",
+      },
+      feedback: {
+        type: "string",
+        enum: ["helpful", "not_helpful"],
+        description: "Only if the parent said whether the answer helped.",
+      },
+      closed: { type: "boolean", description: "True only when the parent says they are done." },
+    },
+  },
+  execute: async (args, context) => {
+    if (!context?.phoneHash) return { recorded: false };
+    try {
+      await updateEnquiry(context.phoneHash, context.userMessage ?? "", {
+        childAge: args.childAge,
+        sport: args.sport,
+        level: args.level,
+        objective: args.objective,
+        assistance: args.assistance,
+        feedback: args.feedback,
+        closed: args.closed,
+      });
+      return { recorded: true, instruction: "Done. Say nothing about it and carry on." };
+    } catch (error) {
+      log.error("could not record the enquiry", error);
+      return { recorded: false, instruction: "Not recorded. Say nothing about it and carry on." };
+    }
   },
 };
 
@@ -964,4 +1036,5 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   forgetChildNoteTool,
   getTournamentDetailsTool,
   requestTeamFollowupTool,
+  recordEnquiryTool,
 ];

@@ -11,6 +11,7 @@ import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitS
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
 import { withdrawConsentForPhone } from "./whatsappConsent";
 import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
+import { attachContactNumber, forgetAllEnquiries, recordTurn } from "./whatsappEnquiries";
 import { clipReply, formatForWhatsApp } from "./whatsappFormat";
 import type { InboundWhatsAppMessage } from "./whatsappService";
 import { log as __rootLog } from "../../utils/logger";
@@ -241,6 +242,10 @@ export async function answerWhatsAppMessage(
     await WhatsAppConversation.deleteOne({ phoneHash });
     // What was noted about their children goes with the chat: STOP means everything.
     await forgetAllNotes(phoneHash);
+    // And the review record of what they asked, including any number kept for a follow-up.
+    await forgetAllEnquiries(phoneHash).catch((err) =>
+      log.error("could not delete the enquiries on STOP", err)
+    );
     // Also off the list for booking messages. A failure here must not stop the reply.
     await withdrawConsentForPhone(message.from).catch((err) =>
       log.error("could not withdraw WhatsApp consent", err)
@@ -259,6 +264,7 @@ export async function answerWhatsAppMessage(
   });
   if (!limit.ok) return { reply: limit.message, firstContact: false };
 
+  const turnStartedAt = new Date();
   try {
     const conversation = await WhatsAppConversation.findOne({ phoneHash })
       .select("messages")
@@ -304,6 +310,14 @@ export async function answerWhatsAppMessage(
       },
       { upsert: true }
     );
+
+    // The pilot review record. Best effort: a failure here must not cost the parent their reply.
+    try {
+      await recordTurn(phoneHash, userMessage, reply, turnStartedAt, now);
+      await attachContactNumber(phoneHash, message.from);
+    } catch (err) {
+      log.error("could not record the enquiry", err);
+    }
 
     return { reply, firstContact, known: Boolean(toolContext.userId) };
   } catch (err) {
