@@ -222,7 +222,7 @@ export async function enquirySummary(): Promise<{
     WhatsAppEnquiry.aggregate([
       { $match: { sport: { $exists: true } } },
       { $group: { _id: { $toLower: "$sport" }, count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
+      { $sort: { count: -1, _id: 1 } },
       { $limit: 15 },
     ]),
     WhatsAppEnquiry.aggregate([

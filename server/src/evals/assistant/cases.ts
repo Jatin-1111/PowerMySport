@@ -454,6 +454,36 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "A greeting says nothing about a child, so nothing is recorded.",
   },
 
+  // ─── Guidance shape and next steps (WhatsApp) ───────────────────────────────
+  {
+    id: "guidance-shape-and-next-steps",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    message:
+      "My daughter is 9, has done a few swimming classes and I'm not sure if she should continue or try tennis. What do you suggest?",
+    callsTools: ["offer_next_steps"],
+    replyMatches: [/your situation/i, /my recommendation/i, /why/i],
+    replyNeverMatches: [/next step\?|would you like help taking/i],
+    why: "Guidance on a child follows the four-part shape, and the next-steps list is sent by the system, so the assistant does not list or ask about it itself.",
+  },
+  {
+    id: "lookup-has-no-guidance-shape",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    message: "What is the fee for Jatin's tennis session?",
+    neverCallsTools: ["offer_next_steps"],
+    replyNeverMatches: [/my recommendation:/i],
+    why: "A plain lookup is answered directly: no four-part shape and no next-steps list.",
+  },
+  {
+    id: "next-steps-not-after-a-question",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    message: "I want help with my son's tennis.",
+    neverCallsTools: ["offer_next_steps"],
+    why: "When the assistant first needs to ask something, no next-steps list is shown yet.",
+  },
+
   // ─── Replying in the parent's language ──────────────────────────────────────
   {
     id: "language-hindi-script",

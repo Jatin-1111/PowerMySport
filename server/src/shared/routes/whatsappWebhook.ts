@@ -27,7 +27,16 @@
  */
 import crypto from "crypto";
 import express from "express";
-import { answerWhatsAppMessage } from "../services/whatsappAssistantService";
+import { answerWhatsAppMessage, type WhatsAppAnswer } from "../services/whatsappAssistantService";
+import {
+  FEEDBACK_BUTTONS,
+  NEXT_STEPS_BODY,
+  NEXT_STEPS_BUTTON,
+  NEXT_STEP_ROWS,
+  WELCOME_BUTTON,
+  WELCOME_ROWS,
+  splitLinkButton,
+} from "../services/whatsappInteractive";
 import {
   FIRST_CONTACT_NOTICE,
   FIRST_CONTACT_NOTICE_MEMBER,
@@ -40,6 +49,9 @@ import {
   isValidMetaSignature,
   markWhatsAppRead,
   maskPhone,
+  sendWhatsAppButtons,
+  sendWhatsAppLinkButton,
+  sendWhatsAppList,
   sendWhatsAppText,
   whatsappSendingConfigured,
   type InboundWhatsAppMessage,
@@ -81,7 +93,33 @@ async function handleInboundMessage(message: InboundWhatsAppMessage): Promise<vo
       answer.known ? FIRST_CONTACT_NOTICE_MEMBER : FIRST_CONTACT_NOTICE
     );
   }
-  await sendWhatsAppText(message.from, answer.reply);
+  await deliver(message.from, answer);
+}
+
+/**
+ * Sends the answer the way it was meant to be read: a menu as a list, the finish prompt as buttons,
+ * a reply that points at one PowerMySport page with a button for it, anything else as text. The
+ * list of next steps follows the guidance it belongs to as its own short message.
+ */
+export async function deliver(to: string, answer: WhatsAppAnswer): Promise<void> {
+  if (answer.menu) {
+    await sendWhatsAppList(to, answer.reply, WELCOME_BUTTON, WELCOME_ROWS);
+    return;
+  }
+  if (answer.feedbackPrompt) {
+    await sendWhatsAppButtons(to, answer.reply, FEEDBACK_BUTTONS);
+    return;
+  }
+
+  const link = splitLinkButton(answer.reply);
+  if (link) {
+    await sendWhatsAppLinkButton(to, link.body, link.label, link.url);
+  } else {
+    await sendWhatsAppText(to, answer.reply);
+  }
+  if (answer.nextSteps) {
+    await sendWhatsAppList(to, NEXT_STEPS_BODY, NEXT_STEPS_BUTTON, NEXT_STEP_ROWS);
+  }
 }
 
 router.get("/webhook", (req, res) => {

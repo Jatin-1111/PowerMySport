@@ -13,6 +13,8 @@ export interface InboundWhatsAppMessage {
   type: string;
   /** Present for text messages, and for the title of a tapped button or list row. */
   text: string | null;
+  /** The id of the button or list row the parent tapped, when they tapped one. */
+  replyId?: string | null;
 }
 
 /**
@@ -56,8 +58,8 @@ export function extractInboundMessages(payload: unknown): InboundWhatsAppMessage
           type?: string;
           text?: { body?: string };
           interactive?: {
-            button_reply?: { title?: string };
-            list_reply?: { title?: string };
+            button_reply?: { id?: string; title?: string };
+            list_reply?: { id?: string; title?: string };
           };
         };
         if (!m.id || !m.from || !m.type) continue;
@@ -66,7 +68,8 @@ export function extractInboundMessages(payload: unknown): InboundWhatsAppMessage
           m.interactive?.button_reply?.title ??
           m.interactive?.list_reply?.title ??
           null;
-        out.push({ id: m.id, from: m.from, type: m.type, text });
+        const replyId = m.interactive?.button_reply?.id ?? m.interactive?.list_reply?.id ?? null;
+        out.push({ id: m.id, from: m.from, type: m.type, text, replyId });
       }
     }
   }
@@ -105,6 +108,90 @@ async function graphPost(body: Record<string, unknown>): Promise<boolean> {
 
 export function sendWhatsAppText(to: string, body: string): Promise<boolean> {
   return graphPost({ to, type: "text", text: { body } });
+}
+
+// ─── Interactive messages ─────────────────────────────────────────────────────
+//
+// Allowed without a template while the parent's last message is under 24 hours old, which is
+// always true when we are answering one. Each falls back to plain text if Meta refuses it (an old
+// client, a limit exceeded), so a parent never gets silence because a button would not render.
+
+export interface InteractiveRow {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+/** Up to three tappable answers under a short message. */
+export async function sendWhatsAppButtons(
+  to: string,
+  body: string,
+  buttons: Array<{ id: string; title: string }>
+): Promise<boolean> {
+  const sent = await graphPost({
+    to,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: body },
+      action: {
+        buttons: buttons.slice(0, 3).map((b) => ({
+          type: "reply",
+          reply: { id: b.id, title: b.title.slice(0, 20) },
+        })),
+      },
+    },
+  });
+  return sent || sendWhatsAppText(to, `${body}\n\n${buttons.map((b) => b.title).join(" / ")}`);
+}
+
+/** A list of up to ten rows behind one button, for a menu. */
+export async function sendWhatsAppList(
+  to: string,
+  body: string,
+  buttonLabel: string,
+  rows: InteractiveRow[]
+): Promise<boolean> {
+  const sent = await graphPost({
+    to,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: body },
+      action: {
+        button: buttonLabel.slice(0, 20),
+        sections: [
+          {
+            rows: rows.slice(0, 10).map((r) => ({
+              id: r.id,
+              title: r.title.slice(0, 24),
+              ...(r.description ? { description: r.description.slice(0, 72) } : {}),
+            })),
+          },
+        ],
+      },
+    },
+  });
+  return sent || sendWhatsAppText(to, `${body}\n\n${rows.map((r) => `• ${r.title}`).join("\n")}`);
+}
+
+/** A message with one button that opens a web page, instead of a long bare link. */
+export async function sendWhatsAppLinkButton(
+  to: string,
+  body: string,
+  label: string,
+  url: string
+): Promise<boolean> {
+  const sent = await graphPost({
+    to,
+    type: "interactive",
+    interactive: {
+      type: "cta_url",
+      body: { text: body },
+      action: { name: "cta_url", parameters: { display_text: label.slice(0, 20), url } },
+    },
+  });
+  return sent || sendWhatsAppText(to, `${body}\n${url}`);
 }
 
 /**

@@ -148,7 +148,7 @@ describe("replyToWhatsAppMessage", () => {
     const failing = async function* () {
       throw new Error("model down");
     };
-    const reply = await replyToWhatsAppMessage(msg("hello"), failing);
+    const reply = await replyToWhatsAppMessage(msg("Hello, can you help me?"), failing);
     assert.match(reply, /try again/i);
     assert.equal(await WhatsAppConversation.countDocuments({}), 0);
   });
@@ -160,7 +160,7 @@ describe("replyToWhatsAppMessage", () => {
   });
 
   it("flags a first message from a number, and not the ones after it", async () => {
-    const first = await answerWhatsAppMessage(msg("hello"), stub("Hi there."));
+    const first = await answerWhatsAppMessage(msg("Hello, can you help me?"), stub("Hi there."));
     assert.equal(first.firstContact, true);
     const second = await answerWhatsAppMessage(msg("and another", "wamid.2"), stub("Sure."));
     assert.equal(second.firstContact, false);
@@ -186,7 +186,7 @@ describe("replyToWhatsAppMessage", () => {
 
   it("tells the model it is an AI and not to collect sensitive details", async () => {
     const seen: Seen[] = [];
-    await replyToWhatsAppMessage(msg("hello"), stub("Hi.", seen));
+    await replyToWhatsAppMessage(msg("Hello, can you help me?"), stub("Hi.", seen));
     assert.match(seen[0]!.systemPrompt, /AI assistant/);
     assert.match(seen[0]!.systemPrompt, /medical details/);
   });

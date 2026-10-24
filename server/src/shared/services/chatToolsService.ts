@@ -49,6 +49,11 @@ export interface ChatToolContext {
    * not act on the model's say-so (making a plan, which costs model calls) checks this instead.
    */
   userMessage?: string;
+  /**
+   * Things a tool wants done AFTER the reply is sent, set by the WhatsApp service and read back by
+   * it. A tool cannot send a message itself, so it leaves a request here. Absent on the website.
+   */
+  outbound?: { nextSteps?: boolean };
 }
 
 export interface ChatToolDefinition {
@@ -1015,6 +1020,29 @@ const recordEnquiryTool: ChatToolDefinition = {
   },
 };
 
+// ─── offer_next_steps ───────────────────────────────────────────────────────────
+
+const offerNextStepsTool: ChatToolDefinition = {
+  name: "offer_next_steps",
+  summary:
+    "show the parent a tappable list of next steps (find a coach, explore tournaments, speak to an expert, ask more, or finish) under your answer",
+  example: "which sport should my 9 year old start with?",
+  promptNote:
+    "Call it once, after you have given personalised guidance about their child, never for a greeting, a plain lookup, a thank you, or when your answer ends in a question you need answered first. The list appears under your answer on its own, so do not list or describe those options yourself and do not ask whether they want help with the next step.",
+  description:
+    "Ask the WhatsApp service to show the parent a tappable list of next steps right after your answer: help finding a coach or academy, exploring tournaments, speaking to an expert, asking another question, or finishing. Call it in the same turn as the guidance it follows. It sends nothing itself and returns nothing to read out.",
+  parametersJsonSchema: { type: "object", properties: {} },
+  execute: async (_args, context) => {
+    if (!context?.outbound) return { shown: false };
+    context.outbound.nextSteps = true;
+    return {
+      shown: true,
+      instruction:
+        "The list will appear under your answer. Do not mention or list the options. End your answer naturally.",
+    };
+  },
+};
+
 // ─── Per-persona tool sets ──────────────────────────────────────────────────────
 
 export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
@@ -1037,4 +1065,5 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   getTournamentDetailsTool,
   requestTeamFollowupTool,
   recordEnquiryTool,
+  offerNextStepsTool,
 ];

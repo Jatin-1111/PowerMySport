@@ -303,8 +303,12 @@ describe("in the WhatsApp assistant", () => {
 
   it("gives a number with no account the phone hash for its notes, and no user", async () => {
     const seen: Seen[] = [];
-    await answerWhatsAppMessage(msg("hi"), stub(seen));
-    assert.deepEqual(seen[0]!.toolContext, { phoneHash: hashPhone(PHONE), userMessage: "hi" });
+    await answerWhatsAppMessage(msg("Hi, can you help me?"), stub(seen));
+    assert.deepEqual(seen[0]!.toolContext, {
+      phoneHash: hashPhone(PHONE),
+      userMessage: "Hi, can you help me?",
+      outbound: {},
+    });
     assert.match(seen[0]!.systemPrompt, /Remembering what they tell you/);
   });
 
@@ -336,7 +340,7 @@ describe("in the WhatsApp assistant", () => {
       role: "Parent",
     });
     const seen: Seen[] = [];
-    const answer = await answerWhatsAppMessage(msg("hello"), stub(seen));
+    const answer = await answerWhatsAppMessage(msg("Hello, can you help me?"), stub(seen));
 
     const prompt = seen[0]!.systemPrompt;
     assert.equal(answer.known, true);
@@ -358,14 +362,14 @@ describe("in the WhatsApp assistant", () => {
       role: "Parent",
     });
     const seen: Seen[] = [];
-    await answerWhatsAppMessage(msg("hello"), stub(seen));
+    await answerWhatsAppMessage(msg("Hello, can you help me?"), stub(seen));
     const ctx = seen[0]!.toolContext as { userId?: string; phoneHash?: string };
     assert.match(String(ctx.userId), /^[a-f0-9]{24}$/);
     assert.equal(ctx.phoneHash, hashPhone(PHONE));
   });
 
   it("deletes the notes together with the chat on STOP", async () => {
-    await answerWhatsAppMessage(msg("hello"), stub([]));
+    await answerWhatsAppMessage(msg("Hello, can you help me?"), stub([]));
     await notes.saveChildNote(hashPhone(PHONE), { childName: "Vikrant" });
 
     const stopped = await answerWhatsAppMessage(msg("STOP", "wamid.2"), stub([]));

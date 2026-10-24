@@ -204,3 +204,39 @@ export async function forgetAllEnquiries(phoneHash: string): Promise<number> {
   const result = await WhatsAppEnquiry.deleteMany({ phoneHash });
   return result.deletedCount;
 }
+
+/**
+ * The topic the parent was last on, closed or not, if they were on it within a day. A "thanks"
+ * or a tapped feedback button lands here after the topic was closed, so it must not open a new one.
+ */
+async function latestEnquiry(phoneHash: string, now: Date) {
+  return WhatsAppEnquiry.findOne({
+    phoneHash,
+    lastMessageAt: { $gte: new Date(now.getTime() - ENQUIRY_IDLE_MS) },
+  }).sort({ lastMessageAt: -1 });
+}
+
+/** The parent tapped "I'm good for now". Returns false when there was no recent topic. */
+export async function closeLatestEnquiry(phoneHash: string, now = new Date()): Promise<boolean> {
+  const enquiry = await latestEnquiry(phoneHash, now);
+  if (!enquiry) return false;
+  enquiry.closed = true;
+  enquiry.lastMessageAt = now;
+  await enquiry.save();
+  return true;
+}
+
+/** The parent tapped a feedback button after a topic. Returns false when there was none to rate. */
+export async function setLatestFeedback(
+  phoneHash: string,
+  value: EnquiryFeedback,
+  now = new Date()
+): Promise<boolean> {
+  const enquiry = await latestEnquiry(phoneHash, now);
+  if (!enquiry) return false;
+  enquiry.feedback = value;
+  enquiry.closed = true;
+  enquiry.lastMessageAt = now;
+  await enquiry.save();
+  return true;
+}

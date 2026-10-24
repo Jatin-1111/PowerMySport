@@ -190,10 +190,11 @@ describe("listing and reading", () => {
     await seed("h2", { sport: "tennis", feedback: "not_helpful" });
     await enquiries.markFollowUpRequested("h2", "q", { summary: "s" });
     await seed("h2", { sport: "Chess", closed: true });
+    await seed("h3", { sport: "TENNIS" });
     const token = await signedInAdmin(["notifications:view"]);
 
     const { data } = (await call("get", `${BASE}/summary`, token)).body;
-    assert.equal(data.parents, 2);
+    assert.equal(data.parents, 3);
     assert.equal(data.needsFollowUp, 1);
     assert.equal(data.asksForTeam, 1);
     assert.deepEqual(data.feedback, { helpful: 1, notHelpful: 1 });

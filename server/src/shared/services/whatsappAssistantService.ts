@@ -11,7 +11,21 @@ import { decrementDailyMessageCount, checkChatRateLimit } from "./chatRateLimitS
 import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
 import { withdrawConsentForPhone } from "./whatsappConsent";
 import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
-import { attachContactNumber, forgetAllEnquiries, recordTurn } from "./whatsappEnquiries";
+import {
+  attachContactNumber,
+  closeLatestEnquiry,
+  forgetAllEnquiries,
+  recordTurn,
+  setLatestFeedback,
+} from "./whatsappEnquiries";
+import {
+  FEEDBACK_BODY,
+  FEEDBACK_THANKS_HELPFUL,
+  FEEDBACK_THANKS_NOT_HELPFUL,
+  WELCOME_BODY,
+  intentForReply,
+  wantsMenu,
+} from "./whatsappInteractive";
 import { clipReply, formatForWhatsApp } from "./whatsappFormat";
 import type { InboundWhatsAppMessage } from "./whatsappService";
 import { log as __rootLog } from "../../utils/logger";
@@ -43,7 +57,17 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 ## How to behave
 - Never explain how you work inside: do not say which tool you used or "a different tool". If an earlier answer of yours was wrong or incomplete, say so in one short sentence, give the corrected answer, and move on.
 - Use what the parent already told you in this chat (the child's name, the sport, the tournaments you just listed). Do not ask again for something they said. When they say "all of them", "that one" or "the first", it means what you listed last.
-- Never suggest a tournament whose entries have closed. Tell the parent plainly if the only events left are closed, and offer to look for ones still open.`;
+- Never suggest a tournament whose entries have closed. Tell the parent plainly if the only events left are closed, and offer to look for ones still open.
+- Ask only what you need to answer this question. Do not run through age, sport and level as a checklist: if the parent already gave them, or the question does not depend on them, do not ask.
+- Do not offer anything as bookable or available unless a tool shows it is. If the parent wants something you cannot do from here, say the PowerMySport team can follow up.
+
+## Shape of personalised guidance
+When you give guidance about this parent's own child (a recommendation, not a lookup of a date, a fee or a link), write it as four short parts in this order, each on its own line or two:
+*Your situation:* a sentence on the child, from what the parent told you.
+*What to consider:* the factors that matter for them.
+*My recommendation:* the one next step, with a short explanation.
+*Why:* in plain words, why that step fits.
+Be specific to this child and leave out generic background. For a lookup, or a reply that is only a question back to the parent, answer directly without this shape.`;
 
 /** The number is tied to exactly one account, so the tools return that parent's own data. */
 export const KNOWN_PARENT_ADDENDUM = `
@@ -173,7 +197,13 @@ async function identify(
     return [] as NoteChild[];
   });
   return {
-    toolContext: userId ? { phoneHash, userId, userMessage } : { phoneHash, userMessage },
+    toolContext: {
+      phoneHash,
+      userMessage,
+      ...(userId ? { userId } : {}),
+      // A tool leaves requests for after the reply here (see ChatToolContext.outbound).
+      outbound: {},
+    },
     parent,
     notes,
   };
@@ -218,6 +248,38 @@ export interface WhatsAppAnswer {
   firstContact: boolean;
   /** The number belongs to one account, which changes what the first-message notice can promise. */
   known?: boolean;
+  /** Send the welcome menu (a list) instead of plain text: the parent only said hello. */
+  menu?: boolean;
+  /** Send the helpful / not-helpful buttons: the parent just said they are done. */
+  feedbackPrompt?: boolean;
+  /** Send the list of next steps under the reply: the assistant has just given guidance. */
+  nextSteps?: boolean;
+}
+
+/** Stores one exchange in the rolling conversation. One atomic update, so two messages arriving
+ * together cannot overwrite each other's turns. */
+async function appendTurn(
+  phoneHash: string,
+  userMessage: string,
+  reply: string,
+  now: Date
+): Promise<void> {
+  await WhatsAppConversation.updateOne(
+    { phoneHash },
+    {
+      $push: {
+        messages: {
+          $each: [
+            { role: "user", content: userMessage, createdAt: now },
+            { role: "assistant", content: reply, createdAt: now },
+          ],
+          $slice: -STORED_MESSAGES,
+        },
+      },
+      $inc: { totalMessageCount: 1 },
+    },
+    { upsert: true }
+  );
 }
 
 /**
@@ -233,8 +295,11 @@ export async function answerWhatsAppMessage(
   const text = message.text?.trim();
   if (!text) return { reply: UNSUPPORTED_REPLY, firstContact: false };
 
-  const userMessage = text.slice(0, MAX_INBOUND_CHARS);
   const phoneHash = hashPhone(message.from);
+  // A tap on a list row or button carries an id; most taps are a question put in a sentence the
+  // assistant can act on, and two (finishing, feedback) are decided here without the model.
+  const intent = intentForReply(message.replyId);
+  const userMessage = (intent?.kind === "ask" ? intent.text : text).slice(0, MAX_INBOUND_CHARS);
 
   // "STOP" and the like delete the chat. Checked before the daily limit so a parent
   // who has used their messages can still take their data back.
@@ -252,6 +317,46 @@ export async function answerWhatsAppMessage(
     );
     return { reply: OPT_OUT_REPLY, firstContact: false };
   }
+
+  // Finishing and feedback cost no model call, so they do not use up the parent's daily messages
+  // and still work when the daily limit has been reached.
+  if (intent?.kind === "done") {
+    const closed = await closeLatestEnquiry(phoneHash).catch((err) => {
+      log.error("could not close the enquiry", err);
+      return false;
+    });
+    return closed
+      ? { reply: FEEDBACK_BODY, firstContact: false, feedbackPrompt: true }
+      : { reply: FEEDBACK_THANKS_HELPFUL, firstContact: false };
+  }
+  if (intent?.kind === "feedback") {
+    await setLatestFeedback(phoneHash, intent.value).catch((err) =>
+      log.error("could not record the feedback", err)
+    );
+    return {
+      reply: intent.value === "helpful" ? FEEDBACK_THANKS_HELPFUL : FEEDBACK_THANKS_NOT_HELPFUL,
+      firstContact: false,
+    };
+  }
+
+  // A greeting is not a question: show the menu instead of asking the model to invent one.
+  if (!intent && wantsMenu(text)) {
+    try {
+      const conversation = await WhatsAppConversation.findOne({ phoneHash }).select("_id").lean();
+      const { toolContext } = await identify(message.from, phoneHash, userMessage);
+      await appendTurn(phoneHash, userMessage, WELCOME_BODY, new Date());
+      return {
+        reply: WELCOME_BODY,
+        firstContact: !conversation,
+        known: Boolean(toolContext.userId),
+        menu: true,
+      };
+    } catch (err) {
+      // Fall through to the assistant, which can greet too.
+      log.error("could not show the welcome menu", err);
+    }
+  }
+
   // Not the website's limiter key: a WhatsApp number is not a user id.
   const limiterKey = `wa:${phoneHash}`;
 
@@ -292,24 +397,7 @@ export async function answerWhatsAppMessage(
     reply = clipReply(formatForWhatsApp(reply), MAX_REPLY_CHARS);
 
     const now = new Date();
-    // One atomic update, so two messages arriving together cannot overwrite
-    // each other's turns.
-    await WhatsAppConversation.updateOne(
-      { phoneHash },
-      {
-        $push: {
-          messages: {
-            $each: [
-              { role: "user", content: userMessage, createdAt: now },
-              { role: "assistant", content: reply, createdAt: now },
-            ],
-            $slice: -STORED_MESSAGES,
-          },
-        },
-        $inc: { totalMessageCount: 1 },
-      },
-      { upsert: true }
-    );
+    await appendTurn(phoneHash, userMessage, reply, now);
 
     // The pilot review record. Best effort: a failure here must not cost the parent their reply.
     try {
@@ -319,7 +407,12 @@ export async function answerWhatsAppMessage(
       log.error("could not record the enquiry", err);
     }
 
-    return { reply, firstContact, known: Boolean(toolContext.userId) };
+    return {
+      reply,
+      firstContact,
+      known: Boolean(toolContext.userId),
+      ...(toolContext.outbound?.nextSteps ? { nextSteps: true } : {}),
+    };
   } catch (err) {
     log.error("could not produce a reply", err);
     await decrementDailyMessageCount(limiterKey);

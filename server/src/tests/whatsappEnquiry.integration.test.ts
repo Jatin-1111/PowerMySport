@@ -191,7 +191,7 @@ describe("in the WhatsApp assistant", () => {
       throw new Error("db down");
     };
     try {
-      const answer = await answerWhatsAppMessage(msg("hello"), stub("Hi there."));
+      const answer = await answerWhatsAppMessage(msg("Hello, can you help me?"), stub("Hi there."));
       assert.equal(answer.reply, "Hi there.");
     } finally {
       WhatsAppEnquiry.create = original;
@@ -199,7 +199,7 @@ describe("in the WhatsApp assistant", () => {
   });
 
   it("deletes the enquiries, and any kept number, with the chat on STOP", async () => {
-    await answerWhatsAppMessage(msg("hello"), stub("Hi."));
+    await answerWhatsAppMessage(msg("Hello, can you help me?"), stub("Hi."));
     await enquiries.markFollowUpRequested(hashPhone(PHONE), "hello", { summary: "call me" });
     await enquiries.attachContactNumber(hashPhone(PHONE), PHONE);
     assert.equal(await WhatsAppEnquiry.countDocuments({}), 1);
