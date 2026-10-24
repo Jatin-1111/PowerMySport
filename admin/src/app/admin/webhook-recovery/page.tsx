@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { toast } from "@/lib/toast";
 import { adminApi } from "@/modules/admin/services/admin";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { MetricStrip, Panel } from "@/modules/shared/ui/Panel";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import {
   Activity,
   AlertOctagon,
-  AlertTriangle,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Clock,
@@ -17,8 +19,6 @@ import {
   RefreshCw,
   RotateCcw,
   ShieldCheck,
-  WifiOff,
-  Zap,
 } from "lucide-react";
 
 interface WebhookError {
@@ -35,18 +35,18 @@ interface WebhookError {
   };
 }
 
-const EVENT_COLORS: Record<string, string> = {
-  "payment.captured": "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "payment.failed": "bg-red-100 text-red-700 border-red-200",
-  "refund.created": "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "refund.failed": "bg-orange-100 text-orange-700 border-orange-200",
+const EVENT_TONE: Record<string, "green" | "red" | "blue" | "orange"> = {
+  "payment.captured": "green",
+  "payment.failed": "red",
+  "refund.created": "blue",
+  "refund.failed": "orange",
 };
 
 interface ReconcileFormState {
   orderId: string;
   type: "payment" | "refund";
   loading: boolean;
-  result: string | null;
+  result: { kind: "ok" | "fixed" | "error"; text: string } | null;
 }
 
 export default function AdminWebhookRecoveryPage() {
@@ -93,7 +93,7 @@ export default function AdminWebhookRecoveryPage() {
         throw new Error("Retry failed");
       }
     } catch {
-      toast.error("Retry failed — event may need manual processing");
+      toast.error("Retry failed. This event may need manual processing.");
       setErrors((prev) =>
         prev.map((e) => (e.key === errorKey ? { ...e, retryCount: e.retryCount + 1 } : e))
       );
@@ -113,10 +113,16 @@ export default function AdminWebhookRecoveryPage() {
       const response = await adminApi.reconcileOrder(reconcile.type, reconcile.orderId);
       if (response.success) {
         const isConsistent = response.data?.isConsistent ?? true;
-        const msg = isConsistent
-          ? `✅ ${reconcile.type === "payment" ? "Payment" : "Refund"} status is consistent for order ${reconcile.orderId}`
-          : `⚠️ Discrepancy found and fixed for order ${reconcile.orderId}`;
-        setReconcile((r) => ({ ...r, result: msg }));
+        const result: ReconcileFormState["result"] = isConsistent
+          ? {
+              kind: "ok",
+              text: `${reconcile.type === "payment" ? "Payment" : "Refund"} status is consistent for order ${reconcile.orderId}.`,
+            }
+          : {
+              kind: "fixed",
+              text: `A mismatch was found and corrected for order ${reconcile.orderId}.`,
+            };
+        setReconcile((r) => ({ ...r, result }));
         toast.success("Reconciliation complete");
       } else {
         throw new Error(response.message || "Failed");
@@ -124,14 +130,14 @@ export default function AdminWebhookRecoveryPage() {
     } catch (err: any) {
       const errorMsg = err.response?.data?.message || err.message || "Failed to reconcile order";
       toast.error(errorMsg);
-      setReconcile((r) => ({ ...r, result: `❌ ${errorMsg}` }));
+      setReconcile((r) => ({ ...r, result: { kind: "error", text: errorMsg } }));
     } finally {
       setReconcile((r) => ({ ...r, loading: false }));
     }
   };
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => toast.success("Copied!"));
+    navigator.clipboard.writeText(text).then(() => toast.success("Copied"));
   };
 
   const stats = {
@@ -142,219 +148,162 @@ export default function AdminWebhookRecoveryPage() {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       <AdminPageHeader
-        title="Webhook Recovery"
-        subtitle="Monitor failed webhook events, retry processing, and reconcile payment state"
+        badge="Trust & Support"
+        title="Webhook recovery"
+        subtitle="Payment events that failed to process. Retry them, or check an order against what PhonePe reports."
       />
 
-      {/* Stats */}
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[
-          {
-            label: "Failed Events",
-            value: stats.total,
-            color: "text-red-600",
-            bg: "bg-red-50 border-red-100",
-            icon: AlertOctagon,
-          },
-          {
-            label: "Payment Events",
-            value: stats.paymentEvents,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50 border-indigo-100",
-            icon: Zap,
-          },
-          {
-            label: "Refund Events",
-            value: stats.refundEvents,
-            color: "text-amber-600",
-            bg: "bg-amber-50 border-amber-100",
-            icon: RotateCcw,
-          },
-          {
-            label: "Max Retries",
-            value: stats.maxRetries,
-            color: "text-slate-600",
-            bg: "bg-slate-50 border-slate-100",
-            icon: Activity,
-          },
-        ].map(({ label, value, color, bg, icon: Icon }) => (
-          <div key={label} className={`rounded-2xl border p-5 ${bg}`}>
-            <div className="flex items-center gap-3">
-              <Icon className={`h-5 w-5 ${color}`} />
-              <p className="text-sm font-medium text-slate-500">{label}</p>
-            </div>
-            <p className={`mt-2 text-2xl font-bold ${color}`}>{value}</p>
-          </div>
-        ))}
-      </div>
+      <MetricStrip
+        items={[
+          { label: "Failed events", value: String(stats.total) },
+          { label: "Payment events", value: String(stats.paymentEvents) },
+          { label: "Refund events", value: String(stats.refundEvents) },
+          { label: "Most retries on one event", value: String(stats.maxRetries) },
+        ]}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        {/* Error Log — takes 3 cols */}
-        <div className="lg:col-span-3">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                <h2 className="text-base font-bold text-slate-900">Failed Webhook Events</h2>
-                {errors.length > 0 && (
-                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700">
-                    {errors.length}
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={loadErrors}
-                disabled={loading}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <Panel
+          flush
+          title="Failed events"
+          description="Events with 3 or more retries need a manual look."
+          action={
+            <button
+              type="button"
+              onClick={loadErrors}
+              disabled={loading}
+              className={btn("outline", "sm")}
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
+              Refresh
+            </button>
+          }
+        >
+          {loading ? (
+            <div className="px-5 pb-5">
+              <SkeletonBlock rows={5} label="Loading failed webhook events" />
             </div>
-
-            {loading ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
-              </div>
-            ) : errors.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <ShieldCheck className="mb-3 h-14 w-14 text-emerald-300" />
-                <p className="text-base font-semibold text-slate-600">No failed webhook events</p>
-                <p className="mt-1 text-sm text-slate-400">All events processed successfully</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100">
-                {errors.map((error) => {
-                  const isExpanded = expandedKey === error.key;
-                  const colorClass =
-                    EVENT_COLORS[error.eventType] || "bg-slate-100 text-slate-700 border-slate-200";
-                  const age = Math.round(
-                    (Date.now() - new Date(error.timestamp).getTime()) / 3600000
-                  );
-                  return (
-                    <div key={error.key} className="px-5 py-4">
-                      <div className="flex items-start gap-3">
-                        <div className="mt-0.5">
-                          {error.eventType.endsWith("failed") ? (
-                            <WifiOff className="h-4 w-4 text-red-500" />
-                          ) : (
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+          ) : errors.length === 0 ? (
+            <EmptyState title="No failed events" description="Every webhook event was processed." />
+          ) : (
+            <ul className="divide-y divide-slate-100 border-t border-slate-100">
+              {errors.map((error) => {
+                const isExpanded = expandedKey === error.key;
+                const age = Math.round(
+                  (Date.now() - new Date(error.timestamp).getTime()) / 3600000
+                );
+                return (
+                  <li key={error.key} className="px-5 py-4">
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                          <StatusBadge
+                            status={error.eventType}
+                            tone={EVENT_TONE[error.eventType] ?? "slate"}
+                            dot={false}
+                            size="sm"
+                          />
+                          {error.retryCount > 0 && (
+                            <StatusBadge
+                              status={`${error.retryCount} ${error.retryCount === 1 ? "retry" : "retries"}`}
+                              tone={error.retryCount >= 3 ? "red" : "slate"}
+                              dot={false}
+                              size="sm"
+                            />
                           )}
+                          <span className="flex items-center gap-1 text-xs text-slate-500">
+                            <Clock className="size-3" aria-hidden />
+                            {age < 1 ? "Under 1 hour ago" : `${age} hours ago`}
+                          </span>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                            <span
-                              className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${colorClass}`}
-                            >
-                              {error.eventType}
-                            </span>
-                            {error.retryCount > 0 && (
-                              <span className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                                {error.retryCount} {error.retryCount === 1 ? "retry" : "retries"}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1 text-xs text-slate-400">
-                              <Clock className="h-3 w-3" />
-                              {age < 1 ? "< 1h ago" : `${age}h ago`}
-                            </span>
-                          </div>
-                          <p className="truncate text-sm font-semibold text-slate-800">
-                            {error.errorMessage}
-                          </p>
-                          <p className="mt-0.5 truncate font-mono text-xs text-slate-500">
-                            {error.reference}
-                          </p>
+                        <p className="truncate text-sm font-semibold text-slate-900">
+                          {error.errorMessage}
+                        </p>
+                        <p className="mt-0.5 truncate font-mono text-xs text-slate-500">
+                          {error.reference}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRetry(error.key)}
+                          disabled={!!retrying}
+                          className={btn("primary", "sm")}
+                        >
+                          {retrying === error.key ? (
+                            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                          ) : (
+                            <RotateCcw className="size-3.5" aria-hidden />
+                          )}
+                          Retry
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedKey(isExpanded ? null : error.key)}
+                          aria-expanded={isExpanded}
+                          aria-label={isExpanded ? "Hide details" : "Show details"}
+                          className={btn("outline", "sm", "!px-2")}
+                        >
+                          {isExpanded ? (
+                            <ChevronUp className="size-3.5" aria-hidden />
+                          ) : (
+                            <ChevronDown className="size-3.5" aria-hidden />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
+                        <p className="text-sm font-medium text-slate-700">Payload summary</p>
+                        <div className="space-y-1 font-mono text-xs text-slate-700">
+                          {Object.entries(error.payloadSummary).map(([k, v]) => (
+                            <div key={k} className="flex items-center gap-2">
+                              <span className="text-slate-500">{k}:</span>
+                              <span className="text-slate-800">{String(v)}</span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
+                        <div className="flex items-center gap-2 border-t border-slate-200 pt-2">
+                          <span className="flex-1 truncate font-mono text-xs text-slate-500">
+                            {error.key}
+                          </span>
                           <button
-                            onClick={() => handleRetry(error.key)}
-                            disabled={!!retrying}
-                            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-60"
+                            type="button"
+                            onClick={() => copyToClipboard(error.key)}
+                            aria-label="Copy event key"
+                            className="rounded p-1 text-slate-500 hover:bg-slate-200 hover:text-slate-700"
                           >
-                            {retrying === error.key ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <RotateCcw className="h-3.5 w-3.5" />
-                            )}
-                            Retry
-                          </button>
-                          <button
-                            onClick={() => setExpandedKey(isExpanded ? null : error.key)}
-                            className="rounded-lg border border-slate-200 p-1.5 text-slate-500 transition hover:bg-slate-50"
-                          >
-                            {isExpanded ? (
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            )}
+                            <Copy className="size-3.5" aria-hidden />
                           </button>
                         </div>
                       </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
 
-                      {isExpanded && (
-                        <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                            Payload Summary
-                          </p>
-                          <div className="space-y-1 font-mono text-xs text-slate-700">
-                            {Object.entries(error.payloadSummary).map(([k, v]) => (
-                              <div key={k} className="flex items-center gap-2">
-                                <span className="text-slate-400">{k}:</span>
-                                <span className="text-slate-800">{String(v)}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <div className="flex items-center gap-2 border-t border-slate-200 pt-1">
-                            <span className="flex-1 truncate font-mono text-[10px] text-slate-400">
-                              {error.key}
-                            </span>
-                            <button
-                              onClick={() => copyToClipboard(error.key)}
-                              className="rounded p-1 text-slate-400 transition hover:bg-slate-200 hover:text-slate-600"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Reconciliation tool — takes 2 cols */}
-        <div className="space-y-4 lg:col-span-2">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              <h2 className="text-base font-bold text-slate-900">Reconciliation</h2>
-            </div>
-            <div className="space-y-4 p-5">
-              <p className="text-sm text-slate-500">
-                Verify that the payment or refund state in the database matches what PhonePe
-                reports. Any discrepancies will be auto-corrected.
-              </p>
-
-              {/* Type selector */}
+        <div className="space-y-6">
+          <Panel
+            title="Check an order"
+            description="Compares the payment or refund state in our database with what PhonePe reports, and corrects any mismatch."
+          >
+            <div className="space-y-4">
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-                  Check Type
-                </label>
-                <div className="grid grid-cols-2 gap-2">
+                <p className={labelClass}>What to check</p>
+                <div className="grid grid-cols-2 gap-2" role="group" aria-label="What to check">
                   {(["payment", "refund"] as const).map((t) => (
                     <button
                       key={t}
+                      type="button"
+                      aria-pressed={reconcile.type === t}
                       onClick={() => setReconcile((r) => ({ ...r, type: t, result: null }))}
-                      className={`rounded-xl border py-2.5 text-sm font-semibold transition-colors ${
-                        reconcile.type === t
-                          ? "border-indigo-300 bg-indigo-600 text-white shadow-sm"
-                          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                      }`}
+                      className={btn(reconcile.type === t ? "primary" : "outline")}
                     >
                       {t.charAt(0).toUpperCase() + t.slice(1)}
                     </button>
@@ -362,86 +311,80 @@ export default function AdminWebhookRecoveryPage() {
                 </div>
               </div>
 
-              {/* Order ID */}
               <div>
-                <label className="mb-1.5 block text-sm font-semibold text-slate-700">
+                <label htmlFor="reconcile-order" className={labelClass}>
                   Order ID
                 </label>
                 <input
+                  id="reconcile-order"
                   type="text"
-                  placeholder="e.g. 64f8c9a2e3b4a5d6c7e8f901"
+                  placeholder="64f8c9a2e3b4a5d6c7e8f901"
                   value={reconcile.orderId}
                   onChange={(e) =>
-                    setReconcile((r) => ({
-                      ...r,
-                      orderId: e.target.value,
-                      result: null,
-                    }))
+                    setReconcile((r) => ({ ...r, orderId: e.target.value, result: null }))
                   }
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 font-mono text-sm text-slate-700 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className={`${fieldClass} font-mono`}
                 />
               </div>
 
               <button
+                type="button"
                 onClick={handleReconcile}
                 disabled={reconcile.loading || !reconcile.orderId.trim()}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className={btn("primary", "md", "w-full")}
               >
                 {reconcile.loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
                 ) : (
-                  <Activity className="h-4 w-4" />
+                  <Activity className="size-4" aria-hidden />
                 )}
-                Run Reconciliation
+                Run check
               </button>
 
               {reconcile.result && (
                 <div
-                  className={`rounded-xl border p-3 text-sm font-medium ${
-                    reconcile.result.startsWith("✅")
-                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                      : reconcile.result.startsWith("⚠️")
-                        ? "border-amber-200 bg-amber-50 text-amber-700"
-                        : "border-red-200 bg-red-50 text-red-700"
+                  role="status"
+                  className={`rounded-lg border p-3 text-sm font-medium ${
+                    reconcile.result.kind === "ok"
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                      : reconcile.result.kind === "fixed"
+                        ? "border-amber-200 bg-amber-50 text-amber-900"
+                        : "border-red-200 bg-red-50 text-red-900"
                   }`}
                 >
-                  {reconcile.result}
+                  {reconcile.result.text}
                 </div>
               )}
             </div>
-          </div>
+          </Panel>
 
-          {/* Guide */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-slate-500">
-              Recovery Guide
-            </p>
-            <ul className="space-y-2.5 text-xs text-slate-600">
+          <Panel title="When to use which">
+            <ul className="space-y-3 text-sm text-slate-600">
               {[
                 {
                   icon: RotateCcw,
-                  text: "Use Retry when a webhook failed due to a transient error (timeout, DB down)",
+                  text: "Retry: the webhook failed for a temporary reason, like a timeout or the database being down.",
                 },
                 {
                   icon: Activity,
-                  text: "Use Reconciliation when you suspect a DB/gateway status mismatch",
+                  text: "Check an order: you suspect our status and PhonePe's don't match.",
                 },
                 {
                   icon: AlertOctagon,
-                  text: "Events with 3+ retries should be manually investigated",
+                  text: "Three or more retries: stop retrying and investigate by hand.",
                 },
                 {
                   icon: ShieldCheck,
-                  text: "Successfully retried events are removed from this list automatically",
+                  text: "A retry that succeeds removes the event from this list.",
                 },
               ].map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-start gap-2">
-                  <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <li key={text} className="flex items-start gap-2.5">
+                  <Icon className="mt-0.5 size-4 shrink-0 text-slate-500" aria-hidden />
                   <span>{text}</span>
                 </li>
               ))}
             </ul>
-          </div>
+          </Panel>
         </div>
       </div>
     </div>

@@ -159,7 +159,7 @@ export default function PermissionSelector({
                 <Info className="h-4 w-4" />
               </button>
               {showPermissionInfo && (
-                <div className="absolute left-6 top-0 z-50 w-72 rounded-lg border border-gray-200 bg-white p-4 shadow-lg">
+                <div className="absolute left-6 top-0 z-50 w-72 rounded-lg border border-gray-200 bg-white p-4 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]">
                   <div className="text-sm">
                     <p className="mb-2 font-semibold text-gray-900">
                       {roleTemplates.find((t) => t.role === selectedRole)?.name} Permissions:

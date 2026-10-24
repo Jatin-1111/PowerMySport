@@ -2,17 +2,18 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { statsApi } from "@/modules/analytics/services/stats";
-import { Card } from "@/modules/shared/ui/Card";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
+import { btn } from "@/modules/shared/ui/buttonStyles";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Venue } from "@/types";
 import { formatCurrency } from "@/utils/format";
-import { ImageIcon, MapPin, Star } from "lucide-react";
+import { ImageIcon, MapPin, Plus, Star } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { ErrorNotice } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -181,10 +182,10 @@ export default function AdminVenuesPage() {
           <span className="inline-flex items-center gap-1 text-slate-700">
             <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
             {v.rating.toFixed(1)}
-            <span className="text-slate-400">({v.reviewCount ?? 0})</span>
+            <span className="text-slate-500">({v.reviewCount ?? 0})</span>
           </span>
         ) : (
-          <span className="text-xs font-semibold uppercase text-slate-400">New</span>
+          <span className="text-xs font-semibold text-slate-500">New</span>
         ),
     },
     {
@@ -196,19 +197,19 @@ export default function AdminVenuesPage() {
             {v.sports.slice(0, 2).map((sport) => (
               <span
                 key={sport}
-                className="bg-power-orange/10 text-power-orange rounded-full px-2 py-0.5 text-xs font-medium"
+                className="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
               >
                 {sport}
               </span>
             ))}
             {v.sports.length > 2 && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                 +{v.sports.length - 2}
               </span>
             )}
           </div>
         ) : (
-          <span className="text-slate-400">—</span>
+          <span className="text-slate-500">—</span>
         ),
     },
     {
@@ -223,21 +224,11 @@ export default function AdminVenuesPage() {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
-          title="All Venues"
-          subtitle="Browse and manage all venues listed on the platform."
+          badge="Commerce"
+          title="Venues"
+          subtitle="Every venue listed on the platform. Open one for pricing, sports and approval status."
         />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadVenues}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        <ErrorNotice message={error} onRetry={loadVenues} />
       </div>
     );
   }
@@ -245,9 +236,15 @@ export default function AdminVenuesPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="All Venues"
-        subtitle="Browse and manage all venues listed on the platform."
+        badge="Commerce"
+        title="Venues"
+        subtitle="Every venue listed on the platform. Open one for pricing, sports and approval status."
+        action={
+          <Link href="/admin/venues/add" className={btn("accent")}>
+            <Plus size={16} aria-hidden />
+            Create venue
+          </Link>
+        }
       />
 
       <AdminDataTable<Venue>
@@ -257,14 +254,14 @@ export default function AdminVenuesPage() {
         loading={loading}
         emptyMessage={
           search
-            ? "No venues match your search."
+            ? "No venues match your search"
             : "Approved venues will appear here once they complete onboarding."
         }
         onRowClick={setSelectedVenue}
         search={{
           value: search,
           onChange: setSearch,
-          placeholder: "Search venues by name...",
+          placeholder: "Search venues by name",
         }}
         sort={{
           column: sortColumn,
@@ -281,7 +278,7 @@ export default function AdminVenuesPage() {
           <ExportCsvButton
             filename="venues.csv"
             rows={visibleVenues}
-            label="Export Page CSV"
+            label="Export this page (CSV)"
             columns={[
               { header: "Name", value: (v) => v.name },
               { header: "Address", value: (v) => v.address || "" },
@@ -315,7 +312,7 @@ export default function AdminVenuesPage() {
             <div className="flex justify-end">
               <Link
                 href={`/admin/venues/${getVenueId(selectedVenue) || "#"}`}
-                className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                className={btn("primary")}
               >
                 Open full page
               </Link>
@@ -362,7 +359,7 @@ export default function AdminVenuesPage() {
 
             <DetailSection title="Location">
               <p className="flex items-start gap-1.5 text-sm text-slate-700">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                 {getVenueLocation(selectedVenue)}
               </p>
             </DetailSection>
@@ -373,7 +370,7 @@ export default function AdminVenuesPage() {
                   {selectedVenue.sports.map((sport) => (
                     <span
                       key={sport}
-                      className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      className="rounded-md bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-800"
                     >
                       {sport}
                       {selectedVenue.sportPricing?.[sport] != null
@@ -393,7 +390,7 @@ export default function AdminVenuesPage() {
                   {selectedVenue.amenities.map((amenity) => (
                     <span
                       key={amenity}
-                      className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
+                      className="rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
                     >
                       {amenity}
                     </span>

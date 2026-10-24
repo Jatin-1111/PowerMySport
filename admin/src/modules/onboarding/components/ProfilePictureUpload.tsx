@@ -25,7 +25,7 @@ export default function ProfilePictureUpload({ value, onChange, disabled = false
         {preview ? (
           <img src={preview} alt="preview" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-slate-400">
+          <div className="flex h-full items-center justify-center text-sm text-slate-500">
             No image
           </div>
         )}

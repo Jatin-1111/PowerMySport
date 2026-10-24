@@ -12,6 +12,7 @@ import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import CertificationsMultiSelect from "@/modules/shared/components/CertificationsMultiSelect";
 import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 const SERVICE_MODES = [
   { value: "OWN_VENUE", label: "Own Venue" },
@@ -69,6 +70,7 @@ const getApiConflictPayload = (error: unknown) => {
 };
 
 export function AddCoachForm() {
+  const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -318,9 +320,13 @@ export function AddCoachForm() {
         const { status, data } = getApiConflictPayload(error);
 
         if (status === 409 && data?.requiresConversion) {
-          const shouldConvert = window.confirm(
-            data.message || "An account already exists. Convert it to a coach account to continue?"
-          );
+          const shouldConvert = await confirm({
+            title: "Convert the existing account?",
+            description:
+              data.message ||
+              "An account already exists. Convert it to a coach account to continue?",
+            confirmLabel: "Convert to coach",
+          });
 
           if (shouldConvert) {
             const retryResponse = await attemptCreate(true);
@@ -352,6 +358,7 @@ export function AddCoachForm() {
 
   return (
     <Card className="max-w-4xl">
+      {confirmDialog}
       <form onSubmit={handleSubmit} className="space-y-6 p-6">
         <OnboardingSectionCard title="Basic Information" subtitle="Name, contact and bio">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -365,7 +372,7 @@ export function AddCoachForm() {
                 className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.firstName
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter first name"
                 disabled={loading}
@@ -383,7 +390,7 @@ export function AddCoachForm() {
                 className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.lastName
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter last name"
                 disabled={loading}
@@ -403,7 +410,7 @@ export function AddCoachForm() {
                 className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.email
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter email"
                 disabled={loading}
@@ -421,7 +428,7 @@ export function AddCoachForm() {
                 className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.phone
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter phone number"
                 disabled={loading}
@@ -441,7 +448,7 @@ export function AddCoachForm() {
               className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.mobileNumber
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                  : "focus:ring-power-orange/40 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="e.g., 9876543210"
               disabled={loading}
@@ -467,7 +474,7 @@ export function AddCoachForm() {
               className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.bio
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                  : "focus:ring-power-orange/40 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="Enter coach bio"
               disabled={loading}
@@ -520,7 +527,7 @@ export function AddCoachForm() {
                         )
                       }
                       min="1"
-                      className="focus:ring-power-orange/40 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2"
+                      className="focus:ring-power-orange-solid/25 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2"
                       placeholder="Rate"
                       disabled={loading}
                     />
@@ -559,7 +566,7 @@ export function AddCoachForm() {
                 className={`flex-1 rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.hourlyRate
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter hourly rate"
                 disabled={loading}
@@ -609,7 +616,7 @@ export function AddCoachForm() {
                   className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                     errors.baseLocation
                       ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                      : "focus:ring-power-orange/40 border-slate-300"
+                      : "focus:ring-power-orange-solid/25 border-slate-300"
                   }`}
                   placeholder="Start typing address and pick suggestion"
                   disabled={loading}
@@ -617,7 +624,7 @@ export function AddCoachForm() {
 
                 {isSearching && <p className="mt-1 text-sm text-slate-500">Searching...</p>}
                 {suggestions.length > 0 && (
-                  <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-md">
+                  <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-sm">
                     {suggestions.map((s) => (
                       <li
                         key={s.label}
@@ -664,7 +671,7 @@ export function AddCoachForm() {
                     className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                       errors.serviceRadiusKm
                         ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                        : "focus:ring-power-orange/40 border-slate-300"
+                        : "focus:ring-power-orange-solid/25 border-slate-300"
                     }`}
                     placeholder="e.g., 10"
                     disabled={loading}
@@ -683,7 +690,7 @@ export function AddCoachForm() {
                     value={formData.travelBufferTime}
                     onChange={handleInputChange}
                     min="0"
-                    className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
+                    className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                     placeholder="e.g., 30"
                     disabled={loading}
                   />
@@ -705,7 +712,7 @@ export function AddCoachForm() {
                 name="venueId"
                 value={formData.venueId}
                 onChange={handleInputChange}
-                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
+                className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                 placeholder="Enter venue ID (if applicable)"
                 disabled={loading}
               />
@@ -723,7 +730,7 @@ export function AddCoachForm() {
               name="verificationStatus"
               value={formData.verificationStatus}
               onChange={handleInputChange}
-              className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
+              className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
               disabled={loading}
             >
               <option value="VERIFIED">Verified</option>
@@ -740,7 +747,7 @@ export function AddCoachForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="bg-power-orange-solid flex items-center justify-center gap-2 px-6 text-white hover:bg-orange-600 disabled:bg-slate-300 sm:w-auto"
+            className="bg-power-orange-solid flex items-center justify-center gap-2 px-6 text-white hover:bg-orange-800 disabled:bg-slate-300 sm:w-auto"
           >
             {loading ? (
               <>

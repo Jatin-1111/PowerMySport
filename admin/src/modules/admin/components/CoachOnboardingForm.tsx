@@ -22,13 +22,11 @@ export function CoachOnboardingForm() {
 
   return (
     <Card className="overflow-hidden border-slate-200 bg-white/90 shadow-sm">
-      <div className="to-power-orange bg-linear-to-r border-b border-slate-200 from-slate-950 via-slate-900 px-6 py-6 text-white">
+      <div className="bg-deep-slate border-b border-slate-200 px-6 py-6 text-white">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-orange-200">
-              Coach onboarding on behalf of
-            </p>
-            <h1 className="mt-2 text-3xl font-bold">Create a coach account as admin</h1>
+            <p className="text-xs text-orange-200">Coach onboarding on behalf of</p>
+            <h1 className="mt-2 text-3xl font-semibold">Create a coach account as admin</h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-200">
               Mirror the client onboarding flow while creating the account, profile, venue details,
               and verification records on the coach&apos;s behalf.
@@ -51,11 +49,11 @@ export function CoachOnboardingForm() {
               onClick={() => flow.setStep(current as Step)}
               className={`rounded-2xl border px-4 py-3 text-left transition ${
                 flow.step === current
-                  ? "border-power-orange text-power-orange bg-orange-50"
+                  ? "border-power-orange text-power-orange-solid bg-orange-50"
                   : "border-slate-200 bg-slate-50 text-slate-500"
               }`}
             >
-              <p className="text-xs uppercase tracking-wide">Step {current}</p>
+              <p className="text-xs">Step {current}</p>
               <p className="mt-1 text-sm font-semibold">
                 {current === 1 && "Identity"}
                 {current === 2 && "Coaching setup"}

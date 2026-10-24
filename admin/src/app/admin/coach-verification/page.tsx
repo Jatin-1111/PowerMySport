@@ -4,11 +4,13 @@ import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { Coach, CoachVerificationStatus } from "@/types";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -74,21 +76,6 @@ export default function AdminCoachVerificationPage() {
   useEffect(() => {
     loadVerifications();
   }, [loadVerifications]);
-
-  const getStatusBadge = (status?: CoachVerificationStatus) => {
-    switch (status) {
-      case "VERIFIED":
-        return "bg-green-100 text-green-700 border border-green-200";
-      case "PENDING":
-        return "bg-yellow-100 text-yellow-700 border border-yellow-200";
-      case "REVIEW":
-        return "bg-blue-100 text-blue-700 border border-blue-200";
-      case "REJECTED":
-        return "bg-red-100 text-red-700 border border-red-200";
-      default:
-        return "bg-slate-100 text-slate-700 border border-slate-200";
-    }
-  };
 
   const getCoachId = (coach: Coach) => coach.id || coach._id || "";
 
@@ -197,197 +184,202 @@ export default function AdminCoachVerificationPage() {
     }
   };
 
+  const header = (
+    <AdminPageHeader
+      badge="People"
+      title="Coach verification"
+      subtitle="Check each coach's documents, then approve, ask for changes or reject."
+    />
+  );
+
   if (loading) {
-    return <div className="py-12 text-center">Loading coach verifications...</div>;
+    return (
+      <div className="space-y-6">
+        {header}
+        <SkeletonBlock rows={6} label="Loading coach verifications" />
+      </div>
+    );
   }
 
   if (error) {
     return (
       <div className="space-y-6">
-        <AdminPageHeader
-          badge="Admin"
-          title="Coach Verification"
-          subtitle="Review and verify coach documents to ensure trust on the platform."
-        />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadVerifications}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        {header}
+        <ErrorNotice message={error} onRetry={loadVerifications} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        badge="Admin"
-        title="Coach Verification"
-        subtitle="Review and verify coach documents to ensure trust on the platform."
-      />
+      {header}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm text-slate-600">
-          {pagination.total} coach{pagination.total === 1 ? "" : "es"} in queue
+        <p className="text-sm tabular-nums text-slate-600">
+          {pagination.total} coach{pagination.total === 1 ? "" : "es"} in this view
+        </p>
+        <div className="flex items-center gap-2">
+          <label htmlFor="verification-status" className="text-sm text-slate-600">
+            Status
+          </label>
+          <select
+            id="verification-status"
+            value={statusFilter}
+            onChange={(e) => {
+              setCurrentPage(1);
+              setStatusFilter(e.target.value as StatusFilter);
+            }}
+            className={`${fieldClass} !w-auto`}
+          >
+            <option value="ALL">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="REVIEW">In review</option>
+            <option value="VERIFIED">Verified</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="UNVERIFIED">Unverified</option>
+          </select>
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setCurrentPage(1);
-            setStatusFilter(e.target.value as StatusFilter);
-          }}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-        >
-          <option value="ALL">All statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="REVIEW">In Review</option>
-          <option value="VERIFIED">Verified</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="UNVERIFIED">Unverified</option>
-        </select>
       </div>
 
       {coaches.length === 0 ? (
-        <Card className="bg-white">
-          <div className="py-12 text-center text-slate-600">
-            No coach verification requests found.
-          </div>
-        </Card>
+        <EmptyState
+          title="No verification requests"
+          description="Coaches who submit documents will appear here."
+        />
       ) : (
         <div className="space-y-4">
-          {coaches.map((coach) => {
-            const userInfo =
-              typeof coach.userId === "object" && coach.userId !== null
-                ? (coach.userId as Record<string, string>)
-                : null;
-            const coachId = getCoachId(coach);
-            const coachDetailsHref = `/admin/coach-verification/${coachId}`;
+          <ul className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            {coaches.map((coach) => {
+              const userInfo =
+                typeof coach.userId === "object" && coach.userId !== null
+                  ? (coach.userId as Record<string, string>)
+                  : null;
+              const coachId = getCoachId(coach);
+              const coachDetailsHref = `/admin/coach-verification/${coachId}`;
+              const isVerified = coach.verificationStatus === "VERIFIED";
 
-            return (
-              <Card key={coachId} className="bg-white">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-3">
-                      {coachId ? (
-                        <Link
-                          href={coachDetailsHref}
-                          className="hover:text-power-orange text-lg font-semibold text-slate-900 transition-colors"
-                        >
-                          {userInfo?.name || "Coach"}
-                        </Link>
-                      ) : (
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          {userInfo?.name || "Coach"}
-                        </h3>
-                      )}
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadge(
-                          coach.verificationStatus
-                        )}`}
-                      >
-                        {coach.verificationStatus || "UNVERIFIED"}
-                      </span>
-                    </div>
-                    {coachId ? (
-                      <Link
-                        href={coachDetailsHref}
-                        className="hover:text-power-orange block text-sm text-slate-600 transition-colors"
-                      >
-                        {userInfo?.email || "No email"}
-                      </Link>
-                    ) : (
+              return (
+                <li key={coachId} className="p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {coachId ? (
+                          <Link
+                            href={coachDetailsHref}
+                            className="text-base font-semibold text-slate-900 hover:text-orange-800 hover:underline"
+                          >
+                            {userInfo?.name || "Coach"}
+                          </Link>
+                        ) : (
+                          <h3 className="text-base font-semibold text-slate-900">
+                            {userInfo?.name || "Coach"}
+                          </h3>
+                        )}
+                        <StatusBadge status={coach.verificationStatus || "UNVERIFIED"} size="sm" />
+                      </div>
                       <p className="text-sm text-slate-600">{userInfo?.email || "No email"}</p>
-                    )}
-                    <p className="text-sm text-slate-500">Sports: {coach.sports.join(", ")}</p>
-                    {coach.verificationNotes && (
-                      <p className="text-sm text-red-600">Notes: {coach.verificationNotes}</p>
-                    )}
-                  </div>
+                      <p className="text-sm text-slate-500">
+                        {coach.sports.length ? coach.sports.join(", ") : "No sports listed"}
+                      </p>
+                      {coach.verificationNotes && (
+                        <p className="text-sm text-red-700">Notes: {coach.verificationNotes}</p>
+                      )}
+                    </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      href={`/admin/coach-verification/${coachId}`}
-                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                      View Details
-                    </Link>
-                    {coach.verificationStatus !== "VERIFIED" && (
+                    <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                      <Link href={coachDetailsHref} className={btn("outline")}>
+                        Review details
+                      </Link>
+                      {!isVerified && (
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(coach)}
+                          disabled={actionLoading}
+                          className={btn("primary")}
+                        >
+                          Approve
+                        </button>
+                      )}
+                      {!isVerified && (
+                        <button
+                          type="button"
+                          onClick={() => handleNotify(coach)}
+                          disabled={actionLoading}
+                          className={btn("quiet")}
+                        >
+                          Send reminder
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleNotify(coach)}
+                        type="button"
+                        onClick={() => startAction(coach, "REVIEW")}
                         disabled={actionLoading}
-                        className="rounded-lg border border-orange-300 px-4 py-2 text-sm font-semibold text-orange-700 transition-colors hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        className={btn("quiet")}
                       >
-                        Notify
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleApprove(coach)}
-                      disabled={actionLoading}
-                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => startAction(coach, "REVIEW")}
-                      disabled={actionLoading}
-                      className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
-                    >
-                      Mark Review
-                    </button>
-                    <button
-                      onClick={() => startAction(coach, "REJECT")}
-                      disabled={actionLoading}
-                      className="rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                </div>
-
-                {actionCoachId === coachId && actionMode && (
-                  <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-                    <p className="text-sm font-semibold text-slate-800">
-                      {actionMode === "REJECT" ? "Rejection reason" : "Review notes (optional)"}
-                    </p>
-                    <textarea
-                      rows={3}
-                      value={actionText}
-                      onChange={(event) => setActionText(event.target.value)}
-                      placeholder={
-                        actionMode === "REJECT"
-                          ? "Explain why this verification is rejected"
-                          : "Add notes for the review queue"
-                      }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={submitAction}
-                        disabled={actionLoading || (actionMode === "REJECT" && !actionText.trim())}
-                        className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {actionLoading ? "Saving..." : "Submit"}
+                        Move to review
                       </button>
                       <button
-                        onClick={cancelAction}
+                        type="button"
+                        onClick={() => startAction(coach, "REJECT")}
                         disabled={actionLoading}
-                        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                        className={btn("dangerOutline")}
                       >
-                        Cancel
+                        Reject
                       </button>
                     </div>
                   </div>
-                )}
 
-                <div className="mt-4 border-t border-slate-100 pt-4">
-                  <p className="mb-2 text-sm font-semibold text-slate-700">Documents</p>
-                  <div className="flex flex-wrap gap-2">
+                  {actionCoachId === coachId && actionMode && (
+                    <div className="mt-4 space-y-3 rounded-xl bg-slate-50 p-4">
+                      <label
+                        htmlFor={`action-${coachId}`}
+                        className="text-sm font-semibold text-slate-800"
+                      >
+                        {actionMode === "REJECT"
+                          ? "Reason for rejecting"
+                          : "Review notes (optional)"}
+                      </label>
+                      <textarea
+                        id={`action-${coachId}`}
+                        rows={3}
+                        value={actionText}
+                        onChange={(event) => setActionText(event.target.value)}
+                        placeholder={
+                          actionMode === "REJECT"
+                            ? "Say what is missing or wrong, so the coach can fix it"
+                            : "Add notes for the review queue"
+                        }
+                        className={fieldClass}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={submitAction}
+                          disabled={
+                            actionLoading || (actionMode === "REJECT" && !actionText.trim())
+                          }
+                          className={btn(actionMode === "REJECT" ? "danger" : "primary")}
+                        >
+                          {actionLoading
+                            ? "Saving…"
+                            : actionMode === "REJECT"
+                              ? "Reject coach"
+                              : "Save"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={cancelAction}
+                          disabled={actionLoading}
+                          className={btn("outline")}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+                    <span className="text-sm font-medium text-slate-700">Documents</span>
                     {coach.verificationDocuments?.length ? (
                       coach.verificationDocuments.map((doc, index) => (
                         <a
@@ -395,64 +387,26 @@ export default function AdminCoachVerificationPage() {
                           href={doc.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="hover:border-power-orange hover:text-power-orange rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition-colors"
+                          className="rounded-md border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50"
                         >
                           {doc.type}: {doc.fileName}
                         </a>
                       ))
                     ) : (
-                      <span className="text-sm text-slate-500">No documents uploaded.</span>
+                      <span className="text-sm text-slate-500">None uploaded</span>
                     )}
                   </div>
-                </div>
-              </Card>
-            );
-          })}
+                </li>
+              );
+            })}
+          </ul>
 
-          {pagination.totalPages > 1 && (
-            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-center text-sm text-slate-600 sm:text-left">
-                Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                {Math.min(currentPage * PAGE_SIZE, pagination.total)} of {pagination.total}
-              </p>
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                  className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-
-                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-                  .slice(
-                    Math.max(0, currentPage - 2),
-                    Math.min(pagination.totalPages, currentPage + 1)
-                  )
-                  .map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
-                        currentPage === page
-                          ? "bg-power-orange-solid text-white"
-                          : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-
-                <button
-                  onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
-                  disabled={currentPage === pagination.totalPages}
-                  className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            page={currentPage}
+            totalPages={pagination.totalPages}
+            total={pagination.total}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 
@@ -461,7 +415,7 @@ export default function AdminCoachVerificationPage() {
         title="Approve coach verification?"
         description={
           pendingApproveCoach
-            ? `This will mark ${pendingApproveCoach.displayName} as verified.`
+            ? `This marks ${pendingApproveCoach.displayName} as verified and shows the verified badge on their profile.`
             : undefined
         }
         confirmLabel="Approve"

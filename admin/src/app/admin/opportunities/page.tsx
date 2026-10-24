@@ -24,6 +24,10 @@ import {
   type OpportunitySourceRow,
   type OpportunityTrack,
 } from "@/modules/admin/services/opportunities";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { Card } from "@/modules/shared/ui/Card";
 import {
   ArrowDown,
@@ -146,7 +150,7 @@ function StatusTag({ row }: { row: AdminOpportunityRow }) {
       ? "bg-amber-50 text-amber-800"
       : "bg-emerald-50 text-emerald-800";
   return (
-    <span className={`whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-bold ${tone}`}>
+    <span className={`whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-semibold ${tone}`}>
       {label}
     </span>
   );
@@ -227,14 +231,14 @@ function QueueTile({
     >
       <span className="min-w-0">
         <span
-          className={`block text-2xl font-bold ${count > 0 ? "text-slate-900" : "text-slate-400"}`}
+          className={`block text-2xl font-semibold ${count > 0 ? "text-slate-900" : "text-slate-500"}`}
         >
           {count}
         </span>
         <span className="block text-xs font-semibold text-slate-700">{label}</span>
         <span className="block truncate text-xs text-slate-500">{hint}</span>
       </span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+      <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" />
     </button>
   );
 }
@@ -287,7 +291,7 @@ function SourcesQueue() {
               </span>
             </span>
             <span
-              className={`rounded-md px-2 py-0.5 text-xs font-bold ${
+              className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
                 source.status === "PENDING_REVIEW"
                   ? "bg-amber-50 text-amber-800"
                   : "bg-red-50 text-red-700"
@@ -328,10 +332,10 @@ function Drawer({
       <aside
         role="dialog"
         aria-label={title}
-        className="relative flex h-full w-full max-w-xl flex-col bg-slate-50 shadow-xl"
+        className="relative flex h-full w-full max-w-xl flex-col bg-slate-50 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
       >
         <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4">
-          <h2 className="text-base font-bold text-slate-900">{title}</h2>
+          <h2 className="text-base font-semibold text-slate-900">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -446,23 +450,25 @@ export default function AdminOpportunitiesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-900">Admissions & Scholarships</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-600">
-            Nothing reaches parents until someone has checked its sources, marked it verified and
-            published it.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowNew((v) => !v)}
-          className="bg-power-orange-solid inline-flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold text-white"
-        >
-          {showNew ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          {showNew ? "Close" : "New entry"}
-        </button>
-      </div>
+      <AdminPageHeader
+        badge="Content"
+        title="Admissions and scholarships"
+        subtitle="Nothing reaches parents until someone has checked its sources, marked it verified and published it."
+        action={
+          <button
+            type="button"
+            onClick={() => setShowNew((v) => !v)}
+            className={showNew ? btn("outline") : btn("accent")}
+          >
+            {showNew ? (
+              <X className="size-4" aria-hidden />
+            ) : (
+              <Plus className="size-4" aria-hidden />
+            )}
+            {showNew ? "Close" : "New entry"}
+          </button>
+        }
+      />
 
       {showNew && (
         <Card variant="elevated">
@@ -478,7 +484,9 @@ export default function AdminOpportunitiesPage() {
                 type="button"
                 onClick={() => setNewMode(mode)}
                 className={`rounded-lg px-3 py-1.5 ${
-                  newMode === mode ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
+                  newMode === mode
+                    ? "bg-deep-slate text-white"
+                    : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
                 {label}
@@ -499,7 +507,7 @@ export default function AdminOpportunitiesPage() {
                 <select
                   value={track}
                   onChange={(e) => setTrack(e.target.value as OpportunityTrack)}
-                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                  className={fieldClass}
                 >
                   <option value="admission">Admissions</option>
                   <option value="scholarship">Scholarships</option>
@@ -516,7 +524,7 @@ export default function AdminOpportunitiesPage() {
                 type="button"
                 onClick={() => void create()}
                 disabled={creating || title.trim().length < 3}
-                className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                className={btn("primary")}
               >
                 {creating && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create draft
@@ -562,25 +570,17 @@ export default function AdminOpportunitiesPage() {
 
       <Card variant="elevated">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-          <div className="flex gap-4 text-sm font-semibold">
-            {SECTIONS.map((section) => {
-              const total = rows.filter((row) => row.track === section.track).length;
-              return (
-                <button
-                  key={section.track}
-                  type="button"
-                  onClick={() => setTab(section.track)}
-                  className={`border-b-2 pb-1 ${
-                    tab === section.track
-                      ? "border-slate-900 text-slate-900"
-                      : "border-transparent text-slate-500 hover:text-slate-900"
-                  }`}
-                >
-                  {section.label} <span className="font-normal text-slate-400">{total}</span>
-                </button>
-              );
-            })}
-          </div>
+          <Tabs
+            className="min-w-0 sm:min-w-[16rem]"
+            label="Entry type"
+            value={tab}
+            onChange={setTab}
+            tabs={SECTIONS.map((section) => ({
+              id: section.track,
+              label: section.label,
+              count: rows.filter((row) => row.track === section.track).length,
+            }))}
+          />
           <div className="flex w-full min-w-0 items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
             <input
               type="search"
@@ -588,19 +588,19 @@ export default function AdminOpportunitiesPage() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search by title"
               aria-label="Search by title"
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm sm:w-56 sm:flex-none"
+              className={`${fieldClass} min-w-0 flex-1 sm:w-56 sm:flex-none`}
             />
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
                 aria-expanded={showFilters}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:border-slate-400"
+                className={btn("outline")}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filters
                 {activeFilters > 0 && (
-                  <span className="rounded-full bg-slate-900 px-1.5 text-xs text-white">
+                  <span className="bg-deep-slate rounded px-1.5 text-xs text-white">
                     {activeFilters}
                   </span>
                 )}
@@ -608,7 +608,7 @@ export default function AdminOpportunitiesPage() {
               {showFilters && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowFilters(false)} />
-                  <div className="absolute right-0 z-20 mt-2 w-64 space-y-3 rounded-lg border border-slate-200 bg-white p-3 shadow-lg">
+                  <div className="absolute right-0 z-20 mt-2 w-64 space-y-3 rounded-lg border border-slate-200 bg-white p-3 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]">
                     <div>
                       <p className="mb-1.5 text-xs font-semibold text-slate-500">Status</p>
                       <div className="flex flex-wrap gap-1.5">
@@ -657,13 +657,14 @@ export default function AdminOpportunitiesPage() {
         </div>
 
         {loading ? (
-          <div className="mt-3 flex items-center gap-2 text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <div className="mt-3">
+            <SkeletonBlock rows={5} label="Loading entries" />
           </div>
         ) : list.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">
-            {filtered ? "Nothing matches these filters." : "None yet."}
-          </p>
+          <EmptyState
+            title={filtered ? "Nothing matches these filters" : "No entries yet"}
+            description={filtered ? "Clear a filter to see more." : "Add one with New entry."}
+          />
         ) : (
           <table className="mt-3 w-full text-left">
             <thead>
@@ -688,7 +689,7 @@ export default function AdminOpportunitiesPage() {
                 <tr
                   key={row._id}
                   onClick={() => router.push(`/admin/opportunities/${row._id}`)}
-                  className="cursor-pointer hover:bg-slate-50"
+                  className="cursor-pointer hover:bg-orange-50/40"
                 >
                   <td className="min-w-0 px-2 py-3">
                     <Link

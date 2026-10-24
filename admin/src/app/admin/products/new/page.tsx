@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorNotice } from "@/modules/shared/ui/States";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminEcommerceApi } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
@@ -12,7 +13,7 @@ const Input = ({
   <div className="w-full">
     <input
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange-solid focus:ring-power-orange-solid border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -26,7 +27,7 @@ const Textarea = ({
   <div className="w-full">
     <textarea
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange-solid focus:ring-power-orange-solid border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -40,7 +41,7 @@ const Select = ({
   <div className="w-full">
     <select
       {...props}
-      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange focus:ring-power-orange border-slate-300"} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange-solid focus:ring-power-orange-solid border-slate-300"} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -309,21 +310,19 @@ export default function AddProductPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Ecommerce"
-        title="New Product"
-        subtitle="Add a new product to the catalog."
+        badge="Commerce"
+        title="New product"
+        subtitle="Add an item to the merchandise catalog. Prices are in rupees."
       />
 
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
-        {error && (
-          <div className="rounded-lg bg-red-50 p-4 text-sm font-medium text-red-600">{error}</div>
-        )}
+        {error && <ErrorNotice message={error} />}
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="space-y-6 md:col-span-2">
             {/* Basic Info */}
             <Card className="space-y-4 p-6">
-              <h3 className="text-lg font-bold text-slate-900">Basic Information</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Basic Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Name *</Label>
@@ -407,7 +406,7 @@ export default function AddProductPage() {
 
             {/* Targeting & Details */}
             <Card className="space-y-4 p-6">
-              <h3 className="text-lg font-bold text-slate-900">Targeting & Specifications</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Targeting & Specifications</h3>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Age Group</Label>
@@ -488,7 +487,7 @@ export default function AddProductPage() {
 
             {/* Images */}
             <Card className="space-y-4 p-6">
-              <h3 className="text-lg font-bold text-slate-900">Images *</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Images *</h3>
               {images.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-4">
                   {images.map((img, index) => (
@@ -530,7 +529,7 @@ export default function AddProductPage() {
                 </Button>
 
                 {isDropdownOpen && (
-                  <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]">
                     <div className="p-1">
                       <label className="flex w-full cursor-pointer items-center rounded-sm px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <UploadCloud className="mr-2 h-4 w-4 text-slate-500" /> Upload File to S3
@@ -564,7 +563,7 @@ export default function AddProductPage() {
             {/* Variants */}
             <Card className="space-y-4 p-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-slate-900">Variants</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Variants</h3>
                 <Button type="button" size="sm" onClick={handleAddVariant}>
                   <Plus className="mr-2 h-4 w-4" /> Add Variant
                 </Button>
@@ -576,7 +575,7 @@ export default function AddProductPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(index)}
-                        className="absolute right-2 top-2 text-slate-400 hover:text-red-500"
+                        className="absolute right-2 top-2 text-slate-500 hover:text-red-500"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -647,7 +646,7 @@ export default function AddProductPage() {
           <div className="space-y-6">
             {/* Categorization & Status */}
             <Card className="space-y-4 p-6">
-              <h3 className="text-lg font-bold text-slate-900">Organization</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Organization</h3>
               <div className="space-y-2">
                 <Label>Category *</Label>
                 <Select
@@ -668,7 +667,7 @@ export default function AddProductPage() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
-                  className="text-power-orange focus:ring-power-orange rounded border-slate-300"
+                  className="text-power-orange-solid focus:ring-power-orange-solid rounded border-slate-300"
                 />
                 <Label htmlFor="isActive">Active in Store</Label>
               </div>
@@ -676,7 +675,7 @@ export default function AddProductPage() {
 
             {/* Pricing */}
             <Card className="space-y-4 p-6">
-              <h3 className="text-lg font-bold text-slate-900">Pricing</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Pricing</h3>
               <div className="space-y-2">
                 <Label>Base Price (in ₹) *</Label>
                 <Input
@@ -712,7 +711,7 @@ export default function AddProductPage() {
 
             {/* Logistics */}
             <Card className="space-y-4 p-6">
-              <h3 className="text-lg font-bold text-slate-900">Logistics</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Logistics</h3>
               <div className="space-y-2">
                 <Label>Weight (g) *</Label>
                 <Input
@@ -790,7 +789,7 @@ export default function AddProductPage() {
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? "Saving..." : "Create Product"}
+            {saving ? "Saving…" : "Create product"}
           </Button>
         </div>
       </form>

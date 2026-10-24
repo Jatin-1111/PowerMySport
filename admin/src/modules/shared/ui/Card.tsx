@@ -1,4 +1,4 @@
-﻿import { cn } from "@/utils/cn";
+import { cn } from "@/utils/cn";
 import React from "react";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -16,13 +16,13 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
  */
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = "default", children, onClick, ...props }, ref) => {
-    const baseStyles = "bg-card border border-border rounded-lg p-4 sm:p-6";
+    const baseStyles = "bg-card border border-border rounded-xl p-4 sm:p-6";
 
     const variants = {
       default: "",
-      elevated: "shadow-lg",
+      elevated: "shadow-[0_8px_24px_-12px_rgb(15_23_42/0.25)]",
       interactive:
-        "hover:shadow-xl transition-shadow duration-200 cursor-pointer hover:border-power-orange",
+        "cursor-pointer transition-[box-shadow,border-color] duration-150 hover:border-slate-300 hover:shadow-[0_8px_24px_-12px_rgb(15_23_42/0.25)]",
     };
 
     return (
@@ -81,7 +81,7 @@ export const CardTitle: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = ({
   ...props
 }) => {
   return (
-    <h3 className={cn("text-xl font-bold text-white", className)} {...props}>
+    <h3 className={cn("text-lg font-semibold text-slate-900", className)} {...props}>
       {children}
     </h3>
   );

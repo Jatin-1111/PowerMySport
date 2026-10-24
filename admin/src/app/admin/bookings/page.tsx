@@ -5,14 +5,16 @@ import { adminApi, type AdminPhonePeRefundStatus } from "@/modules/admin/service
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { BookingTimeline } from "@/modules/admin/components/BookingTimeline";
 import { statsApi } from "@/modules/analytics/services/stats";
-import { Card } from "@/modules/shared/ui/Card";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Booking } from "@/types";
 import { formatCurrency, formatDate, formatTime } from "@/utils/format";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorNotice } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -319,21 +321,11 @@ export default function AdminBookingsPage() {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
-          title="All Bookings"
-          subtitle="View and monitor all bookings across the platform."
+          badge="Commerce"
+          title="Bookings"
+          subtitle="Every booking across venues, coaches and academies. Open one to refund or review its history."
         />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadBookings}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        <ErrorNotice message={error} onRetry={loadBookings} />
       </div>
     );
   }
@@ -341,41 +333,30 @@ export default function AdminBookingsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="All Bookings"
-        subtitle="View and monitor all bookings across the platform."
+        badge="Commerce"
+        title="Bookings"
+        subtitle="Every booking across venues, coaches and academies. Open one to refund or review its history."
       />
 
-      <div className="admin-tabs-scroll border-b border-slate-200">
-        {(
-          [
-            ["ALL", "All Bookings", bookingCounts.all],
-            ["VENUE", "Venue Bookings", bookingCounts.venue],
-            ["Coach", "Coach Bookings", bookingCounts.coach],
-            ["ACADEMY", "Academy Bookings", bookingCounts.academy],
-          ] as [BookingTabType, string, number][]
-        ).map(([tab, label, count]) => (
-          <button
-            key={tab}
-            onClick={() => {
-              setActiveTab(tab);
-              setCurrentPage(1);
-            }}
-            className={`border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4 sm:py-3 ${
-              activeTab === tab
-                ? "border-power-orange text-power-orange"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {label}
-            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs">{count}</span>
-          </button>
-        ))}
-      </div>
+      <Tabs
+        label="Booking type"
+        value={activeTab}
+        onChange={(tab) => {
+          setActiveTab(tab);
+          setCurrentPage(1);
+        }}
+        tabs={[
+          { id: "ALL" as const, label: "All", count: bookingCounts.all },
+          { id: "VENUE" as const, label: "Venues", count: bookingCounts.venue },
+          { id: "Coach" as const, label: "Coaches", count: bookingCounts.coach },
+          { id: "ACADEMY" as const, label: "Academies", count: bookingCounts.academy },
+        ]}
+      />
 
       {!DISPUTE_ACTIONS_ENABLED && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
-          Dispute processing will be enabled after payment gateway integration.
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Disputes can&apos;t be started from here yet. They switch on once the payment gateway
+          integration is live.
         </div>
       )}
 
@@ -404,7 +385,7 @@ export default function AdminBookingsPage() {
           <ExportCsvButton
             filename="bookings.csv"
             rows={filteredBookings}
-            label="Export Page CSV"
+            label="Export this page (CSV)"
             columns={[
               { header: "Booking ID", value: (b) => getBookingId(b) },
               { header: "Status", value: (b) => b.status },
@@ -438,18 +419,20 @@ export default function AdminBookingsPage() {
           selectedBooking && !actionType ? (
             <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => beginAction("DISPUTE")}
                 disabled={!DISPUTE_ACTIONS_ENABLED}
-                className="rounded-lg border border-blue-300 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className={btn("outline")}
               >
-                Dispute
+                Open dispute
               </button>
               <button
+                type="button"
                 onClick={() => beginAction("REFUND")}
                 disabled={!REFUND_ACTIONS_ENABLED}
-                className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className={btn("primary")}
               >
-                Refund
+                Refund booking
               </button>
             </div>
           ) : null
@@ -500,7 +483,7 @@ export default function AdminBookingsPage() {
               <DetailRow
                 label="Total amount"
                 value={
-                  <span className="text-base font-bold text-slate-900">
+                  <span className="text-base font-semibold text-slate-900">
                     {formatCurrency(selectedBooking.totalAmount)}
                   </span>
                 }
@@ -516,8 +499,8 @@ export default function AdminBookingsPage() {
             {selectedBooking.payments && selectedBooking.payments.length > 0 && (
               <DetailSection title="Payout splits">
                 <div className="overflow-hidden rounded-lg border border-slate-200">
-                  <table className="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                  <table className="data-table">
+                    <thead>
                       <tr>
                         <th className="px-3 py-2 text-left">Payee</th>
                         <th className="px-3 py-2 text-right">Amount</th>
@@ -550,10 +533,10 @@ export default function AdminBookingsPage() {
                   <select
                     value={refundType}
                     onChange={(event) => setRefundType(event.target.value as "FULL" | "PARTIAL")}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   >
-                    <option value="FULL">FULL</option>
-                    <option value="PARTIAL">PARTIAL</option>
+                    <option value="FULL">Full refund</option>
+                    <option value="PARTIAL">Partial refund</option>
                   </select>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
@@ -565,12 +548,12 @@ export default function AdminBookingsPage() {
                             "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER"
                         )
                       }
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className={fieldClass}
                     >
-                      <option value="NO_SHOW">NO_SHOW</option>
-                      <option value="POOR_QUALITY">POOR_QUALITY</option>
-                      <option value="PAYMENT_ISSUE">PAYMENT_ISSUE</option>
-                      <option value="OTHER">OTHER</option>
+                      <option value="NO_SHOW">No show</option>
+                      <option value="POOR_QUALITY">Poor quality</option>
+                      <option value="PAYMENT_ISSUE">Payment issue</option>
+                      <option value="OTHER">Other</option>
                     </select>
                     <select
                       value={resolution}
@@ -579,11 +562,11 @@ export default function AdminBookingsPage() {
                           event.target.value as "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND"
                         )
                       }
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      className={fieldClass}
                     >
-                      <option value="FULL_REFUND">FULL_REFUND</option>
-                      <option value="PARTIAL_REFUND">PARTIAL_REFUND</option>
-                      <option value="NO_REFUND">NO_REFUND</option>
+                      <option value="FULL_REFUND">Full refund</option>
+                      <option value="PARTIAL_REFUND">Partial refund</option>
+                      <option value="NO_REFUND">No refund</option>
                     </select>
                   </div>
                 )}
@@ -592,8 +575,8 @@ export default function AdminBookingsPage() {
                   rows={3}
                   value={reason}
                   onChange={(event) => setReason(event.target.value)}
-                  placeholder="Reason"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  placeholder="Reason (required)"
+                  className={fieldClass}
                 />
 
                 {actionType === "DISPUTE" && (
@@ -602,22 +585,28 @@ export default function AdminBookingsPage() {
                     value={evidence}
                     onChange={(event) => setEvidence(event.target.value)}
                     placeholder="Evidence / details (optional)"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   />
                 )}
 
                 <div className="flex flex-wrap gap-2">
                   <button
+                    type="button"
                     onClick={submitAction}
                     disabled={actionLoading || !reason.trim()}
-                    className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={btn(actionType === "REFUND" ? "danger" : "primary")}
                   >
-                    {actionLoading ? "Submitting..." : "Submit"}
+                    {actionLoading
+                      ? "Submitting…"
+                      : actionType === "REFUND"
+                        ? "Issue refund"
+                        : "Submit dispute"}
                   </button>
                   <button
+                    type="button"
                     onClick={() => setActionType(null)}
                     disabled={actionLoading}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className={btn("outline")}
                   >
                     Cancel
                   </button>
@@ -627,11 +616,11 @@ export default function AdminBookingsPage() {
                       disabled={
                         actionLoading || Boolean(refundStatusLoadingByBookingId[selectedBookingId])
                       }
-                      className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      className={btn("outline")}
                     >
                       {refundStatusLoadingByBookingId[selectedBookingId]
-                        ? "Checking..."
-                        : "Check PhonePe Status"}
+                        ? "Checking…"
+                        : "Check PhonePe status"}
                     </button>
                   )}
                 </div>

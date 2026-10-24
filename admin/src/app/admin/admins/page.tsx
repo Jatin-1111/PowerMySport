@@ -3,13 +3,17 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import PermissionSelector from "@/modules/admin/components/PermissionSelector";
 import { Admin, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
-import { ChevronLeft, ChevronRight, Mail, Pencil } from "lucide-react";
+import { Mail, Pencil } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { PermissionModule, RoleTemplate } from "@/types";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 const formatLastLogin = (value?: string) => {
   if (!value) return "Never logged in";
@@ -61,6 +65,7 @@ export default function AdminsManagementPage() {
     permissions: [] as string[],
   });
   const [editSaving, setEditSaving] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [statusTarget, setStatusTarget] = useState<Admin | null>(null);
   const [statusBusy, setStatusBusy] = useState(false);
 
@@ -297,132 +302,123 @@ export default function AdminsManagementPage() {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
+          badge="System"
           title="Admins"
-          subtitle="Manage administrator accounts (Super Admin only)."
+          subtitle="Create and manage administrator accounts."
         />
-        <Card className="bg-white">
-          <div className="py-10 text-center text-slate-600">
-            You do not have permission to manage admin accounts.
-          </div>
-        </Card>
+        <EmptyState
+          title="You can't manage admin accounts"
+          description="Only a super admin can create or change them."
+        />
       </div>
     );
   }
 
   if (loading) {
-    return <div className="py-12 text-center">Loading admins...</div>;
+    return <SkeletonBlock rows={6} label="Loading admins" />;
   }
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Super Admin"
+        badge="System"
         title="Admins"
-        subtitle="Create and manage administrator accounts."
+        subtitle="Who can sign in to this panel, and what each person can do."
+        action={
+          <button
+            type="button"
+            onClick={() => setShowCreate((v) => !v)}
+            aria-expanded={showCreate}
+            className={showCreate ? btn("outline") : btn("accent")}
+          >
+            {showCreate ? "Close" : "Add admin"}
+          </button>
+        }
       />
 
-      {error && (
-        <Card className="bg-white">
-          <div className="space-y-3 py-6 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadAdmins}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
+      {error && <ErrorNotice message={error} onRetry={loadAdmins} />}
+
+      {showCreate && (
+        <Panel
+          title="Add an admin"
+          description="They get a temporary password by email and must change it the first time they sign in."
+        >
+          <div className="mb-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="flex items-start gap-2">
+              <Mail className="mt-0.5 h-4 w-4 text-slate-500" aria-hidden />
+              <p>Use an inbox they actively check. The credentials go to this address.</p>
+            </div>
           </div>
-        </Card>
+
+          <form onSubmit={handleCreateAdmin} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="admin-name" className={labelClass}>
+                  Full name
+                </label>
+                <input
+                  id="admin-name"
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Priya Raman"
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="admin-email" className={labelClass}>
+                  Email address
+                </label>
+                <input
+                  id="admin-email"
+                  value={form.email}
+                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="name@powermysport.com"
+                  type="email"
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+
+            <PermissionSelector
+              roleTemplates={roleTemplates}
+              permissionCatalog={permissionCatalog}
+              selectedRole={form.role}
+              selectedPermissions={form.permissions}
+              onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
+              onPermissionsChange={(permissions) => setForm((prev) => ({ ...prev, permissions }))}
+              disabled={submitting}
+            />
+
+            <div>
+              <button type="submit" disabled={submitting || !form.role} className={btn("primary")}>
+                {submitting ? "Creating…" : "Create admin"}
+              </button>
+            </div>
+          </form>
+
+          {lastInvitationEmail && (
+            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              Invitation email sent to <span className="font-semibold">{lastInvitationEmail}</span>.
+            </div>
+          )}
+        </Panel>
       )}
 
-      <Card className="bg-white">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Create Admin</h2>
-        <p className="mb-5 text-sm text-slate-600">
-          Enter name, email, and select a role with permissions. A temporary password is
-          auto-generated and sent via email. Admin must change it on first login.
-        </p>
-
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-          <div className="flex items-start gap-2">
-            <Mail className="mt-0.5 h-4 w-4 text-slate-500" />
-            <p>
-              Use an active inbox. The admin receives temporary credentials at this address and must
-              reset password on first login.
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleCreateAdmin} className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">Full name</label>
-              <input
-                value={form.name}
-                onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
-                placeholder="Enter full name"
-                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:ring-2"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Email address
-              </label>
-              <input
-                value={form.email}
-                onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                placeholder="name@company.com"
-                type="email"
-                className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:ring-2"
-              />
-              <p className="mt-1.5 text-xs text-slate-500">
-                Temporary credentials will be sent to this email.
-              </p>
-            </div>
-          </div>
-
-          <PermissionSelector
-            roleTemplates={roleTemplates}
-            permissionCatalog={permissionCatalog}
-            selectedRole={form.role}
-            selectedPermissions={form.permissions}
-            onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
-            onPermissionsChange={(permissions) => setForm((prev) => ({ ...prev, permissions }))}
-            disabled={submitting}
-          />
-
-          <div>
-            <button
-              type="submit"
-              disabled={submitting || !form.role}
-              className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {submitting ? "Creating..." : "Create Admin"}
-            </button>
-          </div>
-        </form>
-
-        {lastInvitationEmail && (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            Invitation email sent to <span className="font-semibold">{lastInvitationEmail}</span>.
-          </div>
-        )}
-      </Card>
-
-      <Card className="bg-white">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Admin Accounts</h2>
+      <Panel title="Admin accounts">
         <div className="mb-4 grid gap-3 md:grid-cols-2">
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search admins"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            aria-label="Search admins"
+            className={fieldClass}
           />
           <select
             value={sortBy}
+            aria-label="Sort admins"
             onChange={(event) => setSortBy(event.target.value as "role" | "name" | "email")}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className={fieldClass}
           >
             <option value="role">Role priority</option>
             <option value="name">Name (A-Z)</option>
@@ -452,7 +448,10 @@ export default function AdminsManagementPage() {
           </div>
         )}
         {visibleAdmins.length === 0 ? (
-          <p className="text-slate-600">No admin accounts found.</p>
+          <EmptyState
+            title="No admin accounts match"
+            description="Clear the search to see everyone."
+          />
         ) : (
           <div className="space-y-3">
             {paginatedAdmins.map((admin) => (
@@ -466,32 +465,21 @@ export default function AdminsManagementPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-slate-900">{admin.name}</p>
-                      {!admin.isActive && (
-                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
-                          Inactive
-                        </span>
-                      )}
+                      {!admin.isActive && <StatusBadge status="Inactive" tone="red" size="sm" />}
                       {admin.id === currentAdminId && (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                          You
-                        </span>
+                        <StatusBadge status="You" tone="slate" dot={false} size="sm" />
                       )}
                     </div>
                     <p className="text-sm text-slate-600">{admin.email}</p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="mt-1 text-xs text-slate-500">
                       Last login: {formatLastLogin(admin.lastLogin)}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <span className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1 text-xs font-semibold">
-                      {admin.role}
-                    </span>
+                    <StatusBadge status={admin.role} tone="orange" dot={false} size="sm" />
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEdit(admin)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                      >
-                        <Pencil size={12} />
+                      <button onClick={() => openEdit(admin)} className={btn("outline", "sm")}>
+                        <Pencil size={12} aria-hidden />
                         Edit
                       </button>
                       <button
@@ -502,11 +490,7 @@ export default function AdminsManagementPage() {
                             ? "You cannot deactivate your own account"
                             : undefined
                         }
-                        className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-                          admin.isActive
-                            ? "border-red-300 text-red-700 hover:bg-red-50"
-                            : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                        }`}
+                        className={btn(admin.isActive ? "dangerOutline" : "outline", "sm")}
                       >
                         {admin.isActive ? "Deactivate" : "Activate"}
                       </button>
@@ -519,13 +503,13 @@ export default function AdminsManagementPage() {
                     {admin.permissions.slice(0, 8).map((permission) => (
                       <span
                         key={`${admin.id}-${permission}`}
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                           permission.includes(":manage") ||
                           permission.includes(":delete") ||
                           permission.includes(":verify") ||
                           permission.includes(":approve") ||
                           permission.includes(":resolve")
-                            ? "border border-indigo-200 bg-indigo-50 text-indigo-700"
+                            ? "border border-sky-200 bg-sky-50 text-sky-700"
                             : "border border-slate-200 bg-slate-100 text-slate-700"
                         }`}
                       >
@@ -533,7 +517,7 @@ export default function AdminsManagementPage() {
                       </span>
                     ))}
                     {admin.permissions.length > 8 && (
-                      <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                         +{admin.permissions.length - 8} more
                       </span>
                     )}
@@ -544,62 +528,35 @@ export default function AdminsManagementPage() {
               </div>
             ))}
 
-            {totalPages > 1 && (
-              <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-center text-sm text-slate-600 sm:text-left">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, visibleAdmins.length)} of{" "}
-                  {visibleAdmins.length} admins
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .slice(Math.max(0, currentPage - 2), Math.min(totalPages, currentPage + 1))
-                    .map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
-                          currentPage === page
-                            ? "bg-power-orange-solid text-white"
-                            : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                  <button
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              className="mt-4"
+              page={currentPage}
+              totalPages={totalPages}
+              total={visibleAdmins.length}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
-      </Card>
+      </Panel>
 
       {editingAdmin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Edit ${editingAdmin.name}`}
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
+          >
             <h3 className="text-lg font-semibold text-slate-900">Edit {editingAdmin.name}</h3>
             <p className="mt-1 text-sm text-slate-500">{editingAdmin.email}</p>
 
             <div className="mt-4 space-y-5">
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700">Full name</label>
+                <label htmlFor="edit-admin-name" className={labelClass}>
+                  Full name
+                </label>
                 <input
+                  id="edit-admin-name"
                   value={editForm.name}
                   onChange={(event) =>
                     setEditForm((prev) => ({
@@ -607,7 +564,7 @@ export default function AdminsManagementPage() {
                       name: event.target.value,
                     }))
                   }
-                  className="focus:border-power-orange focus:ring-power-orange/30 w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:ring-2"
+                  className={fieldClass}
                 />
               </div>
 
@@ -626,18 +583,20 @@ export default function AdminsManagementPage() {
 
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
+                type="button"
                 onClick={closeEdit}
                 disabled={editSaving}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className={btn("outline")}
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={saveEdit}
                 disabled={editSaving}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                className={btn("primary")}
               >
-                {editSaving ? "Saving..." : "Save changes"}
+                {editSaving ? "Saving…" : "Save changes"}
               </button>
             </div>
           </div>

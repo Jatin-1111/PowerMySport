@@ -11,7 +11,11 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { slugify } from "@/modules/admin/components/pathway/StageEditor";
 import { Field, TextInput } from "@/modules/admin/components/pathway/fields";
 import { adminApi, type AdminPathwayGuideRow } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn } from "@/modules/shared/ui/buttonStyles";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import axios from "axios";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -70,19 +74,20 @@ export default function AdminPathwaysPage() {
     }
   };
 
+  const [pendingDelete, setPendingDelete] = useState<AdminPathwayGuideRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const remove = async (row: AdminPathwayGuideRow) => {
-    if (
-      !window.confirm(
-        `Delete the ${row.sportName} pathway and all ${row.stageCount} of its stages? This cannot be undone.`
-      )
-    )
-      return;
+    setDeleting(true);
     try {
       await adminApi.deletePathwayGuide(row._id);
       toast.success("Pathway deleted.");
       await load();
     } catch {
       toast.error("Could not delete that pathway.");
+    } finally {
+      setDeleting(false);
+      setPendingDelete(null);
     }
   };
 
@@ -91,84 +96,70 @@ export default function AdminPathwaysPage() {
       <AdminPageHeader
         badge="Content"
         title="Pathways"
-        subtitle="The parent-facing journey for each sport: six stages, each answering the same five questions. Edited stage by stage, published when it's ready."
+        subtitle="The parent-facing journey for each sport: six stages, each answering the same five questions. Edit stage by stage and publish when it's ready."
       />
 
-      {/* ── New pathway ── */}
-      <Card variant="elevated" className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Start a new pathway</h2>
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <Field label="Sport" hint="The display name — the slug is derived from it.">
-            <TextInput value={sportName} onChange={setSportName} placeholder="Tennis" />
-          </Field>
-          <button
-            type="button"
-            onClick={() => void create()}
-            disabled={creating || !sportName.trim()}
-            className="inline-flex h-[38px] items-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40"
-          >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Create draft
-          </button>
-        </div>
-      </Card>
-
       {/* ── Existing ── */}
-      <Card variant="elevated">
-        <h2 className="mb-3 text-lg font-bold text-slate-900">All pathways</h2>
+      <Panel flush title="All pathways" description="One per sport. Open a row to edit its stages.">
         {loading ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <div className="px-5 pb-5">
+            <SkeletonBlock rows={4} label="Loading pathways" />
+          </div>
         ) : rows.length === 0 ? (
-          <p className="text-sm text-slate-500">
-            No pathways yet. Create one above and add its stages.
-          </p>
+          <EmptyState
+            title="No pathways yet"
+            description="Start one below, then add its stages in the editor."
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <th className="py-2">Sport</th>
-                  <th className="py-2">Stages</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Updated</th>
-                  <th className="py-2" />
+                  <th>Sport</th>
+                  <th>Stages</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row._id} className="border-b border-slate-100">
-                    <td className="py-2.5">
+                  <tr key={row._id}>
+                    <td>
                       <Link
                         href={`/admin/pathways/${row._id}`}
-                        className="hover:text-power-orange font-semibold text-slate-800"
+                        className="font-semibold text-slate-900 hover:text-orange-800 hover:underline"
                       >
                         {row.sportName}
                       </Link>
                     </td>
-                    <td className="py-2.5 text-slate-600">{row.stageCount}</td>
-                    <td className="py-2.5">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                          row.status === "published"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {row.status}
-                      </span>
+                    <td className="tabular-nums">{row.stageCount}</td>
+                    <td>
+                      <StatusBadge
+                        status={row.status}
+                        tone={row.status === "published" ? "green" : "slate"}
+                        size="sm"
+                      />
                     </td>
-                    <td className="py-2.5 text-slate-500">
-                      {row.updatedAt ? new Date(row.updatedAt).toLocaleDateString("en-IN") : "—"}
+                    <td className="text-slate-500">
+                      {row.updatedAt
+                        ? new Date(row.updatedAt).toLocaleDateString("en-IN")
+                        : "Never"}
                     </td>
-                    <td className="py-2.5">
-                      <div className="flex justify-end">
+                    <td>
+                      <div className="flex justify-end gap-2">
+                        <Link href={`/admin/pathways/${row._id}`} className={btn("outline", "sm")}>
+                          Edit
+                        </Link>
                         <button
                           type="button"
-                          onClick={() => void remove(row)}
-                          title="Delete"
-                          className="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:border-red-300 hover:text-red-600"
+                          onClick={() => setPendingDelete(row)}
+                          aria-label={`Delete the ${row.sportName} pathway`}
+                          className={btn("dangerOutline", "sm", "!px-2")}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="size-4" aria-hidden />
                         </button>
                       </div>
                     </td>
@@ -178,7 +169,40 @@ export default function AdminPathwaysPage() {
             </table>
           </div>
         )}
-      </Card>
+      </Panel>
+
+      {/* ── New pathway ── */}
+      <Panel title="Start a new pathway" description="Creates an empty draft and opens the editor.">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+          <Field label="Sport" hint="The display name. The slug is derived from it.">
+            <TextInput value={sportName} onChange={setSportName} placeholder="Tennis" />
+          </Field>
+          <button
+            type="button"
+            onClick={() => void create()}
+            disabled={creating || !sportName.trim()}
+            className={btn("accent", "md", "h-[38px]")}
+          >
+            {creating ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Plus className="size-4" aria-hidden />
+            )}
+            Create draft
+          </button>
+        </div>
+      </Panel>
+
+      <ConfirmModal
+        open={pendingDelete !== null}
+        variant="danger"
+        title={`Delete the ${pendingDelete?.sportName ?? ""} pathway?`}
+        description={`This also deletes all ${pendingDelete?.stageCount ?? 0} of its stages. It can't be undone.`}
+        confirmLabel="Delete pathway"
+        loading={deleting}
+        onConfirm={() => pendingDelete && remove(pendingDelete)}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

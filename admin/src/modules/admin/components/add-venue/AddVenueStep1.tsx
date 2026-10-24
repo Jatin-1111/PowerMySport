@@ -62,7 +62,7 @@ export function AddVenueStep1({
                 className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.ownerName
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter owner name"
                 disabled={loading}
@@ -80,7 +80,7 @@ export function AddVenueStep1({
                 className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.ownerEmail
                     ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                    : "focus:ring-power-orange/40 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter owner email"
                 disabled={loading}
@@ -104,7 +104,7 @@ export function AddVenueStep1({
               className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.ownerPhone
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                  : "focus:ring-power-orange/40 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="Enter owner mobile number"
               disabled={loading}
@@ -125,7 +125,7 @@ export function AddVenueStep1({
               className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.name
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                  : "focus:ring-power-orange/40 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="Enter venue name"
               disabled={loading}
@@ -142,7 +142,7 @@ export function AddVenueStep1({
               className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.address
                   ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                  : "focus:ring-power-orange/40 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="Start typing address and pick suggestion"
               disabled={loading}
@@ -150,7 +150,7 @@ export function AddVenueStep1({
 
             {isSearching && <p className="mt-1 text-sm text-slate-500">Searching...</p>}
             {suggestions.length > 0 && (
-              <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-md">
+              <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-sm">
                 {suggestions.map((suggestion) => (
                   <li
                     key={suggestion.label}
@@ -187,7 +187,7 @@ export function AddVenueStep1({
               onChange={handleInputChange}
               rows={4}
               maxLength={500}
-              className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
+              className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
               placeholder="Tell users about your venue"
               disabled={loading}
             />
@@ -201,7 +201,7 @@ export function AddVenueStep1({
           <Button
             type="submit"
             disabled={loading}
-            className="bg-power-orange-solid flex items-center gap-2 px-6 text-white hover:bg-orange-600"
+            className="bg-power-orange-solid flex items-center gap-2 px-6 text-white hover:bg-orange-800"
           >
             {loading ? (
               <>

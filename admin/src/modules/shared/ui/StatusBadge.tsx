@@ -9,7 +9,7 @@ const toneClasses: Record<StatusTone, string> = {
   blue: "bg-blue-50 text-blue-700 ring-blue-200",
   slate: "bg-slate-100 text-slate-600 ring-slate-200",
   purple: "bg-purple-50 text-purple-700 ring-purple-200",
-  orange: "bg-power-orange/10 text-power-orange ring-power-orange/20",
+  orange: "bg-orange-50 text-orange-800 ring-orange-200",
 };
 
 const dotClasses: Record<StatusTone, string> = {
@@ -84,7 +84,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold uppercase tracking-wide ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 rounded-md font-semibold uppercase tracking-wide ring-1 ring-inset",
         size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-0.5 text-xs",
         toneClasses[resolvedTone],
         className

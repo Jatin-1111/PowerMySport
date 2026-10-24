@@ -158,11 +158,11 @@ export default function AdminAuditLogPage() {
       render: (log) => {
         const count = metadataFieldCount(log.metadata);
         return count > 0 ? (
-          <span className="text-power-orange text-xs font-medium">
+          <span className="text-power-orange-solid text-xs font-medium">
             {count} field{count === 1 ? "" : "s"}
           </span>
         ) : (
-          <span className="text-xs text-slate-400">—</span>
+          <span className="text-xs text-slate-500">—</span>
         );
       },
     },
@@ -171,9 +171,9 @@ export default function AdminAuditLogPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Super Admin"
-        title="Audit Log"
-        subtitle="Who did what, and when — a record of sensitive admin actions across the panel."
+        badge="System"
+        title="Audit log"
+        subtitle="Who did what, and when. Every sensitive admin action is recorded here."
       />
 
       <AdminDataTable
@@ -181,16 +181,12 @@ export default function AdminAuditLogPage() {
         rows={visibleLogs}
         getRowKey={(log) => log.id}
         loading={loading}
-        emptyMessage={
-          searchQuery
-            ? "No audit entries match your search on this page."
-            : "No audit log entries yet."
-        }
+        emptyMessage={searchQuery ? "No audit entries match your search" : "No audit entries yet"}
         onRowClick={setSelectedLog}
         search={{
           value: searchQuery,
           onChange: setSearchQuery,
-          placeholder: "Search this page by admin, action, or target",
+          placeholder: "Search this page by admin, action or target",
         }}
         sort={{
           column: sortColumn,
@@ -202,7 +198,7 @@ export default function AdminAuditLogPage() {
           <ExportCsvButton
             filename="audit-log.csv"
             rows={visibleLogs}
-            label="Export Page CSV"
+            label="Export this page (CSV)"
             columns={[
               { header: "When", value: (l) => l.createdAt },
               { header: "Admin Name", value: (l) => l.admin?.name || "" },

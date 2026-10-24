@@ -68,7 +68,7 @@ export default function ExpertiseMultiSelect({
           {value.map((exp) => (
             <div
               key={exp}
-              className="bg-power-orange/10 text-power-orange inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium"
+              className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800"
             >
               <span>{exp}</span>
               <button
@@ -105,13 +105,13 @@ export default function ExpertiseMultiSelect({
             {value.length === 0 ? "Select expertise..." : `Add more expertise...`}
           </span>
           <ChevronDown
-            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
+            className={cn("h-4 w-4 text-slate-500 transition-transform", isOpen && "rotate-180")}
           />
         </button>
 
         {/* Dropdown Menu */}
         {isOpen && (
-          <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg shadow-black/5">
+          <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)] shadow-black/5">
             {EXPERTISE_OPTIONS.map((exp) => {
               const isSelected = value.includes(exp);
               return (
@@ -122,7 +122,7 @@ export default function ExpertiseMultiSelect({
                   className={cn(
                     "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors",
                     isSelected
-                      ? "bg-power-orange/10 text-power-orange font-semibold"
+                      ? "bg-orange-50 font-semibold text-orange-800"
                       : "text-slate-700 hover:bg-slate-50"
                   )}
                 >

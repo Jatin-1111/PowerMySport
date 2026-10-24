@@ -50,9 +50,9 @@ export function AutoApprovalPanel() {
       <details>
         <summary className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <Bot aria-hidden className="h-4 w-4 text-slate-500" />
-          <span className="font-bold text-slate-900">AI approver</span>
+          <span className="font-semibold text-slate-900">AI approver</span>
           <span
-            className={`rounded-md px-1.5 py-0.5 text-xs font-bold ${
+            className={`rounded-md px-1.5 py-0.5 text-xs font-semibold ${
               status.enabled ? "bg-emerald-50 text-emerald-800" : "bg-slate-100 text-slate-700"
             }`}
           >
@@ -73,9 +73,7 @@ export function AutoApprovalPanel() {
           </p>
           {groups.map(({ group, rules }) => (
             <div key={group}>
-              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                {GROUP_TITLE[group]}
-              </p>
+              <p className="text-xs font-semibold text-slate-500">{GROUP_TITLE[group]}</p>
               <ul className="mt-1 list-disc space-y-1 pl-5">
                 {rules.map((rule) => (
                   <li key={rule.id}>{rule.label}</li>

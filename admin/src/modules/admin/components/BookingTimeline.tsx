@@ -152,7 +152,7 @@ export function BookingTimeline({ subjectId }: { subjectId: string }) {
                       [event._id]: !prev[event._id],
                     }))
                   }
-                  className="text-power-orange mt-1 text-xs font-medium hover:underline"
+                  className="text-power-orange-solid mt-1 text-xs font-medium hover:underline"
                 >
                   {isOpen ? "Hide details" : "Show details"}
                 </button>

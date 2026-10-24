@@ -34,7 +34,7 @@ import { Bold, Eye, Heading, List, ListOrdered, Pencil, Sparkles, Table } from "
 import { useId, useRef, useState, type ReactNode } from "react";
 
 const inputClass =
-  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none";
+  "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-800 placeholder:text-slate-500 focus:border-slate-400 focus:outline-none";
 
 const PASTE_NOTES = {
   html: "Kept the formatting from your paste: lists, bold and tables.",
@@ -249,7 +249,7 @@ export function RichTextField({
           <p
             className={`text-xs tabular-nums ${
               overLimit
-                ? "font-bold text-red-700"
+                ? "font-semibold text-red-700"
                 : nearLimit
                   ? "font-semibold text-amber-700"
                   : "text-slate-500"

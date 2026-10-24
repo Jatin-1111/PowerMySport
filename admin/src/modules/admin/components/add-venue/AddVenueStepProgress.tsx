@@ -21,7 +21,7 @@ export function AddVenueStepProgress({
         <div className="min-w-180 relative pb-2">
           <div className="absolute left-6 right-6 top-6 h-0.5 rounded-full bg-slate-200" />
           <div
-            className="bg-power-orange absolute left-6 top-6 h-0.5 rounded-full transition-all duration-500"
+            className="bg-power-orange-solid absolute left-6 top-6 h-0.5 rounded-full transition-all duration-500"
             style={{
               width: `max(0px, calc(${progressPercent}% - 0.5rem))`,
             }}
@@ -47,11 +47,11 @@ export function AddVenueStepProgress({
                           ? "Complete previous steps first"
                           : item.label
                     }
-                    className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold ring-4 ring-white transition-all duration-300 ${
+                    className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold ring-4 ring-white transition-all duration-300 ${
                       isCompleted
-                        ? "cursor-pointer bg-emerald-500 text-white shadow-md hover:scale-105"
+                        ? "cursor-pointer bg-emerald-500 text-white shadow-sm hover:scale-105"
                         : isActive
-                          ? "from-power-orange bg-linear-to-br scale-110 to-orange-500 text-white shadow-lg"
+                          ? "bg-power-orange-solid scale-110 text-white"
                           : "cursor-not-allowed bg-slate-200 text-slate-600"
                     }`}
                   >
@@ -66,7 +66,7 @@ export function AddVenueStepProgress({
                   <div
                     className={`mt-3 rounded-2xl border px-3 py-3 transition-all duration-300 ${
                       isActive
-                        ? "border-power-orange/25 from-power-orange/10 bg-linear-to-b to-white shadow-sm"
+                        ? "border-power-orange/30 bg-orange-50"
                         : isCompleted
                           ? "border-emerald-200 bg-emerald-50/70"
                           : "border-slate-200 bg-slate-50/80"
@@ -76,7 +76,7 @@ export function AddVenueStepProgress({
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                           isActive
-                            ? "bg-power-orange/15 text-power-orange"
+                            ? "bg-power-orange/15 text-power-orange-solid"
                             : isCompleted
                               ? "bg-emerald-100 text-emerald-700"
                               : "bg-slate-200 text-slate-500"
@@ -87,7 +87,7 @@ export function AddVenueStepProgress({
                     </div>
                     <p
                       className={`mt-2 text-[11px] font-semibold leading-tight md:text-xs ${
-                        isActive ? "text-power-orange" : "text-slate-800"
+                        isActive ? "text-power-orange-solid" : "text-slate-800"
                       }`}
                     >
                       {item.label}
@@ -102,7 +102,7 @@ export function AddVenueStepProgress({
 
       <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
         <div
-          className="bg-power-orange h-full transition-all duration-500"
+          className="bg-power-orange-solid h-full transition-all duration-500"
           style={{ width: `${progressPercent}%` }}
         />
       </div>

@@ -30,7 +30,7 @@ export function EntityBadge({
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500",
+          "inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500",
           className
         )}
         title="This reference could not be resolved to a record."
@@ -44,7 +44,7 @@ export function EntityBadge({
     <div className={cn("flex items-center gap-2", className)}>
       <span
         className={cn(
-          "bg-power-orange/10 text-power-orange flex shrink-0 items-center justify-center rounded-full font-semibold",
+          "flex shrink-0 items-center justify-center rounded-full bg-orange-50 font-semibold text-orange-800",
           avatarSize
         )}
         aria-hidden="true"

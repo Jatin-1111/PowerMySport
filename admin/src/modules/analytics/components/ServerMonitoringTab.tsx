@@ -18,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { SkeletonBlock } from "@/modules/shared/ui/States";
 
 const rangeOptions = [
   { hours: 1, label: "1h" },
@@ -51,7 +52,7 @@ function colorAccent(color?: string): {
 function MetricCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
       {detail ? <p className="mt-1 text-sm text-slate-500">{detail}</p> : null}
     </div>
@@ -95,7 +96,7 @@ function TrendChart({
         </div>
         <div className="h-64">
           {data.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">
+            <div className="flex h-full items-center justify-center text-sm text-slate-500">
               No data in this window.
             </div>
           ) : (
@@ -255,7 +256,7 @@ export function ServerMonitoringTab() {
                 : ""}
             </p>
             {overview?.runtime ? (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 {overview.runtime.hostname} · up {Math.floor(overview.runtime.uptimeSec / 3600)}h ·
                 load {overview.runtime.loadAvg[0] ?? 0} · {overview.runtime.cpuCount} vCPU
               </p>
@@ -298,7 +299,7 @@ export function ServerMonitoringTab() {
       </div>
 
       {loadingOverview && !overview ? (
-        <div className="py-10 text-center text-slate-500">Loading server health...</div>
+        <SkeletonBlock rows={6} label="Loading server health" />
       ) : !overview?.available ? (
         <Card className="bg-white">
           <div className="space-y-1">
@@ -431,7 +432,7 @@ export function ServerMonitoringTab() {
                 </option>
               ))}
             </select>
-            {loadingMetrics ? <span className="text-sm text-slate-400">Loading…</span> : null}
+            {loadingMetrics ? <span className="text-sm text-slate-500">Loading…</span> : null}
           </div>
 
           {metrics && !metrics.available ? (
@@ -485,10 +486,10 @@ export function ServerMonitoringTab() {
                 overview.events.map((event, i) => (
                   <div key={i} className="rounded-lg border border-slate-200 bg-white px-4 py-2">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-semibold uppercase text-slate-400">
+                      <span className="text-xs font-semibold text-slate-500">
                         {event.severity || "INFO"}
                       </span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-slate-500">
                         {event.date ? new Date(event.date).toLocaleString() : ""}
                       </span>
                     </div>

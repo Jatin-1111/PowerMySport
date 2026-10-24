@@ -2,7 +2,9 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { UserSafetyRecord, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { SkeletonBlock } from "@/modules/shared/ui/States";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { toast } from "@/lib/toast";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { useRouter, usePathname } from "next/navigation";
@@ -19,7 +21,7 @@ const formatDate = (value?: string | null): string =>
 
 export default function AdminUserSafetyPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center">Loading...</div>}>
+    <Suspense fallback={<SkeletonBlock rows={6} label="Loading user safety" />}>
       <AdminUserSafetyPageContent />
     </Suspense>
   );
@@ -182,9 +184,13 @@ function AdminUserSafetyPageContent() {
       header: "Status",
       render: (user) => (
         <div>
-          <div>{user.isActive ? "ACTIVE" : "SUSPENDED"}</div>
+          <StatusBadge
+            status={user.isActive ? "Active" : "Suspended"}
+            tone={user.isActive ? "green" : "red"}
+            size="sm"
+          />
           {!user.isActive && (user.suspendedAt || user.deactivatedAt) && (
-            <div className="text-xs text-slate-400">
+            <div className="mt-1 text-xs text-slate-500">
               since {formatDate(user.suspendedAt || user.deactivatedAt)}
             </div>
           )}
@@ -199,7 +205,7 @@ function AdminUserSafetyPageContent() {
     },
     {
       key: "lastActiveAt",
-      header: "Last Active",
+      header: "Last active",
       render: (user) => formatDate(user.lastActiveAt),
     },
     {
@@ -215,7 +221,7 @@ function AdminUserSafetyPageContent() {
                   e.stopPropagation();
                   handleActionClick(user.id, "SUSPEND");
                 }}
-                className="cursor-pointer rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-200 disabled:opacity-50"
+                className={btn("outline", "sm")}
               >
                 Suspend
               </button>
@@ -225,7 +231,7 @@ function AdminUserSafetyPageContent() {
                   e.stopPropagation();
                   handleActionClick(user.id, "DEACTIVATE");
                 }}
-                className="cursor-pointer rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-200 disabled:opacity-50"
+                className={btn("dangerOutline", "sm")}
               >
                 Deactivate
               </button>
@@ -237,7 +243,7 @@ function AdminUserSafetyPageContent() {
                 e.stopPropagation();
                 handleActionClick(user.id, "REACTIVATE");
               }}
-              className="cursor-pointer rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 hover:bg-green-200 disabled:opacity-50"
+              className={btn("outline", "sm")}
             >
               Reactivate
             </button>
@@ -250,90 +256,91 @@ function AdminUserSafetyPageContent() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="User Safety"
-        subtitle="Suspend, reactivate, or deactivate accounts with audit-friendly reasons."
+        badge="Trust & Support"
+        title="User safety"
+        subtitle="Suspend, reactivate or deactivate accounts. Every action needs a reason, which is saved to the audit log."
       />
 
-      <Card className="bg-white">
-        <AdminDataTable
-          columns={columns}
-          rows={visibleUsers}
-          getRowKey={(user) => user.id}
-          loading={loading}
-          emptyMessage="No users found."
-          search={{
-            value: search,
-            onChange: setSearch,
-            placeholder: "Search by name or email...",
-          }}
-          pagination={{
-            page,
-            totalPages,
-            onPageChange: handlePageChange,
-            total,
-          }}
-          toolbarExtra={
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-slate-700">Filter:</label>
-              <select
-                value={statusFilter}
-                onChange={(event) => handleStatusChange(event.target.value as typeof statusFilter)}
-                className="focus:ring-power-orange/40 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              >
-                <option value="ALL">All</option>
-                <option value="ACTIVE">Active</option>
-                <option value="SUSPENDED">Suspended</option>
-              </select>
-            </div>
-          }
-        />
-      </Card>
+      <AdminDataTable
+        columns={columns}
+        rows={visibleUsers}
+        getRowKey={(user) => user.id}
+        loading={loading}
+        emptyMessage="No users found"
+        search={{
+          value: search,
+          onChange: setSearch,
+          placeholder: "Search by name or email",
+        }}
+        pagination={{
+          page,
+          totalPages,
+          onPageChange: handlePageChange,
+          total,
+        }}
+        toolbarExtra={
+          <div className="flex items-center gap-2">
+            <label htmlFor="safety-status" className="text-sm text-slate-600">
+              Status
+            </label>
+            <select
+              id="safety-status"
+              value={statusFilter}
+              onChange={(event) => handleStatusChange(event.target.value as typeof statusFilter)}
+              className={`${fieldClass} !w-auto`}
+            >
+              <option value="ALL">All</option>
+              <option value="ACTIVE">Active</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          </div>
+        }
+      />
 
       {/* Suspension / Deactivation Reason Modal */}
       {modalOpen && (
         <div
-          className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="animate-fade-in fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="animate-scale-up w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="safety-modal-title"
+            className="animate-scale-up w-full max-w-md overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-2 text-lg font-bold text-slate-900">
-              {modalAction === "SUSPEND" ? "Suspend Account" : "Deactivate Account"}
+            <h3 id="safety-modal-title" className="mb-2 text-lg font-semibold text-slate-900">
+              {modalAction === "SUSPEND" ? "Suspend this account?" : "Deactivate this account?"}
             </h3>
             <p className="mb-4 text-sm text-slate-500">
-              Please enter the reason for{" "}
-              {modalAction === "SUSPEND" ? "suspending" : "deactivating"} this user account. This
-              reason is required and will be saved in the database.
+              Say why you are {modalAction === "SUSPEND" ? "suspending" : "deactivating"} this
+              account. The reason is required and is saved to the audit log.
             </p>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Reason <span className="text-red-500">*</span>
+                <label htmlFor="safety-reason" className={labelClass}>
+                  Reason
                 </label>
                 <textarea
+                  id="safety-reason"
                   rows={4}
                   value={modalReason}
                   onChange={(e) => setModalReason(e.target.value)}
-                  placeholder="Enter detailed reason here..."
-                  className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                  placeholder="What happened, and what evidence you have"
+                  className={fieldClass}
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="cursor-pointer rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-                >
+                <button onClick={() => setModalOpen(false)} className={btn("outline")}>
                   Cancel
                 </button>
                 <button
                   onClick={handleModalConfirm}
                   disabled={!modalReason.trim()}
-                  className="cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={btn("danger")}
                 >
-                  Confirm {modalAction === "SUSPEND" ? "Suspension" : "Deactivation"}
+                  {modalAction === "SUSPEND" ? "Suspend account" : "Deactivate account"}
                 </button>
               </div>
             </div>

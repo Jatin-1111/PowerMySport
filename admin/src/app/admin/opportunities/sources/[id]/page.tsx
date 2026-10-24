@@ -28,6 +28,7 @@ import { ArrowLeft, Check, ExternalLink, Loader2, RefreshCw, Undo2, X } from "lu
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 /** What the AI approver did, in the words an editor needs to decide whether to revert it. */
 const AUTO_ACTION_TEXT: Record<string, string> = {
@@ -45,6 +46,7 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 export default function OpportunitySourceReviewPage() {
+  const [confirm, confirmDialog] = useConfirm();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -179,7 +181,14 @@ export default function OpportunitySourceReviewPage() {
 
   const revertAuto = () =>
     run("revert", async () => {
-      if (!window.confirm("Revert what the AI approver did and take this over yourself?")) return;
+      if (
+        !(await confirm({
+          title: "Take this over from the AI approver?",
+          description: "What the AI approver did is reverted and the entry comes back to you.",
+          confirmLabel: "Revert and take over",
+        }))
+      )
+        return;
       const res = await opportunitySourceApi.revertAuto(id);
       toast.success(res.message ?? "Reverted.");
       await reload();
@@ -217,6 +226,7 @@ export default function OpportunitySourceReviewPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <AdminPageHeader
         badge={
           drafted
@@ -236,7 +246,7 @@ export default function OpportunitySourceReviewPage() {
         action={
           <Link
             href={entry ? `/admin/opportunities/${entry._id}` : "/admin/opportunities"}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
             {entry ? "Back to the entry" : "All entries"}
@@ -246,7 +256,7 @@ export default function OpportunitySourceReviewPage() {
 
       {autoActed && auto && (
         <Card variant="elevated" className="space-y-2">
-          <p className="text-sm font-bold text-slate-900">
+          <p className="text-sm font-semibold text-slate-900">
             Approved automatically on{" "}
             {new Date(auto.actedAt ?? auto.assessedAt).toLocaleDateString("en-IN", {
               day: "numeric",
@@ -387,7 +397,7 @@ export default function OpportunitySourceReviewPage() {
             type="button"
             onClick={() => void approve()}
             disabled={busy !== null}
-            className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {busy === "approve" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -459,7 +469,7 @@ export default function OpportunitySourceReviewPage() {
             {submission.documents!.map((d) => (
               <li key={d.url} className="flex flex-wrap items-baseline gap-x-2 text-xs">
                 <span
-                  className={`rounded-md px-1.5 py-0.5 font-bold ${
+                  className={`rounded-md px-1.5 py-0.5 font-semibold ${
                     d.status === "read"
                       ? "bg-emerald-50 text-emerald-800"
                       : "bg-slate-100 text-slate-600"

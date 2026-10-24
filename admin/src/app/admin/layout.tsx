@@ -413,31 +413,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   return (
-    <div className="admin-shell min-h-screen bg-slate-50">
-      <div className="min-h-screen lg:flex">
+    <div className="admin-shell bg-background">
+      <a href="#main-content" className="skip-link">
+        Skip to content
+      </a>
+      <div className="min-h-dvh lg:flex">
         {!isLoginPage && !isChangePasswordPage && (
           <>
-            <div className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+            <div className="bg-deep-slate sticky top-0 z-30 border-b border-slate-800 px-4 py-3 text-white lg:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    Admin Dashboard
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900">PowerMySport</p>
+                  <p className="text-[11px] font-medium tracking-wide text-slate-400">Admin</p>
+                  <p className="text-sm font-semibold text-white">PowerMySport</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleLogout}
-                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+                    className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/10"
                   >
-                    Logout
+                    Log out
                   </button>
                   <button
                     type="button"
                     aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
                     aria-expanded={isMobileNavOpen}
                     onClick={() => setIsMobileNavOpen((prev) => !prev)}
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50"
+                    className="inline-flex size-10 items-center justify-center rounded-lg border border-white/15 text-slate-200 transition-colors hover:bg-white/10"
                   >
                     {isMobileNavOpen ? <X size={18} /> : <Menu size={18} />}
                   </button>
@@ -450,12 +451,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 type="button"
                 aria-label="Close mobile navigation"
                 onClick={() => setIsMobileNavOpen(false)}
-                className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+                className="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-[2px] lg:hidden"
               />
             )}
 
             {isMounted && isMobileNavOpen && (
-              <aside className="fixed right-0 top-0 z-40 h-screen w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
+              <aside className="fixed right-0 top-0 z-40 h-dvh w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
                 <div className="flex h-full flex-col">
                   <div className="border-b border-slate-200 p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -469,17 +470,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         type="button"
                         aria-label="Close navigation"
                         onClick={() => setIsMobileNavOpen(false)}
-                        className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50"
+                        className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50"
                       >
                         <X size={18} />
                       </button>
                     </div>
                   </div>
 
-                  <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+                  <nav
+                    aria-label="Admin sections"
+                    className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+                  >
                     {navGroups.map((group) => (
                       <div key={`mobile-group-${group.title}`}>
-                        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-2 px-2 text-xs font-semibold tracking-wide text-slate-500">
                           {group.title}
                         </p>
                         <div className="space-y-1">
@@ -492,16 +496,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 key={`mobile-${item.href}`}
                                 href={item.href}
                                 onClick={() => setIsMobileNavOpen(false)}
-                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                                aria-current={isActive ? "page" : undefined}
+                                className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
                                   isActive
-                                    ? "bg-power-orange-solid text-white shadow-sm"
+                                    ? "bg-orange-50 text-orange-900"
                                     : "text-slate-700 hover:bg-slate-100"
                                 }`}
                               >
+                                {isActive && (
+                                  <span
+                                    aria-hidden
+                                    className="bg-power-orange-solid absolute inset-y-2 left-0 w-0.5 rounded-full"
+                                  />
+                                )}
                                 <Icon size={17} />
-                                <span className="text-sm font-semibold">{item.label}</span>
+                                <span className="text-sm font-medium">{item.label}</span>
                                 {getNavBadgeCount(item.href, pendingCounts) > 0 && (
-                                  <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
+                                  <span className="bg-power-orange-solid ml-auto rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
                                     {getNavBadgeCount(item.href, pendingCounts)}
                                   </span>
                                 )}
@@ -516,9 +527,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <div className="border-t border-slate-200 p-4">
                     <button
                       onClick={handleLogout}
-                      className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                      className="w-full rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
                     >
-                      Logout
+                      Log out
                     </button>
                   </div>
                 </div>
@@ -527,45 +538,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {isMounted && !isMobile && (
               <aside
-                className={`fixed left-0 top-0 hidden h-screen flex-col overflow-y-auto overflow-x-hidden border-r border-slate-200 bg-white shadow-sm transition-[width] duration-200 lg:flex ${
+                className={`bg-deep-slate fixed left-0 top-0 hidden h-dvh flex-col overflow-y-auto overflow-x-hidden border-r border-slate-800 text-slate-300 transition-[width] duration-200 [scrollbar-color:#334155_transparent] [scrollbar-width:thin] lg:flex ${
                   isSidebarCollapsed ? "w-20" : "w-72"
                 }`}
               >
                 {/* ── Brand ──
-                       Collapsed, the gradient card shrinks to a square mark so the
+                       Collapsed, the wordmark shrinks to the square mark so the
                        rail still reads as PowerMySport rather than a bare strip of
                        icons. */}
-                <div className={isSidebarCollapsed ? "p-3" : "p-6"}>
+                <div className={isSidebarCollapsed ? "px-3 pb-3 pt-5" : "px-5 pb-4 pt-6"}>
                   <div
-                    className={`bg-linear-to-br rounded-2xl from-slate-900 to-slate-800 text-white ${
-                      isSidebarCollapsed ? "flex h-14 items-center justify-center" : "p-5"
-                    }`}
+                    className={`flex items-center gap-3 ${isSidebarCollapsed ? "justify-center" : ""}`}
                   >
-                    {isSidebarCollapsed ? (
-                      <span className="text-lg font-bold" title={adminName}>
-                        PMS
-                      </span>
-                    ) : (
-                      <>
-                        <p className="text-xs uppercase tracking-wide text-slate-300">
-                          Admin Dashboard
+                    <span
+                      className="bg-power-orange-solid flex size-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
+                      title={isSidebarCollapsed ? `PowerMySport · ${adminName}` : undefined}
+                    >
+                      PMS
+                    </span>
+                    {!isSidebarCollapsed && (
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold leading-tight text-white">
+                          PowerMySport
                         </p>
-                        <h1 className="mt-2 text-2xl font-bold text-white">PowerMySport</h1>
-                        <p className="mt-1 text-sm text-slate-200">{adminName}</p>
-                      </>
+                        <p className="truncate text-xs text-slate-400">{adminName}</p>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* ── Collapse toggle ── */}
-                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-6 pb-2"}>
+                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-5 pb-2"}>
                   <button
                     type="button"
                     onClick={toggleSidebar}
                     aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     aria-expanded={!isSidebarCollapsed}
                     title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                    className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100 ${
+                    className={`flex min-h-10 w-full items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${
                       isSidebarCollapsed ? "justify-center" : ""
                     }`}
                   >
@@ -584,21 +594,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                        Kept in the rail as an icon: with the labels gone it is the
                        fastest way to reach a page by name, so hiding it would make
                        collapsing cost more than it saves. */}
-                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-6 pb-2"}>
+                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-5 pb-2"}>
                   <button
                     type="button"
                     onClick={() => setIsCommandPaletteOpen(true)}
                     title="Search pages (⌘K)"
                     aria-label="Search pages"
-                    className={`flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-100 ${
+                    className={`flex min-h-10 w-full items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${
                       isSidebarCollapsed ? "justify-center" : ""
                     }`}
                   >
                     <Search size={15} />
                     {!isSidebarCollapsed && (
                       <>
-                        <span className="flex-1 text-left">Search pages...</span>
-                        <kbd className="rounded border border-slate-300 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                        <span className="flex-1 text-left">Search pages</span>
+                        <kbd className="rounded border border-white/20 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
                           ⌘K
                         </kbd>
                       </>
@@ -606,20 +616,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   </button>
                 </div>
 
-                <nav className={`mt-2 space-y-5 pb-6 ${isSidebarCollapsed ? "px-2" : "px-4"}`}>
+                <nav
+                  aria-label="Admin sections"
+                  className={`mt-3 space-y-5 pb-6 ${isSidebarCollapsed ? "px-2" : "px-3"}`}
+                >
                   {navGroups.map((group) => (
                     <div key={group.title}>
                       {/* Collapsed, the group heading becomes a rule. The grouping
                           is still worth showing, but 11px of truncated text in an
                           80px rail is not readable. */}
                       {isSidebarCollapsed ? (
-                        <div aria-hidden className="mx-3 mb-2 border-t border-slate-200" />
+                        <div aria-hidden className="mx-3 mb-2 border-t border-white/10" />
                       ) : (
-                        <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-1.5 px-3 text-xs font-semibold tracking-wide text-slate-400">
                           {group.title}
                         </p>
                       )}
-                      <div className="space-y-1">
+                      <div className="space-y-0.5">
                         {group.items.map((item) => {
                           const Icon = item.icon;
                           const isActive = isAdminRouteActive(pathname, item.href);
@@ -641,14 +654,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                   : undefined
                               }
                               aria-label={isSidebarCollapsed ? item.label : undefined}
-                              className={`relative flex items-center rounded-xl transition-colors ${
-                                isSidebarCollapsed ? "justify-center px-0 py-3" : "gap-3 px-4 py-3"
+                              aria-current={isActive ? "page" : undefined}
+                              className={`relative flex min-h-10 items-center rounded-lg transition-colors ${
+                                isSidebarCollapsed
+                                  ? "justify-center px-0 py-2.5"
+                                  : "gap-3 px-3 py-2"
                               } ${
                                 isActive
-                                  ? "bg-power-orange-solid text-white shadow-sm"
-                                  : "text-slate-700 hover:bg-slate-100"
+                                  ? "bg-white/10 text-white"
+                                  : "text-slate-300 hover:bg-white/5 hover:text-white"
                               }`}
                             >
+                              {isActive && (
+                                <span
+                                  aria-hidden
+                                  className="bg-power-orange absolute inset-y-2 left-0 w-0.5 rounded-full"
+                                />
+                              )}
                               <Icon size={18} />
                               {isSidebarCollapsed ? (
                                 // A count would not fit, so it degrades to a dot
@@ -656,16 +678,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 badgeCount > 0 && (
                                   <span
                                     aria-hidden
-                                    className={`absolute right-2 top-2 h-2 w-2 rounded-full ${
-                                      isActive ? "bg-white" : "bg-power-orange"
-                                    }`}
+                                    className="bg-power-orange absolute right-2 top-2 h-2 w-2 rounded-full"
                                   />
                                 )
                               ) : (
                                 <>
-                                  <span className="text-sm font-semibold">{item.label}</span>
+                                  <span className="text-sm font-medium">{item.label}</span>
                                   {badgeCount > 0 && (
-                                    <span className="bg-power-orange-solid ml-auto rounded-full px-2 py-0.5 text-[11px] font-bold text-white">
+                                    <span className="bg-power-orange-solid ml-auto rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
                                       {badgeCount}
                                     </span>
                                   )}
@@ -680,17 +700,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 <div
-                  className={`mt-auto border-t border-slate-200 ${
-                    isSidebarCollapsed ? "p-3" : "p-6"
+                  className={`mt-auto border-t border-white/10 ${
+                    isSidebarCollapsed ? "p-3" : "p-4"
                   }`}
                 >
                   <button
                     onClick={handleLogout}
-                    title={isSidebarCollapsed ? "Logout" : undefined}
-                    aria-label="Logout"
-                    className="flex w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                    title={isSidebarCollapsed ? "Log out" : undefined}
+                    aria-label="Log out"
+                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-red-500/15 hover:text-red-200"
                   >
-                    {isSidebarCollapsed ? <LogOut size={16} /> : "Logout"}
+                    <LogOut size={16} />
+                    {!isSidebarCollapsed && "Log out"}
                   </button>
                 </div>
               </aside>
@@ -699,13 +720,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
 
         <main
+          id="main-content"
           className={`min-w-0 flex-1 transition-[margin] duration-200 ${
             isLoginPage || isChangePasswordPage ? "" : isSidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
           }`}
         >
-          <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
-            {children}
-          </div>
+          {isLoginPage || isChangePasswordPage ? (
+            // Auth screens own their full-height layout; the padded content
+            // container below would push them past 100dvh and make them scroll.
+            children
+          ) : (
+            <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+              {children}
+            </div>
+          )}
         </main>
       </div>
 

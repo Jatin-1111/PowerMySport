@@ -547,7 +547,7 @@ export default function Step4Venues({
   return (
     <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 4: Venue Details</h2>
+        <h2 className="mb-2 text-3xl font-semibold text-slate-900">Step 4: Venue Details</h2>
         <p className="text-slate-600">
           Add full venue onboarding details, including sports, amenities, maps location, and image
           uploads.
@@ -578,7 +578,7 @@ export default function Step4Venues({
               <h4 className="font-semibold text-slate-900">Venue {index + 1}</h4>
               <button
                 type="button"
-                className="text-sm text-red-600 disabled:text-slate-400"
+                className="text-sm text-red-600 disabled:text-slate-500"
                 onClick={() => removeVenue(index)}
                 disabled={venues.length === 1 || isSubmitting || loading}
               >
@@ -810,9 +810,12 @@ export default function Step4Venues({
                               }}
                             >
                               {slotUploading ? (
-                                <Loader className="text-power-orange mb-2 animate-spin" size={22} />
+                                <Loader
+                                  className="text-power-orange-solid mb-2 animate-spin"
+                                  size={22}
+                                />
                               ) : (
-                                <Upload className="mb-2 text-slate-400" size={22} />
+                                <Upload className="mb-2 text-slate-500" size={22} />
                               )}
                               <span className="text-slate-600">Image {slotIndex + 1}</span>
                               <input
@@ -981,11 +984,11 @@ export default function Step4Venues({
                                 >
                                   {slotUploading ? (
                                     <Loader
-                                      className="text-power-orange mb-2 animate-spin"
+                                      className="text-power-orange-solid mb-2 animate-spin"
                                       size={18}
                                     />
                                   ) : (
-                                    <Camera className="mb-2 text-slate-400" size={18} />
+                                    <Camera className="mb-2 text-slate-500" size={18} />
                                   )}
                                   <span className="text-slate-600">Image {slotIndex + 1}</span>
                                   <input

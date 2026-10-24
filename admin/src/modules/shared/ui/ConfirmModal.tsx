@@ -47,7 +47,7 @@ export function ConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px]"
       onClick={() => {
         if (!loading) {
           onCancel();
@@ -55,7 +55,10 @@ export function ConfirmModal({
       }}
     >
       <div
-        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-xl sm:p-6"
+        role="alertdialog"
+        aria-modal="true"
+        aria-label={title}
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-xl border border-slate-200 bg-white p-4 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)] sm:p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
@@ -75,11 +78,11 @@ export function ConfirmModal({
             className={cn(
               "rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50",
               variant === "danger"
-                ? "bg-red-600 hover:bg-red-700"
+                ? "bg-red-700 hover:bg-red-800"
                 : "bg-slate-900 hover:bg-slate-800"
             )}
           >
-            {loading ? "Processing..." : confirmLabel}
+            {loading ? "Working…" : confirmLabel}
           </button>
         </div>
       </div>

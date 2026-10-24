@@ -93,10 +93,10 @@ export default function CoachPhotoUpload({
       ) : (
         <label className="hover:border-power-orange hover:bg-power-orange/5 mx-auto flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 transition-all">
           {uploading ? (
-            <Loader className="text-power-orange animate-spin" size={32} />
+            <Loader className="text-power-orange-solid animate-spin" size={32} />
           ) : (
             <>
-              <Camera className="mb-2 text-slate-400" size={32} />
+              <Camera className="mb-2 text-slate-500" size={32} />
               <span className="text-center text-xs text-slate-600">Upload Photo</span>
             </>
           )}

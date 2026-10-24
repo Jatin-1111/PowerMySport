@@ -26,6 +26,7 @@ import { useEffect, useState } from "react";
 
 import { readApiErrors } from "./apiErrors";
 import { SourceSubmitForm } from "./SourceSubmitForm";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
@@ -45,7 +46,9 @@ const byFit = (a: OpportunityLeadRow, b: OpportunityLeadRow) =>
 function FitChip({ fit }: { fit?: LeadFit | undefined }) {
   if (!fit) return null;
   const { text, tone } = FIT_LABEL[fit];
-  return <span className={`ml-1 rounded-md px-1.5 py-0.5 text-xs font-bold ${tone}`}>{text}</span>;
+  return (
+    <span className={`ml-1 rounded-md px-1.5 py-0.5 text-xs font-semibold ${tone}`}>{text}</span>
+  );
 }
 
 function LeadRow({
@@ -191,6 +194,7 @@ function LeadRow({
 }
 
 export function LeadsPanel() {
+  const [confirm, confirmDialog] = useConfirm();
   const [leads, setLeads] = useState<OpportunityLeadRow[]>([]);
   const [running, setRunning] = useState(false);
   const [triaging, setTriaging] = useState(false);
@@ -277,7 +281,14 @@ export function LeadsPanel() {
       // A lead that looks like an entry we have is the editor's call: say so, and
       // go on only if they confirm.
       if (axios.isAxiosError(error) && error.response?.status === 409 && !force) {
-        if (/already have/.test(message) && window.confirm(`${message}\n\nDraft it anyway?`)) {
+        if (
+          /already have/.test(message) &&
+          (await confirm({
+            title: "Draft it anyway?",
+            description: message,
+            confirmLabel: "Draft anyway",
+          }))
+        ) {
           return draft(lead, true);
         }
         if (!/already have/.test(message)) toast.error(message);
@@ -298,10 +309,11 @@ export function LeadsPanel() {
 
   return (
     <Card variant="elevated">
+      {confirmDialog}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">
-            New leads from web search <span className="text-slate-400">({leads.length})</span>
+          <h2 className="text-sm font-semibold text-slate-900">
+            New leads from web search <span className="text-slate-500">({leads.length})</span>
           </h2>
           <p className="mt-0.5 text-xs text-slate-500">
             Found by AI search on the 1st of each month. Leads only: nothing here is published until
@@ -350,7 +362,7 @@ export function LeadsPanel() {
             type="button"
             onClick={() => setShowAuto((v) => !v)}
             aria-expanded={showAuto}
-            className="flex w-full items-center justify-between gap-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+            className="flex w-full items-center justify-between gap-2 text-left text-xs font-semibold text-slate-500"
           >
             Dismissed automatically ({autoDismissed.length})
             <ChevronDown

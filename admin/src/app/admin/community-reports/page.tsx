@@ -2,14 +2,17 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { CommunityReportRecord, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { Tabs } from "@/modules/shared/ui/Tabs";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
 
-const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-yellow-100 text-yellow-700",
-  UNDER_REVIEW: "bg-blue-100 text-blue-700",
-  RESOLVED: "bg-green-100 text-green-700",
-  REJECTED: "bg-slate-100 text-slate-500",
+const STATUS_TONE: Record<string, "amber" | "blue" | "green" | "slate"> = {
+  OPEN: "amber",
+  UNDER_REVIEW: "blue",
+  RESOLVED: "green",
+  REJECTED: "slate",
 };
 
 export default function AdminCommunityReportsPage() {
@@ -105,37 +108,36 @@ export default function AdminCommunityReportsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="Community Reports"
-        subtitle="Review user-submitted reports for messages and groups."
+        badge="Trust & Support"
+        title="Community reports"
+        subtitle="Messages and groups that members have reported. Review each one, then resolve or reject it."
       />
 
-      <Card className="space-y-4 bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-700">Filter:</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="rounded border border-slate-300 px-3 py-1.5 text-sm"
-            >
-              <option value="ALL">All</option>
-              <option value="OPEN">Open</option>
-              <option value="UNDER_REVIEW">Under Review</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
-          </div>
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <Tabs
+            className="min-w-0 flex-1"
+            label="Report status"
+            value={statusFilter}
+            onChange={setStatusFilter}
+            tabs={[
+              { id: "ALL" as const, label: "All" },
+              { id: "OPEN" as const, label: "Open" },
+              { id: "UNDER_REVIEW" as const, label: "Under review" },
+              { id: "RESOLVED" as const, label: "Resolved" },
+              { id: "REJECTED" as const, label: "Rejected" },
+            ]}
+          />
 
           {actionableReports.length > 0 && (
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 pb-2 text-sm text-slate-600">
               <input
                 type="checkbox"
                 checked={selectedIds.size > 0 && selectedIds.size === actionableReports.length}
                 onChange={toggleSelectAll}
-                className="h-4 w-4 rounded border-slate-300"
+                className="size-4 rounded accent-orange-700"
               />
-              Select all actionable
+              Select all that need action
             </label>
           )}
         </div>
@@ -148,21 +150,21 @@ export default function AdminCommunityReportsPage() {
             <button
               disabled={bulkBusy}
               onClick={() => handleBulkReview("RESOLVED")}
-              className="rounded bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-200 disabled:opacity-50"
+              className={btn("primary", "sm")}
             >
-              Resolve Selected
+              Resolve selected
             </button>
             <button
               disabled={bulkBusy}
               onClick={() => handleBulkReview("REJECTED")}
-              className="rounded bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
+              className={btn("dangerOutline", "sm")}
             >
-              Reject Selected
+              Reject selected
             </button>
             <button
               disabled={bulkBusy}
               onClick={() => setSelectedIds(new Set())}
-              className="rounded border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white disabled:opacity-50"
+              className={btn("outline", "sm")}
             >
               Clear
             </button>
@@ -170,16 +172,16 @@ export default function AdminCommunityReportsPage() {
         )}
 
         {loading ? (
-          <div className="py-10 text-center text-slate-500">Loading reports...</div>
+          <SkeletonBlock rows={6} label="Loading reports" />
         ) : reports.length === 0 ? (
-          <div className="py-10 text-center text-slate-500">No reports found.</div>
+          <EmptyState title="No reports here" description="Nothing matches this status." />
         ) : (
           <div className="space-y-3">
             {reports.map((report) => {
               const isExpanded = expandedId === report.id;
 
               return (
-                <div key={report.id} className="rounded-xl border border-slate-200 p-4">
+                <div key={report.id} className="rounded-xl border border-slate-200 bg-white p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -188,24 +190,27 @@ export default function AdminCommunityReportsPage() {
                             type="checkbox"
                             checked={selectedIds.has(report.id)}
                             onChange={() => toggleSelected(report.id)}
-                            className="h-4 w-4 rounded border-slate-300"
+                            className="size-4 rounded accent-orange-700"
                           />
                         )}
-                        <span
-                          className={`rounded px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[report.status] ?? "bg-slate-100 text-slate-500"}`}
-                        >
-                          {report.status.replace("_", " ")}
-                        </span>
-                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                          {report.targetType}
-                        </span>
+                        <StatusBadge
+                          status={report.status}
+                          tone={STATUS_TONE[report.status] ?? "slate"}
+                          size="sm"
+                        />
+                        <StatusBadge
+                          status={report.targetType}
+                          tone="slate"
+                          dot={false}
+                          size="sm"
+                        />
                       </div>
                       <p className="mt-2 text-sm font-semibold text-slate-900">{report.reason}</p>
                       {report.details && (
                         <p className="mt-1 text-sm text-slate-600">{report.details}</p>
                       )}
                       <p
-                        className={`mt-2 text-sm italic ${report.targetDeleted ? "text-slate-400" : "text-slate-600"}`}
+                        className={`mt-2 text-sm italic ${report.targetDeleted ? "text-slate-500" : "text-slate-600"}`}
                       >
                         &ldquo;{report.targetPreview}&rdquo;
                       </p>
@@ -215,7 +220,7 @@ export default function AdminCommunityReportsPage() {
                           {report.reportedContent}&rdquo;
                         </p>
                       ) : null}
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-slate-500">
                         Reported by {report.reporterUserId.name}
                         {report.reporterUserId.email && ` (${report.reporterUserId.email})`} •{" "}
                         {new Date(report.createdAt).toLocaleDateString()}
@@ -227,7 +232,7 @@ export default function AdminCommunityReportsPage() {
                     {(report.status === "OPEN" || report.status === "UNDER_REVIEW") && (
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : report.id)}
-                        className="rounded border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        className={btn("outline", "sm")}
                       >
                         {isExpanded ? "Cancel" : "Review"}
                       </button>
@@ -237,13 +242,14 @@ export default function AdminCommunityReportsPage() {
                   {isExpanded && (
                     <div className="mt-3 space-y-3 border-t border-slate-100 pt-3">
                       <div>
-                        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Resolution Note (optional)
+                        <label className={labelClass} htmlFor={`note-${report.id}`}>
+                          Resolution note (optional)
                         </label>
                         <textarea
+                          id={`note-${report.id}`}
                           rows={2}
-                          className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-                          placeholder="Optional note for your records..."
+                          className={fieldClass}
+                          placeholder="Anything worth remembering about this decision"
                           value={noteInputs[report.id] ?? ""}
                           onChange={(e) =>
                             setNoteInputs((prev) => ({
@@ -258,22 +264,22 @@ export default function AdminCommunityReportsPage() {
                           <button
                             disabled={busyId === report.id}
                             onClick={() => handleReview(report.id, "UNDER_REVIEW")}
-                            className="rounded bg-blue-100 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 disabled:opacity-50"
+                            className={btn("outline", "sm")}
                           >
-                            Mark Under Review
+                            Mark under review
                           </button>
                         )}
                         <button
                           disabled={busyId === report.id}
                           onClick={() => handleReview(report.id, "RESOLVED")}
-                          className="rounded bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-200 disabled:opacity-50"
+                          className={btn("primary", "sm")}
                         >
                           Resolve
                         </button>
                         <button
                           disabled={busyId === report.id}
                           onClick={() => handleReview(report.id, "REJECTED")}
-                          className="rounded bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-200 disabled:opacity-50"
+                          className={btn("dangerOutline", "sm")}
                         >
                           Reject
                         </button>
@@ -285,7 +291,7 @@ export default function AdminCommunityReportsPage() {
             })}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

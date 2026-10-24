@@ -6,14 +6,16 @@ import {
   ProductEditableFields,
   adminEcommerceApi,
 } from "@/modules/admin/services/ecommerce";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
-import { X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 function formatInr(paise: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -29,7 +31,7 @@ type SortBy = "name" | "basePrice" | "totalStock" | "createdAt";
 
 export default function AdminProductsPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center">Loading products...</div>}>
+    <Suspense fallback={<SkeletonBlock rows={6} label="Loading products" />}>
       <AdminProductsPageContent />
     </Suspense>
   );
@@ -171,11 +173,11 @@ function AdminProductsPageContent() {
       key: "isActive",
       header: "Status",
       render: (product) => (
-        <span
-          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${product.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
-        >
-          {product.isActive ? "Active" : "Inactive"}
-        </span>
+        <StatusBadge
+          status={product.isActive ? "Active" : "Inactive"}
+          tone={product.isActive ? "green" : "slate"}
+          size="sm"
+        />
       ),
     },
   ];
@@ -183,54 +185,47 @@ function AdminProductsPageContent() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Ecommerce"
+        badge="Commerce"
         title="Products"
-        subtitle="Manage merchandise catalog, pricing, and stock health."
+        subtitle="The merchandise catalog: prices, stock and whether each item is on sale."
+        action={
+          <Link href="/admin/products/new" className={btn("accent")}>
+            <Plus size={16} aria-hidden />
+            Add product
+          </Link>
+        }
       />
 
-      <Card className="bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-3 p-5">
-          <div>
-            <p className="text-sm text-slate-500">Catalog records</p>
-            <p className="text-2xl font-bold text-slate-900">{total}</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">All statuses</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
-            <Link
-              href="/admin/products/new"
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Add New Product
-            </Link>
-          </div>
-        </div>
-      </Card>
+      <div className="flex items-center gap-2">
+        <label htmlFor="product-status" className="text-sm text-slate-600">
+          Show
+        </label>
+        <select
+          id="product-status"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          className={`${fieldClass} !w-auto`}
+        >
+          <option value="">All products</option>
+          <option value="true">Active only</option>
+          <option value="false">Inactive only</option>
+        </select>
+      </div>
 
       {error ? (
-        <Card className="bg-white">
-          <div className="p-5 text-sm font-semibold text-red-600">{error}</div>
-        </Card>
+        <ErrorNotice message={error} />
       ) : (
-        <Card className="bg-white">
+        <>
           <AdminDataTable
             columns={columns}
             rows={products}
             getRowKey={(product) => product.id}
             loading={loading}
-            emptyMessage="No products found."
+            emptyMessage="No products match"
             search={{
               value: search,
               onChange: setSearch,
-              placeholder: "Search by name or SKU...",
+              placeholder: "Search by name or SKU",
             }}
             sort={{
               column: sortBy,
@@ -243,7 +238,7 @@ function AdminProductsPageContent() {
               <ExportCsvButton
                 filename="products.csv"
                 rows={products}
-                label="Export Page CSV"
+                label="Export this page (CSV)"
                 columns={[
                   { header: "Name", value: (p) => p.name },
                   { header: "SKU", value: (p) => p.sku },
@@ -265,26 +260,31 @@ function AdminProductsPageContent() {
               />
             }
           />
-        </Card>
+        </>
       )}
 
       {editingProduct && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
           onClick={closeEdit}
         >
           <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit product"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Edit product</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Edit product</h2>
                 <p className="text-sm text-slate-500">SKU: {editingProduct.sku}</p>
               </div>
               <button
+                type="button"
                 onClick={closeEdit}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -292,20 +292,16 @@ function AdminProductsPageContent() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Name
-                </label>
+                <label className={labelClass}>Name</label>
                 <input
                   value={editForm.name ?? ""}
                   onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Short description
-                </label>
+                <label className={labelClass}>Short description</label>
                 <input
                   value={editForm.shortDescription ?? ""}
                   onChange={(e) =>
@@ -314,14 +310,12 @@ function AdminProductsPageContent() {
                       shortDescription: e.target.value,
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Description
-                </label>
+                <label className={labelClass}>Description</label>
                 <textarea
                   rows={3}
                   value={editForm.description ?? ""}
@@ -331,15 +325,13 @@ function AdminProductsPageContent() {
                       description: e.target.value,
                     }))
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Category
-                  </label>
+                  <label className={labelClass}>Category</label>
                   <select
                     value={editForm.category ?? ""}
                     onChange={(e) =>
@@ -348,7 +340,7 @@ function AdminProductsPageContent() {
                         category: e.target.value,
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   >
                     {CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -358,9 +350,7 @@ function AdminProductsPageContent() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Status
-                  </label>
+                  <label className={labelClass}>Status</label>
                   <select
                     value={editForm.isActive ? "true" : "false"}
                     onChange={(e) =>
@@ -369,7 +359,7 @@ function AdminProductsPageContent() {
                         isActive: e.target.value === "true",
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   >
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
@@ -379,53 +369,57 @@ function AdminProductsPageContent() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Base price (paise)
-                  </label>
+                  <label className={labelClass}>Base price (₹)</label>
                   <input
                     type="number"
-                    value={editForm.basePrice ?? 0}
+                    step="0.01"
+                    min="0"
+                    value={(editForm.basePrice ?? 0) / 100}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
-                        basePrice: Number(e.target.value),
+                        basePrice: Math.round(Number(e.target.value) * 100),
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Sale price (paise, optional)
-                  </label>
+                  <label className={labelClass}>Sale price (₹, optional)</label>
                   <input
                     type="number"
-                    value={editForm.salePrice ?? ""}
+                    step="0.01"
+                    min="0"
+                    value={editForm.salePrice != null ? editForm.salePrice / 100 : ""}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
-                        salePrice: e.target.value ? Number(e.target.value) : undefined,
+                        salePrice: e.target.value
+                          ? Math.round(Number(e.target.value) * 100)
+                          : undefined,
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
+                  type="button"
                   onClick={closeEdit}
                   disabled={saving}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className={btn("outline")}
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={saveEdit}
                   disabled={saving}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                  className={btn("primary")}
                 >
-                  {saving ? "Saving..." : "Save changes"}
+                  {saving ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </div>

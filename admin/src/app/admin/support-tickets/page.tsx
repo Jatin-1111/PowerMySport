@@ -2,10 +2,13 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { SupportTicketRecord, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
-import { AlertTriangle, Clock3, MessageSquare, RefreshCw, Search } from "lucide-react";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { MetricStrip } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { RefreshCw, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
 
 type SupportStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 type SupportPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -106,19 +109,13 @@ export default function AdminSupportTicketsPage() {
     };
   }, [visibleTickets]);
 
-  const statusBadgeClasses: Record<SupportStatus, string> = {
-    OPEN: "border-amber-200 bg-amber-50 text-amber-700",
-    IN_PROGRESS: "border-blue-200 bg-blue-50 text-blue-700",
-    RESOLVED: "border-green-200 bg-green-50 text-green-700",
-    CLOSED: "border-slate-200 bg-slate-100 text-slate-600",
-  };
-
-  const priorityBadgeClasses: Record<SupportPriority, string> = {
-    LOW: "border-slate-200 bg-slate-100 text-slate-600",
-    MEDIUM: "border-blue-200 bg-blue-50 text-blue-700",
-    HIGH: "border-orange-200 bg-orange-50 text-orange-700",
-    URGENT: "border-red-200 bg-red-50 text-red-700",
-  };
+  const statusTone = {
+    OPEN: "amber",
+    IN_PROGRESS: "blue",
+    RESOLVED: "green",
+    CLOSED: "slate",
+  } as const;
+  const priorityTone = { LOW: "slate", MEDIUM: "blue", HIGH: "orange", URGENT: "red" } as const;
 
   const quickActions: Array<{ label: string; value: SupportStatus }> = [
     { label: "Open", value: "OPEN" },
@@ -130,74 +127,56 @@ export default function AdminSupportTicketsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="Support Tickets"
-        subtitle="Triage user issues, academy onboarding requests, and high-priority escalations from one view."
+        badge="Trust & Support"
+        title="Support tickets"
+        subtitle="User issues, academy onboarding requests and urgent escalations in one queue."
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="bg-white">
-          <p className="text-sm text-slate-600">Showing</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.total}</p>
-        </Card>
-        <Card className="bg-white">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-slate-600">Open</p>
-              <p className="mt-2 text-3xl font-bold text-amber-600">{stats.open}</p>
-            </div>
-            <MessageSquare className="text-amber-500" size={18} />
-          </div>
-        </Card>
-        <Card className="bg-white">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-slate-600">In progress</p>
-              <p className="mt-2 text-3xl font-bold text-blue-600">{stats.inProgress}</p>
-            </div>
-            <Clock3 className="text-blue-500" size={18} />
-          </div>
-        </Card>
-        <Card className="bg-white">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm text-slate-600">Urgent / High</p>
-              <p className="mt-2 text-3xl font-bold text-red-600">{stats.urgent}</p>
-            </div>
-            <AlertTriangle className="text-red-500" size={18} />
-          </div>
-        </Card>
-      </div>
+      <MetricStrip
+        items={[
+          { label: "Showing", value: String(stats.total) },
+          { label: "Open", value: String(stats.open) },
+          { label: "In progress", value: String(stats.inProgress) },
+          { label: "Urgent or high", value: String(stats.urgent) },
+        ]}
+      />
 
-      <Card className="space-y-4 bg-white">
+      <div className="space-y-4">
         <div className="grid gap-3 lg:grid-cols-[1.5fr_0.7fr_0.7fr_auto]">
-          <label className="focus-within:border-power-orange flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-700">
-            <Search size={18} className="text-slate-400" />
+          <div className="relative">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              aria-hidden
+            />
             <input
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search tickets, users, emails, or categories"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+              placeholder="Search tickets, users, emails or categories"
+              aria-label="Search tickets"
+              className={`${fieldClass} pl-9`}
             />
-          </label>
+          </div>
 
           <select
             value={statusFilter}
+            aria-label="Filter by status"
             onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition"
+            className={fieldClass}
           >
             <option value="ALL">All statuses</option>
             <option value="OPEN">Open</option>
-            <option value="IN_PROGRESS">In Progress</option>
+            <option value="IN_PROGRESS">In progress</option>
             <option value="RESOLVED">Resolved</option>
             <option value="CLOSED">Closed</option>
           </select>
 
           <select
             value={priorityFilter}
+            aria-label="Filter by priority"
             onChange={(event) => setPriorityFilter(event.target.value as typeof priorityFilter)}
-            className="focus:border-power-orange rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 outline-none transition"
+            className={fieldClass}
           >
             <option value="ALL">All priorities</option>
             <option value="LOW">Low</option>
@@ -206,43 +185,38 @@ export default function AdminSupportTicketsPage() {
             <option value="URGENT">Urgent</option>
           </select>
 
-          <button
-            type="button"
-            onClick={loadTickets}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
-          >
-            <RefreshCw size={16} />
+          <button type="button" onClick={loadTickets} className={btn("outline")}>
+            <RefreshCw size={16} aria-hidden />
             Refresh
           </button>
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-slate-500">Loading support tickets...</div>
+          <SkeletonBlock rows={6} label="Loading support tickets" />
         ) : visibleTickets.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-center text-slate-500">
-            No support tickets match the current filters.
-          </div>
+          <EmptyState
+            title="No tickets match"
+            description="Change the status, priority or search to see more."
+          />
         ) : (
           <div className="space-y-4">
             {visibleTickets.map((ticket) => (
-              <div
-                key={ticket._id}
-                className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md"
-              >
+              <div key={ticket._id} className="rounded-xl border border-slate-200 bg-white p-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-semibold text-slate-900">{ticket.subject}</h3>
-                      <span
-                        className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadgeClasses[ticket.status]}`}
-                      >
-                        {ticket.status.replace("_", " ")}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${priorityBadgeClasses[ticket.priority]}`}
-                      >
-                        {ticket.priority}
-                      </span>
+                      <StatusBadge
+                        status={ticket.status}
+                        tone={statusTone[ticket.status]}
+                        size="sm"
+                      />
+                      <StatusBadge
+                        status={ticket.priority}
+                        tone={priorityTone[ticket.priority]}
+                        dot={false}
+                        size="sm"
+                      />
                     </div>
 
                     <p className="max-w-3xl text-sm leading-6 text-slate-600">
@@ -271,7 +245,8 @@ export default function AdminSupportTicketsPage() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+                  <span className="mr-1 text-sm text-slate-500">Set status</span>
                   {quickActions.map((action) => {
                     const isActive = ticket.status === action.value;
                     return (
@@ -279,11 +254,8 @@ export default function AdminSupportTicketsPage() {
                         key={action.value}
                         type="button"
                         onClick={() => handleStatusUpdate(ticket._id, action.value)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                          isActive
-                            ? "bg-slate-900 text-white"
-                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                        }`}
+                        aria-pressed={isActive}
+                        className={`${btn(isActive ? "primary" : "outline", "sm")}`}
                       >
                         {action.label}
                       </button>
@@ -294,7 +266,7 @@ export default function AdminSupportTicketsPage() {
             ))}
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

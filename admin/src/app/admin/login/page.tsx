@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { toast } from "@/lib/toast";
 import { adminApi } from "@/modules/admin/services/admin";
-import { ArrowLeft, Eye, EyeOff, Lock, Shield } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -68,58 +68,85 @@ export default function AdminLoginPage() {
     }
   };
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md">
-        {/* Header Card */}
-        <div className="bg-linear-to-br relative mb-6 overflow-hidden rounded-2xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-          <div className="relative z-10 text-center">
-            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-              <Shield className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Admin Portal</h1>
-            <p className="text-sm text-slate-200">PowerMySport Administration Panel</p>
-          </div>
-          <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
-        </div>
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-400 hover:border-slate-400 focus:border-power-orange-solid focus:outline-none focus:ring-2 focus:ring-power-orange-solid/25";
 
-        {/* Login Form Card */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+  return (
+    <div className="bg-background grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <aside className="bg-deep-slate hidden flex-col justify-between p-12 text-white lg:flex">
+        <div className="flex items-center gap-3">
+          <span className="bg-power-orange-solid flex size-10 items-center justify-center rounded-lg text-sm font-bold">
+            PMS
+          </span>
+          <span className="text-base font-semibold">PowerMySport</span>
+        </div>
+        <div>
+          <p className="max-w-[16ch] text-4xl font-semibold leading-tight">
+            Run the platform from one place.
+          </p>
+          <p className="mt-4 max-w-[40ch] text-sm text-slate-400">
+            Verifications, bookings, payouts and support queues for the PowerMySport team.
+          </p>
+        </div>
+        <p className="flex items-center gap-2 text-xs text-slate-400">
+          <Lock size={14} aria-hidden />
+          Authorised staff only
+        </p>
+      </aside>
+
+      <div className="flex items-center justify-center px-4 py-8 sm:px-8">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <span className="bg-power-orange-solid flex size-10 items-center justify-center rounded-lg text-sm font-bold text-white">
+              PMS
+            </span>
+            <span className="text-base font-semibold text-slate-900">PowerMySport</span>
+          </div>
+
+          <h1 className="text-2xl font-semibold text-slate-900">Sign in to admin</h1>
+          <p className="mt-1.5 text-sm text-slate-600">Use your PowerMySport staff account.</p>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Email Address
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
+                Email
               </label>
               <input
+                id="email"
                 type="email"
                 name="email"
+                autoComplete="username"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
-                placeholder="teams@powermysport.com"
+                className={inputClass}
+                placeholder="name@powermysport.com"
               />
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Password</label>
+              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
+                Password
+              </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? "text" : "password"}
                   name="password"
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
-                  placeholder="••••••••"
+                  className={`${inputClass} pr-11`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute right-1 top-1/2 inline-flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 hover:text-slate-800"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
@@ -127,36 +154,29 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-slate-900 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bg-deep-slate w-full rounded-lg py-2.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Logging in...
+                  <span
+                    aria-hidden
+                    className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                  />
+                  Signing in…
                 </span>
               ) : (
-                "Login to Admin Panel"
+                "Sign in"
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <Link
-              href="/"
-              className="text-power-orange inline-flex items-center gap-1 text-sm font-medium transition-colors hover:text-orange-600"
-            >
-              <ArrowLeft className="h-3 w-3" />
-              Back to Main Site
-            </Link>
-          </div>
-        </div>
-
-        {/* Security Notice */}
-        <div className="mt-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-600 shadow-sm">
-            <Lock size={14} className="text-slate-400" />
-            <span>Secure admin access only</span>
-          </div>
+          <Link
+            href="/"
+            className="text-power-orange-solid mt-8 inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
+          >
+            <ArrowLeft className="size-3.5" aria-hidden />
+            Back to main site
+          </Link>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@ export function ApprovalVerdictCard({ verdict }: { verdict: ApprovalAssessment }
           <ShieldAlert aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
         )}
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900">
+          <p className="text-sm font-semibold text-slate-900">
             {verdict.pass
               ? "Passes every approval rule"
               : `Held for a person: ${failed.length} ${failed.length === 1 ? "rule is" : "rules are"} not met`}

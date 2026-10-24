@@ -222,10 +222,10 @@ export default function VenueImageUpload({
                 ) : (
                   <label className="hover:border-power-orange hover:bg-power-orange/5 flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 transition-all">
                     {isUploading ? (
-                      <Loader className="text-power-orange animate-spin" size={24} />
+                      <Loader className="text-power-orange-solid animate-spin" size={24} />
                     ) : (
                       <>
-                        <Upload className="mb-1 text-slate-400" size={24} />
+                        <Upload className="mb-1 text-slate-500" size={24} />
                         <span className="text-center text-xs text-slate-600">
                           Image {generalUrls.indexOf(url) + 1}
                         </span>
@@ -299,9 +299,9 @@ export default function VenueImageUpload({
                     ) : (
                       <label className="hover:border-power-orange hover:bg-power-orange/5 flex aspect-square cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 transition-all">
                         {isUploading ? (
-                          <Loader className="text-power-orange animate-spin" size={20} />
+                          <Loader className="text-power-orange-solid animate-spin" size={20} />
                         ) : (
-                          <Camera className="text-slate-400" size={20} />
+                          <Camera className="text-slate-500" size={20} />
                         )}
                         <input
                           type="file"
@@ -328,7 +328,7 @@ export default function VenueImageUpload({
         type="button"
         onClick={handleConfirmImages}
         disabled={disabled || Object.keys(uploadedImages).length === 0}
-        className="bg-power-orange-solid w-full rounded-lg py-3 font-medium text-white transition-colors hover:bg-orange-600 disabled:bg-slate-300"
+        className="bg-power-orange-solid w-full rounded-lg py-3 font-medium text-white transition-colors hover:bg-orange-800 disabled:bg-slate-300"
       >
         Confirm All Images
       </button>

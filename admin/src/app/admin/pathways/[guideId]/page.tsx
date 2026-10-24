@@ -44,6 +44,7 @@ import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { readApiErrors } from "../page";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 /**
  * Drop the blank fields before saving.
@@ -69,6 +70,7 @@ function trimContributor(draft: AdminPathwayContributor): AdminPathwayContributo
 type Selection = string | null;
 
 export default function AdminPathwayEditPage() {
+  const [confirm, confirmDialog] = useConfirm();
   const params = useParams();
   const guideId = params?.guideId as string;
 
@@ -189,7 +191,15 @@ export default function AdminPathwayEditPage() {
   };
 
   const removeStage = async (key: string, name: string) => {
-    if (!window.confirm(`Delete the "${name}" stage?`)) return;
+    if (
+      !(await confirm({
+        title: `Delete the "${name}" stage?`,
+        description: "Its content is removed from the pathway.",
+        confirmLabel: "Delete stage",
+        variant: "danger",
+      }))
+    )
+      return;
     try {
       const res = await adminApi.deletePathwayStage(guideId, key);
       if (res.data) {
@@ -231,7 +241,7 @@ export default function AdminPathwayEditPage() {
         <p className="text-sm text-slate-600">That pathway no longer exists.</p>
         <Link
           href="/admin/pathways"
-          className="text-power-orange mt-2 inline-block text-sm font-semibold"
+          className="text-power-orange-solid mt-2 inline-block text-sm font-semibold"
         >
           Back to pathways
         </Link>
@@ -244,8 +254,9 @@ export default function AdminPathwayEditPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <AdminPageHeader
-        badge="Pathway"
+        badge="Content"
         title={guide.sportName}
         subtitle={`${guide.stages.length} stage${guide.stages.length === 1 ? "" : "s"} · ${
           isPublished ? "live for parents" : "draft, not shown to anyone"
@@ -254,7 +265,7 @@ export default function AdminPathwayEditPage() {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/admin/pathways"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
             >
               <ArrowLeft className="h-4 w-4" />
               All pathways
@@ -263,7 +274,7 @@ export default function AdminPathwayEditPage() {
               type="button"
               onClick={() => void togglePublished()}
               disabled={statusSaving}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100 disabled:opacity-40"
+              className="bg-deep-slate inline-flex min-h-10 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-40"
             >
               {statusSaving ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -280,7 +291,7 @@ export default function AdminPathwayEditPage() {
 
       {/* ── Intro copy ── */}
       <Card variant="elevated" className="space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Page introduction</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Page introduction</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Eyebrow" hint="Small caps line above the title.">
             <TextInput
@@ -317,8 +328,8 @@ export default function AdminPathwayEditPage() {
         </Field>
 
         <div className="border-t border-slate-100 pt-5">
-          <p className="text-sm font-bold text-slate-800">Contributed by</p>
-          <p className="mb-3 mt-0.5 text-xs text-slate-400">
+          <p className="text-sm font-semibold text-slate-800">Contributed by</p>
+          <p className="mb-3 mt-0.5 text-xs text-slate-500">
             For a pathway written by someone outside the team. Credited on the page and in its
             structured data.
           </p>
@@ -341,7 +352,7 @@ export default function AdminPathwayEditPage() {
       {/* ── Stages ── */}
       <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
         <Card variant="elevated" className="lg:sticky lg:top-6">
-          <h2 className="mb-3 text-lg font-bold text-slate-900">Stages</h2>
+          <h2 className="mb-3 text-lg font-semibold text-slate-900">Stages</h2>
           {guide.stages.length === 0 ? (
             <p className="text-sm text-slate-500">No stages yet.</p>
           ) : (
@@ -363,7 +374,7 @@ export default function AdminPathwayEditPage() {
                           : "border-slate-200 hover:border-slate-300"
                       }`}
                     >
-                      <span className="block text-[10px] font-extrabold tracking-widest text-slate-400">
+                      <span className="block text-[10px] font-extrabold tracking-widest text-slate-500">
                         {String(stage.order).padStart(2, "0")}
                       </span>
                       <span className="block truncate text-sm font-semibold text-slate-800">
@@ -379,7 +390,7 @@ export default function AdminPathwayEditPage() {
                         aria-label="Move up"
                         disabled={index === 0}
                         onClick={() => void moveStage(index, -1)}
-                        className="rounded border border-slate-200 p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                        className="rounded border border-slate-200 p-0.5 text-slate-500 hover:text-slate-700 disabled:opacity-30"
                       >
                         <ChevronUp className="h-3 w-3" />
                       </button>
@@ -388,7 +399,7 @@ export default function AdminPathwayEditPage() {
                         aria-label="Move down"
                         disabled={index === guide.stages.length - 1}
                         onClick={() => void moveStage(index, 1)}
-                        className="rounded border border-slate-200 p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30"
+                        className="rounded border border-slate-200 p-0.5 text-slate-500 hover:text-slate-700 disabled:opacity-30"
                       >
                         <ChevronDown className="h-3 w-3" />
                       </button>
@@ -396,7 +407,7 @@ export default function AdminPathwayEditPage() {
                         type="button"
                         aria-label="Delete stage"
                         onClick={() => void removeStage(stage.key, stage.name)}
-                        className="rounded border border-slate-200 p-0.5 text-slate-400 hover:border-red-300 hover:text-red-600"
+                        className="rounded border border-slate-200 p-0.5 text-slate-500 hover:border-red-300 hover:text-red-600"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>

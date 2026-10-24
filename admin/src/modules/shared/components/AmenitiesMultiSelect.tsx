@@ -51,7 +51,7 @@ export default function AmenitiesMultiSelect({
             {value.map((amenity) => (
               <div
                 key={amenity}
-                className="bg-power-orange/10 text-power-orange inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm"
+                className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 text-sm text-orange-800"
               >
                 <span>{amenity}</span>
                 <button
@@ -82,7 +82,7 @@ export default function AmenitiesMultiSelect({
 
         {/* Dropdown Menu */}
         {isOpen && !disabled && (
-          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-300 bg-white shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]">
             {AMENITIES_OPTIONS.map((amenity) => (
               <label
                 key={amenity}

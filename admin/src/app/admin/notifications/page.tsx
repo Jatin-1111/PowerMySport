@@ -7,26 +7,13 @@ import {
   SchedulerHealth,
   FailedReminder,
 } from "@/modules/admin/services/notifications";
-import { Card } from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { MetricStrip, Panel } from "@/modules/shared/ui/Panel";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { toast } from "@/lib/toast";
 import { formatDate, formatTime } from "@/utils/format";
-import {
-  Bell,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  AlertTriangle,
-  Activity,
-  RefreshCw,
-  Send,
-  Calendar,
-  Download,
-  RotateCcw,
-  Filter,
-  X,
-  Copy,
-} from "lucide-react";
+import { Activity, RefreshCw, Send, Download, RotateCcw, Filter, X, Copy } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
@@ -377,519 +364,395 @@ export default function NotificationsPage() {
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
-  if (loading) {
-    return <div className="py-12 text-center">Loading notifications...</div>;
+  const successRate = stats?.totalProcessed ? (stats.totalSent / stats.totalProcessed) * 100 : 0;
+  const cancelRate = stats?.totalProcessed
+    ? (stats.totalCancelled / stats.totalProcessed) * 100
+    : 0;
+  const failureRate = stats?.failureRate ?? 0;
+
+  const actions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={handleHealthCheck}
+        disabled={actionLoading}
+        className={btn("outline")}
+      >
+        <Activity className="size-4" aria-hidden />
+        Run health check
+      </button>
+      <button
+        type="button"
+        onClick={handleSendDailySummary}
+        disabled={actionLoading}
+        className={btn("outline")}
+      >
+        <Send className="size-4" aria-hidden />
+        Send daily summary
+      </button>
+      <button type="button" onClick={fetchData} disabled={loading} className={btn("quiet")}>
+        <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden />
+        Refresh
+      </button>
+    </div>
+  );
+
+  const header = (
+    <AdminPageHeader
+      badge="Monitoring"
+      title="Notifications"
+      subtitle="Booking reminders, delivery results and scheduler health, updated live."
+      action={actions}
+    />
+  );
+
+  if (loading && !stats) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <SkeletonBlock rows={8} label="Loading notifications" />
+      </div>
+    );
   }
 
   if (error || !stats) {
     return (
       <div className="space-y-6">
-        <AdminPageHeader
-          badge="Monitoring"
-          title="Notification Dashboard"
-          subtitle="Monitor booking reminders and scheduler health."
-        />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={fetchData}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        {header}
+        <ErrorNotice message={error || "We couldn't load notification data."} onRetry={fetchData} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        badge="Monitoring"
-        title="Notification Dashboard"
-        subtitle="Monitor booking reminders and scheduler health in real-time."
+    <div className="space-y-8">
+      {header}
+
+      <MetricStrip
+        items={[
+          {
+            label: "Processed, last 24h",
+            value: (stats.totalProcessed ?? 0).toLocaleString("en-IN"),
+          },
+          {
+            label: "Sent",
+            value: (stats.totalSent ?? 0).toLocaleString("en-IN"),
+            detail: `${successRate.toFixed(1)}% of processed`,
+          },
+          {
+            label: "Failed",
+            value: (stats.totalFailed ?? 0).toLocaleString("en-IN"),
+            detail: `${failureRate.toFixed(2)}% failure rate`,
+          },
+          {
+            label: "Cancelled",
+            value: (stats.totalCancelled ?? 0).toLocaleString("en-IN"),
+            detail: `${cancelRate.toFixed(1)}% of processed`,
+          },
+        ]}
       />
 
-      {/* Manual Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button
-          onClick={handleHealthCheck}
-          disabled={actionLoading}
-          className="bg-blue-600 text-white hover:bg-blue-700"
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        <Panel
+          title="Delivery results"
+          description="Status split of reminders in the last 24 hours."
         >
-          <Activity className="mr-2 h-4 w-4" />
-          Run Health Check
-        </Button>
-        <Button
-          onClick={handleSendDailySummary}
-          disabled={actionLoading}
-          className="bg-green-600 text-white hover:bg-green-700"
-        >
-          <Send className="mr-2 h-4 w-4" />
-          Send Daily Summary
-        </Button>
-        <Button onClick={handleExportCSV} className="bg-purple-600 text-white hover:bg-purple-700">
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
-        {selectedReminders.size > 0 && (
-          <Button
-            onClick={handleRetrySelected}
-            disabled={actionLoading}
-            className="bg-orange-600 text-white hover:bg-orange-700"
+          <NotificationStatusChart
+            totalProcessed={stats.totalProcessed || 0}
+            totalSent={stats.totalSent || 0}
+            totalFailed={stats.totalFailed || 0}
+            totalCancelled={stats.totalCancelled || 0}
+          />
+        </Panel>
+
+        {health && (
+          <Panel
+            title="Scheduler health"
+            action={
+              <StatusBadge
+                status={health.isHealthy ? "Healthy" : "Unhealthy"}
+                tone={health.isHealthy ? "green" : "red"}
+              />
+            }
           >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Retry Selected ({selectedReminders.size})
-          </Button>
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-5">
+              <div className="col-span-2">
+                <dt className="text-sm text-slate-500">Last run</dt>
+                <dd className="mt-0.5 text-sm font-semibold text-slate-900">
+                  {health.lastRun
+                    ? `${formatTime(health.lastRun)}, ${health.minutesSinceLastRun || 0} min ago`
+                    : "Never"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-slate-500">Pending</dt>
+                <dd className="mt-0.5 text-xl font-semibold tabular-nums text-slate-900">
+                  {health.pendingCount || 0}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-slate-500">Overdue</dt>
+                <dd
+                  className={`mt-0.5 text-xl font-semibold tabular-nums ${
+                    (health.overdueCount || 0) > 50 ? "text-red-700" : "text-slate-900"
+                  }`}
+                >
+                  {health.overdueCount || 0}
+                </dd>
+              </div>
+            </dl>
+
+            {health.issues && health.issues.length > 0 && (
+              <div className="mt-5 rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm font-semibold text-red-900">Issues detected</p>
+                <ul className="mt-1.5 list-disc space-y-1 pl-5">
+                  {health.issues.map((issue, index) => (
+                    <li key={index} className="text-sm text-red-800">
+                      {issue}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Panel>
         )}
-        <Button
-          onClick={fetchData}
-          disabled={loading}
-          className="ml-auto bg-slate-600 text-white hover:bg-slate-700"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
       </div>
 
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="bg-white p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="rounded-lg bg-blue-100 p-2">
-                <Bell className="h-6 w-6 text-blue-600" />
-              </div>
-              <span className="text-sm text-slate-500">24h Total</span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-slate-900">
-                {stats?.totalProcessed?.toLocaleString() || "0"}
-              </p>
-              <p className="text-sm text-slate-600">Total Processed</p>
-            </div>
-          </Card>
-
-          <Card className="bg-white p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="rounded-lg bg-green-100 p-2">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
-              <span className="text-sm text-slate-500">24h Sent</span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-slate-900">
-                {stats?.totalSent?.toLocaleString() || "0"}
-              </p>
-              <p className="text-sm text-slate-600">Successfully Sent</p>
-            </div>
-          </Card>
-
-          <Card className="bg-white p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="rounded-lg bg-red-100 p-2">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-              <span className="text-sm text-slate-500">24h Failed</span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-slate-900">
-                {stats?.totalFailed?.toLocaleString() || "0"}
-              </p>
-              <p className="text-sm text-slate-600">Failed Deliveries</p>
-            </div>
-          </Card>
-
-          <Card className="bg-white p-6">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="rounded-lg bg-orange-100 p-2">
-                <AlertTriangle className="h-6 w-6 text-orange-600" />
-              </div>
-              <span className="text-sm text-slate-500">Failure Rate</span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-3xl font-bold text-slate-900">
-                {stats?.failureRate?.toFixed(2) || "0.00"}%
-              </p>
-              <p className="text-sm text-slate-600">
-                {(stats?.failureRate || 0) < 1
-                  ? "Excellent"
-                  : (stats?.failureRate || 0) < 5
-                    ? "Good"
-                    : "Needs Attention"}
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Analytics Charts */}
-      {stats && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card className="bg-white p-6">
-            <h3 className="mb-4 text-lg font-bold text-slate-900">Status Distribution (24h)</h3>
-            <NotificationStatusChart
-              totalProcessed={stats.totalProcessed || 0}
-              totalSent={stats.totalSent || 0}
-              totalFailed={stats.totalFailed || 0}
-              totalCancelled={stats.totalCancelled || 0}
-            />
-          </Card>
-
-          <Card className="bg-white p-6">
-            <h3 className="mb-4 text-lg font-bold text-slate-900">Performance Metrics</h3>
-            <div className="space-y-4">
-              <div>
-                <div className="mb-1 flex justify-between">
-                  <span className="text-sm text-slate-600">Success Rate</span>
-                  <span className="text-sm font-semibold text-green-600">
-                    {stats?.totalProcessed
-                      ? ((stats.totalSent / stats.totalProcessed) * 100).toFixed(1)
-                      : "0.0"}
-                    %
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-green-500"
-                    style={{
-                      width: stats?.totalProcessed
-                        ? `${(stats.totalSent / stats.totalProcessed) * 100}%`
-                        : "0%",
-                    }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="mb-1 flex justify-between">
-                  <span className="text-sm text-slate-600">Failure Rate</span>
-                  <span className="text-sm font-semibold text-red-600">
-                    {stats?.failureRate?.toFixed(1) || "0.0"}%
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-red-500"
-                    style={{ width: `${stats?.failureRate || 0}%` }}
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="mb-1 flex justify-between">
-                  <span className="text-sm text-slate-600">Cancellation Rate</span>
-                  <span className="text-sm font-semibold text-slate-600">
-                    {stats?.totalProcessed
-                      ? ((stats.totalCancelled / stats.totalProcessed) * 100).toFixed(1)
-                      : "0.0"}
-                    %
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-slate-500"
-                    style={{
-                      width: stats?.totalProcessed
-                        ? `${(stats.totalCancelled / stats.totalProcessed) * 100}%`
-                        : "0%",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Health Status */}
-      {health && (
-        <Card className="bg-white p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-              <Activity className="h-5 w-5" />
-              Scheduler Health
-            </h2>
-            <div
-              className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                health?.isHealthy ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}
-            >
-              {health?.isHealthy ? (
-                <span className="inline-flex items-center gap-1">
-                  <CheckCircle2 className="h-4 w-4" /> Healthy
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1">
-                  <XCircle className="h-4 w-4" /> Unhealthy
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1">
-              <p className="text-sm text-slate-600">Last Run</p>
-              <p className="text-base font-semibold text-slate-900">
-                {health?.lastRun
-                  ? `${formatTime(health.lastRun)} (${health?.minutesSinceLastRun || 0}m ago)`
-                  : "Never"}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-slate-600">Pending</p>
-              <p className="text-base font-semibold text-slate-900">{health?.pendingCount || 0}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-slate-600">Overdue</p>
-              <p
-                className={`text-base font-semibold ${
-                  (health?.overdueCount || 0) > 50 ? "text-red-600" : "text-slate-900"
-                }`}
+      <Panel
+        flush
+        title="Failed reminders"
+        description={
+          hasActiveFilters
+            ? `${filteredReminders.length} match your filters.`
+            : "Reminders that did not reach the user in the last 24 hours."
+        }
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedReminders.size > 0 && (
+              <button
+                type="button"
+                onClick={handleRetrySelected}
+                disabled={actionLoading}
+                className={btn("primary")}
               >
-                {health?.overdueCount || 0}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm text-slate-600">Failure Rate</p>
-              <p
-                className={`text-base font-semibold ${
-                  (health?.failureRate || 0) > 10 ? "text-red-600" : "text-slate-900"
-                }`}
-              >
-                {health?.failureRate?.toFixed(2) || "0.00"}%
-              </p>
-            </div>
-          </div>
-
-          {health.issues && health.issues.length > 0 && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-red-900">Issues Detected:</h3>
-              <ul className="space-y-1">
-                {health.issues.map((issue, index) => (
-                  <li key={index} className="text-sm text-red-800">
-                    • {issue}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Failed Reminders Table */}
-      <Card className="bg-white p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-xl font-bold text-slate-900">
-            <XCircle className="h-5 w-5" />
-            Failed Reminders
-            {hasActiveFilters && (
-              <span className="text-sm font-normal text-slate-500">
-                ({filteredReminders.length} filtered)
-              </span>
+                <RotateCcw className="size-4" aria-hidden />
+                Retry {selectedReminders.size} selected
+              </button>
             )}
-          </h2>
-          <div className="flex gap-2">
-            <Button
+            <button
+              type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className={`${showFilters ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-700"}`}
+              aria-expanded={showFilters}
+              className={btn("outline")}
             >
-              <Filter className="mr-2 h-4 w-4" />
-              Filters
-            </Button>
+              <Filter className="size-4" aria-hidden />
+              Filters{hasActiveFilters ? " (on)" : ""}
+            </button>
+            <label className="sr-only" htmlFor="failed-limit">
+              Rows to show
+            </label>
             <select
+              id="failed-limit"
               value={failedLimit}
               onChange={(e) => setFailedLimit(Number(e.target.value))}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={`${fieldClass} !w-auto`}
             >
               <option value={10}>Show 10</option>
               <option value={25}>Show 25</option>
               <option value={50}>Show 50</option>
               <option value={100}>Show 100</option>
             </select>
+            <button type="button" onClick={handleExportCSV} className={btn("outline")}>
+              <Download className="size-4" aria-hidden />
+              Export CSV
+            </button>
           </div>
-        </div>
-
-        {/* Filter Panel */}
+        }
+      >
         {showFilters && (
-          <div className="mb-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Booking ID</label>
-                <input
-                  type="text"
-                  value={filters.bookingId}
-                  onChange={(e) => setFilters({ ...filters, bookingId: e.target.value })}
-                  placeholder="Search by booking ID..."
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">User</label>
-                <input
-                  type="text"
-                  value={filters.userId}
-                  onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
-                  placeholder="Search by name, email, or user ID..."
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Interval</label>
-                <select
-                  value={filters.interval}
-                  onChange={(e) => setFilters({ ...filters, interval: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                >
-                  <option value="">All intervals</option>
-                  <option value="24h">24 Hours</option>
-                  <option value="1h">1 Hour</option>
-                  <option value="15min">15 Minutes</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Date From</label>
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Date To</label>
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex items-end">
-                <Button
-                  onClick={clearFilters}
-                  disabled={!hasActiveFilters}
-                  className="w-full bg-slate-600 text-white hover:bg-slate-700"
-                >
-                  <X className="mr-2 h-4 w-4" />
-                  Clear Filters
-                </Button>
-              </div>
+          <div className="mx-5 mb-4 grid gap-4 rounded-xl bg-slate-50 p-4 md:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <label htmlFor="f-booking" className={labelClass}>
+                Booking ID
+              </label>
+              <input
+                id="f-booking"
+                type="text"
+                value={filters.bookingId}
+                onChange={(e) => setFilters({ ...filters, bookingId: e.target.value })}
+                placeholder="Paste a booking ID"
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="f-user" className={labelClass}>
+                User
+              </label>
+              <input
+                id="f-user"
+                type="text"
+                value={filters.userId}
+                onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
+                placeholder="Name, email or user ID"
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="f-interval" className={labelClass}>
+                Reminder timing
+              </label>
+              <select
+                id="f-interval"
+                value={filters.interval}
+                onChange={(e) => setFilters({ ...filters, interval: e.target.value })}
+                className={fieldClass}
+              >
+                <option value="">All</option>
+                <option value="24h">24 hours before</option>
+                <option value="1h">1 hour before</option>
+                <option value="15min">15 minutes before</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="f-from" className={labelClass}>
+                From
+              </label>
+              <input
+                id="f-from"
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="f-to" className={labelClass}>
+                To
+              </label>
+              <input
+                id="f-to"
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+                className={fieldClass}
+              />
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                className={btn("outline", "md", "w-full")}
+              >
+                <X className="size-4" aria-hidden />
+                Clear filters
+              </button>
             </div>
           </div>
         )}
 
         {filteredReminders.length === 0 ? (
-          <div className="py-8 text-center">
-            <CheckCircle2 className="mx-auto mb-3 h-12 w-12 text-green-500" />
-            <p className="text-slate-600">
-              {hasActiveFilters
-                ? "No failed reminders match your filters."
-                : "No failed reminders in the last 24 hours!"}
-            </p>
-          </div>
+          <EmptyState
+            title={hasActiveFilters ? "No reminders match these filters" : "No failed reminders"}
+            description={
+              hasActiveFilters
+                ? "Clear a filter to see more."
+                : "Every reminder in the last 24 hours was delivered."
+            }
+          />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto border-t border-slate-100">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="px-4 py-3 text-left">
+                <tr>
+                  <th className="w-10">
                     <input
                       type="checkbox"
+                      aria-label="Select all failed reminders"
                       checked={
                         selectedReminders.size === filteredReminders.length &&
                         filteredReminders.length > 0
                       }
                       onChange={toggleSelectAll}
-                      className="rounded"
+                      className="size-4 rounded accent-orange-700"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                    Reminder ID
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">User</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                    Interval
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                    Scheduled For
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                    Retry Count
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                    Failure Reason
-                  </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
-                    Actions
+                  <th>Reminder</th>
+                  <th>User</th>
+                  <th>Timing</th>
+                  <th>Failed at</th>
+                  <th>Retries</th>
+                  <th>Reason</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredReminders.map((reminder) => (
-                  <tr key={reminder._id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3">
+                  <tr key={reminder._id}>
+                    <td>
                       <input
                         type="checkbox"
+                        aria-label={`Select reminder ${reminder._id}`}
                         checked={selectedReminders.has(reminder._id)}
                         onChange={() => toggleReminderSelection(reminder._id)}
-                        className="rounded"
+                        className="size-4 rounded accent-orange-700"
                       />
                     </td>
-                    <td className="px-4 py-3 font-mono text-sm text-slate-600">
+                    <td>
                       <button
                         type="button"
                         onClick={() => {
                           navigator.clipboard.writeText(reminder._id);
                           toast.success("Reminder ID copied");
                         }}
-                        title="Click to copy full ID"
-                        className="inline-flex items-center gap-1 hover:text-slate-900"
+                        title="Copy full ID"
+                        className="inline-flex items-center gap-1.5 font-mono text-xs text-slate-600 hover:text-slate-900"
                       >
-                        {reminder._id}
-                        <Copy className="h-3.5 w-3.5" />
+                        {reminder._id.slice(-8)}
+                        <Copy className="size-3.5" aria-hidden />
+                        <span className="sr-only">Copy reminder ID</span>
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-700">
-                      <div className="font-medium">{reminder.userName}</div>
+                    <td>
+                      <div className="font-medium text-slate-900">{reminder.userName}</div>
                       {reminder.userEmail && (
-                        <div className="text-xs text-slate-400">{reminder.userEmail}</div>
+                        <div className="text-xs text-slate-500">{reminder.userEmail}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`rounded px-2 py-1 text-xs font-semibold ${
+                    <td>
+                      <StatusBadge
+                        status={reminder.interval}
+                        size="sm"
+                        dot={false}
+                        tone={
                           reminder.interval === "24h"
-                            ? "bg-blue-100 text-blue-700"
+                            ? "blue"
                             : reminder.interval === "1h"
-                              ? "bg-orange-100 text-orange-700"
-                              : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {reminder.interval}
-                      </span>
+                              ? "amber"
+                              : "red"
+                        }
+                      />
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(reminder.failedAt)}
-                        <Clock className="ml-2 h-4 w-4" />
-                        {formatTime(reminder.failedAt)}
-                      </div>
+                    <td className="whitespace-nowrap">
+                      {formatDate(reminder.failedAt)}
+                      <span className="text-slate-500"> · {formatTime(reminder.failedAt)}</span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reminder.retryCount}</td>
-                    <td className="px-4 py-3 text-sm text-red-600">
-                      {reminder.failureReason || "Unknown error"}
+                    <td>{reminder.retryCount}</td>
+                    <td className="max-w-xs text-red-700">
+                      {reminder.failureReason || "No reason recorded"}
                     </td>
-                    <td className="px-4 py-3">
-                      <Button
+                    <td className="text-right">
+                      <button
+                        type="button"
                         onClick={() => handleRetryReminder(reminder._id)}
                         disabled={actionLoading}
-                        className="bg-orange-600 px-2 py-1 text-xs text-white hover:bg-orange-700"
+                        className={btn("outline", "sm")}
                       >
-                        <RotateCcw className="mr-1 h-3 w-3" />
+                        <RotateCcw className="size-3.5" aria-hidden />
                         Retry
-                      </Button>
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -897,7 +760,7 @@ export default function NotificationsPage() {
             </table>
           </div>
         )}
-      </Card>
+      </Panel>
     </div>
   );
 }

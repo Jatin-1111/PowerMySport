@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsUpDown,
-  ChevronUp,
-  ChevronDown,
-  Search,
-} from "lucide-react";
+import { ChevronsUpDown, ChevronUp, ChevronDown, Inbox, Search } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Pagination } from "./Pagination";
 
 export interface AdminDataTableColumn<T> {
   key: string;
@@ -73,103 +67,20 @@ export function AdminDataTable<T>({
 }: AdminDataTableProps<T>) {
   const hasToolbar = Boolean(search || toolbarExtra);
 
-  const renderPageButtons = () => {
-    if (!pagination) return null;
-    const total = pagination.totalPages;
-    const current = pagination.page;
-
-    // Calculate visible range (up to 5 pages)
-    let start = Math.max(1, current - 2);
-    let end = Math.min(total, current + 2);
-
-    // Adjust range if we have fewer than 5 pages but more are available
-    if (end - start + 1 < 5) {
-      if (start === 1) {
-        end = Math.min(total, start + 4);
-      } else if (end === total) {
-        start = Math.max(1, end - 4);
-      }
-    }
-
-    const buttons = [];
-
-    // Always show page 1
-    if (start > 1) {
-      buttons.push(
-        <button
-          key={1}
-          type="button"
-          onClick={() => pagination.onPageChange(1)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-        >
-          1
-        </button>
-      );
-      if (start > 2) {
-        buttons.push(
-          <span key="dots-start" className="self-center px-1 text-slate-400">
-            ...
-          </span>
-        );
-      }
-    }
-
-    // Show middle range
-    for (let p = start; p <= end; p++) {
-      buttons.push(
-        <button
-          key={p}
-          type="button"
-          onClick={() => pagination.onPageChange(p)}
-          className={cn(
-            "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
-            current === p
-              ? "bg-power-orange-solid text-white"
-              : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-          )}
-        >
-          {p}
-        </button>
-      );
-    }
-
-    // Always show last page
-    if (end < total) {
-      if (end < total - 1) {
-        buttons.push(
-          <span key="dots-end" className="self-center px-1 text-slate-400">
-            ...
-          </span>
-        );
-      }
-      buttons.push(
-        <button
-          key={total}
-          type="button"
-          onClick={() => pagination.onPageChange(total)}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
-        >
-          {total}
-        </button>
-      );
-    }
-
-    return buttons;
-  };
-
   return (
     <div className="space-y-3">
       {hasToolbar && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           {search && (
             <div className="relative w-full max-w-xs">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
               <input
                 type="text"
                 value={search.value}
                 onChange={(e) => search.onChange(e.target.value)}
                 placeholder={search.placeholder || "Search..."}
-                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2"
+                aria-label={search.placeholder || "Search"}
+                className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm placeholder:text-slate-500 hover:border-slate-400"
               />
             </div>
           )}
@@ -177,53 +88,91 @@ export function AdminDataTable<T>({
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
+          <thead className="bg-slate-50/80">
             <tr>
               {columns.map((col) => {
                 const isSorted = sort?.column === col.key;
                 return (
                   <th
                     key={col.key}
+                    scope="col"
+                    aria-sort={
+                      col.sortable && sort
+                        ? isSorted
+                          ? sort.direction === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
+                        : undefined
+                    }
                     className={cn(
-                      "px-4 py-3 text-xs font-semibold uppercase text-slate-500",
+                      "px-4 py-3 text-xs font-semibold tracking-wide text-slate-500",
                       alignClass(col.align),
-                      col.sortable && "cursor-pointer select-none hover:text-slate-700",
                       col.className
                     )}
-                    onClick={col.sortable && sort ? () => sort.onChange(col.key) : undefined}
                   >
-                    <span className="inline-flex items-center gap-1">
-                      {col.header}
-                      {col.sortable &&
-                        sort &&
-                        (isSorted ? (
+                    {col.sortable && sort ? (
+                      <button
+                        type="button"
+                        onClick={() => sort.onChange(col.key)}
+                        className={cn(
+                          "-mx-1.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 hover:text-slate-800",
+                          isSorted && "text-slate-900"
+                        )}
+                      >
+                        {col.header}
+                        {isSorted ? (
                           sort.direction === "asc" ? (
                             <ChevronUp className="h-3.5 w-3.5" />
                           ) : (
                             <ChevronDown className="h-3.5 w-3.5" />
                           )
                         ) : (
-                          <ChevronsUpDown className="h-3.5 w-3.5 text-slate-300" />
-                        ))}
-                    </span>
+                          <ChevronsUpDown className="h-3.5 w-3.5 text-slate-500" />
+                        )}
+                      </button>
+                    ) : (
+                      col.header
+                    )}
                   </th>
                 );
               })}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 bg-white">
+          <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-slate-500">
-                  Loading...
-                </td>
-              </tr>
+              Array.from({ length: 6 }, (_, i) => (
+                <tr key={`skeleton-${i}`} aria-hidden>
+                  {columns.map((col) => (
+                    <td key={col.key} className="px-4 py-3.5">
+                      <div
+                        className="skeleton h-4"
+                        style={{ width: `${55 + ((i * 17 + col.key.length * 11) % 40)}%` }}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-slate-500">
-                  {emptyMessage}
+                <td colSpan={columns.length} className="px-4 py-14">
+                  <div className="mx-auto flex max-w-sm flex-col items-center text-center">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+                      <Inbox className="h-5 w-5" aria-hidden />
+                    </span>
+                    <p className="mt-3 text-sm font-semibold text-slate-900">{emptyMessage}</p>
+                    {search?.value && (
+                      <button
+                        type="button"
+                        onClick={() => search.onChange("")}
+                        className="text-power-orange-solid mt-2 text-sm font-semibold hover:underline"
+                      >
+                        Clear search
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -231,7 +180,25 @@ export function AdminDataTable<T>({
                 <tr
                   key={getRowKey(row)}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
-                  className={cn(onRowClick && "cursor-pointer hover:bg-slate-50")}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (
+                            e.target === e.currentTarget &&
+                            (e.key === "Enter" || e.key === " ")
+                          ) {
+                            e.preventDefault();
+                            onRowClick(row);
+                          }
+                        }
+                      : undefined
+                  }
+                  tabIndex={onRowClick ? 0 : undefined}
+                  className={cn(
+                    "transition-colors",
+                    onRowClick &&
+                      "cursor-pointer hover:bg-orange-50/50 focus-visible:bg-orange-50/50"
+                  )}
                 >
                   {columns.map((col) => (
                     <td
@@ -248,37 +215,7 @@ export function AdminDataTable<T>({
         </table>
       </div>
 
-      {pagination && pagination.totalPages > 1 && (
-        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-center text-xs text-slate-500 sm:text-left">
-            Page {pagination.page} of {pagination.totalPages}
-            {typeof pagination.total === "number" && ` · ${pagination.total} total`}
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => pagination.onPageChange(Math.max(1, pagination.page - 1))}
-              disabled={pagination.page <= 1}
-              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-
-            {renderPageButtons()}
-
-            <button
-              type="button"
-              onClick={() =>
-                pagination.onPageChange(Math.min(pagination.totalPages, pagination.page + 1))
-              }
-              disabled={pagination.page >= pagination.totalPages}
-              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {pagination && <Pagination {...pagination} />}
     </div>
   );
 }

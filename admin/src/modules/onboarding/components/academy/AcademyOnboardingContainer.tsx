@@ -328,7 +328,7 @@ export default function AcademyOnboardingContainer() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-dvh items-center justify-center">
         <div className="text-center">
           <div className="bg-power-orange/20 mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full">
             <div className="border-power-orange border-3 h-8 w-8 animate-spin rounded-full border-t-transparent" />
@@ -340,7 +340,7 @@ export default function AcademyOnboardingContainer() {
   }
 
   return (
-    <div className="bg-linear-to-br min-h-screen from-slate-50 to-slate-100 px-4 py-8">
+    <div className="min-h-dvh px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8">
           <div className="mb-2 flex justify-between">
@@ -351,7 +351,7 @@ export default function AcademyOnboardingContainer() {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-slate-200">
             <div
-              className="from-power-orange to-power-orange/80 bg-linear-to-r h-full transition-all duration-500"
+              className="bg-power-orange-solid h-full transition-all duration-500"
               style={{ width: `${(currentStep / 7) * 100}%` }}
             />
           </div>
@@ -369,17 +369,17 @@ export default function AcademyOnboardingContainer() {
               <div
                 className={`flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all ${
                   step === currentStep
-                    ? "bg-power-orange-solid scale-110 text-white shadow-lg"
+                    ? "bg-power-orange-solid scale-110 text-white shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
                     : step <= maxUnlockedStep
                       ? "bg-green-500 text-white"
-                      : "bg-slate-200 text-slate-400"
+                      : "bg-slate-200 text-slate-500"
                 }`}
               >
                 {step < maxUnlockedStep ? "✓" : step}
               </div>
               <span
                 className={`mt-1 text-xs ${
-                  step === currentStep ? "text-power-orange font-medium" : "text-slate-500"
+                  step === currentStep ? "text-power-orange-solid font-medium" : "text-slate-500"
                 }`}
               >
                 {STEP_LABELS[step - 1]}
@@ -401,7 +401,7 @@ export default function AcademyOnboardingContainer() {
             type="button"
             onClick={goNext}
             disabled={!canGoNext}
-            className="border-power-orange/30 bg-power-orange/10 text-power-orange hover:bg-power-orange/15 rounded-lg border px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className="border-power-orange/30 hover:bg-power-orange/15 rounded-lg border bg-orange-50 px-4 py-2 text-orange-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next Step
           </button>

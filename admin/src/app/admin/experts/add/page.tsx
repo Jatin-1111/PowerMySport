@@ -153,7 +153,7 @@ export default function AddExpertPage() {
             "w-full rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2",
             error
               ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
-              : "focus:border-power-orange focus:ring-power-orange/20 border-slate-200"
+              : "focus:border-power-orange-solid focus:ring-power-orange-solid/25 border-slate-200"
           )}
         />
         {error && (
@@ -168,7 +168,7 @@ export default function AddExpertPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-28">
       <AdminPageHeader
-        badge="Admin"
+        badge="People"
         title="Add expert"
         subtitle="Create an expert profile. This provisions their login and emails temporary credentials."
       />
@@ -189,7 +189,7 @@ export default function AddExpertPage() {
                 <User className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Personal Details</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Personal Details</h2>
                 <p className="text-sm text-slate-500">Basic information and contact details.</p>
               </div>
             </div>
@@ -216,11 +216,11 @@ export default function AddExpertPage() {
           {/* Section 2: Professional Profile */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50 text-purple-600">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                 <Briefcase className="h-5 w-5" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Professional Profile</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Professional Profile</h2>
                 <p className="text-sm text-slate-500">Service offerings, fees, and bio.</p>
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function AddExpertPage() {
                 <label className="text-sm font-medium text-slate-700">Session Mode</label>
                 <select
                   {...register("sessionMode")}
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
+                  className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 >
                   <option value="ONLINE">Online</option>
                   <option value="IN_PERSON">In-person</option>
@@ -253,7 +253,7 @@ export default function AddExpertPage() {
                   <input
                     placeholder="e.g. 2nd Floor, ABC Sports Complex, Sector 15, Chandigarh"
                     {...register("inPersonAddress")}
-                    className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
+                    className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                   />
                   <p className="text-xs text-slate-500">
                     Shown to a client only after they've booked a session — never on the public
@@ -312,7 +312,7 @@ export default function AddExpertPage() {
                   rows={4}
                   {...register("bio")}
                   placeholder="Tell clients about this expert..."
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
+                  className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 />
               </div>
 
@@ -322,7 +322,7 @@ export default function AddExpertPage() {
                   rows={3}
                   {...register("achievements")}
                   placeholder="List major accomplishments..."
-                  className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
+                  className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 />
               </div>
             </div>
@@ -333,7 +333,7 @@ export default function AddExpertPage() {
         <div className="space-y-8">
           {/* Photo Upload */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-4 text-sm font-bold text-slate-900">Profile Photo</h3>
+            <h3 className="mb-4 text-sm font-semibold text-slate-900">Profile Photo</h3>
             <CoachPhotoUpload
               currentPhotoUrl={photoUrl || undefined}
               onPhotoReady={(url, key) => {
@@ -346,8 +346,8 @@ export default function AddExpertPage() {
           {/* Availability */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-2">
-              <Calendar className="text-power-orange h-4 w-4" />
-              <h3 className="text-sm font-bold text-slate-900">Availability</h3>
+              <Calendar className="text-power-orange-solid h-4 w-4" />
+              <h3 className="text-sm font-semibold text-slate-900">Availability</h3>
             </div>
 
             <p className="mb-5 text-xs leading-relaxed text-slate-500">
@@ -356,14 +356,12 @@ export default function AddExpertPage() {
             </p>
 
             <div className="mb-6 flex flex-col gap-1.5 border-b border-slate-100 pb-6">
-              <label className="text-xs font-semibold uppercase text-slate-500">
-                Session length (mins)
-              </label>
+              <label className="text-xs font-semibold text-slate-500">Session length (mins)</label>
               <input
                 type="number"
                 min={15}
                 step={15}
-                className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
+                className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:bg-white focus:outline-none focus:ring-2"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
@@ -394,7 +392,7 @@ export default function AddExpertPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-power-orange-solid flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600 hover:shadow disabled:opacity-60 disabled:hover:shadow-sm"
+                className="bg-power-orange-solid flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-orange-800 hover:shadow disabled:opacity-60 disabled:hover:shadow-sm"
               >
                 {isSubmitting ? (
                   <>

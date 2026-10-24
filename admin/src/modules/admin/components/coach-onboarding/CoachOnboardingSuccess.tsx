@@ -12,13 +12,11 @@ export function CoachOnboardingSuccess({
   const router = useRouter();
 
   return (
-    <Card className="bg-linear-to-br border border-emerald-200 from-white to-emerald-50 p-6 shadow-sm">
+    <Card className="border border-emerald-200 bg-emerald-50 p-6">
       <div className="space-y-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-            Onboarding complete
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-slate-950">
+          <p className="text-xs font-semibold text-emerald-700">Onboarding complete</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-950">
             Coach account created and activated
           </h2>
           <p className="mt-2 text-sm text-slate-600">

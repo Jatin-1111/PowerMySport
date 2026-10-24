@@ -202,7 +202,7 @@ export default function OpeningHoursInput({ value, onChange }: OpeningHoursInput
         <button
           type="button"
           onClick={copyToAllDays}
-          className="text-power-orange text-sm font-semibold hover:text-orange-600"
+          className="text-power-orange-solid text-sm font-semibold hover:text-orange-600"
         >
           Copy Monday to all days
         </button>
@@ -228,7 +228,7 @@ export default function OpeningHoursInput({ value, onChange }: OpeningHoursInput
                   <button
                     type="button"
                     onClick={() => addSlot(key)}
-                    className="text-power-orange text-sm font-semibold hover:text-orange-600"
+                    className="text-power-orange-solid text-sm font-semibold hover:text-orange-600"
                   >
                     Add slot
                   </button>
@@ -245,7 +245,7 @@ export default function OpeningHoursInput({ value, onChange }: OpeningHoursInput
                         onChange={(e) =>
                           handleSlotTimeChange(key, slotIndex, "startTime", e.target.value)
                         }
-                        className="focus:ring-power-orange rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
+                        className="focus:ring-power-orange-solid rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
                       />
                       <span className="text-sm text-slate-500">to</span>
                       <input
@@ -254,7 +254,7 @@ export default function OpeningHoursInput({ value, onChange }: OpeningHoursInput
                         onChange={(e) =>
                           handleSlotTimeChange(key, slotIndex, "endTime", e.target.value)
                         }
-                        className="focus:ring-power-orange rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
+                        className="focus:ring-power-orange-solid rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
                       />
                       {(dayHours.slots || []).length > 1 && (
                         <button

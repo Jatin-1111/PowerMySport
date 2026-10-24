@@ -54,7 +54,7 @@ export function TagInput({ value = [], onChange, placeholder, error }: TagInputP
       {value.map((tag, index) => (
         <span
           key={index}
-          className="bg-power-orange/10 text-power-orange flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium"
+          className="flex items-center gap-1 rounded-md bg-orange-50 px-2 py-1 text-xs font-medium text-orange-800"
         >
           {tag}
           <button
@@ -77,7 +77,7 @@ export function TagInput({ value = [], onChange, placeholder, error }: TagInputP
         onKeyDown={handleKeyDown}
         onBlur={addTag}
         placeholder={value.length === 0 ? placeholder : ""}
-        className="min-w-[120px] flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
+        className="min-w-[120px] flex-1 bg-transparent text-sm outline-none placeholder:text-slate-500"
       />
     </div>
   );

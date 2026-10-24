@@ -61,7 +61,9 @@ function Bucket({
   return (
     <section className="border-t border-slate-200 pt-5">
       <div className="mb-3 flex items-baseline gap-3">
-        <span className="text-power-orange text-xs font-extrabold tracking-[0.18em]">{number}</span>
+        <span className="text-power-orange-solid text-xs font-extrabold tracking-[0.18em]">
+          {number}
+        </span>
         <div>
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">{title}</h2>
           <p className="text-xs text-slate-500">{subtitle}</p>

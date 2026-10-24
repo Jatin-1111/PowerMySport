@@ -273,7 +273,7 @@ export default function Step5Coaches({
   return (
     <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 5: Coach Details</h2>
+        <h2 className="mb-2 text-3xl font-semibold text-slate-900">Step 5: Coach Details</h2>
         <p className="text-slate-600">
           Add full coach onboarding details, including sports, pricing, service mode, maps location,
           and images.
@@ -304,7 +304,7 @@ export default function Step5Coaches({
               <h4 className="font-semibold text-slate-900">Coach {index + 1}</h4>
               <button
                 type="button"
-                className="text-sm text-red-600 disabled:text-slate-400"
+                className="text-sm text-red-600 disabled:text-slate-500"
                 onClick={() => removeCoach(index)}
                 disabled={coaches.length === 1 || isSubmitting || loading}
               >

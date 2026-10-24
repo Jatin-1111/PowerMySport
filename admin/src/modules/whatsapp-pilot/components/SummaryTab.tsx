@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { Card } from "@/modules/shared/ui/Card";
+import { MetricStrip, Panel } from "@/modules/shared/ui/Panel";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 import { toast } from "@/lib/toast";
 import { EnquirySummary, whatsappPilotApi } from "@/lib/api/whatsappPilotApi";
 
@@ -21,16 +21,6 @@ const FOLLOW_UP_LABEL: Record<string, string> = {
   done: "Done",
 };
 
-function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <p className="text-2xl font-bold tabular-nums text-slate-900">{value}</p>
-      <p className="mt-1 text-sm font-medium text-slate-700">{label}</p>
-      {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
-    </div>
-  );
-}
-
 function Breakdown({
   title,
   rows,
@@ -40,12 +30,11 @@ function Breakdown({
 }) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
-    <Card>
-      <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+    <Panel title={title}>
       {rows.length === 0 ? (
-        <p className="mt-3 text-sm text-slate-500">Nothing recorded yet.</p>
+        <p className="text-sm text-slate-500">Nothing recorded yet.</p>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul className="space-y-3">
           {rows.map((row) => (
             <li key={row.label} className="text-sm">
               <div className="flex justify-between gap-3">
@@ -54,7 +43,7 @@ function Breakdown({
               </div>
               <div className="mt-1 h-1.5 rounded bg-slate-100">
                 <div
-                  className="h-1.5 rounded bg-slate-700"
+                  className="bg-power-orange-solid h-1.5 rounded"
                   style={{ width: `${(row.count / max) * 100}%` }}
                 />
               </div>
@@ -62,7 +51,7 @@ function Breakdown({
           ))}
         </ul>
       )}
-    </Card>
+    </Panel>
   );
 }
 
@@ -88,33 +77,33 @@ export function SummaryTab() {
   }, []);
 
   if (failed)
-    return <p className="py-12 text-center text-slate-500">The summary could not be loaded.</p>;
-  if (!summary) {
-    return (
-      <div className="flex justify-center py-24 text-slate-400">
-        <Loader2 className="animate-spin" />
-      </div>
-    );
-  }
+    return <ErrorNotice message="We couldn't load the summary. Reload the page to try again." />;
+  if (!summary) return <SkeletonBlock rows={6} label="Loading summary" />;
 
   const rated = summary.feedback.helpful + summary.feedback.notHelpful;
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Parents" value={summary.parents} hint="Distinct people who asked" />
-        <Stat label="Enquiries" value={summary.enquiries} hint="One per question topic" />
-        <Stat
-          label="Waiting for the team"
-          value={summary.needsFollowUp}
-          hint="Asked for a person, not yet contacted"
-        />
-        <Stat
-          label="Said it helped"
-          value={summary.feedback.helpful}
-          hint={rated ? `${rated} gave feedback` : "No feedback yet"}
-        />
-      </div>
+      <MetricStrip
+        items={[
+          { label: "Parents", value: String(summary.parents), detail: "Distinct people who asked" },
+          {
+            label: "Enquiries",
+            value: String(summary.enquiries),
+            detail: "One per question topic",
+          },
+          {
+            label: "Waiting for the team",
+            value: String(summary.needsFollowUp),
+            detail: "Asked for a person, not yet contacted",
+          },
+          {
+            label: "Said it helped",
+            value: String(summary.feedback.helpful),
+            detail: rated ? `${rated} gave feedback` : "No feedback yet",
+          },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Breakdown

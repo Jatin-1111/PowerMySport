@@ -2,8 +2,10 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { Admin, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
 import { useCallback, useEffect, useState } from "react";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 
 export default function AdminProfilePage() {
   const [profile, setProfile] = useState<Admin | null>(null);
@@ -32,63 +34,50 @@ export default function AdminProfilePage() {
     loadProfile();
   }, [loadProfile]);
 
-  if (loading) {
-    return <div className="py-12 text-center">Loading profile...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <AdminPageHeader
-          badge="Admin"
-          title="Profile"
-          subtitle="View your account and role permissions."
+  const fields: Array<{ label: string; value: React.ReactNode }> = [
+    { label: "Name", value: profile?.name || "Not set" },
+    { label: "Email", value: profile?.email || "Not set" },
+    { label: "Role", value: profile?.role || "Not set" },
+    {
+      label: "Status",
+      value: (
+        <StatusBadge
+          status={profile?.isActive ? "Active" : "Inactive"}
+          tone={profile?.isActive ? "green" : "slate"}
         />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadProfile}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="Overview"
         title="Profile"
-        subtitle="View your account and role permissions."
+        subtitle="Your admin account and the role it runs under."
       />
 
-      <Card className="bg-white">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-sm text-slate-500">Name</p>
-            <p className="text-base font-semibold text-slate-900">{profile?.name || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-500">Email</p>
-            <p className="text-base font-semibold text-slate-900">{profile?.email || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-500">Role</p>
-            <p className="text-base font-semibold text-slate-900">{profile?.role || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-sm text-slate-500">Status</p>
-            <p className="text-base font-semibold text-slate-900">
-              {profile?.isActive ? "Active" : "Inactive"}
-            </p>
-          </div>
-        </div>
-      </Card>
+      {loading ? (
+        <SkeletonBlock rows={4} label="Loading profile" />
+      ) : error ? (
+        <ErrorNotice message={error} onRetry={loadProfile} />
+      ) : (
+        <Panel className="max-w-2xl" title="Account">
+          <dl className="divide-y divide-slate-100">
+            {fields.map((field) => (
+              <div
+                key={field.label}
+                className="grid gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[10rem_1fr] sm:gap-4"
+              >
+                <dt className="text-sm text-slate-500">{field.label}</dt>
+                <dd className="min-w-0 break-words text-sm font-medium text-slate-900">
+                  {field.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Panel>
+      )}
     </div>
   );
 }

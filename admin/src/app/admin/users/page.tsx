@@ -14,15 +14,17 @@ import {
   VenueListerUserRow,
   VenueListersAnalytics,
 } from "@/modules/analytics/services/stats";
-import { Card } from "@/modules/shared/ui/Card";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
+import { MetricStrip } from "@/modules/shared/ui/Panel";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { io } from "socket.io-client";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -85,9 +87,9 @@ interface PresenceUpdateEvent {
 function OnlinePill({ online, lastActiveAt }: { online: boolean; lastActiveAt: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${
         online
-          ? "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200"
+          ? "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200"
           : "bg-slate-100 text-slate-600"
       }`}
       title={`Last active: ${formatDateTime(lastActiveAt)}`}
@@ -98,18 +100,9 @@ function OnlinePill({ online, lastActiveAt }: { online: boolean; lastActiveAt: s
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card className="bg-white">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
-    </Card>
-  );
-}
-
 export default function AdminUsersPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center">Loading users...</div>}>
+    <Suspense fallback={<SkeletonBlock rows={6} label="Loading users" />}>
       <AdminUsersPageContent />
     </Suspense>
   );
@@ -358,13 +351,15 @@ function AdminUsersPageContent() {
     const phoneCol: AdminDataTableColumn<UsersRow> = {
       key: "phone",
       header: "Phone",
-      render: (u) => <span className="text-slate-600">{u.phone || "—"}</span>,
+      render: (u) => <span className="whitespace-nowrap text-slate-600">{u.phone || "—"}</span>,
     };
     const joinedCol: AdminDataTableColumn<UsersRow> = {
       key: "joined",
       header: "Joined",
       sortable: true,
-      render: (u) => <span className="text-slate-600">{formatDate(u.createdAt)}</span>,
+      render: (u) => (
+        <span className="whitespace-nowrap text-slate-600">{formatDate(u.createdAt)}</span>
+      ),
     };
     const activityCol: AdminDataTableColumn<UsersRow> = {
       key: "lastActive",
@@ -442,7 +437,7 @@ function AdminUsersPageContent() {
         },
         {
           key: "serviceMode",
-          header: "Service Mode",
+          header: "Service mode",
           render: (u) =>
             u.role === "Coach" ? (
               <span className="text-slate-600">{u.serviceMode || "—"}</span>
@@ -455,7 +450,7 @@ function AdminUsersPageContent() {
           render: (u) =>
             u.role === "Coach" ? (
               <span className="text-slate-700">
-                {u.rating.toFixed(1)} <span className="text-slate-400">({u.reviewCount})</span>
+                {u.rating.toFixed(1)} <span className="text-slate-500">({u.reviewCount})</span>
               </span>
             ) : null,
         },
@@ -477,13 +472,13 @@ function AdminUsersPageContent() {
       },
       {
         key: "venues",
-        header: "Venues (A / P / Total)",
+        header: "Venues (approved / pending / total)",
         render: (u) =>
           u.role === "VenueLister" ? (
             <span className="text-slate-700">
-              <span className="text-emerald-600">{u.approvedVenueCount}</span>
+              <span className="text-emerald-700">{u.approvedVenueCount}</span>
               {" / "}
-              <span className="text-amber-600">{u.pendingVenueCount}</span>
+              <span className="text-amber-700">{u.pendingVenueCount}</span>
               {" / "}
               {u.venueCount}
             </span>
@@ -518,7 +513,7 @@ function AdminUsersPageContent() {
           value: (u: UsersRow) => (u.role === "Coach" ? u.verificationStatus : ""),
         },
         {
-          header: "Service Mode",
+          header: "Service mode",
           value: (u: UsersRow) => (u.role === "Coach" ? u.serviceMode || "" : ""),
         },
         {
@@ -542,11 +537,11 @@ function AdminUsersPageContent() {
         value: (u: UsersRow) => (u.role === "VenueLister" ? u.venueCount : ""),
       },
       {
-        header: "Approved Venues",
+        header: "Approved venues",
         value: (u: UsersRow) => (u.role === "VenueLister" ? u.approvedVenueCount : ""),
       },
       {
-        header: "Pending Venues",
+        header: "Pending venues",
         value: (u: UsersRow) => (u.role === "VenueLister" ? u.pendingVenueCount : ""),
       },
       { header: "Created At", value: (u: UsersRow) => u.createdAt },
@@ -554,84 +549,62 @@ function AdminUsersPageContent() {
     ];
   }, [activeTab]);
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <AdminPageHeader
-          badge="Admin"
-          title="Users"
-          subtitle="View role-specific users, analytics, and health metrics."
-        />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={fetchUsersByRole}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  const tabItems = (["EXPERT", "Parent", "Player", "Coach", "VenueLister"] as UsersTabRole[]).map(
+    (tab) => ({ id: tab, label: TAB_LABELS[tab], count: summary[tab] })
+  );
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="People"
         title="Users"
-        subtitle="View role-specific users, analytics, and health metrics."
+        subtitle="Every account on the platform, by role. Open a row for full details."
       />
 
-      <div className="admin-tabs-scroll border-b border-slate-200">
-        {(["EXPERT", "Parent", "Player", "Coach", "VenueLister"] as UsersTabRole[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => switchTab(tab)}
-            className={`border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors sm:px-4 sm:py-3 ${
-              activeTab === tab
-                ? "border-power-orange text-power-orange"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {TAB_LABELS[tab]}
-            <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-xs">
-              {summary[tab]}
-            </span>
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={tabItems} value={activeTab} onChange={switchTab} label="User roles" />
+
+      {error && <ErrorNotice message={error} onRetry={fetchUsersByRole} />}
 
       {activeTab === "Player" && playersAnalytics && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Total" value={playersAnalytics.totalPlayers} />
-          <StatCard label="New This Month" value={playersAnalytics.newThisMonth} />
-          <StatCard label="Sports Profile" value={playersAnalytics.withSportsProfile} />
-          <StatCard label="With Dependents" value={playersAnalytics.withDependents} />
-          <StatCard label="New Last 24h" value={playersAnalytics.newAccountsLast24Hours} />
-        </div>
+        <MetricStrip
+          items={[
+            { label: "Total", value: String(playersAnalytics.totalPlayers) },
+            { label: "New this month", value: String(playersAnalytics.newThisMonth) },
+            { label: "With sports profile", value: String(playersAnalytics.withSportsProfile) },
+            { label: "With dependents", value: String(playersAnalytics.withDependents) },
+            { label: "New in last 24h", value: String(playersAnalytics.newAccountsLast24Hours) },
+          ]}
+        />
       )}
 
       {activeTab === "Coach" && coachesAnalytics && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Total" value={coachesAnalytics.totalCoaches} />
-          <StatCard label="Verified" value={coachesAnalytics.verifiedCount} />
-          <StatCard label="Pending / Review" value={coachesAnalytics.pendingOrReviewCount} />
-          <StatCard label="Avg Rating" value={coachesAnalytics.avgRating.toFixed(2)} />
-          <StatCard label="New Last 24h" value={coachesAnalytics.newAccountsLast24Hours} />
-        </div>
+        <MetricStrip
+          items={[
+            { label: "Total", value: String(coachesAnalytics.totalCoaches) },
+            { label: "Verified", value: String(coachesAnalytics.verifiedCount) },
+            { label: "Pending or in review", value: String(coachesAnalytics.pendingOrReviewCount) },
+            { label: "Average rating", value: String(coachesAnalytics.avgRating.toFixed(2)) },
+            { label: "New in last 24h", value: String(coachesAnalytics.newAccountsLast24Hours) },
+          ]}
+        />
       )}
 
       {activeTab === "VenueLister" && venueListersAnalytics && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Total" value={venueListersAnalytics.totalVenueListers} />
-          <StatCard label="Owners With Venues" value={venueListersAnalytics.withAtLeastOneVenue} />
-          <StatCard label="Approved Venues" value={venueListersAnalytics.approvedVenuesCount} />
-          <StatCard label="Pending Venues" value={venueListersAnalytics.pendingVenuesCount} />
-          <StatCard label="New Last 24h" value={venueListersAnalytics.newAccountsLast24Hours} />
-        </div>
+        <MetricStrip
+          items={[
+            { label: "Total", value: String(venueListersAnalytics.totalVenueListers) },
+            {
+              label: "Owners with venues",
+              value: String(venueListersAnalytics.withAtLeastOneVenue),
+            },
+            { label: "Approved venues", value: String(venueListersAnalytics.approvedVenuesCount) },
+            { label: "Pending venues", value: String(venueListersAnalytics.pendingVenuesCount) },
+            {
+              label: "New in last 24h",
+              value: String(venueListersAnalytics.newAccountsLast24Hours),
+            },
+          ]}
+        />
       )}
 
       <AdminDataTable<UsersRow>
@@ -648,7 +621,7 @@ function AdminUsersPageContent() {
         search={{
           value: searchQuery,
           onChange: setSearchQuery,
-          placeholder: "Search this page by name, email, or phone",
+          placeholder: "Search this page by name, email or phone",
         }}
         sort={{
           column: sortColumn,
@@ -665,7 +638,7 @@ function AdminUsersPageContent() {
           <ExportCsvButton
             filename={`${activeTab.toLowerCase()}-users.csv`}
             rows={visibleUsers}
-            label="Export Page CSV"
+            label="Export this page (CSV)"
             columns={exportColumns}
           />
         }

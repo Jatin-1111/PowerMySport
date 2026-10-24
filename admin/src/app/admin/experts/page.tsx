@@ -3,7 +3,10 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
+import { btn } from "@/modules/shared/ui/buttonStyles";
+import { ErrorNotice } from "@/modules/shared/ui/States";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { DetailDrawer } from "@/modules/shared/ui/DetailDrawer";
 import { expertAdminApi, type AdminExpert } from "@/modules/expert/services/expert";
 import { ExpertAdminPanel } from "./ExpertAdminPanel";
@@ -14,20 +17,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const formatInr = (n: number) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
 type Tab = "ALL" | "PENDING";
-
-const STATUS_LABEL: Record<string, string> = {
-  UNVERIFIED: "UNVERIFIED",
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
-};
-
-const VERIFICATION_BADGE_STYLES: Record<string, string> = {
-  UNVERIFIED: "bg-slate-100 text-slate-600",
-  PENDING: "bg-amber-50 text-amber-700",
-  APPROVED: "bg-emerald-50 text-emerald-700",
-  REJECTED: "bg-red-50 text-red-600",
-};
 
 export default function AdminExpertsPage() {
   const [experts, setExperts] = useState<AdminExpert[]>([]);
@@ -104,19 +93,19 @@ export default function AdminExpertsPage() {
             {e.sports.slice(0, 2).map((s) => (
               <span
                 key={s}
-                className="bg-power-orange/10 text-power-orange rounded-full px-2 py-0.5 text-xs font-medium"
+                className="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
               >
                 {s}
               </span>
             ))}
             {e.sports.length > 2 && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                 +{e.sports.length - 2}
               </span>
             )}
           </div>
         ) : (
-          <span className="text-slate-400">—</span>
+          <span className="text-slate-500">—</span>
         ),
     },
     {
@@ -131,7 +120,7 @@ export default function AdminExpertsPage() {
       render: (e) => (
         <span className="text-slate-600">
           {e.sessionMode === "BOTH"
-            ? "Online / In-person"
+            ? "Online or in person"
             : e.sessionMode === "ONLINE"
               ? "Online"
               : "In-person"}
@@ -147,29 +136,23 @@ export default function AdminExpertsPage() {
           <span className="inline-flex items-center gap-1 text-slate-700">
             <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
             {e.rating.toFixed(1)}
-            <span className="text-slate-400">({e.reviewCount})</span>
+            <span className="text-slate-500">({e.reviewCount})</span>
           </span>
         ) : (
-          <span className="text-xs uppercase text-slate-400">New</span>
+          <span className="text-xs text-slate-500">New</span>
         ),
     },
     {
       key: "verificationStatus",
-      header: "Review",
+      header: "Approval",
       render: (e) => {
         const status = e.verificationStatus || "APPROVED";
-        return (
-          <span
-            className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[status] || ""}`}
-          >
-            {STATUS_LABEL[status] || status}
-          </span>
-        );
+        return <StatusBadge status={status} size="sm" />;
       },
     },
     {
       key: "status",
-      header: "Active",
+      header: "Account",
       render: (e) => <StatusBadge status={e.isActive ? "ACTIVE" : "INACTIVE"} />,
     },
   ];
@@ -177,74 +160,40 @@ export default function AdminExpertsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="People"
         title="Experts"
         subtitle="Manage expert-player profiles. Self-registered experts require approval before going live."
         action={
-          <Link
-            href="/admin/experts/add"
-            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-          >
-            <Plus size={16} /> Add expert
+          <Link href="/admin/experts/add" className={btn("accent")}>
+            <Plus size={16} aria-hidden /> Add expert
           </Link>
         }
       />
 
-      {/* Tabs */}
-      <div className="flex w-fit gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
-        <button
-          onClick={() => setTab("ALL")}
-          className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
-            tab === "ALL"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          All
-        </button>
-        <button
-          onClick={() => setTab("PENDING")}
-          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition-all ${
-            tab === "PENDING"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Pending Review
-          {pendingCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-bold text-white">
-              {pendingCount}
-            </span>
-          )}
-        </button>
-      </div>
+      <Tabs
+        label="Expert list"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: "ALL" as const, label: "All experts" },
+          { id: "PENDING" as const, label: "Pending review", count: pendingCount },
+        ]}
+      />
 
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 py-10 text-center">
-          <p className="font-semibold text-red-600">{error}</p>
-          <button
-            onClick={() => load(tab)}
-            className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-          >
-            Retry
-          </button>
-        </div>
+        <ErrorNotice message={error} onRetry={() => load(tab)} />
       ) : (
         <AdminDataTable<AdminExpert>
           columns={columns}
           rows={visible}
           getRowKey={(e) => e.id || e._id || e.email || ""}
           loading={loading}
-          emptyMessage={
-            tab === "PENDING"
-              ? "No experts pending review."
-              : "No experts yet. Use Add expert to create one."
-          }
+          emptyMessage={tab === "PENDING" ? "No experts are waiting for review" : "No experts yet"}
           onRowClick={setSelected}
           search={{
             value: search,
             onChange: setSearch,
-            placeholder: "Search by name, email, or sport",
+            placeholder: "Search by name, email or sport",
           }}
         />
       )}
@@ -258,11 +207,7 @@ export default function AdminExpertsPage() {
           selected ? (
             <div className="flex items-center gap-2">
               {selected.verificationStatus && selected.verificationStatus !== "APPROVED" && (
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase ${VERIFICATION_BADGE_STYLES[selected.verificationStatus] || ""}`}
-                >
-                  {selected.verificationStatus}
-                </span>
+                <StatusBadge status={selected.verificationStatus} size="sm" />
               )}
               <StatusBadge status={selected.isActive ? "ACTIVE" : "INACTIVE"} />
             </div>

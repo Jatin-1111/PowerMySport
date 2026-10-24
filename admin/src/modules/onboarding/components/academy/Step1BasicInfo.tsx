@@ -167,7 +167,7 @@ export default function Step1BasicInfo({
   return (
     <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
       <div className="mb-8 text-center">
-        <h2 className="mb-2 text-3xl font-bold text-slate-900">Step 1: Academy Basics</h2>
+        <h2 className="mb-2 text-3xl font-semibold text-slate-900">Step 1: Academy Basics</h2>
         <p className="text-slate-600">Tell us about your academy and get started</p>
       </div>
 
@@ -189,7 +189,7 @@ export default function Step1BasicInfo({
                     ownerName: e.target.value,
                   }))
                 }
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.ownerName ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -212,7 +212,7 @@ export default function Step1BasicInfo({
                     ownerEmail: e.target.value,
                   }))
                 }
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.ownerEmail ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -245,7 +245,7 @@ export default function Step1BasicInfo({
                   }}
                   placeholder="9876543210"
                   maxLength={10}
-                  className={`focus:ring-power-orange flex-1 rounded-r-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                  className={`focus:ring-power-orange-solid flex-1 rounded-r-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                     fieldErrors.ownerPhone
                       ? "border-red-300 bg-red-50"
                       : "border-slate-300 bg-white"
@@ -273,7 +273,7 @@ export default function Step1BasicInfo({
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="e.g., Elite Basketball Academy"
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.name ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -295,7 +295,7 @@ export default function Step1BasicInfo({
                   }))
                 }
                 placeholder="Registered business name"
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.legalName ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -327,7 +327,7 @@ export default function Step1BasicInfo({
                 placeholder="2015"
                 min="1900"
                 max={currentYear}
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.establishedYear
                     ? "border-red-300 bg-red-50"
                     : "border-slate-300 bg-white"
@@ -356,7 +356,7 @@ export default function Step1BasicInfo({
                 }}
                 placeholder="Describe your academy, coaching philosophy, achievements, etc. (min. 20 characters)"
                 rows={4}
-                className={`focus:ring-power-orange w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
                   fieldErrors.description ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
                 }`}
                 disabled={isSubmitting}
@@ -367,7 +367,7 @@ export default function Step1BasicInfo({
                 ) : (
                   <span />
                 )}
-                <span className="text-xs text-slate-400">{formData.description.length}/20 min</span>
+                <span className="text-xs text-slate-500">{formData.description.length}/20 min</span>
               </div>
             </div>
           </div>

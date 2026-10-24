@@ -2,7 +2,6 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
@@ -13,6 +12,7 @@ import { Coach, CoachVerificationStatus } from "@/types";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorNotice } from "@/modules/shared/ui/States";
 
 const VERIFICATION_STATUSES: CoachVerificationStatus[] = [
   "UNVERIFIED",
@@ -208,19 +208,19 @@ export default function AdminCoachesPage() {
             {c.sports.slice(0, 2).map((sport) => (
               <span
                 key={sport}
-                className="bg-power-orange/10 text-power-orange rounded-full px-2 py-0.5 text-xs font-medium"
+                className="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
               >
                 {sport}
               </span>
             ))}
             {c.sports.length > 2 && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                 +{c.sports.length - 2}
               </span>
             )}
           </div>
         ) : (
-          <span className="text-slate-400">—</span>
+          <span className="text-slate-500">—</span>
         ),
     },
     {
@@ -237,7 +237,7 @@ export default function AdminCoachesPage() {
       render: (c) => (
         <span className="text-slate-700">
           {(c.rating ?? 0).toFixed(1)}{" "}
-          <span className="text-slate-400">({c.reviewCount ?? 0})</span>
+          <span className="text-slate-500">({c.reviewCount ?? 0})</span>
         </span>
       ),
     },
@@ -253,21 +253,11 @@ export default function AdminCoachesPage() {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
+          badge="People"
           title="Coaches"
           subtitle="Browse and manage coach accounts on the platform."
         />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadCoaches}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        <ErrorNotice message={error} onRetry={loadCoaches} />
       </div>
     );
   }
@@ -275,13 +265,13 @@ export default function AdminCoachesPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="People"
         title="Coaches"
         subtitle="Browse and manage coach accounts on the platform."
         action={
           <Link
             href="/admin/coaches/add"
-            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-800"
           >
             <Plus size={16} /> Add coach
           </Link>
@@ -373,7 +363,7 @@ export default function AdminCoachesPage() {
               <div className="flex justify-end">
                 <button
                   onClick={() => setEditing(true)}
-                  className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                  className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-800"
                 >
                   Edit coach
                 </button>
@@ -409,7 +399,7 @@ export default function AdminCoachesPage() {
                   {selectedCoach.sports.map((sport) => (
                     <span
                       key={sport}
-                      className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-medium"
+                      className="rounded-md bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-800"
                     >
                       {sport}
                       {selectedCoach.sportPricing?.[sport] != null
@@ -459,9 +449,7 @@ export default function AdminCoachesPage() {
         {selectedCoach && editing && (
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Bio
-              </label>
+              <label className="mb-1 block text-xs font-semibold text-slate-500">Bio</label>
               <textarea
                 rows={5}
                 value={editForm.bio}
@@ -471,7 +459,7 @@ export default function AdminCoachesPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold text-slate-500">
                   Hourly rate (₹)
                 </label>
                 <input
@@ -487,7 +475,7 @@ export default function AdminCoachesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label className="mb-1 block text-xs font-semibold text-slate-500">
                   Verification status
                 </label>
                 <select

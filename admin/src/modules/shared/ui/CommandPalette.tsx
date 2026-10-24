@@ -84,15 +84,15 @@ export function CommandPalette({ open, items, onClose, onNavigate }: CommandPale
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
-          <Search className="h-4 w-4 shrink-0 text-slate-400" />
+          <Search className="h-4 w-4 shrink-0 text-slate-500" />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Jump to a page..."
-            className="w-full text-sm outline-none placeholder:text-slate-400"
+            className="w-full text-sm outline-none placeholder:text-slate-500"
           />
-          <kbd className="hidden shrink-0 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 sm:block">
+          <kbd className="hidden shrink-0 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 sm:block">
             ESC
           </kbd>
         </div>
@@ -114,15 +114,13 @@ export function CommandPalette({ open, items, onClose, onNavigate }: CommandPale
                     onClose();
                   }}
                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors ${
-                    isActive
-                      ? "bg-power-orange/10 text-power-orange"
-                      : "text-slate-700 hover:bg-slate-50"
+                    isActive ? "bg-orange-50 text-orange-800" : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   <Icon size={16} />
                   <span className="flex-1">{item.label}</span>
-                  <span className="text-xs text-slate-400">{item.group}</span>
-                  {isActive && <CornerDownLeft className="text-power-orange h-3.5 w-3.5" />}
+                  <span className="text-xs text-slate-500">{item.group}</span>
+                  {isActive && <CornerDownLeft className="text-power-orange-solid h-3.5 w-3.5" />}
                 </button>
               );
             })

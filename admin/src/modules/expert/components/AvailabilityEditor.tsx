@@ -45,7 +45,7 @@ export function AvailabilityEditor({
               <div className="w-12 pt-2 text-sm font-semibold text-slate-700">{day}</div>
               <div className="flex-1 space-y-2">
                 {dayWindows.length === 0 && (
-                  <p className="pt-2 text-sm text-slate-400">Unavailable</p>
+                  <p className="pt-2 text-sm text-slate-500">Unavailable</p>
                 )}
                 {dayWindows.map(({ w, i }) => (
                   <div key={i} className="flex items-center gap-2">
@@ -55,7 +55,7 @@ export function AvailabilityEditor({
                       onChange={(e) => updateWindow(i, { start: e.target.value })}
                       className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
                     />
-                    <span className="text-slate-400">–</span>
+                    <span className="text-slate-500">–</span>
                     <input
                       type="time"
                       value={w.end}
@@ -65,7 +65,7 @@ export function AvailabilityEditor({
                     <button
                       type="button"
                       onClick={() => removeWindow(i)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="rounded-lg p-1.5 text-slate-500 hover:bg-red-50 hover:text-red-600"
                       aria-label="Remove window"
                     >
                       <Trash2 size={15} />
@@ -75,7 +75,7 @@ export function AvailabilityEditor({
                 <button
                   type="button"
                   onClick={() => addWindow(dayIdx)}
-                  className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold hover:underline"
+                  className="text-power-orange-solid inline-flex items-center gap-1 text-xs font-semibold hover:underline"
                 >
                   <Plus size={13} /> Add window
                 </button>
@@ -86,7 +86,7 @@ export function AvailabilityEditor({
       </div>
 
       <div className="mt-5">
-        <h4 className="text-sm font-bold text-slate-900">Blackout dates</h4>
+        <h4 className="text-sm font-semibold text-slate-900">Blackout dates</h4>
         <p className="mt-1 text-xs text-slate-500">
           Days the expert is unavailable even within their weekly hours.
         </p>
@@ -94,7 +94,7 @@ export function AvailabilityEditor({
           {blackout.map((d) => (
             <span
               key={d}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+              className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
             >
               {d}
               <button

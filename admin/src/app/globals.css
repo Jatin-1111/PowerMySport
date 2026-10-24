@@ -9,8 +9,8 @@
 :root {
   /* PowerMySport Brand Colors — see packages/shared-tokens/tokens.css,
      imported above, for --power-orange/--power-orange-solid/etc. */
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f9;
+  --foreground: #0f172a;
   --card: #ffffff;
   --card-foreground: #171717;
   --muted: #f1f5f9;
@@ -48,11 +48,107 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Figures line up in columns and counters do not jitter as they change. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One keyboard focus ring for every control. Mouse clicks do not show it. */
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid var(--power-orange-solid);
+    outline-offset: 2px;
+  }
+
+  /* Pressed feedback for anything that acts like a button. */
+  :where(button, [role="button"]):not(:disabled):active {
+    transform: translateY(1px);
+  }
+
+  :where(button, a, [role="button"]) {
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--power-orange) 28%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Skip link: first tab stop on every admin page. */
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background: var(--deep-slate);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* Loading placeholder that keeps the shape of the content it stands in for. */
+.skeleton {
+  border-radius: 0.375rem;
+  background: linear-gradient(90deg, #e8ebf0 25%, #f3f5f8 50%, #e8ebf0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 
 /* Admin-specific responsive UX baseline */
 .admin-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .admin-shell .overflow-x-auto {
@@ -123,4 +219,44 @@ body {
   .admin-shell .admin-tabs-scroll > * {
     flex: 0 0 auto;
   }
+}
+
+/* Plain <table class="data-table"> gets the same look as AdminDataTable. */
+.data-table {
+  width: 100%;
+  min-width: 100%;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table thead {
+  background: rgb(248 250 252 / 0.8);
+}
+
+.data-table th,
+.data-table td {
+  position: relative;
+}
+
+.data-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 0.75rem 1rem;
+  color: #334155;
+}
+
+.data-table tbody tr {
+  border-top: 1px solid #f1f5f9;
+}
+
+.data-table tbody tr:hover {
+  background: rgb(248 250 252 / 0.7);
 }

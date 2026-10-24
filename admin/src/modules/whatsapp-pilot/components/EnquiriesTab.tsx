@@ -44,7 +44,7 @@ const FOLLOW_UP_TONE: Record<FollowUpStatus, "slate" | "amber" | "blue" | "green
 const FEEDBACK_LABEL = { helpful: "Helpful", not_helpful: "Not helpful" } as const;
 
 const selectClass =
-  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900";
+  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 hover:border-slate-400 focus:border-power-orange-solid focus:outline-none focus:ring-2 focus:ring-power-orange-solid/25";
 
 const when = (iso: string) => format(new Date(iso), "MMM d, h:mm a");
 
@@ -145,7 +145,7 @@ export function EnquiriesTab() {
       header: "Follow-up",
       render: (e) =>
         e.followUpStatus === "none" ? (
-          <span className="text-slate-400">—</span>
+          <span className="text-slate-500">—</span>
         ) : (
           <StatusBadge
             status={FOLLOW_UP_LABEL[e.followUpStatus]}
@@ -233,7 +233,7 @@ export function EnquiriesTab() {
         rows={list?.rows ?? []}
         getRowKey={(e) => e.id}
         loading={loading}
-        emptyMessage="No enquiries match. Enquiries appear here as parents message the assistant."
+        emptyMessage="No enquiries match these filters"
         search={{ value: search, onChange: setSearch, placeholder: "Search the question" }}
         toolbarExtra={
           <Button
@@ -415,7 +415,7 @@ function EnquiryDrawer({
           maxLength={1000}
           aria-label="Team note"
           placeholder="What was said or done. Visible to admins only."
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+          className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm hover:border-slate-400 focus:outline-none focus:ring-2"
         />
         <div className="flex justify-end">
           <Button

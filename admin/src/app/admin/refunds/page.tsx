@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
+import { fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { toast } from "@/lib/toast";
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Landmark,
   Loader2,
@@ -175,7 +175,7 @@ export default function AdminRefundsPage() {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Finance"
+          badge="Commerce"
           title="Refund Processing"
           subtitle="Handle and track player refunds from completed bookings."
         />
@@ -192,7 +192,7 @@ export default function AdminRefundsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Finance"
+        badge="Commerce"
         title="Refund Processing"
         subtitle="Handle and track player refunds from completed bookings."
       />
@@ -201,19 +201,19 @@ export default function AdminRefundsPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card className="border-l-4 border-l-amber-500 bg-white p-6">
           <p className="text-sm font-semibold text-slate-500">Pending</p>
-          <p className="mt-2 text-3xl font-bold text-amber-600">{stats.pendingCount}</p>
+          <p className="mt-2 text-3xl font-semibold text-amber-600">{stats.pendingCount}</p>
         </Card>
         <Card className="border-l-4 border-l-emerald-500 bg-white p-6">
           <p className="text-sm font-semibold text-slate-500">Completed</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-600">{stats.completedCount}</p>
+          <p className="mt-2 text-3xl font-semibold text-emerald-600">{stats.completedCount}</p>
         </Card>
         <Card className="border-l-4 border-l-red-500 bg-white p-6">
           <p className="text-sm font-semibold text-slate-500">Failed</p>
-          <p className="mt-2 text-3xl font-bold text-red-600">{stats.failedCount}</p>
+          <p className="mt-2 text-3xl font-semibold text-red-600">{stats.failedCount}</p>
         </Card>
         <Card className="border-l-power-orange border-l-4 bg-white p-6">
           <p className="text-sm font-semibold text-slate-500">Total Amount</p>
-          <p className="text-power-orange mt-2 text-3xl font-bold">
+          <p className="text-power-orange-solid mt-2 text-3xl font-semibold">
             ₹{stats.totalAmount.toLocaleString()}
           </p>
         </Card>
@@ -225,7 +225,7 @@ export default function AdminRefundsPage() {
           <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white">
             <div className="sticky top-0 border-b border-slate-200 bg-white p-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-900">Process Refund</h2>
+                <h2 className="text-lg font-semibold text-slate-900">Process Refund</h2>
                 <button
                   onClick={() => setSelectedRefund(null)}
                   className="text-slate-500 hover:text-slate-700"
@@ -276,11 +276,11 @@ export default function AdminRefundsPage() {
                 <div className="space-y-3">
                   {/* Original Card */}
                   <label
-                    className="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors"
-                    style={{
-                      borderColor: refundMethod === "ORIGINAL_CARD" ? "#f59e0b" : "#e2e8f0",
-                      backgroundColor: refundMethod === "ORIGINAL_CARD" ? "#fef3c7" : "white",
-                    }}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      refundMethod === "ORIGINAL_CARD"
+                        ? "border-power-orange-solid ring-power-orange-solid bg-orange-50 ring-1"
+                        : "border-slate-200 bg-white hover:border-slate-400"
+                    }`}
                   >
                     <input
                       type="radio"
@@ -305,11 +305,11 @@ export default function AdminRefundsPage() {
 
                   {/* Bank Transfer */}
                   <label
-                    className="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors"
-                    style={{
-                      borderColor: refundMethod === "BANK_TRANSFER" ? "#f59e0b" : "#e2e8f0",
-                      backgroundColor: refundMethod === "BANK_TRANSFER" ? "#fef3c7" : "white",
-                    }}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      refundMethod === "BANK_TRANSFER"
+                        ? "border-power-orange-solid ring-power-orange-solid bg-orange-50 ring-1"
+                        : "border-slate-200 bg-white hover:border-slate-400"
+                    }`}
                   >
                     <input
                       type="radio"
@@ -322,7 +322,7 @@ export default function AdminRefundsPage() {
                     <div className="flex-1">
                       <p className="font-semibold text-slate-900">Bank Transfer</p>
                       <p className="mt-1 text-sm text-slate-600">
-                        Manually transfer refund to player's bank account.
+                        Transfer the refund to the player's bank account by hand.
                         <br />
                         <span className="text-xs text-slate-500">
                           Processing time: 2-3 business days (manual)
@@ -344,7 +344,7 @@ export default function AdminRefundsPage() {
                             accountHolderName: e.target.value,
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className={fieldClass}
                       />
                       <input
                         type="text"
@@ -356,7 +356,7 @@ export default function AdminRefundsPage() {
                             accountNumber: e.target.value,
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className={fieldClass}
                       />
                       <input
                         type="text"
@@ -368,7 +368,7 @@ export default function AdminRefundsPage() {
                             ifscCode: e.target.value.toUpperCase(),
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className={fieldClass}
                         maxLength={11}
                       />
                       <input
@@ -381,18 +381,18 @@ export default function AdminRefundsPage() {
                             bankName: e.target.value,
                           })
                         }
-                        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        className={fieldClass}
                       />
                     </div>
                   )}
 
                   {/* Store Credit */}
                   <label
-                    className="flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-colors"
-                    style={{
-                      borderColor: refundMethod === "STORE_CREDIT" ? "#f59e0b" : "#e2e8f0",
-                      backgroundColor: refundMethod === "STORE_CREDIT" ? "#fef3c7" : "white",
-                    }}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      refundMethod === "STORE_CREDIT"
+                        ? "border-power-orange-solid ring-power-orange-solid bg-orange-50 ring-1"
+                        : "border-slate-200 bg-white hover:border-slate-400"
+                    }`}
                   >
                     <input
                       type="radio"
@@ -451,22 +451,22 @@ export default function AdminRefundsPage() {
       {pendingRefunds.length === 0 && failedRefunds.length === 0 ? (
         <Card className="bg-white py-12 text-center">
           <CheckCircle2 className="mx-auto mb-4 h-12 w-12 text-emerald-500" />
-          <h3 className="text-lg font-semibold text-slate-900">All set!</h3>
+          <h3 className="text-lg font-semibold text-slate-900">No refunds waiting</h3>
           <p className="mx-auto mt-2 max-w-md text-slate-500">
-            No pending refunds at the moment. All refund requests have been processed.
+            Every refund request has been processed.
           </p>
         </Card>
       ) : (
         <div className="space-y-8">
           {pendingRefunds.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+              <h2 className="text-sm font-semibold text-slate-700">
                 Pending ({pendingRefunds.length})
               </h2>
               {pendingRefunds.map((refund) => (
                 <Card
                   key={refund.id}
-                  className="overflow-hidden border border-slate-200 bg-white transition-all hover:shadow-md"
+                  className="overflow-hidden border border-slate-200 bg-white transition-all hover:shadow-sm"
                 >
                   <div className="flex flex-col gap-4 p-6 md:flex-row md:items-center">
                     <div className="flex-1">
@@ -483,7 +483,9 @@ export default function AdminRefundsPage() {
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-emerald-600">₹{refund.amount}</p>
+                        <p className="text-2xl font-semibold tabular-nums text-slate-900">
+                          ₹{refund.amount.toLocaleString("en-IN")}
+                        </p>
                         <p className="mt-1 text-xs text-slate-500">
                           {new Date(refund.requestedAt).toLocaleDateString("en-IN", {
                             month: "short",
@@ -492,7 +494,7 @@ export default function AdminRefundsPage() {
                         </p>
                       </div>
                       {submittedIds.has(refund.bookingId) ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-700">
+                        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800">
                           <Clock size={12} />
                           Awaiting PhonePe
                         </span>
@@ -514,8 +516,8 @@ export default function AdminRefundsPage() {
 
           {failedRefunds.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-red-500">
-                Failed — Retry Required ({failedRefunds.length})
+              <h2 className="text-sm font-semibold text-red-700">
+                Failed, retry needed ({failedRefunds.length})
               </h2>
               {failedRefunds.map((refund) => (
                 <Card key={refund.id} className="overflow-hidden border border-red-200 bg-white">
@@ -532,12 +534,14 @@ export default function AdminRefundsPage() {
                       </div>
                       <p className="mt-2 text-sm text-slate-600">{refund.playerEmail}</p>
                       <p className="mt-1 text-xs font-medium text-red-500">
-                        Previous refund attempt failed — choose a method below to retry.
+                        The last attempt failed. Choose a method to try again.
                       </p>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="text-2xl font-bold text-red-600">₹{refund.amount}</p>
+                        <p className="text-2xl font-semibold tabular-nums text-red-700">
+                          ₹{refund.amount.toLocaleString("en-IN")}
+                        </p>
                         <p className="mt-1 text-xs text-slate-500">
                           {new Date(refund.requestedAt).toLocaleDateString("en-IN", {
                             month: "short",
@@ -566,54 +570,12 @@ export default function AdminRefundsPage() {
         </div>
       )}
 
-      {/* Pagination Controls */}
-      {pagination.totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-between border-t border-slate-200 pt-4">
-          <div className="text-sm text-slate-500">
-            Showing{" "}
-            <span className="font-medium text-slate-900">
-              {Math.min(currentPage * PAGE_SIZE, pagination.total)}
-            </span>{" "}
-            of <span className="font-medium text-slate-900">{pagination.total}</span> refund
-            requests
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-2"
-            >
-              <ChevronLeft size={16} />
-            </Button>
-
-            <div className="flex gap-1">
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "primary" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className="w-9 px-0"
-                >
-                  {page}
-                </Button>
-              ))}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
-              disabled={currentPage === pagination.totalPages}
-              className="px-2"
-            >
-              <ChevronRight size={16} />
-            </Button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={currentPage}
+        totalPages={pagination.totalPages}
+        total={pagination.total}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

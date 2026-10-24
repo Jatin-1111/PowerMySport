@@ -41,11 +41,13 @@ import {
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 const buttonClass =
   "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold disabled:opacity-50";
 
 export default function AdminOpportunityEditPage() {
+  const [confirm, confirmDialog] = useConfirm();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -116,11 +118,13 @@ export default function AdminOpportunityEditPage() {
       toast.success("Saved.");
     });
 
-  const verify = () => {
+  const verify = async () => {
     if (
-      !window.confirm(
-        "Mark as verified today? Only do this after opening every source and checking each figure against it."
-      )
+      !(await confirm({
+        title: "Mark as verified today?",
+        description: "Only do this after opening every source and checking each figure against it.",
+        confirmLabel: "Mark verified",
+      }))
     )
       return;
     void run("verify", async () => {
@@ -158,8 +162,17 @@ export default function AdminOpportunityEditPage() {
       await load();
     });
 
-  const remove = () => {
-    if (!doc || !window.confirm(`Delete "${doc.title}"? This cannot be undone.`)) return;
+  const remove = async () => {
+    if (
+      !doc ||
+      !(await confirm({
+        title: `Delete "${doc.title}"?`,
+        description: "This can't be undone.",
+        confirmLabel: "Delete entry",
+        variant: "danger",
+      }))
+    )
+      return;
     void run("delete", async () => {
       await opportunityAdminApi.remove(id);
       toast.success("Deleted.");
@@ -194,6 +207,7 @@ export default function AdminOpportunityEditPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <AdminPageHeader
         badge={doc.track === "admission" ? "Admission" : "Scholarship"}
         title={doc.title}
@@ -203,7 +217,7 @@ export default function AdminOpportunityEditPage() {
         action={
           <Link
             href="/admin/opportunities"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/30 px-3 py-2 text-sm font-semibold text-white hover:bg-white/10"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:border-slate-400 hover:bg-slate-50"
           >
             <ArrowLeft className="h-4 w-4" />
             All entries
@@ -298,7 +312,7 @@ export default function AdminOpportunityEditPage() {
 
       {checking && (
         <Card variant="elevated">
-          <h2 className="text-sm font-bold text-slate-900">Check against a source</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Check against a source</h2>
           <p className="mt-1 text-xs text-slate-500">
             Give this year&apos;s document. You will see what it says differently from this entry,
             field by field, and approving marks the entry verified.

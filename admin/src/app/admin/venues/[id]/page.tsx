@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { statsApi } from "@/modules/analytics/services/stats";
@@ -9,21 +9,11 @@ import { adminApi } from "@/modules/admin/services/admin";
 import { toast } from "@/lib/toast";
 import { Venue } from "@/types";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import { Card } from "@/modules/shared/ui/Card";
-import {
-  ArrowLeft,
-  MapPin,
-  Star,
-  Clock,
-  Info,
-  CheckCircle2,
-  Activity,
-  XCircle,
-  FileText,
-  Image as ImageIcon,
-  Pencil,
-  X,
-} from "lucide-react";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { ArrowLeft, Image as ImageIcon, Pencil, Star, X } from "lucide-react";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 interface VenueEditForm {
   name: string;
@@ -37,7 +27,6 @@ interface VenueEditForm {
 
 export default function AdminVenueDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const venueId = params.id as string;
 
   const [venue, setVenue] = useState<Venue | null>(null);
@@ -122,10 +111,39 @@ export default function AdminVenueDetailPage() {
     }
   };
 
+  const header = (
+    <AdminPageHeader
+      badge="Commerce"
+      title={venue?.name || "Venue"}
+      subtitle={venue?.address || (loading ? "Loading venue" : "Venue details")}
+      action={
+        venue ? (
+          <div className="flex items-center gap-3">
+            <StatusBadge status={venue.approvalStatus || "PENDING"} />
+            <button type="button" onClick={openEdit} className={btn("outline")}>
+              <Pencil size={14} aria-hidden /> Edit venue
+            </button>
+          </div>
+        ) : undefined
+      }
+    />
+  );
+
+  const back = (
+    <Link
+      href="/admin/venues"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+    >
+      <ArrowLeft size={16} aria-hidden />
+      Venues
+    </Link>
+  );
+
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="border-t-power-orange h-8 w-8 animate-spin rounded-full border-4 border-slate-200"></div>
+      <div className="space-y-6">
+        {header}
+        <SkeletonBlock rows={8} label="Loading venue" />
       </div>
     );
   }
@@ -133,23 +151,9 @@ export default function AdminVenueDetailPage() {
   if (error || !venue) {
     return (
       <div className="space-y-6">
-        <div className="mb-4 flex items-center gap-2 text-slate-500 transition-colors hover:text-slate-900">
-          <ArrowLeft size={20} />
-          <button onClick={() => router.push("/admin/venues")} className="font-semibold">
-            Back to Venues
-          </button>
-        </div>
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error || "Venue not found"}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        {header}
+        {back}
+        <ErrorNotice message={error || "We couldn't find this venue."} onRetry={fetchVenue} />
       </div>
     );
   }
@@ -162,315 +166,243 @@ export default function AdminVenueDetailPage() {
         year: "numeric",
       })
     : "Unknown";
+  const owner =
+    typeof venue.ownerId === "object" && venue.ownerId !== null
+      ? (venue.ownerId as { name?: string; email?: string; phone?: string })
+      : null;
+
+  const facts: Array<{ label: string; value: React.ReactNode }> = [
+    { label: "Price per hour", value: <span className="tabular-nums">₹{venue.pricePerHour}</span> },
+    {
+      label: "Rating",
+      value: venue.rating ? (
+        <span className="inline-flex items-center gap-1 tabular-nums">
+          <Star className="size-4 fill-amber-500 text-amber-500" aria-hidden />
+          {venue.rating.toFixed(1)}
+          <span className="font-normal text-slate-500">({venue.reviewCount || 0} reviews)</span>
+        </span>
+      ) : (
+        "No reviews yet"
+      ),
+    },
+    { label: "Listed on", value: joinedDate },
+    {
+      label: "External coaches",
+      value: venue.allowExternalCoaches ? "Allowed" : "Not allowed",
+    },
+    {
+      label: "Coordinates",
+      value: venue.location?.coordinates ? (
+        <span className="font-mono text-xs">
+          {venue.location.coordinates[1]}, {venue.location.coordinates[0]}
+        </span>
+      ) : (
+        "Not set"
+      ),
+    },
+    {
+      label: "Venue ID",
+      value: <span className="break-all font-mono text-xs">{venue.id || venue._id}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="mb-2 flex items-center justify-between">
-        <Link
-          href="/admin/venues"
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
-        >
-          <ArrowLeft size={16} />
-          Back to Venues
-        </Link>
-        <div className="flex items-center gap-3">
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              venue.approvalStatus === "APPROVED"
-                ? "bg-emerald-100 text-emerald-700"
-                : venue.approvalStatus === "REJECTED"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-amber-100 text-amber-700"
-            }`}
-          >
-            {venue.approvalStatus || "PENDING"}
-          </span>
-          <button
-            onClick={openEdit}
-            className="flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            <Pencil size={14} /> Edit
-          </button>
-        </div>
-      </div>
+      {header}
+      {back}
 
-      {/* Hero Banner */}
-      <div className="relative h-64 w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm md:h-80">
-        {imageUrl ? (
-          <Image src={imageUrl} alt={venue.name} fill className="object-cover" />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-            <ImageIcon className="h-16 w-16 text-slate-300" />
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)]">
+        <div className="space-y-6">
+          <div className="relative h-56 w-full overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-900/5 md:h-72">
+            {imageUrl ? (
+              <Image src={imageUrl} alt={`Photo of ${venue.name}`} fill className="object-cover" />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ImageIcon className="size-12 text-slate-300" aria-hidden />
+              </div>
+            )}
           </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 flex w-full flex-col justify-between gap-4 p-6 md:flex-row md:items-end md:p-8">
-          <div className="text-white">
-            <h1 className="mb-2 text-3xl font-extrabold text-white drop-shadow-md md:text-4xl">
-              {venue.name}
-            </h1>
-            <p className="flex items-center gap-2 text-sm font-medium text-white/90 md:text-base">
-              <MapPin size={18} />
-              {venue.address || "Location not provided"}
-            </p>
-          </div>
-          <div className="shrink-0">
-            <div className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-white shadow-lg backdrop-blur-md">
-              <span className="text-sm font-semibold uppercase tracking-wider">Base Price</span>
-              <span className="text-2xl font-bold">₹{venue.pricePerHour}</span>
-              <span className="text-xs font-medium opacity-80">/hr</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Main Content - Left Column */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
-              <FileText className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">About this Venue</h2>
-            </div>
-            <p className="whitespace-pre-line leading-relaxed text-slate-600">
+          <Panel title="About this venue">
+            <p className="max-w-[65ch] whitespace-pre-line text-sm leading-relaxed text-slate-700">
               {venue.description || "No description provided."}
             </p>
-          </Card>
+          </Panel>
 
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
-              <Activity className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">Sports Available</h2>
-            </div>
-            {venue.sports && venue.sports.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {venue.sports.map((sport) => (
-                  <div
-                    key={sport}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700"
-                  >
-                    {sport}
-                  </div>
-                ))}
+          <Panel title="Sports and amenities">
+            <div className="space-y-5">
+              <div>
+                <p className="mb-2 text-sm text-slate-500">Sports</p>
+                {venue.sports && venue.sports.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {venue.sports.map((sport) => (
+                      <li
+                        key={sport}
+                        className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-sm font-medium text-slate-800"
+                      >
+                        {sport}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500">No sports listed.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-sm italic text-slate-500">No sports listed.</p>
-            )}
-          </Card>
-
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
-              <CheckCircle2 className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">Amenities</h2>
-            </div>
-            {venue.amenities && venue.amenities.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {venue.amenities.map((amenity) => (
-                  <div
-                    key={amenity}
-                    className="bg-power-orange/10 text-power-orange rounded-full px-3 py-1.5 text-xs font-semibold"
-                  >
-                    {amenity}
-                  </div>
-                ))}
+              <div>
+                <p className="mb-2 text-sm text-slate-500">Amenities</p>
+                {venue.amenities && venue.amenities.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {venue.amenities.map((amenity) => (
+                      <li
+                        key={amenity}
+                        className="rounded-md bg-orange-50 px-2.5 py-1 text-sm font-medium text-orange-900"
+                      >
+                        {amenity}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500">No amenities listed.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-sm italic text-slate-500">No amenities listed.</p>
-            )}
-          </Card>
+            </div>
+          </Panel>
         </div>
 
-        {/* Sidebar - Right Column */}
         <div className="space-y-6">
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
-              <Info className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">Quick Stats</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Rating</span>
-                <div className="flex items-center gap-1 font-bold text-amber-600">
-                  <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                  {venue.rating ? venue.rating.toFixed(1) : "New"}
+          <Panel title="Details">
+            <dl className="divide-y divide-slate-100">
+              {facts.map((fact) => (
+                <div
+                  key={fact.label}
+                  className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
+                >
+                  <dt className="shrink-0 text-sm text-slate-500">{fact.label}</dt>
+                  <dd className="min-w-0 text-right text-sm font-medium text-slate-900">
+                    {fact.value}
+                  </dd>
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Reviews</span>
-                <span className="font-semibold text-slate-900">{venue.reviewCount || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">Listed On</span>
-                <span className="text-sm font-semibold text-slate-900">{joinedDate}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-500">External Coaches</span>
-                <span className="text-sm font-semibold text-slate-900">
-                  {venue.allowExternalCoaches ? (
-                    <span className="flex items-center gap-1 text-emerald-600">
-                      <CheckCircle2 size={14} /> Allowed
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-red-500">
-                      <XCircle size={14} /> Not Allowed
-                    </span>
-                  )}
-                </span>
-              </div>
-            </div>
-          </Card>
+              ))}
+            </dl>
+          </Panel>
 
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
-              <Clock className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">Location Data</h2>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Coordinates
-                </span>
-                <p className="rounded border border-slate-100 bg-slate-50 p-2 font-mono text-sm text-slate-700">
-                  {venue.location?.coordinates
-                    ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}`
-                    : "N/A"}
-                </p>
-              </div>
-              <div>
-                <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Venue ID
-                </span>
-                <p className="break-all font-mono text-xs text-slate-500">
-                  {venue.id || venue._id}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <div className="mb-4 flex items-center gap-2 border-b border-slate-100 pb-4">
-              <Info className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">Owner</h2>
-            </div>
-            {typeof venue.ownerId === "object" && venue.ownerId !== null ? (
+          <Panel title="Owner">
+            {owner ? (
               <div className="text-sm text-slate-900">
-                <p className="font-semibold">
-                  {(venue.ownerId as { name?: string }).name || "Unknown"}
-                </p>
-                {(venue.ownerId as { email?: string }).email && (
-                  <p className="mt-1 text-xs text-slate-500">
-                    {(venue.ownerId as { email?: string }).email}
-                  </p>
-                )}
-                {(venue.ownerId as { phone?: string }).phone && (
-                  <p className="text-xs text-slate-500">
-                    {(venue.ownerId as { phone?: string }).phone}
-                  </p>
-                )}
+                <p className="font-semibold">{owner.name || "Unknown"}</p>
+                {owner.email && <p className="mt-1 text-slate-600">{owner.email}</p>}
+                {owner.phone && <p className="text-slate-600">{owner.phone}</p>}
               </div>
             ) : (
-              <p className="text-sm italic text-slate-500">Owner unavailable</p>
+              <p className="text-sm text-slate-500">Owner details aren&apos;t available.</p>
             )}
-          </Card>
+          </Panel>
         </div>
       </div>
 
       {isEditing && editForm && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
           onClick={closeEdit}
         >
           <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit venue"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between">
-              <h2 className="text-lg font-bold text-slate-900">Edit venue</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Edit venue</h2>
               <button
+                type="button"
                 onClick={closeEdit}
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Close"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
               >
-                <X className="h-5 w-5" />
+                <X className="size-5" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label htmlFor="v-name" className={labelClass}>
                   Name
                 </label>
                 <input
+                  id="v-name"
                   value={editForm.name}
                   onChange={(e) => setEditForm((prev) => prev && { ...prev, name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label htmlFor="v-desc" className={labelClass}>
                   Description
                 </label>
                 <textarea
+                  id="v-desc"
                   rows={3}
                   value={editForm.description}
                   onChange={(e) =>
                     setEditForm((prev) => prev && { ...prev, description: e.target.value })
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label htmlFor="v-sports" className={labelClass}>
                   Sports (comma separated)
                 </label>
                 <input
+                  id="v-sports"
                   value={editForm.sports}
                   onChange={(e) =>
                     setEditForm((prev) => prev && { ...prev, sports: e.target.value })
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <label htmlFor="v-amen" className={labelClass}>
                   Amenities (comma separated)
                 </label>
                 <input
+                  id="v-amen"
                   value={editForm.amenities}
                   onChange={(e) =>
                     setEditForm((prev) => prev && { ...prev, amenities: e.target.value })
                   }
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className={fieldClass}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label htmlFor="v-price" className={labelClass}>
                     Price per hour (₹)
                   </label>
                   <input
+                    id="v-price"
                     type="number"
                     value={editForm.pricePerHour}
                     onChange={(e) =>
                       setEditForm(
-                        (prev) =>
-                          prev && {
-                            ...prev,
-                            pricePerHour: Number(e.target.value),
-                          }
+                        (prev) => prev && { ...prev, pricePerHour: Number(e.target.value) }
                       )
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <label htmlFor="v-status" className={labelClass}>
                     Approval status
                   </label>
                   <select
+                    id="v-status"
                     value={editForm.approvalStatus}
                     onChange={(e) =>
                       setEditForm(
@@ -481,12 +413,12 @@ export default function AdminVenueDetailPage() {
                           }
                       )
                     }
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                   >
-                    <option value="PENDING">PENDING</option>
-                    <option value="REVIEW">REVIEW</option>
-                    <option value="APPROVED">APPROVED</option>
-                    <option value="REJECTED">REJECTED</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="REVIEW">In review</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
                   </select>
                 </div>
               </div>
@@ -497,32 +429,30 @@ export default function AdminVenueDetailPage() {
                   checked={editForm.allowExternalCoaches}
                   onChange={(e) =>
                     setEditForm(
-                      (prev) =>
-                        prev && {
-                          ...prev,
-                          allowExternalCoaches: e.target.checked,
-                        }
+                      (prev) => prev && { ...prev, allowExternalCoaches: e.target.checked }
                     )
                   }
-                  className="h-4 w-4 rounded"
+                  className="size-4 rounded accent-orange-700"
                 />
                 Allow external coaches
               </label>
 
               <div className="flex justify-end gap-2 pt-2">
                 <button
+                  type="button"
                   onClick={closeEdit}
                   disabled={saving}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className={btn("outline")}
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={saveEdit}
                   disabled={saving}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                  className={btn("primary")}
                 >
-                  {saving ? "Saving..." : "Save changes"}
+                  {saving ? "Saving…" : "Save changes"}
                 </button>
               </div>
             </div>

@@ -8,9 +8,10 @@ import { ArrowLeft, ExternalLink, FileSearch, Plus, RefreshCw, Trash2 } from "lu
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { SkeletonBlock } from "@/modules/shared/ui/States";
 
 const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
-const labelCls = "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+const labelCls = "mb-1 block text-xs font-semibold text-slate-500";
 
 // ─── Human-readable Live vs. Proposed comparison (replaces a raw JSON dump) ───
 
@@ -58,14 +59,14 @@ function valuesEqual(a: unknown, b: unknown): boolean {
 }
 
 function DiffValue({ value }: { value: unknown }) {
-  if (isEmptyValue(value)) return <span className="text-slate-400">—</span>;
+  if (isEmptyValue(value)) return <span className="text-slate-500">—</span>;
 
   if (Array.isArray(value)) {
     if (value.every((v) => typeof v === "string" || typeof v === "number")) {
       return (
         <div className="flex flex-wrap gap-1">
           {value.map((v, i) => (
-            <span key={i} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+            <span key={i} className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
               {String(v)}
             </span>
           ))}
@@ -87,7 +88,7 @@ function DiffValue({ value }: { value: unknown }) {
     const entries = Object.entries(value as Record<string, unknown>).filter(
       ([, v]) => !isEmptyValue(v)
     );
-    if (entries.length === 0) return <span className="text-slate-400">—</span>;
+    if (entries.length === 0) return <span className="text-slate-500">—</span>;
     return (
       <div className="space-y-1 text-sm text-slate-700">
         {entries.map(([k, v]) => (
@@ -128,8 +129,8 @@ function FieldDiff({ live, proposed }: { live: unknown; proposed: unknown }) {
     <div className="divide-y divide-slate-100">
       <div className="grid grid-cols-1 gap-3 pb-2 sm:grid-cols-[160px_1fr_1fr]">
         <span />
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Currently Live</p>
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Proposed</p>
+        <p className="text-xs font-semibold text-slate-500">Currently Live</p>
+        <p className="text-xs font-semibold text-slate-500">Proposed</p>
       </div>
       {keys.map((key) => {
         const liveVal = liveObj?.[key];
@@ -140,9 +141,7 @@ function FieldDiff({ live, proposed }: { live: unknown; proposed: unknown }) {
             key={key}
             className={`grid grid-cols-1 gap-3 rounded-lg px-2 py-3 sm:grid-cols-[160px_1fr_1fr] ${changed ? "bg-amber-50" : ""}`}
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {humanizeKey(key)}
-            </p>
+            <p className="text-xs font-semibold text-slate-500">{humanizeKey(key)}</p>
             <DiffValue value={liveVal} />
             <div className={changed ? "font-medium" : ""}>
               <DiffValue value={proposedVal} />
@@ -169,12 +168,12 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+        <p className="mb-2 text-xs font-semibold text-slate-500">
           Currently in Calendar ({liveList.length})
         </p>
         <ul className="space-y-1.5">
           {liveList.length === 0 ? (
-            <li className="text-sm text-slate-400">No editions yet.</li>
+            <li className="text-sm text-slate-500">No editions yet.</li>
           ) : (
             liveList.map((e, i) => (
               <li key={i} className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -186,12 +185,12 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
         </ul>
       </div>
       <div>
-        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-400">
+        <p className="mb-2 text-xs font-semibold text-slate-500">
           Proposed ({proposedList.length})
         </p>
         <ul className="space-y-1.5">
           {proposedList.length === 0 ? (
-            <li className="text-sm text-slate-400">No editions proposed.</li>
+            <li className="text-sm text-slate-500">No editions proposed.</li>
           ) : (
             proposedList.map((e, i) => (
               <li key={i} className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-slate-700">
@@ -209,9 +208,7 @@ function CalendarComparison({ live, proposed }: { live: unknown; proposed: unkno
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <details className="rounded-lg border border-slate-200 bg-slate-50/60 p-3" open>
-      <summary className="cursor-pointer text-xs font-bold uppercase tracking-wide text-slate-600">
-        {title}
-      </summary>
+      <summary className="cursor-pointer text-xs font-semibold text-slate-600">{title}</summary>
       <div className="mt-3 space-y-4">{children}</div>
     </details>
   );
@@ -243,7 +240,7 @@ function StringListEditor({
           <button
             type="button"
             onClick={() => onChange(items.filter((_, i) => i !== idx))}
-            className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 transition-colors hover:border-red-300 hover:text-red-600"
+            className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-500 transition-colors hover:border-red-300 hover:text-red-600"
           >
             <Trash2 size={14} />
           </button>
@@ -492,7 +489,7 @@ function FederationEditor({
                   onClick={() =>
                     patch({ stateAssociations: data.stateAssociations.filter((_, i) => i !== idx) })
                   }
-                  className="rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600"
+                  className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:border-red-300 hover:text-red-600"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -621,7 +618,7 @@ function FederationEditor({
                         },
                       })
                     }
-                    className="rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600"
+                    className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:border-red-300 hover:text-red-600"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -851,7 +848,7 @@ function CalendarEditor({
             <button
               type="button"
               onClick={() => onChange(data.filter((_, i) => i !== idx))}
-              className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-400 hover:border-red-300 hover:text-red-600"
+              className="shrink-0 rounded-lg border border-slate-200 p-2 text-slate-500 hover:border-red-300 hover:text-red-600"
             >
               <Trash2 size={14} />
             </button>
@@ -934,7 +931,7 @@ function CalendarEditor({
                   href={edition.detailUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold"
+                  className="text-power-orange-solid inline-flex items-center gap-1 text-xs font-semibold"
                 >
                   Tournament page <ExternalLink size={11} />
                 </a>
@@ -961,7 +958,7 @@ function CalendarEditor({
                             documents: edition.documents?.filter((_, i) => i !== docIdx),
                           })
                         }
-                        className="ml-auto shrink-0 text-slate-400 hover:text-red-600"
+                        className="ml-auto shrink-0 text-slate-500 hover:text-red-600"
                         title="Remove this document"
                       >
                         <Trash2 size={12} />
@@ -970,7 +967,7 @@ function CalendarEditor({
                   ))}
                 </ul>
               ) : (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500">
                   No documents found on this tournament&apos;s page.
                 </p>
               )}
@@ -1148,13 +1145,13 @@ export default function AdminDataSourceDetailPage() {
     }
   };
 
-  if (loading) return <div className="py-12 text-center">Loading data source...</div>;
+  if (loading) return <SkeletonBlock rows={6} label="Loading data source" />;
   if (error || !submission) {
     return (
       <Card className="bg-white">
         <div className="space-y-3 py-10 text-center">
           <p className="font-semibold text-red-600">{error || "Data source not found."}</p>
-          <Link href="/admin/data-sources" className="text-power-orange font-semibold">
+          <Link href="/admin/data-sources" className="text-power-orange-solid font-semibold">
             Back to Data Sources
           </Link>
         </div>
@@ -1177,13 +1174,13 @@ export default function AdminDataSourceDetailPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="Content"
         title={`${submission.targetType.replace(/_/g, " ")} — ${submission.sportSlug}`}
         subtitle="Review the AI-extracted data against the source and the live record below, edit as needed, then approve or reject."
         action={
           <Link
             href="/admin/data-sources"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
           >
             <ArrowLeft size={16} /> Back to list
           </Link>
@@ -1206,7 +1203,7 @@ export default function AdminDataSourceDetailPage() {
                   href={submission.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-power-orange inline-flex items-center gap-1"
+                  className="text-power-orange-solid inline-flex items-center gap-1"
                 >
                   {submission.sourceUrl} <ExternalLink size={12} />
                 </a>
@@ -1221,7 +1218,7 @@ export default function AdminDataSourceDetailPage() {
                   href={submission.originUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-power-orange"
+                  className="text-power-orange-solid"
                 >
                   {submission.originUrl}
                 </a>
@@ -1232,9 +1229,7 @@ export default function AdminDataSourceDetailPage() {
             )}
             {submission.extractionWarnings && submission.extractionWarnings.length > 0 && (
               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                  Extraction warnings
-                </p>
+                <p className="text-xs font-semibold text-amber-700">Extraction warnings</p>
                 <ul className="mt-1 space-y-0.5">
                   {submission.extractionWarnings.map((w, i) => (
                     <li key={i} className="text-sm text-amber-800">
@@ -1263,9 +1258,7 @@ export default function AdminDataSourceDetailPage() {
         <Card className="space-y-3 bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                Tournament Details
-              </h2>
+              <h2 className="text-sm font-semibold text-slate-700">Tournament Details</h2>
               <p className="max-w-2xl text-xs text-slate-500">
                 The calendar only lists a name and a week. Fact sheets, acceptance lists, the host
                 academy and the full official title live on each tournament&apos;s own page — this
@@ -1302,9 +1295,7 @@ export default function AdminDataSourceDetailPage() {
       )}
 
       <Card className="space-y-3 bg-white">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-          Live Now vs. Proposed
-        </h2>
+        <h2 className="text-sm font-semibold text-slate-700">Live Now vs. Proposed</h2>
         <p className="text-xs text-slate-500">
           Fields highlighted below differ from what's currently live. Bookkeeping fields (IDs,
           timestamps, status flags) are hidden since they're not content you need to review.
@@ -1318,9 +1309,7 @@ export default function AdminDataSourceDetailPage() {
 
       {submission.citations && Object.keys(submission.citations).length > 0 && (
         <Card className="space-y-3 bg-white">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-            Source Citations
-          </h2>
+          <h2 className="text-sm font-semibold text-slate-700">Source Citations</h2>
           <p className="text-xs text-slate-500">
             Where the AI says it found each field — check these against the source instead of
             re-reading the whole thing.
@@ -1328,9 +1317,7 @@ export default function AdminDataSourceDetailPage() {
           <div className="space-y-2">
             {Object.entries(submission.citations).map(([field, quote]) => (
               <div key={field} className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  {field}
-                </p>
+                <p className="text-xs font-semibold text-slate-500">{field}</p>
                 <p className="mt-1 text-sm italic text-slate-700">“{quote}”</p>
               </div>
             ))}
@@ -1340,9 +1327,7 @@ export default function AdminDataSourceDetailPage() {
 
       {draft != null && (
         <Card className="space-y-4 bg-white">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-            Edit Before Approving
-          </h2>
+          <h2 className="text-sm font-semibold text-slate-700">Edit Before Approving</h2>
           {submission.targetType === "FEDERATION" && (
             <FederationEditor data={draft as FederationDraft} onChange={setDraft} />
           )}

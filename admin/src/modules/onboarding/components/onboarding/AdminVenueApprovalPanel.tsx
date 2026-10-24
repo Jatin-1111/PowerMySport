@@ -5,10 +5,15 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
 import { OnboardingVenue, PendingVenueListItem } from "@/modules/onboarding/types/onboarding";
 import { formatOpeningHours } from "@/modules/onboarding/utils/formatOpeningHours";
-import { Card } from "@/modules/shared/ui/Card";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, TriangleAlert, X } from "lucide-react";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { ArrowLeft, Check, TriangleAlert, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 interface AdminVenueApprovalPanelProps {
   initialVenues?: PendingVenueListItem[];
@@ -19,6 +24,7 @@ type ViewMode = "list" | "details";
 export default function AdminVenueApprovalPanel({
   initialVenues = [],
 }: AdminVenueApprovalPanelProps) {
+  const [confirmAction, confirmDialog] = useConfirm();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [venues, setVenues] = useState<PendingVenueListItem[]>(initialVenues);
   const [selectedVenue, setSelectedVenue] = useState<OnboardingVenue | null>(null);
@@ -101,9 +107,11 @@ export default function AdminVenueApprovalPanel({
       return;
     }
 
-    const confirmed = confirm(
-      `Approve venue "${selectedVenue.name}"? This will activate the venue immediately.`
-    );
+    const confirmed = await confirmAction({
+      title: `Approve "${selectedVenue.name}"?`,
+      description: "The venue goes live immediately.",
+      confirmLabel: "Approve venue",
+    });
     if (!confirmed) return;
 
     setActionLoading(true);
@@ -195,118 +203,59 @@ export default function AdminVenueApprovalPanel({
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
-          title="Venue Approval Panel"
-          subtitle="Review and approve pending venue submissions to expand the platform."
+          badge="Commerce"
+          title="Venue approvals"
+          subtitle="New venue submissions waiting for a decision. Open one to check photos, documents and details."
         />
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="border-power-orange h-12 w-12 animate-spin rounded-full border-b-2"></div>
-          </div>
+          <SkeletonBlock rows={6} label="Loading pending venues" />
         ) : error ? (
-          <Card className="bg-white">
-            <div className="space-y-3 py-10 text-center">
-              <p className="font-semibold text-red-600">{error}</p>
-              <button
-                onClick={loadPendingVenues}
-                className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-              >
-                Retry
-              </button>
-            </div>
-          </Card>
+          <ErrorNotice message={error} onRetry={loadPendingVenues} />
         ) : venues.length === 0 ? (
-          <Card className="bg-white">
-            <div className="flex flex-col items-center gap-4 py-12 text-center">
-              <div className="bg-power-orange/10 text-power-orange rounded-full px-4 py-2 text-sm font-semibold">
-                No pending venues
-              </div>
-              <p className="max-w-md text-slate-600">All venue submissions are up to date!</p>
-            </div>
-          </Card>
+          <EmptyState
+            title="No venues waiting"
+            description="New submissions will appear here for approval."
+          />
         ) : (
           <div className="space-y-4">
-            {venues.map((venue) => (
-              <Card key={venue.id} className="bg-white transition-shadow hover:shadow-lg">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-slate-900">{venue.name}</h3>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Owner: {venue.ownerEmail} | {venue.ownerPhone}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <span className="bg-power-orange/10 text-power-orange inline-block rounded-full px-3 py-1 text-xs font-semibold">
-                        {venue.sports.join(", ")}
-                      </span>
-                      <span className="inline-block rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">
-                        Status: {venue.approvalStatus}
-                      </span>
-                      <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        Submitted: {new Date(venue.submittedAt).toLocaleDateString()}
-                      </span>
+            <ul className="divide-y divide-slate-200 overflow-hidden rounded-2xl border border-slate-200 bg-white">
+              {venues.map((venue) => (
+                <li key={venue.id} className="flex flex-wrap items-start justify-between gap-4 p-5">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-semibold text-slate-900">{venue.name}</h3>
+                      <StatusBadge status={venue.approvalStatus} size="sm" />
                     </div>
+                    <p className="text-sm text-slate-600">
+                      {venue.ownerEmail} · {venue.ownerPhone}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {venue.sports.join(", ")} · Submitted{" "}
+                      {new Date(venue.submittedAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </p>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleViewDetails(venue.id)}
-                    className="bg-power-orange-solid ml-4 rounded-lg px-6 py-2.5 font-semibold text-white transition-colors hover:bg-orange-600"
+                    className={btn("primary")}
                   >
-                    Review
+                    Review venue
                   </button>
-                </div>
-              </Card>
-            ))}
+                </li>
+              ))}
+            </ul>
 
-            {/* Pagination Controls */}
-
-            {/* Pagination Controls */}
-            {paginationData.totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4">
-                <p className="text-sm text-slate-600">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, paginationData.total)} of{" "}
-                  {paginationData.total} venues
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-
-                  {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1)
-                    .slice(
-                      Math.max(0, currentPage - 2),
-                      Math.min(paginationData.totalPages, currentPage + 1)
-                    )
-                    .map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
-                          currentPage === page
-                            ? "bg-power-orange-solid text-white"
-                            : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(paginationData.totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === paginationData.totalPages}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              page={currentPage}
+              totalPages={paginationData.totalPages}
+              total={paginationData.total}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
       </div>
@@ -315,206 +264,176 @@ export default function AdminVenueApprovalPanel({
 
   // ============ DETAILS VIEW ============
   if (viewMode === "details" && selectedVenue) {
+    const facts: Array<{ label: string; value: React.ReactNode }> = [
+      { label: "Price per hour", value: `₹${selectedVenue.pricePerHour}` },
+      { label: "Opening hours", value: formatOpeningHours(selectedVenue.openingHours) },
+      {
+        label: "Coordinates",
+        value: (
+          <span className="font-mono text-xs">
+            {selectedVenue.location?.coordinates[1]}, {selectedVenue.location?.coordinates[0]}
+          </span>
+        ),
+      },
+      { label: "Sports", value: selectedVenue.sports.join(", ") },
+      { label: "Amenities", value: selectedVenue.amenities?.join(", ") || "None" },
+      {
+        label: "External coaches",
+        value: selectedVenue.allowExternalCoaches ? "Allowed" : "Not allowed",
+      },
+    ];
+
     return (
       <div className="space-y-6">
-        {/* Back Button */}
+        {confirmDialog}
+        <AdminPageHeader
+          badge="Commerce"
+          title={selectedVenue.name}
+          subtitle={selectedVenue.address}
+          action={<StatusBadge status={selectedVenue.approvalStatus} />}
+        />
+
         <button
+          type="button"
           onClick={() => setViewMode("list")}
-          className="text-power-orange flex items-center gap-2 font-semibold transition-colors hover:text-orange-600"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to List
+          <ArrowLeft className="size-4" aria-hidden />
+          Venue approvals
         </button>
 
-        <Card className="overflow-hidden bg-white">
-          {/* Header */}
-          <div className="border-b border-slate-200 p-5 sm:p-8">
-            <h1 className="text-3xl font-bold text-slate-900">{selectedVenue.name}</h1>
-            <p className="mt-2 text-slate-600">{selectedVenue.address}</p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <span className="rounded-full bg-yellow-100 px-4 py-2 text-sm font-semibold text-yellow-800">
-                Status: {selectedVenue.approvalStatus}
-              </span>
-            </div>
-          </div>
-
-          {/* Venue Info */}
-          <div className="grid grid-cols-1 gap-6 border-b border-slate-200 p-5 sm:p-8 md:grid-cols-2">
-            <div>
-              <h3 className="mb-2 font-semibold text-slate-900">Basic Details</h3>
-              <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-slate-600">Price per Hour:</dt>
-                  <dd className="font-semibold text-slate-900">₹{selectedVenue.pricePerHour}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-600">Opening Hours:</dt>
-                  <dd className="text-xs font-semibold text-slate-900">
-                    {formatOpeningHours(selectedVenue.openingHours)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-600">Location:</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {selectedVenue.location?.coordinates[1]},{" "}
-                    {selectedVenue.location?.coordinates[0]}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div>
-              <h3 className="mb-2 font-semibold text-slate-900">Additional Info</h3>
-              <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-slate-600">Sports:</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {selectedVenue.sports.join(", ")}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-600">Amenities:</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {selectedVenue.amenities?.join(", ") || "None"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-600">External Coaches:</dt>
-                  <dd className="font-semibold text-slate-900">
-                    {selectedVenue.allowExternalCoaches ? "Allowed" : "Not Allowed"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="border-b border-slate-200 p-5 sm:p-8">
-            <h3 className="mb-3 font-semibold text-slate-900">Description</h3>
-            <p className="leading-relaxed text-slate-700">{selectedVenue.description}</p>
-          </div>
-
-          {/* Photos */}
-          {selectedVenue.images && selectedVenue.images.length > 0 && (
-            <div className="border-b border-slate-200 p-5 sm:p-8">
-              <h3 className="mb-4 font-semibold text-slate-900">Uploaded Photos</h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {selectedVenue.images.map((photo, idx) => (
-                  <div key={idx} className="relative aspect-square overflow-hidden rounded-lg">
-                    <Image
-                      src={photo}
-                      alt={`Venue photo ${idx + 1}`}
-                      fill
-                      className="object-cover"
-                    />
-                    {photo === selectedVenue.coverPhotoUrl && (
-                      <div className="bg-power-orange-solid absolute right-2 top-2 rounded px-2 py-1 text-xs font-semibold text-white">
-                        Cover Photo
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Documents */}
-          {selectedVenue.documents && selectedVenue.documents.length > 0 && (
-            <div className="border-b border-slate-200 p-5 sm:p-8">
-              <h3 className="mb-4 font-semibold text-slate-900">Uploaded Documents</h3>
-              <div className="space-y-3">
-                {selectedVenue.documents.map((doc, idx) => (
+        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)]">
+          <div className="space-y-6">
+            <Panel title="Details">
+              <dl className="divide-y divide-slate-100">
+                {facts.map((fact) => (
                   <div
-                    key={idx}
-                    className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
+                    key={fact.label}
+                    className="grid gap-1 py-2.5 first:pt-0 last:pb-0 sm:grid-cols-[10rem_1fr] sm:gap-4"
                   >
-                    <div className="flex items-center space-x-3">
-                      <svg
-                        className="h-5 w-5 text-slate-400"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V4z" />
-                      </svg>
-                      <div className="min-w-0">
-                        <p className="font-semibold text-slate-900">{doc.type}</p>
-                        <p className="text-sm text-slate-600">{doc.fileName}</p>
-                      </div>
-                    </div>
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-power-orange text-sm font-semibold hover:text-orange-600"
-                    >
-                      View
-                    </a>
+                    <dt className="text-sm text-slate-500">{fact.label}</dt>
+                    <dd className="min-w-0 break-words text-sm font-medium text-slate-900">
+                      {fact.value}
+                    </dd>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
+              </dl>
+              <p className="mt-4 max-w-[65ch] border-t border-slate-100 pt-4 text-sm leading-relaxed text-slate-700">
+                {selectedVenue.description || "No description provided."}
+              </p>
+            </Panel>
 
-          {/* Action Buttons */}
-          <div className="border-t border-slate-200 bg-slate-50 p-5 sm:p-8">
-            <h3 className="mb-4 font-semibold text-slate-900">Admin Actions</h3>
+            {selectedVenue.images && selectedVenue.images.length > 0 && (
+              <Panel title="Photos">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {selectedVenue.images.map((photo, idx) => (
+                    <div key={idx} className="relative aspect-video overflow-hidden rounded-lg">
+                      <Image
+                        src={photo}
+                        alt={`Venue photo ${idx + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      {photo === selectedVenue.coverPhotoUrl && (
+                        <span className="bg-deep-slate absolute right-2 top-2 rounded px-2 py-1 text-xs font-semibold text-white">
+                          Cover photo
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            )}
 
-            {/* Rejection Reason Field */}
-            <div className="mb-4">
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Rejection Reason (if rejecting)
-              </label>
-              <textarea
-                value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="Explain why the venue is being rejected..."
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                rows={3}
-              />
-            </div>
-
-            {/* Review Notes Field */}
-            <div className="mb-6">
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Review Notes (if marking for review)
-              </label>
-              <textarea
-                value={reviewNotes}
-                onChange={(e) => setReviewNotes(e.target.value)}
-                placeholder="What needs to be updated or reviewed..."
-                className="w-full rounded-lg border border-slate-300 px-4 py-3 focus:border-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
-              <button
-                onClick={handleApprove}
-                disabled={actionLoading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Check size={16} />
-                Approve
-              </button>
-              <button
-                onClick={handleMarkForReview}
-                disabled={actionLoading || !reviewNotes.trim()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-yellow-600 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <TriangleAlert size={16} />
-                Mark for Review
-              </button>
-              <button
-                onClick={handleReject}
-                disabled={actionLoading || !rejectionReason.trim()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <X size={16} />
-                Reject
-              </button>
-            </div>
+            {selectedVenue.documents && selectedVenue.documents.length > 0 && (
+              <Panel title="Documents">
+                <ul className="divide-y divide-slate-100">
+                  {selectedVenue.documents.map((doc, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">{doc.type}</p>
+                        <p className="truncate text-sm text-slate-600">{doc.fileName}</p>
+                      </div>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={btn("outline", "sm")}
+                      >
+                        Open
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </Panel>
+            )}
           </div>
-        </Card>
+
+          <div className="lg:sticky lg:top-6">
+            <Panel title="Decision" description="The owner is notified of whichever you choose.">
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={handleApprove}
+                  disabled={actionLoading}
+                  className={btn("primary", "md", "w-full")}
+                >
+                  <Check size={16} aria-hidden />
+                  Approve venue
+                </button>
+
+                <div className="space-y-2 border-t border-slate-100 pt-4">
+                  <label htmlFor="review-notes" className={labelClass}>
+                    What needs to change
+                  </label>
+                  <textarea
+                    id="review-notes"
+                    value={reviewNotes}
+                    onChange={(e) => setReviewNotes(e.target.value)}
+                    placeholder="Tell the owner what to fix or add"
+                    className={fieldClass}
+                    rows={3}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleMarkForReview}
+                    disabled={actionLoading || !reviewNotes.trim()}
+                    className={btn("outline", "md", "w-full")}
+                  >
+                    <TriangleAlert size={16} aria-hidden />
+                    Ask for changes
+                  </button>
+                </div>
+
+                <div className="space-y-2 border-t border-slate-100 pt-4">
+                  <label htmlFor="reject-reason" className={labelClass}>
+                    Reason for rejecting
+                  </label>
+                  <textarea
+                    id="reject-reason"
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Explain why this venue can't be listed"
+                    className={fieldClass}
+                    rows={3}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleReject}
+                    disabled={actionLoading || !rejectionReason.trim()}
+                    className={btn("dangerOutline", "md", "w-full")}
+                  >
+                    <X size={16} aria-hidden />
+                    Reject venue
+                  </button>
+                </div>
+              </div>
+            </Panel>
+          </div>
+        </div>
       </div>
     );
   }

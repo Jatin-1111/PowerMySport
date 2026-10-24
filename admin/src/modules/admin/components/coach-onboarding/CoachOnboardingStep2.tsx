@@ -148,7 +148,7 @@ export function CoachOnboardingStep2({
               className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                 errors.hourlyRate
                   ? "border-red-400 focus:ring-red-200"
-                  : "focus:ring-power-orange/30 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="500"
               disabled={loading}
@@ -208,7 +208,7 @@ export function CoachOnboardingStep2({
                         [sport]: event.target.value,
                       }))
                     }
-                    className="focus:ring-power-orange/30 w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2"
+                    className="focus:ring-power-orange-solid/25 w-28 rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2"
                     placeholder="500"
                     disabled={loading}
                   />
@@ -237,7 +237,7 @@ export function CoachOnboardingStep2({
                 onClick={() => setServiceMode(value)}
                 className={`rounded-2xl border px-4 py-3 text-left text-sm transition ${
                   serviceMode === value
-                    ? "border-power-orange text-power-orange bg-orange-50"
+                    ? "border-power-orange text-power-orange-solid bg-orange-50"
                     : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                 }`}
                 disabled={loading}
@@ -256,7 +256,7 @@ export function CoachOnboardingStep2({
         {needsBaseLocation ? (
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center gap-2">
-              <MapPin className="text-power-orange h-4 w-4" />
+              <MapPin className="text-power-orange-solid h-4 w-4" />
               <p className="text-sm font-semibold text-slate-900">Base location</p>
             </div>
             <div>
@@ -271,7 +271,7 @@ export function CoachOnboardingStep2({
                 className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                   errors.baseLocation
                     ? "border-red-400 focus:ring-red-200"
-                    : "focus:ring-power-orange/30 border-slate-300"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 disabled={loading}
               />
@@ -313,7 +313,7 @@ export function CoachOnboardingStep2({
                   className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                     errors.serviceRadiusKm
                       ? "border-red-400 focus:ring-red-200"
-                      : "focus:ring-power-orange/30 border-slate-300"
+                      : "focus:ring-power-orange-solid/25 border-slate-300"
                   }`}
                   disabled={loading}
                 />
@@ -333,7 +333,7 @@ export function CoachOnboardingStep2({
                   className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                     errors.travelBufferTime
                       ? "border-red-400 focus:ring-red-200"
-                      : "focus:ring-power-orange/30 border-slate-300"
+                      : "focus:ring-power-orange-solid/25 border-slate-300"
                   }`}
                   disabled={loading}
                 />
@@ -364,7 +364,7 @@ export function CoachOnboardingStep2({
                   className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                     errors.venueName
                       ? "border-red-400 focus:ring-red-200"
-                      : "focus:ring-power-orange/30 border-slate-300"
+                      : "focus:ring-power-orange-solid/25 border-slate-300"
                   }`}
                   placeholder="Venue name"
                   disabled={loading}
@@ -387,7 +387,7 @@ export function CoachOnboardingStep2({
                   className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                     errors.venueAddress
                       ? "border-red-400 focus:ring-red-200"
-                      : "focus:ring-power-orange/30 border-slate-300"
+                      : "focus:ring-power-orange-solid/25 border-slate-300"
                   }`}
                   placeholder="Search venue address"
                   disabled={loading}
@@ -426,7 +426,7 @@ export function CoachOnboardingStep2({
                 value={venueDescription}
                 onChange={(event) => setVenueDescription(event.target.value)}
                 rows={4}
-                className="focus:ring-power-orange/30 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:ring-2"
+                className="focus:ring-power-orange-solid/25 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:ring-2"
                 placeholder="Optional venue description"
                 disabled={loading}
               />

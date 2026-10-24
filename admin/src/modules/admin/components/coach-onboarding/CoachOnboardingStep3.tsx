@@ -81,7 +81,7 @@ export function CoachOnboardingStep3({
       >
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Identity</p>
+            <p className="text-xs font-semibold text-slate-500">Identity</p>
             <div className="mt-3 space-y-2 text-sm text-slate-700">
               <p>
                 <span className="font-semibold text-slate-900">Name:</span> {firstName} {lastName}
@@ -99,9 +99,7 @@ export function CoachOnboardingStep3({
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Coaching setup
-            </p>
+            <p className="text-xs font-semibold text-slate-500">Coaching setup</p>
             <div className="mt-3 space-y-2 text-sm text-slate-700">
               <p>
                 <span className="font-semibold text-slate-900">Sports:</span>{" "}
@@ -123,9 +121,7 @@ export function CoachOnboardingStep3({
 
         {isOwnVenue ? (
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Venue details
-            </p>
+            <p className="text-xs font-semibold text-slate-500">Venue details</p>
             <div className="mt-3 space-y-2 text-sm text-slate-700">
               <p>
                 <span className="font-semibold text-slate-900">Venue name:</span> {venueName}
@@ -145,9 +141,7 @@ export function CoachOnboardingStep3({
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Verification documents
-              </p>
+              <p className="text-xs font-semibold text-slate-500">Verification documents</p>
               <p className="text-sm text-slate-600">
                 Optional for admin-created coaches. Add documents only if you want them stored for
                 review.
@@ -166,7 +160,7 @@ export function CoachOnboardingStep3({
               >
                 <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
                       Document type
                     </label>
                     <select
@@ -196,7 +190,7 @@ export function CoachOnboardingStep3({
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-xs font-semibold uppercase text-slate-500">
+                    <label className="mb-1 block text-xs font-semibold text-slate-500">
                       Uploaded file
                     </label>
                     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
@@ -241,9 +235,7 @@ export function CoachOnboardingStep3({
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Venue images
-                </p>
+                <p className="text-xs font-semibold text-slate-500">Venue images</p>
                 <p className="text-sm text-slate-600">
                   Upload files now, then the final submit will create, attach, and activate the
                   coach.

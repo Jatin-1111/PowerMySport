@@ -3,11 +3,15 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
+import { Tabs } from "@/modules/shared/ui/Tabs";
+import { toast } from "@/lib/toast";
 import { conciergeApi, ConciergeRequest } from "@/lib/api/conciergeApi";
 import { format } from "date-fns";
 import {
   Download,
-  FileText,
   CheckCircle,
   XCircle,
   Clock,
@@ -27,25 +31,25 @@ const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; badg
     label: "Pending",
     icon: <Clock size={14} />,
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700",
+      "inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700",
   },
   processing: {
     label: "Processing",
     icon: <Loader2 size={14} className="animate-spin" />,
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700",
+      "inline-flex items-center gap-1 rounded-md bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700",
   },
   completed: {
     label: "Completed",
     icon: <CheckCircle size={14} />,
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700",
+      "inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700",
   },
   rejected: {
     label: "Rejected",
     icon: <XCircle size={14} />,
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700",
+      "inline-flex items-center gap-1 rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-700",
   },
 };
 
@@ -109,12 +113,12 @@ function RequestRow({
           {/* Status + date */}
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge status={req.status} />
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-500">
               {format(new Date(req.createdAt), "MMM d, yyyy")}
             </span>
           </div>
         </div>
-        <div className="shrink-0 text-slate-400">
+        <div className="shrink-0 text-slate-500">
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </div>
       </button>
@@ -125,9 +129,7 @@ function RequestRow({
           {/* Request details */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Request Details
-              </p>
+              <p className="text-[10px] font-semibold text-slate-500">Request Details</p>
               <div className="space-y-1.5 text-sm">
                 <div className="flex gap-2">
                   <span className="shrink-0 text-slate-500">Sport:</span>
@@ -155,18 +157,16 @@ function RequestRow({
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                Documents Submitted
-              </p>
+              <p className="mb-3 text-[10px] font-semibold text-slate-500">Documents Submitted</p>
               {req.documents.length === 0 ? (
-                <p className="text-sm italic text-slate-400">No documents attached</p>
+                <p className="text-sm italic text-slate-500">No documents attached</p>
               ) : (
                 <div className="space-y-2">
                   {req.documents.map((doc, idx) => (
                     <button
                       key={idx}
                       onClick={() => onDownload(req._id, doc.s3Key, doc.documentName)}
-                      className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-indigo-600 transition hover:border-indigo-200 hover:bg-indigo-50"
+                      className="flex w-full items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-orange-800 transition hover:border-orange-200 hover:bg-orange-50"
                     >
                       <Download size={13} />
                       <span className="flex-1 truncate text-left">{doc.documentName}</span>
@@ -179,7 +179,7 @@ function RequestRow({
 
           {/* Action panel — status + notes */}
           <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-4">
-            <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="flex items-center gap-1 text-[10px] font-semibold text-slate-500">
               <MessageSquare size={12} /> Admin Response to Parent
             </p>
 
@@ -221,7 +221,7 @@ function RequestRow({
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-slate-600">
                 Notes for Parent{" "}
-                <span className="font-normal text-slate-400">(shown in their dashboard)</span>
+                <span className="font-normal text-slate-500">(shown in their dashboard)</span>
               </label>
               <textarea
                 value={notes}
@@ -237,15 +237,15 @@ function RequestRow({
                         ? "e.g. We have received your documents and are processing your BCCI registration. Estimated time: 3-5 business days."
                         : "Add any notes or updates for the parent..."
                 }
-                className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+                className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition focus:ring-1"
               />
-              <p className="mt-1 text-right text-[10px] text-slate-400">{notes.length}/2000</p>
+              <p className="mt-1 text-right text-[10px] text-slate-500">{notes.length}/2000</p>
             </div>
 
             {/* Suggested next-step templates */}
             {pendingStatus === "completed" && (
               <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-                <p className="mb-2 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                <p className="mb-2 flex items-center gap-1 text-[10px] font-semibold text-emerald-600">
                   <Trophy size={12} /> Suggested Next Steps for Parent
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -277,7 +277,7 @@ function RequestRow({
             {/* Existing admin notes from DB */}
             {req.adminNotes && req.adminNotes !== notes && (
               <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
-                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-600">
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold text-amber-600">
                   <AlertCircle size={12} /> Current Saved Note
                 </p>
                 <p className="text-xs leading-relaxed text-amber-800">{req.adminNotes}</p>
@@ -287,18 +287,18 @@ function RequestRow({
             {/* Save button */}
             <div className="flex items-center justify-between">
               {saved && (
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-                  <CheckCircle size={14} /> Saved successfully
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
+                  <CheckCircle size={14} /> Saved
                 </span>
               )}
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={saving || !hasChanged}
-                className="ml-auto flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="bg-deep-slate ml-auto flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                {saving ? "Saving..." : "Save & Notify Parent"}
+                {saving ? "Saving…" : "Save and notify parent"}
               </button>
             </div>
           </div>
@@ -346,7 +346,7 @@ export default function ConciergeRequestsAdminPage() {
         )
       );
     } catch (err) {
-      alert("Failed to update request");
+      toast.error("We couldn't update that request. Try again.");
     }
   };
 
@@ -361,7 +361,7 @@ export default function ConciergeRequestsAdminPage() {
       a.click();
       a.remove();
     } catch {
-      alert("Failed to get document download URL");
+      toast.error("We couldn't get the download link. Try again.");
     }
   };
 
@@ -384,66 +384,46 @@ export default function ConciergeRequestsAdminPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Concierge Requests</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Review document submissions, update status, and send responses back to parents.
-          </p>
-        </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-          <input
-            type="text"
-            placeholder="Search by user, sport, or tournament..."
-            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-4 text-sm focus:border-indigo-500 focus:outline-none sm:w-72"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+      <AdminPageHeader
+        badge="Trust & Support"
+        title="Concierge requests"
+        subtitle="Documents parents have sent for help. Review each, update the status and reply."
+        action={
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              size={16}
+              aria-hidden
+            />
+            <input
+              type="search"
+              placeholder="Search by user, sport or tournament"
+              aria-label="Search requests"
+              className={`${fieldClass} pl-9 sm:w-72`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        }
+      />
 
-      {/* Status filter tabs */}
-      <div className="flex flex-wrap gap-2">
-        {(["all", "pending", "processing", "completed", "rejected"] as const).map((s) => {
-          const active = statusFilter === s;
-          const count = counts[s];
-          return (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setStatusFilter(s)}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                active
-                  ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-              {count > 0 && (
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs
+        label="Request status"
+        value={statusFilter}
+        onChange={setStatusFilter}
+        tabs={(["all", "pending", "processing", "completed", "rejected"] as const).map((s) => ({
+          id: s,
+          label: s.charAt(0).toUpperCase() + s.slice(1),
+          count: s === "all" ? undefined : counts[s],
+        }))}
+      />
 
       {loading ? (
-        <div className="flex h-48 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-        </div>
+        <SkeletonBlock rows={6} label="Loading concierge requests" />
       ) : error ? (
-        <div className="flex h-48 items-center justify-center text-red-500">{error}</div>
+        <ErrorNotice message={error} onRetry={fetchRequests} />
       ) : filteredRequests.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 py-12 text-slate-500">
-          <FileText size={40} className="mb-3 text-slate-300" />
-          <p className="font-semibold text-slate-700">No requests found</p>
-          <p className="mt-1 text-sm">Try adjusting your search or filter.</p>
-        </div>
+        <EmptyState title="No requests found" description="Change the search or the status tab." />
       ) : (
         <div>
           {filteredRequests.map((req) => (

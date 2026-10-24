@@ -2,7 +2,10 @@
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { ModerationExperience, ModerationReview, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { useCallback, useEffect, useState } from "react";
@@ -28,6 +31,7 @@ function ReviewsQueue() {
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<ModerationReview[]>([]);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [targetTypeFilter, setTargetTypeFilter] = useState<"" | "VENUE" | "Coach">("");
   const [page, setPage] = useState(1);
@@ -98,7 +102,7 @@ function ReviewsQueue() {
     {
       key: "status",
       header: "Status",
-      render: (review) => review.moderationStatus,
+      render: (review) => <StatusBadge status={review.moderationStatus} size="sm" />,
     },
     {
       key: "review",
@@ -112,23 +116,26 @@ function ReviewsQueue() {
       render: (review) => (
         <div className="flex gap-2">
           <button
+            type="button"
             disabled={pendingActionId === review._id}
             onClick={() => handleModeration(review._id, "APPROVE")}
-            className="rounded bg-green-100 px-2 py-1 text-green-800 hover:bg-green-200"
+            className={btn("outline", "sm")}
           >
             Approve
           </button>
           <button
+            type="button"
             disabled={pendingActionId === review._id}
             onClick={() => handleModeration(review._id, "HIDE")}
-            className="rounded bg-amber-100 px-2 py-1 text-amber-800 hover:bg-amber-200"
+            className={btn("quiet", "sm")}
           >
             Hide
           </button>
           <button
+            type="button"
             disabled={pendingActionId === review._id}
-            onClick={() => handleModeration(review._id, "REMOVE")}
-            className="rounded bg-red-100 px-2 py-1 text-red-800 hover:bg-red-200"
+            onClick={() => setPendingRemoveId(review._id)}
+            className={btn("dangerOutline", "sm")}
           >
             Remove
           </button>
@@ -138,24 +145,25 @@ function ReviewsQueue() {
   ];
 
   return (
-    <Card className="bg-white">
+    <>
       <AdminDataTable
         columns={columns}
         rows={visibleReviews}
         getRowKey={(review) => review._id}
         loading={loading}
-        emptyMessage="No reviews pending moderation."
+        emptyMessage="No reviews waiting for moderation"
         search={{
           value: search,
           onChange: setSearch,
-          placeholder: "Search this page by target, reviewer, or text...",
+          placeholder: "Search this page by target, reviewer or text",
         }}
         toolbarExtra={
           <>
             <select
               value={targetTypeFilter}
               onChange={(e) => setTargetTypeFilter(e.target.value as typeof targetTypeFilter)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className={`${fieldClass} !w-auto`}
+              aria-label="Review type"
             >
               <option value="">All types</option>
               <option value="VENUE">Venues</option>
@@ -164,7 +172,7 @@ function ReviewsQueue() {
             <ExportCsvButton
               filename="reviews.csv"
               rows={visibleReviews}
-              label="Export Page CSV"
+              label="Export this page (CSV)"
               columns={[
                 { header: "Reviewed", value: (r) => getTargetLabel(r) },
                 { header: "Reviewer", value: (r) => getReviewerLabel(r) },
@@ -178,7 +186,20 @@ function ReviewsQueue() {
         }
         pagination={{ page, totalPages, onPageChange: setPage, total }}
       />
-    </Card>
+      <ConfirmModal
+        open={pendingRemoveId !== null}
+        variant="danger"
+        title="Remove this review?"
+        description="This removes it from the platform."
+        confirmLabel="Remove"
+        loading={pendingActionId !== null}
+        onConfirm={async () => {
+          if (pendingRemoveId) await handleModeration(pendingRemoveId, "REMOVE");
+          setPendingRemoveId(null);
+        }}
+        onCancel={() => setPendingRemoveId(null)}
+      />
+    </>
   );
 }
 
@@ -195,6 +216,7 @@ function ExperiencesQueue() {
   const [loading, setLoading] = useState(true);
   const [experiences, setExperiences] = useState<ModerationExperience[]>([]);
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -274,7 +296,7 @@ function ExperiencesQueue() {
     {
       key: "status",
       header: "Status",
-      render: (experience) => experience.moderationStatus,
+      render: (experience) => <StatusBadge status={experience.moderationStatus} size="sm" />,
     },
     {
       key: "actions",
@@ -282,23 +304,26 @@ function ExperiencesQueue() {
       render: (experience) => (
         <div className="flex gap-2">
           <button
+            type="button"
             disabled={pendingActionId === experience.id}
             onClick={() => handleModeration(experience.id, "APPROVE")}
-            className="rounded bg-green-100 px-2 py-1 text-green-800 hover:bg-green-200"
+            className={btn("outline", "sm")}
           >
             Approve
           </button>
           <button
+            type="button"
             disabled={pendingActionId === experience.id}
             onClick={() => handleModeration(experience.id, "FLAG")}
-            className="rounded bg-amber-100 px-2 py-1 text-amber-800 hover:bg-amber-200"
+            className={btn("quiet", "sm")}
           >
             Flag
           </button>
           <button
+            type="button"
             disabled={pendingActionId === experience.id}
-            onClick={() => handleModeration(experience.id, "REMOVE")}
-            className="rounded bg-red-100 px-2 py-1 text-red-800 hover:bg-red-200"
+            onClick={() => setPendingRemoveId(experience.id)}
+            className={btn("dangerOutline", "sm")}
           >
             Remove
           </button>
@@ -308,23 +333,23 @@ function ExperiencesQueue() {
   ];
 
   return (
-    <Card className="bg-white">
+    <>
       <AdminDataTable
         columns={columns}
         rows={visibleExperiences}
         getRowKey={(experience) => experience.id}
         loading={loading}
-        emptyMessage="Nothing pending review — every coach/expert-anchored experience has been decided."
+        emptyMessage="Nothing waiting. Every coach and expert experience has been decided"
         search={{
           value: search,
           onChange: setSearch,
-          placeholder: "Search this page by title, author, or subject...",
+          placeholder: "Search this page by title, author or subject",
         }}
         toolbarExtra={
           <ExportCsvButton
             filename="experience-moderation.csv"
             rows={visibleExperiences}
-            label="Export Page CSV"
+            label="Export this page (CSV)"
             columns={[
               { header: "Experience", value: (e) => e.title },
               { header: "Author", value: (e) => `${e.author.name} (${e.author.email})` },
@@ -336,7 +361,20 @@ function ExperiencesQueue() {
         }
         pagination={{ page, totalPages, onPageChange: setPage, total }}
       />
-    </Card>
+      <ConfirmModal
+        open={pendingRemoveId !== null}
+        variant="danger"
+        title="Remove this experience?"
+        description="This removes it from the platform."
+        confirmLabel="Remove"
+        loading={pendingActionId !== null}
+        onConfirm={async () => {
+          if (pendingRemoveId) await handleModeration(pendingRemoveId, "REMOVE");
+          setPendingRemoveId(null);
+        }}
+        onCancel={() => setPendingRemoveId(null)}
+      />
+    </>
   );
 }
 
@@ -346,33 +384,20 @@ export default function AdminReviewsPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="Review Moderation"
-        subtitle="Review flagged and pending content, then approve, hide, or remove it."
+        badge="Commerce"
+        title="Reviews"
+        subtitle="Reviews and community experiences waiting for a decision: approve, hide or remove."
       />
 
-      <div className="flex gap-1 border-b border-slate-200">
-        <button
-          onClick={() => setTab("reviews")}
-          className={`border-b-2 px-4 py-2 text-sm font-medium transition ${
-            tab === "reviews"
-              ? "border-slate-900 text-slate-900"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Reviews
-        </button>
-        <button
-          onClick={() => setTab("experiences")}
-          className={`border-b-2 px-4 py-2 text-sm font-medium transition ${
-            tab === "experiences"
-              ? "border-slate-900 text-slate-900"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          }`}
-        >
-          Experiences
-        </button>
-      </div>
+      <Tabs
+        label="Moderation queue"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { id: "reviews" as const, label: "Reviews" },
+          { id: "experiences" as const, label: "Experiences" },
+        ]}
+      />
 
       {tab === "reviews" ? <ReviewsQueue /> : <ExperiencesQueue />}
     </div>

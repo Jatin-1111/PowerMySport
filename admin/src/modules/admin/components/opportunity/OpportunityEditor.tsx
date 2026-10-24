@@ -65,7 +65,7 @@ function Group({
   return (
     <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
       <div>
-        <h2 className="text-base font-bold text-slate-900">{title}</h2>
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
         {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
       </div>
       {children}

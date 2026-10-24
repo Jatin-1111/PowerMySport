@@ -32,8 +32,8 @@ const formatDate = (v?: string) =>
       })
     : "—";
 const field =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange/40";
-const label = "mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-power-orange-solid/25";
+const label = "mb-1 block text-xs font-semibold text-slate-500";
 
 export function ExpertAdminPanel({
   expert,
@@ -330,7 +330,7 @@ export function ExpertAdminPanel({
           </div>
         </div>
         <div className="border-t border-slate-100 pt-4">
-          <h4 className="text-sm font-bold text-slate-900">Weekly availability</h4>
+          <h4 className="text-sm font-semibold text-slate-900">Weekly availability</h4>
           <p className="mt-1 text-xs text-slate-500">
             Clients can only book slots inside these windows.
           </p>
@@ -348,7 +348,7 @@ export function ExpertAdminPanel({
           <button
             onClick={saveEdit}
             disabled={busy}
-            className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
+            className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white hover:bg-orange-800 disabled:opacity-60"
           >
             {busy ? "Saving..." : "Save"}
           </button>
@@ -371,7 +371,7 @@ export function ExpertAdminPanel({
       {/* Approve / Reject panel for PENDING self-registered experts */}
       {expert.verificationStatus === "PENDING" && (
         <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="mb-1 text-sm font-bold text-amber-900">Awaiting Review</p>
+          <p className="mb-1 text-sm font-semibold text-amber-900">Awaiting Review</p>
           <p className="mb-3 text-xs text-amber-700">
             This expert self-registered and submitted their profile for review. Review their profile
             details below, then approve or reject.
@@ -427,7 +427,7 @@ export function ExpertAdminPanel({
 
       {expert.verificationStatus === "REJECTED" && (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4">
-          <p className="mb-1 text-sm font-bold text-red-900">Profile Rejected</p>
+          <p className="mb-1 text-sm font-semibold text-red-900">Profile Rejected</p>
           {expert.rejectionReason && (
             <p className="mb-3 text-xs text-red-700">{expert.rejectionReason}</p>
           )}
@@ -493,7 +493,7 @@ export function ExpertAdminPanel({
           {(expert.sports || []).map((s) => (
             <span
               key={s}
-              className="bg-power-orange/10 text-power-orange rounded-full px-2.5 py-0.5 text-xs font-medium"
+              className="rounded-md bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-800"
             >
               {s}
             </span>
@@ -501,7 +501,7 @@ export function ExpertAdminPanel({
           {(expert.expertise || []).map((s) => (
             <span
               key={s}
-              className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
+              className="rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
             >
               {s}
             </span>
@@ -622,7 +622,7 @@ export function ExpertAdminPanel({
                           Payout pending (auto-releases 24h after completion, or process it now from{" "}
                           <Link
                             href="/admin/payouts"
-                            className="text-power-orange font-semibold hover:underline"
+                            className="text-power-orange-solid font-semibold hover:underline"
                           >
                             Pending Payouts
                           </Link>
@@ -663,7 +663,7 @@ function SummaryStat({ label, value, warn }: { label: string; value: string; war
   return (
     <div className={`rounded-lg p-2.5 ${warn ? "bg-amber-50" : "bg-slate-50"}`}>
       <p className={`text-xs ${warn ? "text-amber-700" : "text-slate-500"}`}>{label}</p>
-      <p className={`font-bold ${warn ? "text-amber-800" : "text-slate-900"}`}>{value}</p>
+      <p className={`font-semibold ${warn ? "text-amber-800" : "text-slate-900"}`}>{value}</p>
     </div>
   );
 }

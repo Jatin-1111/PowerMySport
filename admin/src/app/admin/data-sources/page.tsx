@@ -23,6 +23,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 const toSportSlug = (name: string) => name.trim().toLowerCase().replace(/\s+/g, "-");
 
@@ -99,13 +100,13 @@ export default function AdminDataSourcesPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="Content"
         title="Federation & Tournament Data Sources"
         subtitle="Submit a link or PDF for a federation/tournament — AI extracts the fields, you review and approve before anything goes live."
         action={
           <button
             onClick={() => setShowAddForm((v) => !v)}
-            className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            className="bg-power-orange-solid inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-800"
           >
             <Plus size={16} /> Add Source
           </button>
@@ -159,19 +160,9 @@ export default function AdminDataSourcesPage() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center">Loading data sources...</div>
+        <SkeletonBlock rows={6} label="Loading data sources" />
       ) : error ? (
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={load}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        <ErrorNotice message={error} onRetry={load} />
       ) : submissions.length === 0 ? (
         <Card className="bg-white">
           <div className="py-12 text-center text-slate-600">No data sources found.</div>
@@ -190,7 +181,7 @@ export default function AdminDataSourcesPage() {
                       <span className="text-xs text-slate-500">·</span>
                       <span className="text-sm capitalize text-slate-700">{s.sportSlug}</span>
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[s.status]}`}
+                        className={`rounded-md px-2.5 py-0.5 text-xs font-semibold ${STATUS_BADGE[s.status]}`}
                       >
                         {s.status.replace(/_/g, " ")}
                       </span>
@@ -203,7 +194,7 @@ export default function AdminDataSourcesPage() {
                       <p className="text-xs text-red-600">{s.extractionError}</p>
                     )}
                   </div>
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-slate-500">
                     {new Date(s.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -280,9 +271,7 @@ function CalendarFreshnessCard() {
     <Card className="bg-white">
       <div className="mb-3 flex items-center gap-2">
         <CalendarClock size={16} className="text-slate-500" />
-        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-          Tournament Calendar Freshness
-        </h2>
+        <h2 className="text-sm font-semibold text-slate-700">Tournament Calendar Freshness</h2>
       </div>
       <p className="mb-3 text-xs text-slate-500">
         There's no longer an automatic refresh — this shows how long it's been since each sport's
@@ -294,7 +283,7 @@ function CalendarFreshnessCard() {
           return (
             <span
               key={row.sportSlug}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${badge.className}`}
+              className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold ${badge.className}`}
             >
               {row.sportName}: {badge.label}
             </span>
@@ -428,13 +417,11 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
 
   return (
     <Card className="space-y-4 bg-white">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">New Data Source</h2>
+      <h2 className="text-sm font-semibold text-slate-700">New Data Source</h2>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Target Type
-          </label>
+          <label className="mb-1 block text-xs font-semibold text-slate-500">Target Type</label>
           <select
             value={targetType}
             onChange={(e) => {
@@ -449,9 +436,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Sport
-          </label>
+          <label className="mb-1 block text-xs font-semibold text-slate-500">Sport</label>
           <select
             value={sportName}
             onChange={(e) => {
@@ -470,7 +455,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <label className="mb-1 block text-xs font-semibold text-slate-500">
           {targetType === "CURATED_TOURNAMENT"
             ? "Tournament"
             : targetType === "TOURNAMENT_CALENDAR"
@@ -512,9 +497,7 @@ function AddSourceForm({ onCreated, onCancel }: { onCreated: () => void; onCance
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-          Source
-        </label>
+        <label className="mb-1 block text-xs font-semibold text-slate-500">Source</label>
         <div className="mb-2 flex gap-2">
           <button
             type="button"

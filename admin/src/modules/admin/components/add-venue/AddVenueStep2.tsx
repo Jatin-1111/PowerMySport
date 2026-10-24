@@ -90,7 +90,7 @@ export function AddVenueStep2({
                     type="checkbox"
                     checked={samePriceForAll}
                     onChange={(e) => onToggleSamePriceMode(e.target.checked)}
-                    className="text-power-orange h-4 w-4 rounded"
+                    className="text-power-orange-solid h-4 w-4 rounded"
                     disabled={loading}
                   />
                   Same price for all sports
@@ -114,7 +114,7 @@ export function AddVenueStep2({
                       className={`flex-1 rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                         errors.pricePerHour
                           ? "border-red-500 bg-red-50 focus:ring-red-500/40"
-                          : "focus:ring-power-orange/40 border-slate-300"
+                          : "focus:ring-power-orange-solid/25 border-slate-300"
                       }`}
                       placeholder="500"
                       disabled={loading}
@@ -146,7 +146,7 @@ export function AddVenueStep2({
                               )
                             }
                             min="1"
-                            className="focus:ring-power-orange/40 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2"
+                            className="focus:ring-power-orange-solid/25 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2"
                             placeholder="500"
                             disabled={loading}
                           />
@@ -204,7 +204,7 @@ export function AddVenueStep2({
                 name="approvalStatus"
                 value={formData.approvalStatus}
                 onChange={handleInputChange}
-                className="focus:ring-power-orange/40 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
+                className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                 disabled={loading}
               >
                 <option value="APPROVED">Approved</option>
@@ -229,7 +229,7 @@ export function AddVenueStep2({
             type="button"
             onClick={onContinue}
             disabled={loading}
-            className="bg-power-orange-solid flex items-center gap-2 px-6 text-white hover:bg-orange-600"
+            className="bg-power-orange-solid flex items-center gap-2 px-6 text-white hover:bg-orange-800"
           >
             {loading ? (
               <>

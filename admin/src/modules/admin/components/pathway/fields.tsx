@@ -27,8 +27,8 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
-      {hint && <span className="mt-0.5 block text-xs text-slate-400">{hint}</span>}
+      <span className="text-xs font-semibold text-slate-500">{label}</span>
+      {hint && <span className="mt-0.5 block text-xs text-slate-500">{hint}</span>}
       <div className="mt-1.5">{children}</div>
     </label>
   );
@@ -55,7 +55,7 @@ export function TextInput({
       disabled={disabled}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value)}
-      className={`${inputClass} disabled:bg-slate-50 disabled:text-slate-400`}
+      className={`${inputClass} disabled:bg-slate-50 disabled:text-slate-500`}
     />
   );
 }
@@ -128,16 +128,16 @@ export function RepeatableList<T>({
     <section className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">{label}</h3>
+          <h3 className="text-sm font-semibold text-slate-800">{label}</h3>
           {hint && <p className="mt-0.5 text-xs text-slate-500">{hint}</p>}
         </div>
-        <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">
+        <span className="shrink-0 rounded-md bg-white px-2 py-0.5 text-xs font-semibold text-slate-500">
           {items.length}
         </span>
       </div>
 
       {items.length === 0 ? (
-        <p className="mt-3 text-xs italic text-slate-400">{emptyText}</p>
+        <p className="mt-3 text-xs italic text-slate-500">{emptyText}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {items.map((item, index) => (
@@ -147,7 +147,7 @@ export function RepeatableList<T>({
             >
               <div className="flex flex-col items-center gap-0.5 pt-1 text-slate-300">
                 <GripVertical className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold text-slate-400">{index + 1}</span>
+                <span className="text-[10px] font-semibold text-slate-500">{index + 1}</span>
               </div>
 
               <div className="min-w-0 flex-1 space-y-2">
@@ -206,7 +206,7 @@ function IconButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={`rounded border border-slate-200 p-1 text-slate-400 disabled:opacity-30 ${
+      className={`rounded border border-slate-200 p-1 text-slate-500 disabled:opacity-30 ${
         danger
           ? "hover:border-red-300 hover:text-red-600"
           : "hover:border-slate-400 hover:text-slate-700"
@@ -230,7 +230,7 @@ export function ErrorList({ errors }: { errors: string[] }) {
   if (errors.length === 0) return null;
   return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-3">
-      <p className="text-sm font-bold text-red-800">
+      <p className="text-sm font-semibold text-red-800">
         {errors.length} problem{errors.length === 1 ? "" : "s"} to fix
       </p>
       <ul className="mt-1.5 space-y-1 font-mono text-xs text-red-900">

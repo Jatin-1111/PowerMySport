@@ -62,7 +62,7 @@ export function DetailDrawer({
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
           <div className="min-w-0">
-            <div className="text-lg font-bold text-slate-900">{title}</div>
+            <div className="text-lg font-semibold text-slate-900">{title}</div>
             {subtitle && <div className="mt-0.5 text-sm text-slate-500">{subtitle}</div>}
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -70,7 +70,7 @@ export function DetailDrawer({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              className="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
               aria-label="Close"
             >
               <X className="h-5 w-5" />
@@ -100,7 +100,7 @@ export function DetailSection({
 }) {
   return (
     <section className={className}>
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</h4>
+      <h4 className="mb-2 text-xs font-semibold text-slate-500">{title}</h4>
       <div className="space-y-2">{children}</div>
     </section>
   );

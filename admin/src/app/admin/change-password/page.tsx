@@ -2,7 +2,7 @@
 
 import { toast } from "@/lib/toast";
 import { adminApi } from "@/modules/admin/services/admin";
-import { Lock, Shield } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
@@ -88,88 +88,102 @@ export default function AdminChangePasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="bg-linear-to-br relative mb-6 overflow-hidden rounded-2xl from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
-          <div className="relative z-10 text-center">
-            <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
-              <Shield className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Change Password</h1>
-            <p className="text-sm text-slate-200">
-              First login detected. Please set your new password.
-            </p>
-          </div>
-          <div className="bg-power-orange/20 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-blue-500/20 blur-3xl" />
+    <div className="bg-background flex min-h-dvh items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="bg-power-orange-solid flex size-10 items-center justify-center rounded-lg text-sm font-bold text-white">
+            PMS
+          </span>
+          <span className="text-base font-semibold text-slate-900">PowerMySport</span>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Current Password
-              </label>
-              <input
-                type="password"
-                name="currentPassword"
-                value={formData.currentPassword}
-                onChange={handleChange}
-                required
-                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
-                placeholder="Enter current password"
-              />
-            </div>
+        <h1 className="text-2xl font-semibold text-slate-900">Set a new password</h1>
+        <p className="mt-1.5 text-sm text-slate-600">
+          This is your first sign-in. Choose a password before you continue.
+        </p>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                New Password
-              </label>
-              <input
-                type="password"
-                name="newPassword"
-                value={formData.newPassword}
-                onChange={handleChange}
-                required
-                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
-                placeholder="Minimum 8 characters"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                className="focus:ring-power-orange/50 focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 transition-all focus:outline-none focus:ring-2"
-                placeholder="Re-enter new password"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-lg bg-slate-900 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <div>
+            <label
+              htmlFor="currentPassword"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
             >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  Updating...
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <Lock size={16} />
-                  Update Password
-                </span>
-              )}
-            </button>
-          </form>
-        </div>
+              Current password
+            </label>
+            <input
+              id="currentPassword"
+              type="password"
+              name="currentPassword"
+              autoComplete="current-password"
+              value={formData.currentPassword}
+              onChange={handleChange}
+              required
+              className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:outline-none focus:ring-2"
+              placeholder="Enter your current password"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="newPassword"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              New password
+            </label>
+            <input
+              id="newPassword"
+              type="password"
+              name="newPassword"
+              autoComplete="new-password"
+              value={formData.newPassword}
+              onChange={handleChange}
+              required
+              className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:outline-none focus:ring-2"
+              placeholder="At least 8 characters"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Confirm new password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              name="confirmPassword"
+              autoComplete="new-password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              className="focus:border-power-orange-solid focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:outline-none focus:ring-2"
+              placeholder="Re-enter the new password"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="bg-deep-slate w-full rounded-lg py-2.5 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSubmitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span
+                  aria-hidden
+                  className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+                />
+                Updating…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                <Lock size={16} aria-hidden />
+                Update password
+              </span>
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

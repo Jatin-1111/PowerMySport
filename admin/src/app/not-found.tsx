@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
   title: "Page not found",
@@ -7,25 +7,20 @@ export const metadata = {
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-center text-white shadow-lg sm:p-10">
-        <div className="bg-power-orange/20 pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full blur-3xl" />
-        <p className="text-power-orange relative text-xs font-semibold uppercase tracking-[0.2em]">
-          Error 404
+    <div className="bg-background flex min-h-dvh items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <p className="text-sm font-semibold tabular-nums text-slate-500">404</p>
+        <h1 className="mt-2 text-3xl font-semibold text-slate-900">This page doesn&apos;t exist</h1>
+        <p className="mt-3 text-sm text-slate-600">
+          The link may be old, or the page may have moved. Pick up from the dashboard.
         </p>
-        <h1 className="relative mt-3 text-6xl font-bold">404</h1>
-        <h2 className="relative mt-2 text-xl font-semibold">Page not found</h2>
-        <p className="relative mt-2 text-sm text-slate-300">
-          The admin page you&apos;re looking for doesn&apos;t exist or has moved.
-        </p>
-        <div className="relative mt-6 flex justify-center">
-          <Link
-            href="/admin"
-            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-          >
-            <Home className="h-4 w-4" /> Go to dashboard
-          </Link>
-        </div>
+        <Link
+          href="/admin"
+          className="bg-deep-slate mt-8 inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Back to dashboard
+        </Link>
       </div>
     </div>
   );

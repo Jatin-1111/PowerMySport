@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Loader2, Trash2 } from "lucide-react";
-import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
+import { fieldClass } from "@/modules/shared/ui/buttonStyles";
 import { toast } from "@/lib/toast";
 import {
   WhatsAppPilotMode,
@@ -23,6 +26,7 @@ export function AccessTab() {
   const [invalid, setInvalid] = useState<string[]>([]);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [savingMode, setSavingMode] = useState(false);
+  const [confirmEveryone, setConfirmEveryone] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -84,14 +88,6 @@ export function AccessTab() {
 
   const handleMode = async (mode: WhatsAppPilotMode) => {
     if (!state || mode === state.mode) return;
-    if (
-      mode === "everyone" &&
-      !window.confirm(
-        "Anyone who messages the number will get the AI assistant. Open it to everyone?"
-      )
-    ) {
-      return;
-    }
     setSavingMode(true);
     try {
       await whatsappPilotApi.setMode(mode);
@@ -100,33 +96,36 @@ export function AccessTab() {
       toast.error(errorMessage(err, "Could not change who gets the assistant."));
     } finally {
       setSavingMode(false);
+      setConfirmEveryone(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-24 text-slate-400">
-        <Loader2 className="animate-spin" />
-      </div>
-    );
-  }
+  // Opening the assistant to everyone is the one change here that reaches real
+  // parents at once, so it asks first. Narrowing to listed numbers does not.
+  const requestMode = (mode: WhatsAppPilotMode) => {
+    if (mode === "everyone") setConfirmEveryone(true);
+    else void handleMode(mode);
+  };
 
-  if (!state) {
-    return <p className="py-12 text-center text-slate-500">The pilot list could not be loaded.</p>;
-  }
+  if (loading) return <SkeletonBlock rows={6} label="Loading pilot access" />;
+
+  if (!state)
+    return <ErrorNotice message="We couldn't load the pilot list. Reload the page to try again." />;
 
   return (
     <div className="space-y-6">
       {!state.assistantOn && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div
+          role="status"
+          className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
           The assistant is switched off on the server (<code>WHATSAPP_ASSISTANT</code> is not{" "}
           <code>on</code>), so every number gets the holding message whatever is set here.
         </div>
       )}
 
-      <Card>
-        <h2 className="text-base font-semibold text-slate-900">Who gets the assistant</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <Panel title="Who gets the assistant">
+        <div className="grid gap-3 sm:grid-cols-2">
           {(
             [
               {
@@ -147,11 +146,11 @@ export function AccessTab() {
                 key={option.mode}
                 type="button"
                 disabled={savingMode}
-                onClick={() => handleMode(option.mode)}
+                onClick={() => requestMode(option.mode)}
                 aria-pressed={selected}
                 className={`rounded-lg border p-4 text-left transition disabled:opacity-60 ${
                   selected
-                    ? "border-slate-900 bg-slate-50"
+                    ? "border-power-orange-solid ring-power-orange-solid bg-orange-50/60 ring-1"
                     : "border-slate-200 bg-white hover:border-slate-400"
                 }`}
               >
@@ -167,19 +166,22 @@ export function AccessTab() {
             on the server and always {state.envListCount === 1 ? "gets" : "get"} the assistant.
           </p>
         )}
-      </Card>
+      </Panel>
 
-      <Card>
-        <h2 className="text-base font-semibold text-slate-900">Add numbers</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          One per line, with an optional name after the number. Indian mobile numbers only.
-        </p>
+      <Panel
+        title="Add numbers"
+        description="One per line, with an optional name after the number. Indian mobile numbers only."
+      >
+        <label htmlFor="pilot-numbers" className="sr-only">
+          Numbers to add
+        </label>
         <textarea
+          id="pilot-numbers"
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={6}
           placeholder={"9876543210, Coach Ravi\n+91 98765 43211 Meera (parent)"}
-          className="mt-3 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+          className={`${fieldClass} font-mono`}
         />
         {invalid.length > 0 && (
           <p className="mt-2 text-sm text-red-700">
@@ -195,19 +197,15 @@ export function AccessTab() {
             Add to pilot
           </Button>
         </div>
-      </Card>
+      </Panel>
 
-      <Card>
-        <h2 className="text-base font-semibold text-slate-900">
-          Listed numbers{" "}
-          <span className="font-normal text-slate-500">({state.numbers.length})</span>
-        </h2>
+      <Panel title={`Listed numbers (${state.numbers.length})`}>
         {state.numbers.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="text-sm text-slate-500">
             No numbers yet. Until you add some, nobody gets the assistant.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-slate-100">
+          <ul className="divide-y divide-slate-100">
             {state.numbers.map((entry) => (
               <li key={entry.id} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0">
@@ -222,7 +220,7 @@ export function AccessTab() {
                   onClick={() => handleRemove(entry.id)}
                   disabled={removingId === entry.id}
                   aria-label={`Remove ${entry.label || `number ending ${entry.lastFour}`}`}
-                  className="rounded-md p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  className="rounded-md p-2 text-slate-500 transition hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
                 >
                   {removingId === entry.id ? (
                     <Loader2 size={16} className="animate-spin" />
@@ -234,7 +232,17 @@ export function AccessTab() {
             ))}
           </ul>
         )}
-      </Card>
+      </Panel>
+
+      <ConfirmModal
+        open={confirmEveryone}
+        title="Open the assistant to everyone?"
+        description="Any number that messages PowerMySport on WhatsApp will get the AI assistant straight away."
+        confirmLabel="Open to everyone"
+        loading={savingMode}
+        onConfirm={() => void handleMode("everyone")}
+        onCancel={() => setConfirmEveryone(false)}
+      />
     </div>
   );
 }

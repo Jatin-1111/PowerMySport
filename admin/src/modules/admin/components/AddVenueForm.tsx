@@ -12,14 +12,14 @@ export function AddVenueForm() {
   const flow = useAddVenueFlow();
 
   return (
-    <div className="min-h-screen py-10 md:py-12">
+    <div className="min-h-dvh py-10 md:py-12">
       <div className="container mx-auto px-4">
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-4xl font-bold text-slate-900">Add Venue</h1>
+          <h1 className="mb-2 text-4xl font-semibold text-slate-900">Add Venue</h1>
           <p className="text-slate-600">
             Complete these 5 steps to publish a venue from the admin panel
           </p>
-          <p className="border-power-orange/20 bg-power-orange/10 text-power-orange mt-3 inline-flex items-center rounded-full border px-4 py-1 text-xs font-semibold uppercase tracking-wide">
+          <p className="border-power-orange/20 mt-3 inline-flex items-center rounded-full border bg-orange-50 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-orange-800">
             Step {flow.currentStep} of 5
           </p>
         </div>

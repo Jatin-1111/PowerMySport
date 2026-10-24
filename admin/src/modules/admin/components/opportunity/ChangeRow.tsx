@@ -79,7 +79,7 @@ export function ChangeValue({
   const cost = path === "cost" ? describeCost(value) : null;
   if (cost) return <span className={`text-sm ${tone}`}>{cost}</span>;
   if (value === null || value === undefined || value === "") {
-    return <span className="text-xs italic text-slate-400">(empty)</span>;
+    return <span className="text-xs italic text-slate-500">(empty)</span>;
   }
   if (Array.isArray(value)) {
     return (
@@ -220,7 +220,7 @@ export function ChangeRow({
       <label className="flex cursor-pointer items-start gap-3">
         <input type="checkbox" checked={kept} onChange={onToggle} className="mt-1" />
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-sm font-bold text-slate-900">
+          <p className="text-sm font-semibold text-slate-900">
             {PATH_LABELS[change.path] ?? change.path}
             {change.from && (
               <span className="ml-2 text-xs font-normal text-slate-500">
@@ -240,12 +240,12 @@ export function ChangeRow({
           <div className={`grid gap-3 ${isNew ? "" : "sm:grid-cols-2"}`}>
             {!isNew && (
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Now</p>
+                <p className="text-[11px] font-semibold text-slate-500">Now</p>
                 <ChangeValue value={change.current} muted path={change.path} />
               </div>
             )}
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+              <p className="text-[11px] font-semibold text-emerald-700">
                 {isNew ? "Read from the source" : "Source says"}
               </p>
               <ChangeValue value={change.proposed} path={change.path} />

@@ -6,7 +6,9 @@ import {
   AdminOrderRecord,
   adminEcommerceApi,
 } from "@/modules/admin/services/ecommerce";
-import { Card } from "@/modules/shared/ui/Card";
+import { fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
@@ -14,6 +16,7 @@ import { toast } from "@/lib/toast";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 function formatInr(paise: number): string {
   return new Intl.NumberFormat("en-IN", {
@@ -43,7 +46,7 @@ type SortBy = "createdAt" | "totalAmount" | "orderNumber";
 
 export default function AdminOrdersPage() {
   return (
-    <Suspense fallback={<div className="py-12 text-center">Loading orders...</div>}>
+    <Suspense fallback={<SkeletonBlock rows={6} label="Loading orders" />}>
       <AdminOrdersPageContent />
     </Suspense>
   );
@@ -133,6 +136,8 @@ function AdminOrdersPageContent() {
     setOrderDetail(null);
   };
 
+  const [pendingCancel, setPendingCancel] = useState(false);
+
   const handleFulfillmentStatusChange = async (nextStatus: string) => {
     if (!selectedOrderId) return;
     setStatusUpdating(true);
@@ -188,12 +193,12 @@ function AdminOrdersPageContent() {
     {
       key: "paymentStatus",
       header: "Payment",
-      render: (order) => order.paymentStatus,
+      render: (order) => <StatusBadge status={order.paymentStatus} size="sm" />,
     },
     {
       key: "fulfillmentStatus",
       header: "Fulfillment",
-      render: (order) => order.fulfillmentStatus,
+      render: (order) => <StatusBadge status={order.fulfillmentStatus} size="sm" />,
     },
     {
       key: "totalAmount",
@@ -212,51 +217,48 @@ function AdminOrdersPageContent() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Ecommerce"
+        badge="Commerce"
         title="Orders"
-        subtitle="Monitor merchandise order and payment status in real time."
+        subtitle="Merchandise orders, their payment status and where each one is in fulfilment."
       />
 
-      <Card className="bg-white">
-        <div className="flex flex-wrap items-center justify-between gap-4 p-5">
-          <div>
-            <p className="text-sm text-slate-500">Total orders</p>
-            <p className="text-2xl font-bold text-slate-900">{total}</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-slate-700">Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            >
-              {STATUS_OPTIONS.map((option) => (
-                <option key={option || "ALL"} value={option}>
-                  {option || "ALL"}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </Card>
+      <div className="flex items-center gap-2">
+        <label htmlFor="order-status" className="text-sm text-slate-600">
+          Status
+        </label>
+        <select
+          id="order-status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className={`${fieldClass} !w-auto`}
+        >
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option || "ALL"} value={option}>
+              {option
+                ? option
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/^./, (c) => c.toUpperCase())
+                : "All orders"}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {error ? (
-        <Card className="bg-white">
-          <div className="p-5 text-sm font-semibold text-red-600">{error}</div>
-        </Card>
+        <ErrorNotice message={error} />
       ) : (
-        <Card className="bg-white">
+        <>
           <AdminDataTable
             columns={columns}
             rows={orders}
             getRowKey={(order) => order.id}
             loading={loading}
-            emptyMessage="No orders found."
+            emptyMessage="No orders match"
             search={{
               value: search,
               onChange: setSearch,
-              placeholder: "Search by order number...",
+              placeholder: "Search by order number",
             }}
             sort={{
               column: sortBy,
@@ -269,7 +271,7 @@ function AdminOrdersPageContent() {
               <ExportCsvButton
                 filename="orders.csv"
                 rows={orders}
-                label="Export Page CSV"
+                label="Export this page (CSV)"
                 columns={[
                   { header: "Order #", value: (o) => o.orderNumber },
                   {
@@ -298,48 +300,51 @@ function AdminOrdersPageContent() {
               />
             }
           />
-        </Card>
+        </>
       )}
 
       {selectedOrderId && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
           onClick={closeOrderDetail}
         >
           <div
-            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Order detail"
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
             onClick={(e) => e.stopPropagation()}
           >
             {detailLoading || !orderDetail ? (
-              <div className="py-10 text-center text-slate-500">Loading order detail...</div>
+              <SkeletonBlock rows={6} label="Loading order detail" />
             ) : (
               <>
                 <div className="mb-4 flex items-start justify-between">
                   <div>
-                    <h2 className="text-lg font-bold text-slate-900">{orderDetail.orderNumber}</h2>
+                    <h2 className="text-lg font-semibold text-slate-900">
+                      {orderDetail.orderNumber}
+                    </h2>
                     <p className="text-sm text-slate-500">
                       Placed {new Date(orderDetail.createdAt).toLocaleString("en-IN")}
                     </p>
                   </div>
                   <button
+                    type="button"
                     onClick={closeOrderDetail}
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close"
+                    className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
                 <div className="mb-4 rounded-lg bg-slate-50 p-4">
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Customer
-                  </p>
+                  <p className="mb-1 text-sm text-slate-500">Customer</p>
                   <EntityBadge {...getCustomer(orderDetail.userId)} />
                 </div>
 
                 <div className="mb-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Line items
-                  </p>
+                  <p className="mb-2 text-sm text-slate-500">Line items</p>
                   <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
                     {orderDetail.items.map((item) => (
                       <div
@@ -379,7 +384,7 @@ function AdminOrdersPageContent() {
                   </div>
                   <div>
                     <p className="text-slate-500">Total</p>
-                    <p className="text-power-orange font-semibold">
+                    <p className="font-semibold text-slate-900">
                       {formatInr(orderDetail.totalAmount)}
                     </p>
                   </div>
@@ -387,9 +392,7 @@ function AdminOrdersPageContent() {
 
                 {orderDetail.shippingAddress && (
                   <div className="mb-4 rounded-lg border border-slate-200 p-4 text-sm text-slate-700">
-                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Shipping address
-                    </p>
+                    <p className="mb-1 text-sm text-slate-500">Shipping address</p>
                     <p>{orderDetail.shippingAddress.fullName}</p>
                     <p>
                       {orderDetail.shippingAddress.addressLine1}
@@ -406,19 +409,24 @@ function AdminOrdersPageContent() {
                 )}
 
                 <div>
-                  <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Fulfillment status
-                  </p>
+                  <label htmlFor="fulfilment-status" className={labelClass}>
+                    Fulfilment status
+                  </label>
                   <select
+                    id="fulfilment-status"
                     value={orderDetail.fulfillmentStatus}
                     disabled={statusUpdating}
-                    onChange={(e) => handleFulfillmentStatusChange(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:opacity-50"
+                    onChange={(e) => {
+                      // Cancelling is the one status change that ends the order, so it asks first.
+                      if (e.target.value === "CANCELLED") setPendingCancel(true);
+                      else handleFulfillmentStatusChange(e.target.value);
+                    }}
+                    className={fieldClass}
                   >
                     {["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"].map(
                       (option) => (
                         <option key={option} value={option}>
-                          {option}
+                          {option.charAt(0) + option.slice(1).toLowerCase()}
                         </option>
                       )
                     )}
@@ -429,6 +437,21 @@ function AdminOrdersPageContent() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={pendingCancel}
+        variant="danger"
+        title="Cancel this order?"
+        description="The order will be marked as cancelled."
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        loading={statusUpdating}
+        onConfirm={async () => {
+          await handleFulfillmentStatusChange("CANCELLED");
+          setPendingCancel(false);
+        }}
+        onCancel={() => setPendingCancel(false)}
+      />
     </div>
   );
 }

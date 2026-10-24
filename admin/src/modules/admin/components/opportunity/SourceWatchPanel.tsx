@@ -80,7 +80,7 @@ function WatchRow({
   return (
     <li className="space-y-1.5 py-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${status.tone}`}>
+        <span className={`rounded-md px-2 py-0.5 text-xs font-semibold ${status.tone}`}>
           {changed ? "Changed" : status.label}
         </span>
         <a
@@ -242,7 +242,7 @@ export function SourceWatchPanel() {
     <Card variant="elevated">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Weekly source check</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Weekly source check</h2>
           <p className="mt-0.5 text-xs text-slate-500">
             {watches.length === 0
               ? "No check has run yet. It runs every Monday morning, or now."
@@ -274,7 +274,7 @@ export function SourceWatchPanel() {
         <>
           {changed.length > 0 ? (
             <>
-              <h3 className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <h3 className="mt-4 text-xs font-semibold text-slate-500">
                 Changed ({changed.length})
               </h3>
               <ul className="divide-y divide-slate-100">
@@ -301,7 +301,7 @@ export function SourceWatchPanel() {
                 type="button"
                 onClick={() => setShowUnreadable((v) => !v)}
                 aria-expanded={showUnreadable}
-                className="flex w-full items-center justify-between gap-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500"
+                className="flex w-full items-center justify-between gap-2 text-left text-xs font-semibold text-slate-500"
               >
                 Check by hand ({dueByHand} due of {unreadable.length})
                 <ChevronDown

@@ -7,20 +7,16 @@ import {
   AcademyAdminReviewDetails,
 } from "@/modules/admin/services/admin";
 import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge, type StatusTone } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { toast } from "sonner";
-import {
-  BadgeCheck,
-  Ban,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Filter,
-  ShieldAlert,
-  Plus,
-} from "lucide-react";
+import { Eye, Plus, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -33,17 +29,11 @@ type ActionMode = "APPROVE" | "KYC" | "REJECT" | "SUSPEND";
 
 const PAGE_SIZE = 10;
 
-const statusBadge = (academy: AcademyAdminQueueRecord) => {
-  if (academy.isActive) {
-    return "bg-green-100 text-green-700 border border-green-200";
-  }
-  if (academy.isApproved) {
-    return "bg-blue-100 text-blue-700 border border-blue-200";
-  }
-  if (academy.rejectionReason) {
-    return "bg-red-100 text-red-700 border border-red-200";
-  }
-  return "bg-yellow-100 text-yellow-700 border border-yellow-200";
+const academyStatus = (academy: AcademyAdminQueueRecord): { label: string; tone: StatusTone } => {
+  if (academy.rejectionReason) return { label: "Rejected", tone: "red" };
+  if (academy.isActive) return { label: "Live", tone: "green" };
+  if (academy.isApproved) return { label: "Approved", tone: "blue" };
+  return { label: "Pending", tone: "amber" };
 };
 
 const formatDate = (value?: string) => {
@@ -136,11 +126,6 @@ export default function AdminAcademiesPage() {
       void loadSelectedAcademy(selectedAcademyId);
     }
   }, [selectedAcademyId, loadSelectedAcademy]);
-
-  const currentSelection = useMemo(() => {
-    if (!selectedAcademyId) return null;
-    return academies.find((academy) => academy.id === selectedAcademyId) || null;
-  }, [academies, selectedAcademyId]);
 
   const openAction = (mode: ActionMode) => {
     if (!selectedAcademyId) return;
@@ -240,52 +225,44 @@ export default function AdminAcademiesPage() {
     }
   };
 
-  const selectedQueueItem = currentSelection;
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <AdminPageHeader
-          badge="Admin"
-          title="Academy Management"
-          subtitle="Review academy submissions, verify KYC, and manage live status from one place."
-        />
-        <Link
-          href="/admin/academies/add"
-          className="bg-power-orange-solid inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          <Plus size={16} />
-          Create Academy
-        </Link>
-      </div>
+      <AdminPageHeader
+        badge="People"
+        title="Academies"
+        subtitle="Review academy submissions, verify KYC and manage live status."
+        action={
+          <Link href="/admin/academies/add" className={btn("accent")}>
+            <Plus size={16} aria-hidden />
+            Create academy
+          </Link>
+        }
+      />
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-slate-600">
-          {pagination.total} academy{submissionCountLabel(pagination.total)} in queue
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <Filter size={16} />
-            <select
-              value={filter}
-              onChange={(event) => {
-                setCurrentPage(1);
-                setSelectedAcademyId(null);
-                setSelectedAcademy(null);
-                setFilter(event.target.value as QueueFilter);
-              }}
-              className="bg-transparent outline-none"
-            >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Tabs
+          className="min-w-0 flex-1"
+          label="Academy queue"
+          value={filter}
+          tabs={[
+            { id: "pending" as const, label: "Pending" },
+            { id: "approved" as const, label: "Approved" },
+            { id: "rejected" as const, label: "Rejected" },
+          ]}
+          onChange={(next) => {
+            setCurrentPage(1);
+            setSelectedAcademyId(null);
+            setSelectedAcademy(null);
+            setFilter(next);
+          }}
+        />
+        <p className="pb-2 text-sm tabular-nums text-slate-600">
+          {pagination.total} academ{pagination.total === 1 ? "y" : "ies"}
+        </p>
       </div>
 
       {filter === "pending" && selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
+        <div className="flex flex-wrap items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3">
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-semibold text-orange-800">
               {selectedIds.size} selected
@@ -293,9 +270,9 @@ export default function AdminAcademiesPage() {
             <button
               disabled={bulkBusy}
               onClick={() => runBulkAction("APPROVE")}
-              className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+              className={btn("primary", "sm")}
             >
-              Approve Selected
+              Approve selected
             </button>
             <button
               disabled={bulkBusy}
@@ -306,9 +283,9 @@ export default function AdminAcademiesPage() {
                   return next;
                 })
               }
-              className="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+              className={btn("dangerOutline", "sm")}
             >
-              Reject Selected
+              Reject selected
             </button>
             <button
               disabled={bulkBusy}
@@ -317,7 +294,7 @@ export default function AdminAcademiesPage() {
                 setShowBulkRejectInput(false);
                 setBulkRejectReason("");
               }}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white disabled:opacity-50"
+              className={btn("outline", "sm")}
             >
               Clear
             </button>
@@ -330,14 +307,14 @@ export default function AdminAcademiesPage() {
                 value={bulkRejectReason}
                 onChange={(event) => setBulkRejectReason(event.target.value)}
                 placeholder="Rejection reason applied to all selected academies..."
-                className="focus:border-power-orange focus:ring-power-orange/40 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                className={`${fieldClass} flex-1`}
               />
               <button
                 disabled={bulkBusy}
                 onClick={() => runBulkAction("REJECT")}
-                className="rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                className={btn("danger", "sm")}
               >
-                Confirm Reject
+                Reject all selected
               </button>
             </div>
           )}
@@ -345,28 +322,16 @@ export default function AdminAcademiesPage() {
       )}
 
       {error ? (
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadAcademies}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        <ErrorNotice message={error} onRetry={loadAcademies} />
       ) : loading ? (
-        <div className="py-12 text-center">Loading academies...</div>
+        <SkeletonBlock rows={6} label="Loading academies" />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="bg-white">
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <Panel>
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Queue</h2>
-                <p className="text-sm text-slate-600">
-                  Click a row to review full submission details.
-                </p>
+                <h2 className="text-base font-semibold text-slate-900">Submissions</h2>
+                <p className="text-sm text-slate-600">Pick a row to review the full submission.</p>
               </div>
               <div className="flex items-center gap-3">
                 {filter === "pending" && academies.length > 0 && (
@@ -380,19 +345,14 @@ export default function AdminAcademiesPage() {
                     Select all
                   </label>
                 )}
-                <div className="text-sm text-slate-500">
-                  Page {pagination.page} of {pagination.totalPages}
-                </div>
               </div>
             </div>
 
             {academies.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 py-10 text-center text-slate-600">
-                <div className="bg-power-orange/10 text-power-orange rounded-full px-4 py-2 text-sm font-semibold">
-                  No academies found
-                </div>
-                <p className="max-w-md">There are no records for the selected filter right now.</p>
-              </div>
+              <EmptyState
+                title="No academies here"
+                description="Nothing matches this queue right now."
+              />
             ) : (
               <div className="space-y-3">
                 {academies.map((academy) => {
@@ -400,10 +360,10 @@ export default function AdminAcademiesPage() {
                   return (
                     <div
                       key={academy.id}
-                      className={`flex w-full items-start gap-3 rounded-2xl border p-4 transition ${
+                      className={`flex w-full items-start gap-3 rounded-xl border p-4 transition-colors ${
                         isSelected
-                          ? "border-power-orange bg-orange-50"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                          ? "border-power-orange-solid ring-power-orange-solid bg-orange-50 ring-1"
+                          : "border-slate-200 bg-white hover:border-slate-300"
                       }`}
                     >
                       {filter === "pending" && (
@@ -425,17 +385,11 @@ export default function AdminAcademiesPage() {
                               <h3 className="text-base font-semibold text-slate-900">
                                 {academy.name}
                               </h3>
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(academy)}`}
-                              >
-                                {academy.rejectionReason
-                                  ? "Rejected"
-                                  : academy.isActive
-                                    ? "Live"
-                                    : academy.isApproved
-                                      ? "Approved"
-                                      : "Pending"}
-                              </span>
+                              <StatusBadge
+                                size="sm"
+                                status={academyStatus(academy).label}
+                                tone={academyStatus(academy).tone}
+                              />
                             </div>
                             <p className="mt-1 text-sm text-slate-600">
                               {academy.city || "Location unavailable"} •{" "}
@@ -457,72 +411,52 @@ export default function AdminAcademiesPage() {
               </div>
             )}
 
-            {pagination.totalPages > 1 && (
-              <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-center text-sm text-slate-600 sm:text-left">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, pagination.total)} of {pagination.total}
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))}
-                    disabled={currentPage === pagination.totalPages}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </Card>
+            <Pagination
+              className="mt-5"
+              page={currentPage}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              onPageChange={setCurrentPage}
+            />
+          </Panel>
 
-          <Card className="bg-white">
+          <Panel>
             {!selectedAcademyId ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 py-14 text-center text-slate-600">
-                <ShieldAlert size={28} className="text-slate-400" />
+                <ShieldAlert size={28} className="text-slate-500" />
                 <p className="font-semibold text-slate-900">Select an academy</p>
                 <p className="max-w-sm text-sm">
                   Review details, verify KYC, and approve or reject the submission.
                 </p>
               </div>
             ) : selectedLoading ? (
-              <div className="py-12 text-center">Loading review details...</div>
+              <SkeletonBlock rows={6} label="Loading review details" />
             ) : selectedAcademy ? (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">{selectedAcademy.name}</h2>
+                  <h2 className="text-xl font-semibold text-slate-900">{selectedAcademy.name}</h2>
                   <p className="mt-1 text-sm text-slate-600">
                     {selectedAcademy.legalName || selectedAcademy.name}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(selectedAcademy)}`}
-                    >
-                      {selectedAcademy.rejectionReason
-                        ? "Rejected"
-                        : selectedAcademy.isActive
-                          ? "Live"
-                          : selectedAcademy.isApproved
-                            ? "Approved"
-                            : "Pending"}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      Step {selectedAcademy.onboardingStep || 1}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {selectedAcademy.city || "No city"}
-                    </span>
+                    <StatusBadge
+                      status={academyStatus(selectedAcademy).label}
+                      tone={academyStatus(selectedAcademy).tone}
+                    />
+                    <StatusBadge
+                      status={`Step ${selectedAcademy.onboardingStep || 1}`}
+                      tone="slate"
+                      dot={false}
+                    />
+                    <StatusBadge
+                      status={selectedAcademy.city || "No city"}
+                      tone="slate"
+                      dot={false}
+                    />
                   </div>
                 </div>
 
-                <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
                   <div>
                     <span className="font-semibold text-slate-900">Owner:</span>{" "}
                     {selectedAcademy.ownerId?.name || selectedAcademy.ownerEmail || "N/A"}
@@ -545,23 +479,17 @@ export default function AdminAcademiesPage() {
 
                 <div className="space-y-3 text-sm text-slate-700">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Sports
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500">Sports</p>
                     <p className="mt-1">{selectedAcademy.sports?.join(", ") || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Description
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500">Description</p>
                     <p className="mt-1 leading-relaxed">
                       {selectedAcademy.description || "No description provided."}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Compliance
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500">Compliance</p>
                     <p className="mt-1">
                       PAN: {selectedAcademy.panNumber || "N/A"} • GST:{" "}
                       {selectedAcademy.gstNumber || "N/A"}
@@ -570,56 +498,58 @@ export default function AdminAcademiesPage() {
                 </div>
 
                 <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <p className="text-sm font-semibold text-slate-900">Notes</p>
+                  <p className="text-sm font-semibold text-slate-900">Notes for the decision</p>
                   <textarea
                     value={rejectionReason}
                     onChange={(event) => setRejectionReason(event.target.value)}
                     rows={4}
                     placeholder="Use this field for rejection reasons or review notes."
-                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    className={fieldClass}
                   />
                   <textarea
                     value={suspendReason}
                     onChange={(event) => setSuspendReason(event.target.value)}
                     rows={3}
                     placeholder="Optional suspend reason."
-                    className="focus:border-power-orange focus:ring-power-orange/40 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                    className={fieldClass}
                   />
                 </div>
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button
+                    type="button"
                     onClick={() => openAction("APPROVE")}
-                    className="rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+                    className={btn("primary")}
                   >
-                    Approve Academy
+                    Approve academy
                   </button>
                   <button
+                    type="button"
                     onClick={() => openAction("KYC")}
-                    className="rounded-xl border border-blue-300 px-4 py-3 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+                    className={btn("outline")}
                   >
-                    Mark KYC Verified
+                    Mark KYC verified
                   </button>
                   <button
-                    onClick={() => openAction("REJECT")}
-                    className="rounded-xl border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
-                  >
-                    Reject Academy
-                  </button>
-                  <button
+                    type="button"
                     onClick={() => openAction("SUSPEND")}
-                    className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    className={btn("outline")}
                   >
-                    Suspend Academy
+                    Suspend academy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openAction("REJECT")}
+                    className={btn("dangerOutline")}
+                  >
+                    Reject academy
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-slate-600">
-                Failed to load academy details.
-              </div>
+              <ErrorNotice message="We couldn't load this academy's details." />
             )}
-          </Card>
+          </Panel>
         </div>
       )}
 
@@ -658,8 +588,4 @@ export default function AdminAcademiesPage() {
       />
     </div>
   );
-}
-
-function submissionCountLabel(total: number) {
-  return total === 1 ? "" : "s";
 }

@@ -113,8 +113,8 @@ export function ContributorPicker({
       </Field>
 
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Platform profile</p>
-        <p className="mt-0.5 text-xs text-slate-400">
+        <p className="text-xs font-semibold text-slate-500">Platform profile</p>
+        <p className="mt-0.5 text-xs text-slate-500">
           Optional. Adds their photo and a booking button, and drops both automatically if they stop
           being bookable. Only verified, active people can be found here.
         </p>
@@ -172,7 +172,7 @@ export function ContributorPicker({
                       className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-slate-50"
                     >
                       <span className="text-sm font-medium text-slate-800">{match.name}</span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-slate-500">
                         {match.sports.join(", ") || match.type}
                       </span>
                     </button>
@@ -182,7 +182,7 @@ export function ContributorPicker({
             )}
 
             {!searching && query.trim().length >= 2 && matches.length === 0 && (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 No verified {type} matches that name. Check they have finished verification.
               </p>
             )}

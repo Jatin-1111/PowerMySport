@@ -33,7 +33,7 @@ const LINK_STATUS: Record<PublishCheckLink["status"], { text: string; tone: stri
 function LinkIcon({ status }: { status: PublishCheckLink["status"] }) {
   if (status === "ok") return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />;
   if (status === "gone") return <XCircle className="h-4 w-4 shrink-0 text-red-600" />;
-  return <CircleHelp className="h-4 w-4 shrink-0 text-slate-400" />;
+  return <CircleHelp className="h-4 w-4 shrink-0 text-slate-500" />;
 }
 
 export function PublishCheckPanel({
@@ -55,7 +55,7 @@ export function PublishCheckPanel({
     <Card variant="elevated">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-bold text-slate-900">Check before publishing</h2>
+          <h2 className="text-sm font-semibold text-slate-900">Check before publishing</h2>
           <p className="mt-1 max-w-2xl text-xs text-slate-500">
             Reads the entry for things that do not add up, and opens each source and the apply link.
             It checks what is saved, so your edits are saved first. It advises. The only thing that
@@ -100,7 +100,7 @@ export function PublishCheckPanel({
                 return (
                   <li key={index} className="flex items-start gap-3 px-3 py-2.5">
                     <span
-                      className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-xs font-bold ${tone}`}
+                      className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${tone}`}
                     >
                       {label}
                     </span>
@@ -113,9 +113,7 @@ export function PublishCheckPanel({
 
           {links.length > 0 && (
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                Links ({links.length})
-              </h3>
+              <h3 className="text-xs font-semibold text-slate-500">Links ({links.length})</h3>
               <ul className="mt-1 divide-y divide-slate-100">
                 {links.map((link) => {
                   const { text, tone } = LINK_STATUS[link.status];

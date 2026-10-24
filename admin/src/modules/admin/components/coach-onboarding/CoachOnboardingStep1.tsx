@@ -59,7 +59,7 @@ export function CoachOnboardingStep1({
               className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                 errors.firstName
                   ? "border-red-400 focus:ring-red-200"
-                  : "focus:ring-power-orange/30 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="First name"
               disabled={loading}
@@ -77,7 +77,7 @@ export function CoachOnboardingStep1({
               className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                 errors.lastName
                   ? "border-red-400 focus:ring-red-200"
-                  : "focus:ring-power-orange/30 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="Last name"
               disabled={loading}
@@ -98,7 +98,7 @@ export function CoachOnboardingStep1({
               className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                 errors.email
                   ? "border-red-400 focus:ring-red-200"
-                  : "focus:ring-power-orange/30 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="coach@example.com"
               disabled={loading}
@@ -115,7 +115,7 @@ export function CoachOnboardingStep1({
               className={`w-full rounded-xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
                 errors.phone
                   ? "border-red-400 focus:ring-red-200"
-                  : "focus:ring-power-orange/30 border-slate-300"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="+91 98765 43210"
               disabled={loading}
@@ -134,7 +134,7 @@ export function CoachOnboardingStep1({
             className={`w-full rounded-2xl border px-4 py-3 text-slate-900 outline-none transition focus:ring-2 ${
               errors.bio
                 ? "border-red-400 focus:ring-red-200"
-                : "focus:ring-power-orange/30 border-slate-300"
+                : "focus:ring-power-orange-solid/25 border-slate-300"
             }`}
             placeholder="Tell players about the coach's experience, style, and certifications."
             disabled={loading}

@@ -2,17 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import {
-  Activity,
-  CheckCircle2,
-  Clock,
-  Phone,
-  Search,
-  Stethoscope,
-  X,
-  XCircle,
-} from "lucide-react";
+import { Activity, CheckCircle2, Clock, Phone, Search, X, XCircle } from "lucide-react";
 import axiosInstance from "@/lib/api/axios";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
 
 type ScreeningStatus = "requested" | "scheduled" | "completed" | "cancelled";
 
@@ -35,25 +30,25 @@ const STATUS_META: Record<
   requested: {
     label: "Requested",
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700",
+      "inline-flex items-center gap-1 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700",
     icon: <Clock size={12} />,
   },
   scheduled: {
     label: "Scheduled",
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700",
+      "inline-flex items-center gap-1 rounded-md bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700",
     icon: <Activity size={12} />,
   },
   completed: {
     label: "Completed",
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700",
+      "inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700",
     icon: <CheckCircle2 size={12} />,
   },
   cancelled: {
     label: "Cancelled",
     badge:
-      "inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500",
+      "inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500",
     icon: <XCircle size={12} />,
   },
 };
@@ -107,126 +102,104 @@ export default function ScreeningsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="mb-1 flex items-center gap-2">
-            <Stethoscope className="text-power-orange h-5 w-5" />
-            <h1 className="text-xl font-bold text-slate-900">Physical Screenings</h1>
+      <AdminPageHeader
+        badge="Content"
+        title="Physical screenings"
+        subtitle={`${total} request${total !== 1 ? "s" : ""} from parents. Update the status as you contact them.`}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500"
+                aria-hidden
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search child, sport or city"
+                aria-label="Search screenings"
+                className={`${fieldClass} w-60 pl-9`}
+              />
+            </div>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              aria-label="Filter by status"
+              className={`${fieldClass} !w-auto`}
+            >
+              <option value="">All statuses</option>
+              {STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {STATUS_META[s].label}
+                </option>
+              ))}
+            </select>
           </div>
-          <p className="text-sm text-slate-500">
-            {total} total request{total !== 1 ? "s" : ""}
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search child, sport, city…"
-              className="focus:ring-power-orange/30 focus:border-power-orange w-52 rounded-lg border border-slate-200 py-2 pl-8 pr-3 text-sm focus:outline-none focus:ring-2"
-            />
-          </div>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="focus:ring-power-orange/30 focus:border-power-orange rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2"
-          >
-            <option value="">All statuses</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_META[s].label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+        }
+      />
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+      <Panel flush>
         {loading ? (
-          <div className="flex items-center justify-center py-16 text-sm text-slate-400">
-            Loading…
+          <div className="px-5 pb-5">
+            <SkeletonBlock rows={5} label="Loading screening requests" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-            <Stethoscope className="mb-2 h-8 w-8 opacity-30" />
-            <p className="text-sm">No screening requests yet</p>
-          </div>
+          <EmptyState
+            title={search ? "No requests match" : "No screening requests yet"}
+            description={search ? "Try a different search." : "Requests from parents appear here."}
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="data-table">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Child
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Sport
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Contact
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Availability
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    City
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Received
-                  </th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Update
-                  </th>
+                <tr>
+                  <th>Child</th>
+                  <th>Sport</th>
+                  <th>Contact</th>
+                  <th>Availability</th>
+                  <th>City</th>
+                  <th>Status</th>
+                  <th>Received</th>
+                  <th>Update</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody>
                 {filtered.map((r) => {
                   const meta = STATUS_META[r.status];
                   return (
-                    <tr key={r._id} className="transition-colors hover:bg-slate-50/50">
-                      <td className="px-5 py-3.5 font-medium text-slate-900">{r.dependentName}</td>
-                      <td className="px-5 py-3.5 text-slate-600">
-                        {r.sport ?? <span className="text-slate-300">—</span>}
-                      </td>
-                      <td className="px-5 py-3.5">
+                    <tr key={r._id}>
+                      <td>{r.dependentName}</td>
+                      <td>{r.sport ?? <span className="text-slate-500">—</span>}</td>
+                      <td>
                         <a
                           href={`tel:${r.phone}`}
-                          className="hover:text-power-orange inline-flex items-center gap-1.5 text-slate-700 transition-colors"
+                          className="inline-flex items-center gap-1.5 text-slate-700 transition-colors hover:text-orange-800"
                         >
                           <Phone className="h-3 w-3" />
                           {r.phone}
                         </a>
                       </td>
-                      <td className="max-w-[160px] truncate px-5 py-3.5 text-slate-500">
-                        {r.preferredTime ?? <span className="text-slate-300">—</span>}
+                      <td className="max-w-[160px] truncate">
+                        {r.preferredTime ?? <span className="text-slate-500">—</span>}
                       </td>
-                      <td className="px-5 py-3.5 text-slate-500">
-                        {r.city ?? <span className="text-slate-300">—</span>}
-                      </td>
-                      <td className="px-5 py-3.5">
+                      <td>{r.city ?? <span className="text-slate-500">—</span>}</td>
+                      <td>
                         <span className={meta.badge}>
                           {meta.icon}
                           {meta.label}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-3.5 text-slate-400">
+                      <td className="whitespace-nowrap">
                         {format(new Date(r.createdAt), "dd MMM yyyy")}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td>
                         <select
                           value={r.status}
                           disabled={updatingId === r._id}
                           onChange={(e) => updateStatus(r._id, e.target.value as ScreeningStatus)}
-                          className="focus:ring-power-orange/30 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-2 disabled:opacity-50"
+                          className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm hover:border-slate-400 disabled:opacity-50"
                         >
                           {STATUS_OPTIONS.map((s) => (
                             <option key={s} value={s}>
@@ -242,7 +215,7 @@ export default function ScreeningsPage() {
             </table>
           </div>
         )}
-      </div>
+      </Panel>
     </div>
   );
 }

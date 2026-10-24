@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { AccessTab } from "@/modules/whatsapp-pilot/components/AccessTab";
 import { EnquiriesTab } from "@/modules/whatsapp-pilot/components/EnquiriesTab";
 import { SummaryTab } from "@/modules/whatsapp-pilot/components/SummaryTab";
+import { useState } from "react";
 
 const TABS = [
   { id: "enquiries", label: "Enquiries" },
@@ -17,37 +19,14 @@ export default function WhatsAppPilotPage() {
   const [tab, setTab] = useState<TabId>("enquiries");
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">WhatsApp pilot</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Review what parents asked the assistant, what it advised and how each enquiry ended, and
-          choose who can use it.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <AdminPageHeader
+        badge="Overview"
+        title="WhatsApp pilot"
+        subtitle="What parents asked the assistant, what it advised and how each enquiry ended. Choose who can use it under Access."
+      />
 
-      <div
-        role="tablist"
-        aria-label="WhatsApp pilot"
-        className="flex gap-1 border-b border-slate-200"
-      >
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            role="tab"
-            type="button"
-            aria-selected={tab === t.id}
-            onClick={() => setTab(t.id)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
-              tab === t.id
-                ? "border-slate-900 text-slate-900"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={[...TABS]} value={tab} onChange={setTab} label="WhatsApp pilot sections" />
 
       {tab === "enquiries" && <EnquiriesTab />}
       {tab === "summary" && <SummaryTab />}
