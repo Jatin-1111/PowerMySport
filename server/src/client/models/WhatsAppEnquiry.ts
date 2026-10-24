@@ -90,6 +90,9 @@ const whatsAppEnquirySchema = new Schema<WhatsAppEnquiryDocument>(
 
 // Finding this number's open topic, newest first.
 whatsAppEnquirySchema.index({ phoneHash: 1, lastMessageAt: -1 });
+// The admin list, newest first, and its "needs follow-up" filter.
+whatsAppEnquirySchema.index({ followUpStatus: 1, lastMessageAt: -1 });
+whatsAppEnquirySchema.index({ createdAt: -1 });
 // A child's details and a parent's question are in here, so enquiries are not kept indefinitely.
 whatsAppEnquirySchema.index(
   { lastMessageAt: 1 },
