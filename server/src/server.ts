@@ -24,6 +24,7 @@ import { initializeRankingDigestScheduler } from "./utils/rankingDigestScheduler
 import { initializeOpportunityWatchScheduler } from "./utils/opportunityWatchScheduler";
 import { initializeOpportunityDigestScheduler } from "./utils/opportunityDigestScheduler";
 import { initializeOpportunityAlertScheduler } from "./utils/opportunityAlertScheduler";
+import { initializePingPilotHealthScheduler } from "./utils/pingPilotHealthScheduler";
 import { initializeOpportunityDiscoveryScheduler } from "./utils/opportunityDiscoveryScheduler";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
 import { startLogDigest, stopLogDigest } from "./utils/logDigest";
@@ -211,6 +212,10 @@ const startServer = async () => {
           // Daily alerts to parents about windows they follow opening or closing.
           // Deployed server only, or OPPORTUNITY_ALERTS_CRON=on.
           initializeOpportunityAlertScheduler();
+
+          // Keep-alive ping to the ping-pilott backend every 5 minutes.
+          // Deployed server only, or PING_PILOT_HEALTH_CRON=on.
+          initializePingPilotHealthScheduler();
 
           // Everything above has registered its boot facts; print the block.
           bootReady();
