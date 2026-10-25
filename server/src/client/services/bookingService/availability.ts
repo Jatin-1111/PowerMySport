@@ -160,11 +160,14 @@ export const hasAcademyCapacity = async (
   return taken < capacity;
 };
 
+// One lock per resource per DAY, not per start time. The conflict check that
+// follows is a range-overlap query, so two bookings with different start times
+// (10:00-11:00 and 10:30-11:30) must still serialize on the same lock; keyed by
+// start time they took different locks, both saw no conflict, and both inserted.
 const acquireResourceSlotLock = async (
   resourceType: "VENUE_SLOT" | "COACH_SLOT" | "ACADEMY_SLOT",
   resourceId: string,
   date: Date,
-  startTime: string,
   session: ClientSession
 ): Promise<void> => {
   if (!mongoose.Types.ObjectId.isValid(resourceId)) {
@@ -174,7 +177,7 @@ const acquireResourceSlotLock = async (
     {
       resourceType,
       resourceId: new mongoose.Types.ObjectId(resourceId),
-      dateKey: `${getDateKey(date)}-${startTime}`,
+      dateKey: getDateKey(date),
     },
     {
       $inc: { version: 1 },
@@ -202,13 +205,7 @@ export const createBookingAtomically = async (
 
       await session.withTransaction(async () => {
         if (payload.venueId) {
-          await acquireResourceSlotLock(
-            "VENUE_SLOT",
-            payload.venueId,
-            payload.date,
-            payload.startTime,
-            session
-          );
+          await acquireResourceSlotLock("VENUE_SLOT", payload.venueId, payload.date, session);
 
           emitSlotLocked(payload.venueId, {
             slotStartTime: payload.startTime,
@@ -230,13 +227,7 @@ export const createBookingAtomically = async (
         }
 
         if (payload.coachId) {
-          await acquireResourceSlotLock(
-            "COACH_SLOT",
-            payload.coachId,
-            payload.date,
-            payload.startTime,
-            session
-          );
+          await acquireResourceSlotLock("COACH_SLOT", payload.coachId, payload.date, session);
 
           const hasCoachConflict = await hasConflictingCoachBooking(
             payload.coachId,
@@ -256,13 +247,7 @@ export const createBookingAtomically = async (
           // Serialize concurrent bookers on the same academy slot so the
           // capacity count below and the insert that follows can't interleave
           // and oversubscribe the batch.
-          await acquireResourceSlotLock(
-            "ACADEMY_SLOT",
-            payload.academyId,
-            payload.date,
-            payload.startTime,
-            session
-          );
+          await acquireResourceSlotLock("ACADEMY_SLOT", payload.academyId, payload.date, session);
 
           // Re-read maxBatchSize inside the transaction rather than trusting
           // the value read during pricing — the academy may have been edited.
