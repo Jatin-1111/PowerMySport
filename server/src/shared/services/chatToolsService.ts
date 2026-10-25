@@ -54,7 +54,7 @@ export interface ChatToolContext {
    * Things a tool wants done AFTER the reply is sent, set by the WhatsApp service and read back by
    * it. A tool cannot send a message itself, so it leaves a request here. Absent on the website.
    */
-  outbound?: { nextSteps?: boolean; topicMenu?: boolean };
+  outbound?: { nextSteps?: boolean; topicMenu?: boolean; menuTapped?: boolean };
 }
 
 export interface ChatToolDefinition {
@@ -1128,12 +1128,21 @@ const showTopicMenuTool: ChatToolDefinition = {
     "show the parent a tappable list of topics to start from (choosing a sport, getting started, tournaments, pathways, something else) when they have only said hello or asked about PowerMySport in general",
   example: "hi, tell me more about what you do",
   promptNote:
-    "Call it when a message has no question about their child or a sport in it: a hello, 'tell me more', 'I found you', 'where do I start'. Keep your own reply to one or two short sentences: greet them by first name if you know it, and say in one sentence what you can help with. Do not describe the website, list the tools or pages, or list the topics yourself, and never suggest creating an account to a parent who has one. The list appears under your reply. Never call it when the message asks something specific.",
+    "Call it when a message has no question about their child or a sport in it: a hello, 'tell me more', 'I found you', 'where do I start'. Keep your own reply to one or two short sentences: greet them by first name if you know it, and say in one sentence what you can help with. Do not describe the website, list the tools or pages, or list the topics yourself, and never suggest creating an account to a parent who has one. The list appears under your reply. Never call it when the message asks something specific, or names a topic such as getting started or improving in a sport, choosing a sport, tournaments or pathways: that parent has chosen, so ask the one question you need instead.",
   description:
     "Ask the WhatsApp service to show the parent a tappable list of topics right after your short reply: choosing the right sport, getting started or improving in a sport, tournaments and rankings, sports career pathways, or something else. Use it for a general first message. It sends nothing itself and returns nothing to read out.",
   parametersJsonSchema: { type: "object", properties: {} },
   execute: async (_args, context) => {
     if (!context?.outbound) return { shown: false };
+    // The parent has just picked a topic from this very menu. Showing it again is a loop, and
+    // a prompt asking the model not to is a request, so the refusal is made here.
+    if (context.outbound.menuTapped) {
+      return {
+        shown: false,
+        instruction:
+          "The parent has just chosen a topic from the menu, so do not show it again. Ask the one question you need to help with it, such as which child and which sport, in one short sentence.",
+      };
+    }
     context.outbound.topicMenu = true;
     return {
       shown: true,

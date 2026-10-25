@@ -515,6 +515,28 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "A message that already asks something specific is answered, not met with a menu.",
   },
 
+  // ─── A chosen topic is answered, not met with the menu again ──────────────────
+  {
+    id: "chosen-topic-gets-a-question-not-the-menu",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    knownParent: true,
+    message: "I want help getting started or improving in a sport.",
+    neverCallsTools: ["show_topic_menu"],
+    maxChars: 500,
+    why: "The parent has picked a topic, so the assistant asks the one question it needs (which child and sport) and never repeats the menu.",
+  },
+  {
+    id: "guidance-ends-after-the-why",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    message:
+      "My son is 14, has played tennis for 2 years and wants to compete. Which stage is he at and what should we do next?",
+    callsTools: ["offer_next_steps"],
+    replyNeverMatches: [/\?\s*$/],
+    why: "Guidance stops after the Why, with no closing question, so the next-steps list can follow it.",
+  },
+
   // ─── Asking the team to follow up on WhatsApp ───────────────────────────────
   {
     id: "whatsapp-followup-asks-first",

@@ -546,3 +546,67 @@ describe("a generic opener from the website", () => {
     assert.match(CHANNEL_ADDENDUM, /two short sentences at most, then show_topic_menu/);
   });
 });
+
+describe("a topic the parent chose is not answered with the menu again", () => {
+  const menuTool = ASSISTANT_CHAT_TOOLS.find((t: { name: string }) => t.name === "show_topic_menu");
+  const { WELCOME_ROWS, NEXT_STEP_ROWS } = require("../shared/services/whatsappInteractive");
+
+  it("refuses the menu on a tap from the menu, and tells the model to ask one question", async () => {
+    let result: any;
+    const answer = await answerWhatsAppMessage(
+      msg("Start or improve a sport", "menu_start"),
+      stub("Which child and which sport?", [], async (ctx) => {
+        result = await menuTool.execute({}, ctx);
+      })
+    );
+    assert.equal(result.shown, false);
+    assert.match(result.instruction, /do not show it again/);
+    assert.equal(answer.topicMenu, undefined, "nothing for the webhook to send");
+  });
+
+  it("does the same for every topic row", async () => {
+    for (const row of WELCOME_ROWS) {
+      await WhatsAppConversation.deleteMany({});
+      const answer = await answerWhatsAppMessage(
+        msg(row.title, row.id),
+        stub("Tell me a little more.", [], async (ctx) => {
+          await menuTool.execute({}, ctx);
+        })
+      );
+      assert.equal(answer.topicMenu, undefined, row.id);
+    }
+  });
+
+  it("still shows the menu for a general message the parent typed", async () => {
+    const answer = await answerWhatsAppMessage(
+      msg("Hello, what can you help me with?"),
+      stub("Hi! I can help with your child's sports.", [], async (ctx) => {
+        await menuTool.execute({}, ctx);
+      })
+    );
+    assert.equal(answer.topicMenu, true);
+  });
+
+  it("a tap on a next-step row is not treated as a menu tap", async () => {
+    const answer = await answerWhatsAppMessage(
+      msg("Explore tournaments", "next_tournaments"),
+      stub("Which sport?", [], async (ctx) => {
+        assert.equal(ctx.outbound.menuTapped, undefined);
+      })
+    );
+    assert.equal(answer.menu, undefined);
+  });
+
+  it("the rows say what they mean on their own, so WhatsApp does not show a title twice", () => {
+    for (const row of [...WELCOME_ROWS, ...NEXT_STEP_ROWS]) {
+      assert.equal(row.description, undefined, row.id);
+    }
+  });
+
+  it("guidance is told to stop after the Why and to ask for the next steps", () => {
+    const { CHANNEL_ADDENDUM } = require("../shared/services/whatsappAssistantService");
+    assert.match(CHANNEL_ADDENDUM, /Stop after the Why: do not end with a question/);
+    assert.match(CHANNEL_ADDENDUM, /call offer_next_steps/);
+    assert.match(CHANNEL_ADDENDUM, /names a topic.*do not show the menu/);
+  });
+});

@@ -34,13 +34,11 @@ export const WELCOME_ROWS: ListRow[] = [
   {
     id: "menu_start",
     title: "Start or improve a sport",
-    description: "Getting started or improving in a sport",
   },
   { id: "menu_tournaments", title: "Tournaments & rankings" },
   {
     id: "menu_pathway",
     title: "Sports career pathways",
-    description: "Sports career and future pathways",
   },
   { id: "menu_other", title: "Something else" },
 ];
@@ -52,12 +50,10 @@ export const NEXT_STEP_ROWS: ListRow[] = [
   {
     id: "next_coach",
     title: "Find a coach or academy",
-    description: "Help me find a coach or academy",
   },
   {
     id: "next_tournaments",
     title: "Explore tournaments",
-    description: "Help me explore tournaments or competitions",
   },
   { id: "next_expert", title: "Speak to a sports expert" },
   { id: "next_question", title: "Ask another question" },
