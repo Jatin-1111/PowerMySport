@@ -5,6 +5,7 @@ process.env.WHATSAPP_PHONE_NUMBER_ID = "123";
 
 import assert from "node:assert/strict";
 import test from "node:test";
+import { WHATSAPP_OPENERS, isGenericWhatsAppOpener } from "@powermysport/shared-types";
 import {
   FEEDBACK_BUTTONS,
   NEXT_STEP_ROWS,
@@ -222,6 +223,63 @@ test("deliver sends each kind of answer the way it was meant", async () => {
         nextSteps,
         NEXT_STEP_ROWS.map((r) => r.id)
       );
+    }
+  );
+});
+
+test("each generic opener the website pre-fills gets the menu, however it is typed", () => {
+  for (const opener of Object.values(WHATSAPP_OPENERS)) {
+    assert.equal(wantsMenu(opener), true, opener);
+    assert.equal(wantsMenu(opener.toLowerCase()), true, "lower case");
+    assert.equal(wantsMenu(opener.replace(/[!.]/g, "")), true, "no punctuation");
+    assert.equal(wantsMenu(opener.replace(/'/g, "\u2019")), true, "curly apostrophe");
+    assert.equal(wantsMenu(`  ${opener}  `), true, "padded");
+  }
+});
+
+test("a generic opener with a real question added is a real message, not a menu request", () => {
+  for (const real of [
+    `${WHATSAPP_OPENERS.knowMore} What is the fee for a tennis expert in Chandigarh?`,
+    "Hi! I have a question about the AITA U14 rankings.",
+    "Hi! I found PowerMySport and would like to book an expert.",
+    "Hi! I'm not sure where to start with my 9 year old's swimming.",
+  ]) {
+    assert.equal(wantsMenu(real), false, real);
+  }
+  assert.equal(isGenericWhatsAppOpener(null), false);
+  assert.equal(isGenericWhatsAppOpener(undefined), false);
+  assert.equal(isGenericWhatsAppOpener(""), false);
+});
+
+test("a topic menu follows the reply on its own, unless next steps are already going out", async () => {
+  await withFetch(
+    () => true,
+    async (sent) => {
+      await deliver("9198", {
+        reply: "Hi Aarav, I can help with sports for your child.",
+        firstContact: false,
+        topicMenu: true,
+      });
+      assert.deepEqual(
+        sent.map((s) => s.interactive?.type ?? s.type),
+        ["text", "list"]
+      );
+      const rows = sent[1]!.interactive.action.sections[0].rows.map((r: any) => r.id);
+      assert.deepEqual(
+        rows,
+        WELCOME_ROWS.map((r) => r.id)
+      );
+
+      sent.length = 0;
+      await deliver("9198", {
+        reply: "Guidance.",
+        firstContact: false,
+        nextSteps: true,
+        topicMenu: true,
+      });
+      const kinds = sent.map((s) => s.interactive?.type ?? s.type);
+      assert.deepEqual(kinds, ["text", "list"], "one list, not two");
+      assert.equal(sent[1]!.interactive.action.sections[0].rows[0].id, NEXT_STEP_ROWS[0]!.id);
     }
   );
 });

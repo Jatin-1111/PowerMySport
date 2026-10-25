@@ -1,12 +1,12 @@
 "use client";
 
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { WHATSAPP_OPENERS } from "@powermysport/shared-types";
 import { Button } from "@/modules/shared/ui/Button";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import React, { useState } from "react";
 
-const DEFAULT_MESSAGE =
-  "Hi! I found PowerMySport and would like help with my child's sports journey.";
+const DEFAULT_MESSAGE = WHATSAPP_OPENERS.helpJourney;
 
 /**
  * One field and one action. What the parent types opens WhatsApp as the first

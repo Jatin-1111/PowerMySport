@@ -5,3 +5,4 @@ export * from "./tournament";
 export * from "./booking";
 export * from "./planner";
 export * from "./child";
+export * from "./whatsapp";

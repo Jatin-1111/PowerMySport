@@ -1,3 +1,5 @@
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { WHATSAPP_OPENERS } from "@powermysport/shared-types";
 import { Instagram, Linkedin, Mail } from "lucide-react";
 import Link from "next/link";
 import React from "react";
@@ -10,7 +12,7 @@ function WhatsAppIcon() {
   );
 }
 
-const WA_FOOTER_URL = `https://wa.me/918968582443?text=${encodeURIComponent("Hi! I found PowerMySport and would like to know more.")}`;
+const WA_FOOTER_URL = buildWhatsAppUrl(WHATSAPP_OPENERS.knowMore);
 
 // Mirrors the flags Navigation.tsx already reads, so the footer stays in
 // sync with what's actually live instead of drifting independently.

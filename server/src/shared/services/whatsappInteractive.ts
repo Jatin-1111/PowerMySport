@@ -8,6 +8,8 @@
  * button label at most 20; an interactive body is at most 1024 characters.
  */
 
+import { isGenericWhatsAppOpener } from "@powermysport/shared-types";
+
 export interface ListRow {
   id: string;
   title: string;
@@ -22,6 +24,10 @@ export interface ReplyButton {
 export const WELCOME_BODY =
   "Hi! Welcome to PowerMySport 👋\nWe help parents understand and guide their child's sporting journey.\n\nWhat would you like help with today? You can pick below or just type your question.";
 export const WELCOME_BUTTON = "Choose a topic";
+
+/** The prompt for a menu that follows a short reply from the assistant, not the full welcome. */
+export const TOPIC_MENU_BODY =
+  "What would you like help with? Pick a topic below, or just type your question.";
 
 export const WELCOME_ROWS: ListRow[] = [
   { id: "menu_sport", title: "Choosing the right sport" },
@@ -115,8 +121,12 @@ export function intentForReply(replyId: string | null | undefined): Intent | nul
   return text ? { kind: "ask", text } : null;
 }
 
-/** A message that is only a greeting or a request for the menu, so the menu is the answer. */
+/**
+ * A message that asks for nothing specific, so the menu is the answer: a bare greeting, a request
+ * for the menu, or one of the generic messages the website's WhatsApp buttons pre-fill.
+ */
 export function wantsMenu(text: string): boolean {
+  if (isGenericWhatsAppOpener(text)) return true;
   const cleaned = text
     .toLowerCase()
     .replace(/[^a-zऀ-ॿ ]/g, " ")

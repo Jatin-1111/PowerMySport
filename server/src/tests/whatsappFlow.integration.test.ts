@@ -488,3 +488,61 @@ describe("voice notes and photos", () => {
     assert.match(answer.reply, /text, voice notes and photos/);
   });
 });
+
+describe("a generic opener from the website", () => {
+  const { WHATSAPP_OPENERS } = require("@powermysport/shared-types");
+  const { WEB_CHAT_TOOLS, WHATSAPP_CHAT_TOOLS } = require("../shared/services/chatToolsService");
+  const menuTool = ASSISTANT_CHAT_TOOLS.find((t: { name: string }) => t.name === "show_topic_menu");
+
+  it("is answered with the menu and the notice, without the model, for every button", async () => {
+    for (const opener of Object.values(WHATSAPP_OPENERS) as string[]) {
+      await WhatsAppConversation.deleteMany({});
+      const calls: Call[] = [];
+      const answer = await answerWhatsAppMessage(msg(opener), neverCalled(calls));
+      assert.equal(answer.menu, true, opener);
+      assert.equal(answer.firstContact, true, "the notice still goes first");
+      assert.equal(calls.length, 0, "no model call");
+    }
+  });
+
+  it("is not answered with the menu when a real question comes with it", async () => {
+    const calls: Call[] = [];
+    const answer = await answerWhatsAppMessage(
+      msg(`${WHATSAPP_OPENERS.knowMore} Which tennis expert is in Chandigarh?`),
+      stub("Jatin is in Chandigarh.", calls)
+    );
+    assert.equal(answer.menu, undefined);
+    assert.equal(calls.length, 1);
+  });
+
+  it("the topic-menu tool leaves a request that reaches the answer", async () => {
+    const answer = await answerWhatsAppMessage(
+      msg("Hello, I came across your website and want to know what you do."),
+      stub("Hi! I can help with your child's sports.", [], async (ctx) => {
+        await menuTool.execute({}, ctx);
+      })
+    );
+    assert.equal(answer.topicMenu, true);
+    assert.equal(answer.nextSteps, undefined);
+  });
+
+  it("does nothing outside WhatsApp", async () => {
+    assert.deepEqual(await menuTool.execute({}, { userMessage: "x" }), { shown: false });
+    assert.deepEqual(await menuTool.execute({}, undefined), { shown: false });
+  });
+
+  it("is on WhatsApp only", () => {
+    const names = (tools: Array<{ name: string }>) => tools.map((t) => t.name);
+    assert.ok(names(WHATSAPP_CHAT_TOOLS).includes("show_topic_menu"));
+    assert.ok(!names(WEB_CHAT_TOOLS).includes("show_topic_menu"));
+  });
+
+  it("is told to a parent who has an account that they never need to create one", () => {
+    const {
+      KNOWN_PARENT_ADDENDUM,
+      CHANNEL_ADDENDUM,
+    } = require("../shared/services/whatsappAssistantService");
+    assert.match(KNOWN_PARENT_ADDENDUM, /never suggest creating one or signing up/);
+    assert.match(CHANNEL_ADDENDUM, /two short sentences at most, then show_topic_menu/);
+  });
+});

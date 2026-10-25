@@ -1,4 +1,5 @@
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { WHATSAPP_OPENERS } from "@powermysport/shared-types";
 import { WhatsAppIcon } from "@/modules/shared/ui/WhatsAppIcon";
 import { ArrowUpRight, Instagram, Linkedin, Mail, MapPin, Phone } from "lucide-react";
 import type { ComponentType, ReactNode } from "react";
@@ -83,7 +84,7 @@ export function DirectContact() {
           icon={WhatsAppIcon}
           iconClass="text-green-700"
           label="WhatsApp"
-          href={buildWhatsAppUrl("Hi! I have a question about PowerMySport.")}
+          href={buildWhatsAppUrl(WHATSAPP_OPENERS.haveAQuestion)}
           external
         >
           Chat with us

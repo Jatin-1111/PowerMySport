@@ -1,5 +1,6 @@
 "use client";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { WHATSAPP_OPENERS } from "@powermysport/shared-types";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { ExploreGrid } from "@/modules/marketing/components/marketing/ExploreGrid";
 import { HeroAsk } from "@/modules/marketing/components/marketing/HeroAsk";
@@ -28,9 +29,7 @@ function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 }
 
-const WHATSAPP_HERO_HREF = buildWhatsAppUrl(
-  "Hi! I found PowerMySport and would like help with my child's sports journey."
-);
+const WHATSAPP_HERO_HREF = buildWhatsAppUrl(WHATSAPP_OPENERS.helpJourney);
 
 // Section reveals use the `.reveal-on-scroll` utility in globals.css. The
 // framer-motion stagger this replaced left the homepage's copy at `opacity: 0`

@@ -1,6 +1,7 @@
 "use client";
 
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { WHATSAPP_OPENERS } from "@powermysport/shared-types";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
@@ -332,7 +333,7 @@ export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = tru
                   ))}
                 </div>
                 <NavDropdownFooter
-                  href={buildWhatsAppUrl("Hi! I'm not sure where to start with my child's sport.")}
+                  href={buildWhatsAppUrl(WHATSAPP_OPENERS.notSureWhereToStart)}
                   prompt="Not sure where to start?"
                   label="Talk to PMS on WhatsApp"
                 />

@@ -33,6 +33,7 @@ import {
   NEXT_STEPS_BODY,
   NEXT_STEPS_BUTTON,
   NEXT_STEP_ROWS,
+  TOPIC_MENU_BODY,
   WELCOME_BUTTON,
   WELCOME_ROWS,
   splitLinkButton,
@@ -119,6 +120,8 @@ export async function deliver(to: string, answer: WhatsAppAnswer): Promise<void>
   }
   if (answer.nextSteps) {
     await sendWhatsAppList(to, NEXT_STEPS_BODY, NEXT_STEPS_BUTTON, NEXT_STEP_ROWS);
+  } else if (answer.topicMenu) {
+    await sendWhatsAppList(to, TOPIC_MENU_BODY, WELCOME_BUTTON, WELCOME_ROWS);
   }
 }
 

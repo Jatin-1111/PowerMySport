@@ -363,6 +363,12 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
         instruction:
           "The list will appear under your answer. Do not mention or list the options. End your answer naturally.",
       };
+    case "show_topic_menu":
+      return {
+        shown: true,
+        instruction:
+          "The topics will appear under your reply. Do not list or mention them. Keep your reply to one or two short sentences.",
+      };
     case "request_whatsapp_followup": {
       if (args.parentAgreed !== true) {
         return {

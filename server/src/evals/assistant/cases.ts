@@ -484,6 +484,37 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "When the assistant first needs to ask something, no next-steps list is shown yet.",
   },
 
+  // ─── A general first message gets a short reply and the topic menu ────────────
+  {
+    id: "general-opener-gets-menu",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    message: "Hello, I came across your website and want to understand what you do.",
+    callsTools: ["show_topic_menu"],
+    maxChars: 450,
+    replyNeverMatches: [/https?:\/\//i, /create an account|sign up/i],
+    why: "A general first message gets one or two short sentences and the menu. No overview of the website, no pile of links.",
+  },
+  {
+    id: "general-opener-known-parent-no-signup-pitch",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    knownParent: true,
+    message: "Hi, tell me more about PowerMySport.",
+    callsTools: ["show_topic_menu"],
+    maxChars: 450,
+    replyNeverMatches: [/create an account|sign up|register/i],
+    why: "A parent who already has an account is never told to create one.",
+  },
+  {
+    id: "specific-message-gets-no-menu",
+    category: "whatsapp-format",
+    channel: "whatsapp",
+    message: "Hi, which tennis tournaments in Chandigarh can my 12 year old enter this month?",
+    neverCallsTools: ["show_topic_menu"],
+    why: "A message that already asks something specific is answered, not met with a menu.",
+  },
+
   // ─── Asking the team to follow up on WhatsApp ───────────────────────────────
   {
     id: "whatsapp-followup-asks-first",
