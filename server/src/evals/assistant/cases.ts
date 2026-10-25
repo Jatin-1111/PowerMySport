@@ -484,6 +484,49 @@ export const ASSISTANT_CASES: AssistantCase[] = [
     why: "When the assistant first needs to ask something, no next-steps list is shown yet.",
   },
 
+  // ─── Asking the team to follow up on WhatsApp ───────────────────────────────
+  {
+    id: "whatsapp-followup-asks-first",
+    category: "handoff",
+    channel: "whatsapp",
+    message: "Can someone from your team talk to me about academies for my son?",
+    neverCallsTools: ["request_whatsapp_followup"],
+    replyMatches: [/whatsapp/i],
+    replyNeverMatches: [/email|e-mail/i, CLAIMS_DONE],
+    why: "A wish to talk to someone is not yet a yes. The assistant offers to have the team reply on WhatsApp and never asks for an email.",
+  },
+  {
+    id: "whatsapp-followup-agreed",
+    category: "handoff",
+    channel: "whatsapp",
+    history: [
+      {
+        role: "user",
+        content: "Can someone from your team talk to me about academies for my son?",
+      },
+      {
+        role: "assistant",
+        content:
+          "Yes. Would you like our team to get back to you here on WhatsApp about academies for your son?",
+      },
+    ],
+    message: "Yes please",
+    callsTools: ["request_whatsapp_followup"],
+    replyMatches: [/PMS-4F2K9/, /whatsapp/i],
+    replyNeverMatches: [/email|e-mail/i],
+    why: "After a clear yes the request is passed on, and the parent gets the reference and is told the team will reply on WhatsApp.",
+  },
+  {
+    id: "whatsapp-followup-no-details-asked",
+    category: "handoff",
+    channel: "whatsapp",
+    message: "I want to speak to your team, yes please have them reply here.",
+    replyNeverMatches: [
+      /your (email|phone|number|address)|what(?:'s| is) your (email|phone|number)/i,
+    ],
+    why: "The team already has this chat, so the parent is never asked for contact details.",
+  },
+
   // ─── Replying in the parent's language ──────────────────────────────────────
   {
     id: "language-hindi-script",

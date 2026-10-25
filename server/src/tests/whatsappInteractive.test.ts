@@ -65,9 +65,16 @@ test("every row and button id means something, and an unknown id means nothing",
   assert.equal(intentForReply(null), null);
   assert.deepEqual(intentForReply("next_done"), { kind: "done" });
   assert.deepEqual(intentForReply("fb_not_helpful"), { kind: "feedback", value: "not_helpful" });
-  const ask = intentForReply("next_coach");
+  const ask = intentForReply("next_tournaments");
   assert.equal(ask?.kind, "ask");
-  assert.match((ask as { text: string }).text, /coach or academy/);
+  assert.match((ask as { text: string }).text, /tournaments/);
+  // Help we cannot give from here is recorded for the team the moment it is tapped.
+  assert.deepEqual(intentForReply("next_coach"), {
+    kind: "followup",
+    assistance: "coach",
+    text: "I'd like help finding a coach or academy for my child.",
+  });
+  assert.equal((intentForReply("next_expert") as { assistance: string }).assistance, "expert");
 });
 
 test("a greeting or a request for the menu shows the menu; a question does not", () => {

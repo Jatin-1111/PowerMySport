@@ -178,6 +178,38 @@ export async function markFollowUpRequested(
   return enquiry.reference;
 }
 
+export interface FollowUpResult {
+  reference: string;
+  /** True when this kind of help had already been asked for on this topic, so nothing changed. */
+  alreadyRequested: boolean;
+}
+
+/**
+ * The parent wants the team to get back to them on WhatsApp: a coach or academy, an expert, or
+ * just a person. Marks the current topic as waiting for the team. Asking again for the same kind
+ * of help on the same topic changes nothing and returns the same reference, so a parent who taps
+ * twice is not entered twice. The number itself is kept by `attachContactNumber`, which the
+ * webhook layer calls, because only it has the number.
+ */
+export async function requestFollowUp(
+  phoneHash: string,
+  question: string,
+  details: { kind: AssistanceKind; summary?: unknown }
+): Promise<FollowUpResult> {
+  const enquiry = await currentEnquiry(phoneHash, question);
+  if (enquiry.followUpStatus === "new" && enquiry.assistance.includes(details.kind)) {
+    return { reference: enquiry.reference, alreadyRequested: true };
+  }
+
+  const summary = plain(details.summary, 600);
+  enquiry.assistance = [...new Set([...enquiry.assistance, details.kind])];
+  enquiry.followUpStatus = "new";
+  if (summary) enquiry.followUpSummary = summary;
+  enquiry.lastMessageAt = new Date();
+  await enquiry.save();
+  return { reference: enquiry.reference, alreadyRequested: false };
+}
+
 /**
  * Keeps the number, encrypted, on the topic where the parent asked for a person, so the team can
  * reach them. Called by the webhook layer, which has the number; the model never does. Does

@@ -48,6 +48,13 @@ const selectClass =
 
 const when = (iso: string) => format(new Date(iso), "MMM d, h:mm a");
 
+/** WhatsApp lets a business message freely for 24 hours after the parent's last message. */
+const WINDOW_MS = 24 * 60 * 60 * 1000;
+const replyWindowEnd = (lastMessageAt: string) =>
+  new Date(new Date(lastMessageAt).getTime() + WINDOW_MS).toISOString();
+const replyWindowOpen = (lastMessageAt: string) =>
+  Date.now() < new Date(lastMessageAt).getTime() + WINDOW_MS;
+
 const child = (e: WhatsAppEnquiry) =>
   [e.childAge ? `${e.childAge} yrs` : null, e.sport, e.level].filter(Boolean).join(", ") || "—";
 
@@ -400,9 +407,18 @@ function EnquiryDrawer({
                 </Button>
               )}
               <span className="text-xs text-slate-500">
-                Kept because the parent asked for a person. Each look is logged.
+                Kept because the parent asked for the team. Each look is logged.
               </span>
             </div>
+          )}
+          {enquiry.hasContact && (
+            <p className="mt-2 text-xs text-slate-500">
+              {replyWindowOpen(enquiry.lastMessageAt)
+                ? `They last wrote ${when(enquiry.lastMessageAt)}. WhatsApp lets you reply freely until ${when(
+                    replyWindowEnd(enquiry.lastMessageAt)
+                  )}.`
+                : `They last wrote ${when(enquiry.lastMessageAt)}, more than a day ago. WhatsApp now only allows an approved template message, so a free-text reply will not be delivered until they write again.`}
+            </p>
           )}
         </DetailSection>
       )}

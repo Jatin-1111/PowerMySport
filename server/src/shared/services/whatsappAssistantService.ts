@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { WhatsAppConversation } from "../../client/models/WhatsAppConversation";
 import { buildAssistantChatSystemPrompt } from "./assistantChatService";
 import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticChatService";
-import { ASSISTANT_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
+import { WHATSAPP_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
 import { formatParentContext, getParentContext, type ParentContext } from "./parentContext";
 import type { NoteChild } from "../../client/models/WhatsAppNote";
 import { findUserIdByPhone } from "./whatsappIdentity";
@@ -14,6 +14,7 @@ import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
 import {
   attachContactNumber,
   closeLatestEnquiry,
+  requestFollowUp,
   forgetAllEnquiries,
   recordTurn,
   setLatestFeedback,
@@ -23,6 +24,7 @@ import {
   FEEDBACK_THANKS_HELPFUL,
   FEEDBACK_THANKS_NOT_HELPFUL,
   WELCOME_BODY,
+  followUpReply,
   intentForReply,
   wantsMenu,
 } from "./whatsappInteractive";
@@ -52,7 +54,7 @@ You are replying inside WhatsApp, not on the website. Adjust everything above to
 - You are an AI assistant. If asked whether you are a person or a bot, say you are an AI assistant.
 - Never ask for a child's medical details, ID numbers, payment details or passwords, and tell a parent not to send them here.
 - Write fees in rupees with the symbol and the unit, for example ₹1,000 per session, never a bare number.
-- If a parent wants to talk to a person, say the PowerMySport team can help. Offer to pass their question on, which needs their name and an email address, and also give https://powermysport.com/contact
+- If a parent wants to talk to a person, or wants help you cannot give from here (a coach or academy, for instance), offer to have the PowerMySport team get back to them here on WhatsApp. You never need their email or phone number: this chat is how the team reaches them. Also give https://powermysport.com/contact if they ask how else to reach the team.
 
 ## How to behave
 - Never explain how you work inside: do not say which tool you used or "a different tool". If an earlier answer of yours was wrong or incomplete, say so in one short sentence, give the corrected answer, and move on.
@@ -164,7 +166,7 @@ export type ReplyGenerator = (
 ) => AsyncIterable<string>;
 
 const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, toolContext) =>
-  streamAgenticChatResponse(systemPrompt, history, userMessage, ASSISTANT_CHAT_TOOLS, toolContext);
+  streamAgenticChatResponse(systemPrompt, history, userMessage, WHATSAPP_CHAT_TOOLS, toolContext);
 
 /**
  * Whose number this is, as far as the account is known, and what the account shows about
@@ -299,7 +301,8 @@ export async function answerWhatsAppMessage(
   // A tap on a list row or button carries an id; most taps are a question put in a sentence the
   // assistant can act on, and two (finishing, feedback) are decided here without the model.
   const intent = intentForReply(message.replyId);
-  const userMessage = (intent?.kind === "ask" ? intent.text : text).slice(0, MAX_INBOUND_CHARS);
+  const tapped = intent?.kind === "ask" || intent?.kind === "followup";
+  const userMessage = (tapped ? intent.text : text).slice(0, MAX_INBOUND_CHARS);
 
   // "STOP" and the like delete the chat. Checked before the daily limit so a parent
   // who has used their messages can still take their data back.
@@ -328,6 +331,22 @@ export async function answerWhatsAppMessage(
     return closed
       ? { reply: FEEDBACK_BODY, firstContact: false, feedbackPrompt: true }
       : { reply: FEEDBACK_THANKS_HELPFUL, firstContact: false };
+  }
+  if (intent?.kind === "followup") {
+    // The tap is the request: record it for the team and give the reference, no model involved.
+    try {
+      const result = await requestFollowUp(phoneHash, userMessage, { kind: intent.assistance });
+      const reply = followUpReply(intent.assistance, result.reference, result.alreadyRequested);
+      await appendTurn(phoneHash, userMessage, reply, new Date());
+      // The number is kept so the team can answer here; it is only ever kept for a request like this.
+      await attachContactNumber(phoneHash, message.from).catch((err) =>
+        log.error("could not keep the contact number", err)
+      );
+      return { reply, firstContact: false };
+    } catch (err) {
+      log.error("could not record the follow-up request", err);
+      return { reply: FALLBACK_REPLY, firstContact: false };
+    }
   }
   if (intent?.kind === "feedback") {
     await setLatestFeedback(phoneHash, intent.value).catch((err) =>
@@ -382,7 +401,7 @@ export async function answerWhatsAppMessage(
     const { toolContext, parent, notes } = await identify(message.from, phoneHash, userMessage);
     const chunks = await retrieveRelevantChunks(userMessage);
     const systemPrompt =
-      buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, chunks) +
+      buildAssistantChatSystemPrompt(WHATSAPP_CHAT_TOOLS, chunks) +
       CHANNEL_ADDENDUM +
       identityAddendum(Boolean(toolContext.userId), parent, notes);
 

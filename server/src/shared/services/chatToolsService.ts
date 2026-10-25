@@ -25,7 +25,8 @@ import {
   presentChild,
   saveChildNote,
 } from "./whatsappNotes";
-import { markFollowUpRequested, updateEnquiry } from "./whatsappEnquiries";
+import { markFollowUpRequested, requestFollowUp, updateEnquiry } from "./whatsappEnquiries";
+import { followUpReply } from "./whatsappInteractive";
 import { getChildrenDetail, getSeasonPlans } from "./parentContext";
 import { findEditionsForChat, getUpcomingEditions } from "./tournamentEditionQueries";
 
@@ -1043,6 +1044,82 @@ const offerNextStepsTool: ChatToolDefinition = {
   },
 };
 
+// ─── request_whatsapp_followup ──────────────────────────────────────────────────
+
+const requestWhatsappFollowupTool: ChatToolDefinition = {
+  name: "request_whatsapp_followup",
+  summary:
+    "ask the PowerMySport team to get back to the parent here on WhatsApp, for a person to talk to or for help you cannot give from this chat, once the parent has agreed",
+  example: "can someone from your team talk to me about academies",
+  promptNote:
+    "When the parent wants to talk to a person, or wants help you cannot give here, first ask in one short sentence whether they would like the team to get back to them here on WhatsApp, and wait for a clear yes. Never ask for an email address, a phone number or any other detail, and never call it on a vague request. When it works, tell them the team will get back to them here on WhatsApp and give the reference. Do not promise a time.",
+  description:
+    "Ask the PowerMySport team to follow up with this parent on this WhatsApp chat. Call it ONLY after the parent has clearly agreed to have the team get back to them here. kind is what they need: coach (a coach or academy), expert (an expert consultation), tournaments, team (a person to talk to) or other. summary says what they want in one or two plain sentences, in English, without any medical, ID or payment details. It cannot be undone and it reaches a real person. Asking again for the same help on the same topic changes nothing and returns the same reference.",
+  parametersJsonSchema: {
+    type: "object",
+    properties: {
+      kind: {
+        type: "string",
+        enum: ["coach", "expert", "tournaments", "team", "other"],
+        description: "What kind of help the parent wants from the team.",
+      },
+      summary: {
+        type: "string",
+        description:
+          "What the parent wants help with, in one or two plain sentences, in English, without medical, ID or payment details.",
+      },
+      parentAgreed: {
+        type: "boolean",
+        description:
+          "True only if the parent has clearly said yes to having the team get back to them on WhatsApp. False or omitted otherwise.",
+      },
+    },
+    required: ["kind", "summary", "parentAgreed"],
+  },
+  execute: async (args, context) => {
+    if (!context?.phoneHash) {
+      return {
+        sent: false,
+        instruction:
+          "This is not available here. Give https://powermysport.com/contact so they can reach the team.",
+      };
+    }
+    // A model decides when to call this, so the agreement is checked here and not trusted to it.
+    if (args.parentAgreed !== true) {
+      return {
+        sent: false,
+        instruction:
+          "Not sent. Ask whether they would like the team to get back to them here on WhatsApp and wait for a clear yes, then call again with parentAgreed true.",
+      };
+    }
+    const kinds = ["coach", "expert", "tournaments", "team", "other"] as const;
+    const kind = kinds.find((k) => k === args.kind) ?? "team";
+    try {
+      const result = await requestFollowUp(context.phoneHash, context.userMessage ?? "", {
+        kind,
+        summary: args.summary,
+      });
+      return {
+        sent: true,
+        reference: result.reference,
+        alreadyRequested: result.alreadyRequested,
+        instruction: `${
+          result.alreadyRequested ? "It was already with the team. " : "Passed on. "
+        }Tell the parent the team will get back to them here on WhatsApp, and give the reference ${
+          result.reference
+        } to quote. Do not promise a time or anything more.`,
+      };
+    } catch (error) {
+      log.error("could not record the WhatsApp follow-up", error);
+      return {
+        sent: false,
+        instruction:
+          "It could not be passed on just now. Say so, and give https://powermysport.com/contact.",
+      };
+    }
+  },
+};
+
 // ─── Per-persona tool sets ──────────────────────────────────────────────────────
 
 export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
@@ -1066,4 +1143,24 @@ export const ASSISTANT_CHAT_TOOLS: ChatToolDefinition[] = [
   requestTeamFollowupTool,
   recordEnquiryTool,
   offerNextStepsTool,
+  requestWhatsappFollowupTool,
 ];
+
+/** Only meaningful on WhatsApp: they act on a chat the website does not have. */
+const WHATSAPP_ONLY_TOOLS = new Set([
+  "record_enquiry",
+  "offer_next_steps",
+  "request_whatsapp_followup",
+]);
+
+/**
+ * The website asks for an email address to hand a question to the team; WhatsApp already has the
+ * parent's number and asks for nothing. Each channel is shown only its own way, so the model never
+ * has two ways to do the same thing.
+ */
+export const WEB_CHAT_TOOLS: ChatToolDefinition[] = ASSISTANT_CHAT_TOOLS.filter(
+  (tool) => !WHATSAPP_ONLY_TOOLS.has(tool.name)
+);
+export const WHATSAPP_CHAT_TOOLS: ChatToolDefinition[] = ASSISTANT_CHAT_TOOLS.filter(
+  (tool) => tool.name !== "request_team_followup"
+);

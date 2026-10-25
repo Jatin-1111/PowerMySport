@@ -37,8 +37,9 @@ beforeEach(async () => {
   await Promise.all([WhatsAppEnquiry.deleteMany({}), WhatsAppConversation.deleteMany({})]);
 });
 
-// Its own number, so the daily message count this file uses does not run into another file's.
-const PHONE = "919811122233";
+// A number of its own for each run: the daily message count lives in Redis and outlasts a run,
+// so a fixed number would stop answering after a few runs in one day.
+const PHONE = `9198${String(Date.now()).slice(-8)}`;
 const msg = (text: string, replyId?: string, id = `wamid.${Math.random()}`) => ({
   id,
   from: PHONE,
@@ -195,5 +196,130 @@ describe("the prompt", () => {
     }
     assert.match(CHANNEL_ADDENDUM, /unless a tool shows it is/);
     assert.match(CHANNEL_ADDENDUM, /Ask only what you need/);
+  });
+});
+
+describe("asking the team to follow up on WhatsApp", () => {
+  const { decryptValue } = require("../shared/utils/encryption");
+  const { followUpReply } = require("../shared/services/whatsappInteractive");
+  const {
+    hashPhone,
+    answerWhatsAppMessage: answer,
+  } = require("../shared/services/whatsappAssistantService");
+  const { WEB_CHAT_TOOLS, WHATSAPP_CHAT_TOOLS } = require("../shared/services/chatToolsService");
+  const followUp = ASSISTANT_CHAT_TOOLS.find(
+    (t: { name: string }) => t.name === "request_whatsapp_followup"
+  );
+
+  const talk = () =>
+    answer(msg("My son is 12 and plays tennis. What should we do next?"), stub("Here is advice."));
+
+  it("tapping 'Find a coach or academy' records the request, with no model call", async () => {
+    await talk();
+    const calls: Call[] = [];
+    const reply = await answer(msg("Find a coach or academy", "next_coach"), neverCalled(calls));
+
+    assert.equal(calls.length, 0);
+    assert.match(reply.reply, /We have noted that you are looking for a coach or academy/);
+    assert.match(reply.reply, /get back to you here on WhatsApp/);
+    const enquiry = await WhatsAppEnquiry.findOne({}).lean();
+    assert.equal(enquiry.followUpStatus, "new");
+    assert.ok(enquiry.assistance.includes("coach"));
+    assert.ok(reply.reply.includes(enquiry.reference), "the parent is given the reference");
+  });
+
+  it("keeps the parent's number, encrypted, so the team can answer here", async () => {
+    await talk();
+    await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
+    const enquiry = await WhatsAppEnquiry.findOne({}).lean();
+    assert.ok(enquiry.contactPhoneEnc);
+    assert.equal(decryptValue(enquiry.contactPhoneEnc), PHONE);
+    assert.ok(!JSON.stringify(enquiry).includes(PHONE));
+  });
+
+  it("tapping twice is one request with one reference", async () => {
+    await talk();
+    const first = await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
+    const second = await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
+
+    assert.match(second.reply, /already with our team/);
+    assert.equal(await WhatsAppEnquiry.countDocuments({}), 1);
+    const reference = (await WhatsAppEnquiry.findOne({}).lean()).reference;
+    assert.ok(first.reply.includes(reference) && second.reply.includes(reference));
+  });
+
+  it("an expert request also keeps the self-serve link open", async () => {
+    await talk();
+    const reply = await answer(msg("Speak to a sports expert", "next_expert"), neverCalled([]));
+    assert.match(reply.reply, /sports expert/);
+    assert.match(reply.reply, /https:\/\/powermysport\.com\/experts/);
+    assert.ok((await WhatsAppEnquiry.findOne({}).lean()).assistance.includes("expert"));
+  });
+
+  it("works with no earlier conversation, and does not use up a daily message", async () => {
+    const reply = await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
+    assert.match(reply.reply, /Your reference: PMS-/);
+    assert.equal(await WhatsAppEnquiry.countDocuments({ followUpStatus: "new" }), 1);
+  });
+
+  it("the tool refuses without a clear yes, and records with one", async () => {
+    const ctx = { phoneHash: hashPhone(PHONE), userMessage: "talk to someone" };
+    const refused = await followUp.execute({ kind: "team", summary: "x" }, ctx);
+    assert.equal(refused.sent, false);
+    assert.match(refused.instruction, /clear yes/);
+    assert.equal(await WhatsAppEnquiry.countDocuments({}), 0);
+
+    const sent = await followUp.execute(
+      { kind: "team", summary: "wants a call about academies", parentAgreed: true },
+      ctx
+    );
+    assert.equal(sent.sent, true);
+    assert.match(sent.reference, /^PMS-/);
+    assert.match(sent.instruction, /WhatsApp/);
+    const enquiry = await WhatsAppEnquiry.findOne({}).lean();
+    assert.equal(enquiry.followUpStatus, "new");
+    assert.equal(enquiry.followUpSummary, "wants a call about academies");
+  });
+
+  it("the tool does nothing, and says where to go instead, outside WhatsApp", async () => {
+    const out = await followUp.execute({ kind: "team", summary: "x", parentAgreed: true }, {});
+    assert.equal(out.sent, false);
+    assert.match(out.instruction, /powermysport\.com\/contact/);
+    assert.equal(await WhatsAppEnquiry.countDocuments({}), 0);
+  });
+
+  it("an unknown kind falls back to 'team' rather than being stored", async () => {
+    const ctx = { phoneHash: hashPhone(PHONE), userMessage: "q" };
+    await followUp.execute({ kind: "<script>", summary: "x", parentAgreed: true }, ctx);
+    assert.deepEqual((await WhatsAppEnquiry.findOne({}).lean()).assistance, ["team"]);
+  });
+
+  it("each channel is shown only its own way of reaching the team", () => {
+    const names = (tools: Array<{ name: string }>) => tools.map((t) => t.name);
+    assert.ok(names(WHATSAPP_CHAT_TOOLS).includes("request_whatsapp_followup"));
+    assert.ok(!names(WHATSAPP_CHAT_TOOLS).includes("request_team_followup"));
+    assert.ok(names(WEB_CHAT_TOOLS).includes("request_team_followup"));
+    for (const only of ["request_whatsapp_followup", "record_enquiry", "offer_next_steps"]) {
+      assert.ok(!names(WEB_CHAT_TOOLS).includes(only), `${only} is not on the website`);
+    }
+  });
+
+  it("the wording never promises a time and never asks for contact details", () => {
+    for (const kind of ["coach", "expert", "team", "tournaments", "other"] as const) {
+      for (const already of [false, true]) {
+        const text = followUpReply(kind, "PMS-ABCDE", already);
+        assert.ok(text.includes("PMS-ABCDE"));
+        assert.ok(!/hours|within|today|tomorrow|email|phone number/i.test(text), text);
+        assert.ok(!text.includes("—"), "no em dashes in copy");
+      }
+    }
+  });
+
+  it("STOP deletes the request and the number kept for it", async () => {
+    await talk();
+    await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
+    assert.equal(await WhatsAppEnquiry.countDocuments({}), 1);
+    await answer(msg("STOP"), neverCalled([]));
+    assert.equal(await WhatsAppEnquiry.countDocuments({}), 0);
   });
 });

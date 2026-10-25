@@ -39,7 +39,11 @@ const value = (name: string): string | undefined => {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function main(): Promise<void> {
-  const { ASSISTANT_CHAT_TOOLS } = require("../../shared/services/chatToolsService");
+  const {
+    ASSISTANT_CHAT_TOOLS,
+    WEB_CHAT_TOOLS,
+    WHATSAPP_CHAT_TOOLS,
+  } = require("../../shared/services/chatToolsService");
   const { streamAgenticChatResponse } = require("../../shared/services/agenticChatService");
   const { ASSISTANT_CASES } = require("./cases") as typeof import("./cases");
   const { runCase, staticChecks } = require("./harness") as typeof import("./harness");
@@ -85,8 +89,11 @@ async function main(): Promise<void> {
     for (let i = 0; i < runsPerCase; i += 1) {
       if (!first) await sleep(delayMs);
       first = false;
-      const run = await runCase(c, ASSISTANT_CHAT_TOOLS, (system, history, message, tools) =>
-        streamAgenticChatResponse(system, history, message, tools)
+      const run = await runCase(
+        c,
+        c.channel === "whatsapp" ? WHATSAPP_CHAT_TOOLS : WEB_CHAT_TOOLS,
+        (system, history, message, tools) =>
+          streamAgenticChatResponse(system, history, message, tools)
       );
       const violations = scoreCase(c, run);
       scored.push({ case: c, run, violations });

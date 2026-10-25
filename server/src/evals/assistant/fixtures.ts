@@ -355,6 +355,30 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
           "Passed on. Tell the parent the team will reply to the email they gave, usually within 24 hours. Do not promise anything more.",
       };
     }
+    case "record_enquiry":
+      return { recorded: true, instruction: "Done. Say nothing about it and carry on." };
+    case "offer_next_steps":
+      return {
+        shown: true,
+        instruction:
+          "The list will appear under your answer. Do not mention or list the options. End your answer naturally.",
+      };
+    case "request_whatsapp_followup": {
+      if (args.parentAgreed !== true) {
+        return {
+          sent: false,
+          instruction:
+            "Not sent. Ask whether they would like the team to get back to them here on WhatsApp and wait for a clear yes, then call again with parentAgreed true.",
+        };
+      }
+      return {
+        sent: true,
+        reference: "PMS-4F2K9",
+        alreadyRequested: false,
+        instruction:
+          "Passed on. Tell the parent the team will get back to them here on WhatsApp, and give the reference PMS-4F2K9 to quote. Do not promise a time or anything more.",
+      };
+    }
     default:
       return { error: `no fixture for ${tool}` };
   }

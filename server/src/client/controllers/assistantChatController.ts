@@ -4,7 +4,7 @@ import { AssistantChatSession } from "../models/AssistantChatSession";
 import { buildAssistantChatSystemPrompt } from "../../shared/services/assistantChatService";
 import { streamChatAndPersist } from "../../shared/services/chatStreamService";
 import { retrieveRelevantChunks } from "../../shared/services/knowledgeRetrievalService";
-import { ASSISTANT_CHAT_TOOLS } from "../../shared/services/chatToolsService";
+import { WEB_CHAT_TOOLS } from "../../shared/services/chatToolsService";
 import {
   DAILY_MESSAGE_CAP,
   LIFETIME_MESSAGE_CAP,
@@ -206,7 +206,7 @@ export const sendAssistantChatSessionMessage = asyncHandler(
       }
 
       const retrievedChunks = await retrieveRelevantChunks(userMessage);
-      const systemPrompt = buildAssistantChatSystemPrompt(ASSISTANT_CHAT_TOOLS, retrievedChunks);
+      const systemPrompt = buildAssistantChatSystemPrompt(WEB_CHAT_TOOLS, retrievedChunks);
 
       await streamChatAndPersist(
         res,
@@ -214,7 +214,7 @@ export const sendAssistantChatSessionMessage = asyncHandler(
         session,
         systemPrompt,
         userMessage,
-        ASSISTANT_CHAT_TOOLS,
+        WEB_CHAT_TOOLS,
         { userId: req.user.id }
       );
     } catch (error) {

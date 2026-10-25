@@ -76,6 +76,7 @@ export const FEEDBACK_THANKS_NOT_HELPFUL =
  */
 export type Intent =
   | { kind: "ask"; text: string }
+  | { kind: "followup"; assistance: "coach" | "expert"; text: string }
   | { kind: "done" }
   | { kind: "feedback"; value: "helpful" | "not_helpful" };
 
@@ -85,9 +86,7 @@ const ASK: Record<string, string> = {
   menu_tournaments: "I have a question about tournaments and rankings.",
   menu_pathway: "I want to understand sports career pathways for my child.",
   menu_other: "I have something else to ask.",
-  next_coach: "I'd like help finding a coach or academy for my child.",
   next_tournaments: "Help me explore tournaments or competitions for my child.",
-  next_expert: "I'd like to speak to a sports expert.",
   next_question: "I have another question.",
 };
 
@@ -96,6 +95,22 @@ export function intentForReply(replyId: string | null | undefined): Intent | nul
   if (replyId === "next_done") return { kind: "done" };
   if (replyId === "fb_helpful") return { kind: "feedback", value: "helpful" };
   if (replyId === "fb_not_helpful") return { kind: "feedback", value: "not_helpful" };
+  // Help the assistant cannot give from here: the tap is the request, so it is recorded for the
+  // team straight away instead of being talked about first.
+  if (replyId === "next_coach") {
+    return {
+      kind: "followup",
+      assistance: "coach",
+      text: "I'd like help finding a coach or academy for my child.",
+    };
+  }
+  if (replyId === "next_expert") {
+    return {
+      kind: "followup",
+      assistance: "expert",
+      text: "I'd like to speak to a sports expert.",
+    };
+  }
   const text = ASK[replyId];
   return text ? { kind: "ask", text } : null;
 }
@@ -111,6 +126,46 @@ export function wantsMenu(text: string): boolean {
   return /^(hi+|hello+|hey+|hii+|namaste|namaskar|start|menu|help|options|hi there|hello there|good (morning|afternoon|evening))$/.test(
     cleaned
   );
+}
+
+// ─── Asking the team to get back to the parent ───────────────────────────────
+
+const FOLLOW_UP_WHAT = {
+  coach: "that you are looking for a coach or academy",
+  expert: "that you would like to speak to a sports expert",
+  team: "your request",
+  tournaments: "that you want help with tournaments",
+  other: "your request",
+} as const;
+
+/**
+ * What the parent is told once the team has been asked to follow up. The reference is theirs to
+ * quote. Nothing here promises a time, because nobody has agreed one.
+ */
+export function followUpReply(
+  kind: keyof typeof FOLLOW_UP_WHAT,
+  reference: string,
+  alreadyRequested = false
+): string {
+  const lines = alreadyRequested
+    ? [
+        "This is already with our team. They will get back to you here on WhatsApp with the next steps.",
+        `Your reference: ${reference}`,
+      ]
+    : [
+        `Thank you! We have noted ${FOLLOW_UP_WHAT[kind]}.`,
+        "Our team will review your request and get back to you here on WhatsApp with the next steps.",
+        `Your reference: ${reference}`,
+      ];
+  // Experts can be booked on the site straight away, so that way stays open while the team follows up.
+  if (kind === "expert") {
+    lines.push(
+      "",
+      "If you would rather not wait, you can see their open times and book here:",
+      "https://powermysport.com/experts"
+    );
+  }
+  return lines.join("\n");
 }
 
 // ─── Link button ─────────────────────────────────────────────────────────────
