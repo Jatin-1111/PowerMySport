@@ -414,7 +414,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="admin-shell bg-background">
-      <a href="#main-content" className="skip-link">
+      <a
+        href="#main-content"
+        className="focus:bg-deep-slate sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
         Skip to content
       </a>
       <div className="min-h-dvh lg:flex">
