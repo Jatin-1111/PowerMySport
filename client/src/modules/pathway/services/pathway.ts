@@ -1,5 +1,6 @@
 import type { FactSheetDetails } from "@/modules/tournaments/types/factSheet";
 import axiosInstance from "@/lib/api/axios";
+import { withoutUnavailableLinks } from "@/modules/pathway/utils/availableActions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -178,7 +179,7 @@ export const pathwayApi = {
       const resp = await axiosInstance.get<ApiResponse<PathwayGuide>>(
         `/pathways/guide?${q.toString()}`
       );
-      return resp.data.data ?? null;
+      return resp.data.data ? withoutUnavailableLinks(resp.data.data) : null;
     } catch {
       return null;
     }

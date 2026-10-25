@@ -1,5 +1,6 @@
 import type { PathwayGuide, PathwayGuideSummary, PathwayStageSummary } from "./pathway";
 import { pathwaySportRank } from "../data/sports";
+import { withoutUnavailableLinks } from "../utils/availableActions";
 
 // ─── Server-side pathway fetch ───────────────────────────────────────────────
 //
@@ -40,7 +41,7 @@ export async function fetchPathwayGuide(sport: string): Promise<PathwayGuide | n
     // 404 is the normal answer for a sport whose pathway isn't published yet.
     if (!res.ok) return null;
     const body = await res.json();
-    return body?.success && body?.data ? (body.data as PathwayGuide) : null;
+    return body?.success && body?.data ? withoutUnavailableLinks(body.data as PathwayGuide) : null;
   } catch {
     return null;
   }
