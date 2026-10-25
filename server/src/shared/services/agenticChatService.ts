@@ -65,8 +65,11 @@ export async function* streamAgenticChatResponse(
   history: ChatHistoryMessage[],
   userMessage: string,
   tools: ChatToolDefinition[] = [],
-  toolContext: ChatToolContext = {}
+  toolContext: ChatToolContext = {},
+  /** Replaces the default list of models to try, in order. The eval uses it to test one model. */
+  options: { models?: string[] } = {}
 ): AsyncGenerator<string> {
+  const models = options.models?.length ? options.models : chatModelCandidates;
   if (!apiKey) {
     throw new Error("Missing GEMINI_API_KEY or GOOGLE_API_KEY environment variable");
   }
@@ -104,7 +107,7 @@ export async function* streamAgenticChatResponse(
   let startedAnswering = false;
   let toolHasRun = false;
 
-  for (const modelName of chatModelCandidates) {
+  for (const modelName of models) {
     try {
       // ── Hop 0: stream normally, bail out the moment a tool call appears ──────
       const firstStream = await genAI.models.generateContentStream({
@@ -188,7 +191,7 @@ export async function* streamAgenticChatResponse(
   if (isBusyError(lastError)) throw new AiBusyError(lastError);
 
   throw new Error(
-    `No supported Gemini chat model found. Tried: ${chatModelCandidates.join(", ")}. Last error: ${
+    `No supported Gemini chat model found. Tried: ${models.join(", ")}. Last error: ${
       lastError instanceof Error ? lastError.message : String(lastError)
     }`
   );

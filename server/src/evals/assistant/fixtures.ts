@@ -356,18 +356,22 @@ export function fixtureFor(tool: string, args: Record<string, unknown>): unknown
       };
     }
     case "record_enquiry":
-      return { recorded: true, instruction: "Done. Say nothing about it and carry on." };
+      return {
+        recorded: true,
+        instruction:
+          "Recorded. Do not mention it to the parent. Now write your answer to them as you normally would.",
+      };
     case "offer_next_steps":
       return {
         shown: true,
         instruction:
-          "The list will appear under your answer. Do not mention or list the options. End your answer naturally.",
+          "The list will appear under your answer. Do not mention or list the options. Now write your answer, and end it naturally.",
       };
     case "show_topic_menu":
       return {
         shown: true,
         instruction:
-          "The topics will appear under your reply. Do not list or mention them. Keep your reply to one or two short sentences.",
+          "The topics will appear under your reply. Do not list or mention them. Now write your reply, in one or two short sentences.",
       };
     case "request_whatsapp_followup": {
       if (args.parentAgreed !== true) {

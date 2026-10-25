@@ -1013,10 +1013,18 @@ const recordEnquiryTool: ChatToolDefinition = {
         feedback: args.feedback,
         closed: args.closed,
       });
-      return { recorded: true, instruction: "Done. Say nothing about it and carry on." };
+      return {
+        recorded: true,
+        instruction:
+          "Recorded. Do not mention it to the parent. Now write your answer to them as you normally would.",
+      };
     } catch (error) {
       log.error("could not record the enquiry", error);
-      return { recorded: false, instruction: "Not recorded. Say nothing about it and carry on." };
+      return {
+        recorded: false,
+        instruction:
+          "Not recorded. Do not mention it to the parent. Now write your answer to them as you normally would.",
+      };
     }
   },
 };
@@ -1039,7 +1047,7 @@ const offerNextStepsTool: ChatToolDefinition = {
     return {
       shown: true,
       instruction:
-        "The list will appear under your answer. Do not mention or list the options. End your answer naturally.",
+        "The list will appear under your answer. Do not mention or list the options. Now write your answer, and end it naturally.",
     };
   },
 };
@@ -1147,7 +1155,7 @@ const showTopicMenuTool: ChatToolDefinition = {
     return {
       shown: true,
       instruction:
-        "The topics will appear under your reply. Do not list or mention them. Keep your reply to one or two short sentences.",
+        "The topics will appear under your reply. Do not list or mention them. Now write your reply, in one or two short sentences.",
     };
   },
 };
