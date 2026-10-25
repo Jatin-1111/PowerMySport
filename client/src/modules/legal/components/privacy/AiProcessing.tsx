@@ -83,7 +83,8 @@ export function AiProcessing() {
         We do not send a date of birth, a federation registration number, an email address, a phone
         number or a street address to the model. For the guidance plans and the chat assistants, we
         send what you type and the details you have given us for that feature, such as a
-        player&apos;s age, sport and goals.
+        player&apos;s age, sport and goals. On WhatsApp, a voice note or photo you send is sent as
+        well, so it can be turned into text. We do not keep the audio or the image, only the text.
       </p>
       <p className="mb-4 leading-relaxed text-slate-600">
         Travel and stay estimates are requested automatically for events on your plan and events we
