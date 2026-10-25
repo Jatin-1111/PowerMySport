@@ -5,6 +5,7 @@ import { Coach } from "../../models/Coach";
 import Academy from "../../../admin/models/Academy";
 import { validatePromoCode } from "../PromoCodeService";
 import { generateDynamicSlots } from "../../../utils/booking";
+import { acquireKeys } from "../../../utils/keyedQueue";
 import { emitSlotLocked } from "../../sockets/bookingSocket";
 import {
   log,
@@ -193,6 +194,51 @@ const acquireResourceSlotLock = async (
 };
 
 export const createBookingAtomically = async (
+  payload: BookingCreatePayload
+): Promise<BookingDocument> => {
+  // Requests for the same resource and day wait their turn in this process
+  // instead of all opening a transaction on the same lock document (see
+  // utils/keyedQueue). The transaction below is still what guarantees
+  // correctness across instances.
+  const dayKey = getDateKey(payload.date);
+  const queueKeys = [
+    payload.venueId && `venue:${payload.venueId}:${dayKey}`,
+    payload.coachId && `coach:${payload.coachId}:${dayKey}`,
+    payload.academyId && `academy:${payload.academyId}:${dayKey}`,
+  ].filter((k): k is string => Boolean(k));
+  const release = await acquireKeys(queueKeys);
+
+  try {
+    // Cheap read-only rejection, now that earlier requests in the queue have
+    // committed. Losers of a rush stop here without opening a transaction.
+    if (payload.venueId) {
+      const taken = await hasConflictingVenueBooking(
+        payload.venueId,
+        payload.date,
+        payload.startTime,
+        payload.endTime,
+        payload.userId
+      );
+      if (taken) throw new Error("Selected time slot is already booked for this venue");
+    }
+    if (payload.coachId) {
+      const taken = await hasConflictingCoachBooking(
+        payload.coachId,
+        payload.date,
+        payload.startTime,
+        payload.endTime,
+        payload.userId
+      );
+      if (taken) throw new Error("Coach is not available for the selected time slot");
+    }
+
+    return await createBookingInTransaction(payload);
+  } finally {
+    release();
+  }
+};
+
+const createBookingInTransaction = async (
   payload: BookingCreatePayload
 ): Promise<BookingDocument> => {
   let lastError: unknown;
