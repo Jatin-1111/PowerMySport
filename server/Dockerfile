@@ -31,7 +31,7 @@ RUN npm ci
 COPY server/. .
 
 # Build TypeScript → dist/
-RUN npm run build
+RUN npm run build:clean
 
 
 # ── Stage 2: Runner (lean production image) ───────
