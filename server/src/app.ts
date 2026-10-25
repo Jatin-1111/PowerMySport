@@ -5,7 +5,7 @@ import compression from "compression";
 import express, { Express } from "express";
 import { hostname as osHostname } from "os";
 import mongoose from "mongoose";
-import redis from "./config/redis";
+import redis, { REDIS_ENABLED } from "./config/redis";
 import { authMiddleware, adminMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 import { errorLogger, requestLogger } from "./middleware/logger";
@@ -302,24 +302,27 @@ const getDetailedHealthPayload = async () => {
 
   // Live Redis ping with a 500ms timeout so a busy Redis under load
   // never blocks the ALB health check and causes a false-positive Severe state.
-  let redisStatus = "disconnected";
+  // REDIS_ENABLED=false is a deliberate "off" switch, so it is not a failure.
+  let redisStatus = REDIS_ENABLED ? "disconnected" : "disabled";
   let redisPingMs: number | null = null;
-  try {
-    const t0 = Date.now();
-    await Promise.race([
-      redis.ping(),
-      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 500)),
-    ]);
-    redisPingMs = Date.now() - t0;
-    redisStatus = "connected";
-  } catch (err: any) {
-    redisStatus = err?.message === "ping timeout" ? "timeout" : "error";
+  if (REDIS_ENABLED) {
+    try {
+      const t0 = Date.now();
+      await Promise.race([
+        redis.ping(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 500)),
+      ]);
+      redisPingMs = Date.now() - t0;
+      redisStatus = "connected";
+    } catch (err: any) {
+      redisStatus = err?.message === "ping timeout" ? "timeout" : "error";
+    }
   }
 
   const memoryUsage = process.memoryUsage();
   const uptimeSec = Math.round(process.uptime());
   const dbHealthy = dbStatus === "connected";
-  const redisHealthy = redisStatus === "connected";
+  const redisHealthy = redisStatus === "connected" || redisStatus === "disabled";
   const allHealthy = dbHealthy && redisHealthy;
 
   return {
