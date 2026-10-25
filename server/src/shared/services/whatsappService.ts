@@ -5,6 +5,8 @@ const log = __rootLog.child("whatsapp");
 
 const GRAPH_VERSION = "v25.0";
 
+import type { InboundMedia } from "./whatsappMedia";
+
 export interface InboundWhatsAppMessage {
   /** Meta's id for the message (wamid...), the key for de-duplicating redeliveries. */
   id: string;
@@ -15,6 +17,8 @@ export interface InboundWhatsAppMessage {
   text: string | null;
   /** The id of the button or list row the parent tapped, when they tapped one. */
   replyId?: string | null;
+  /** A voice note or photo the parent sent. Read into text by the assistant before answering. */
+  media?: InboundMedia;
 }
 
 /**
@@ -57,6 +61,8 @@ export function extractInboundMessages(payload: unknown): InboundWhatsAppMessage
           from?: string;
           type?: string;
           text?: { body?: string };
+          audio?: { id?: string; mime_type?: string };
+          image?: { id?: string; mime_type?: string; caption?: string };
           interactive?: {
             button_reply?: { id?: string; title?: string };
             list_reply?: { id?: string; title?: string };
@@ -67,9 +73,29 @@ export function extractInboundMessages(payload: unknown): InboundWhatsAppMessage
           m.text?.body ??
           m.interactive?.button_reply?.title ??
           m.interactive?.list_reply?.title ??
+          // A photo's caption is the parent's own words; the photo itself is in `media`.
+          m.image?.caption ??
           null;
         const replyId = m.interactive?.button_reply?.id ?? m.interactive?.list_reply?.id ?? null;
-        out.push({ id: m.id, from: m.from, type: m.type, text, replyId });
+        const media: InboundMedia | undefined =
+          m.type === "audio" && m.audio?.id
+            ? { kind: "audio", id: m.audio.id, mimeType: m.audio.mime_type }
+            : m.type === "image" && m.image?.id
+              ? {
+                  kind: "image",
+                  id: m.image.id,
+                  mimeType: m.image.mime_type,
+                  caption: m.image.caption ?? null,
+                }
+              : undefined;
+        out.push({
+          id: m.id,
+          from: m.from,
+          type: m.type,
+          text,
+          replyId,
+          ...(media ? { media } : {}),
+        });
       }
     }
   }
