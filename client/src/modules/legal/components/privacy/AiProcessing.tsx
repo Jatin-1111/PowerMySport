@@ -84,7 +84,8 @@ export function AiProcessing() {
         number or a street address to the model. For the guidance plans and the chat assistants, we
         send what you type and the details you have given us for that feature, such as a
         player&apos;s age, sport and goals. On WhatsApp, a voice note or photo you send is sent as
-        well, so it can be turned into text. We do not keep the audio or the image, only the text.
+        well, so it can be turned into text. On our side, only the resulting text is kept: the audio
+        or image file is dropped once it has been read.
       </p>
       <p className="mb-4 leading-relaxed text-slate-600">
         Travel and stay estimates are requested automatically for events on your plan and events we
