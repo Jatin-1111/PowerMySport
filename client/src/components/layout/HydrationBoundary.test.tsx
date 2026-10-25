@@ -25,6 +25,7 @@ describe("restoring the signed-in user from the browser", () => {
   it("restores a user whose children are in the current, flat shape", () => {
     saveUser({
       id: "u1",
+      role: "PARENT",
       name: "Parent",
       dependents: [{ _id: "c1", name: "Riya", chosenSport: "Tennis", quiz: { heightCm: 140 } }],
     });
@@ -38,6 +39,7 @@ describe("restoring the signed-in user from the browser", () => {
   it("drops children saved in the old grouped shape, so no screen shows them half-empty", () => {
     saveUser({
       id: "u1",
+      role: "PARENT",
       name: "Parent",
       dependents: [{ _id: "c1", name: "Riya", sport: { chosenSport: "Tennis" }, physical: {} }],
     });
@@ -51,7 +53,11 @@ describe("restoring the signed-in user from the browser", () => {
   it("recognises the old shape from any one of its groups", () => {
     for (const group of ["sport", "physical", "practical", "standing"]) {
       localStorage.clear();
-      saveUser({ id: "u1", dependents: [{ _id: "c1", name: "Riya", [group]: {} }] });
+      saveUser({
+        id: "u1",
+        role: "PARENT",
+        dependents: [{ _id: "c1", name: "Riya", [group]: {} }],
+      });
       useAuthStore.setState({ user: null, hydrated: false });
       mount();
 
@@ -62,13 +68,18 @@ describe("restoring the signed-in user from the browser", () => {
   it("keeps everything else about the user", () => {
     saveUser({
       id: "u1",
+      role: "PARENT",
       name: "Parent",
       email: "p@example.com",
       dependents: [{ _id: "c1", name: "Riya", sport: {} }],
     });
     mount();
 
-    expect(useAuthStore.getState().user).toMatchObject({ id: "u1", name: "Parent" });
+    expect(useAuthStore.getState().user).toMatchObject({
+      id: "u1",
+      role: "PARENT",
+      name: "Parent",
+    });
   });
 
   it("marks the store hydrated even when there is no saved user", () => {

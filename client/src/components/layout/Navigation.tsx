@@ -140,8 +140,8 @@ const exploreGroups = exploreItems.reduce<
 const COMMUNITY_PATH = "/community";
 
 /** "SUPER_ADMIN" as "Super admin": sentence case, for the menu's account block. */
-const roleLabel = (role: string) => {
-  const text = role.replace(/_/g, " ").toLowerCase();
+const roleLabel = (role?: string) => {
+  const text = (role ?? "").replace(/_/g, " ").toLowerCase();
   return text.charAt(0).toUpperCase() + text.slice(1);
 };
 

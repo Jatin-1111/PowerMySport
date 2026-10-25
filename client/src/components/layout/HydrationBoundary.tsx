@@ -41,7 +41,13 @@ export function HydrationBoundary({ children }: { children: React.ReactNode }) {
         if (Array.isArray(saved.dependents) && saved.dependents.some(isOldShape)) {
           delete saved.dependents;
         }
-        useAuthStore.setState({ user: saved });
+        // Every screen reads `user.role`; a saved object without one is unusable,
+        // and the header crashes the whole marketing layout on it.
+        if (!saved || typeof saved.role !== "string") {
+          localStorage.removeItem("user");
+        } else {
+          useAuthStore.setState({ user: saved });
+        }
       } catch (error) {
         console.error("Failed to parse user from localStorage:", error);
         localStorage.removeItem("user");
