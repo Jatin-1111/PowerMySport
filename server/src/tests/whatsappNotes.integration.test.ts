@@ -286,7 +286,8 @@ describe("the three tools", () => {
 });
 
 describe("in the WhatsApp assistant", () => {
-  const PHONE = "919812345678";
+  // A number of its own for each run: the daily message count lives in Redis and outlasts a run.
+  const PHONE = `9198${String(Date.now()).slice(-8)}`;
   const msg = (text: string, id = "wamid.1") => ({ id, from: PHONE, type: "text", text });
 
   type Seen = { systemPrompt: string; toolContext: unknown };
@@ -335,7 +336,7 @@ describe("in the WhatsApp assistant", () => {
     await User.create({
       name: "Meera Kapoor",
       email: "notes-parent@example.com",
-      phone: "9812345678",
+      phone: PHONE.slice(2),
       password: "Passw0rd!x",
       role: "Parent",
     });
@@ -357,7 +358,7 @@ describe("in the WhatsApp assistant", () => {
     await User.create({
       name: "Meera Kapoor",
       email: "notes-parent2@example.com",
-      phone: "9812345678",
+      phone: PHONE.slice(2),
       password: "Passw0rd!x",
       role: "Parent",
     });

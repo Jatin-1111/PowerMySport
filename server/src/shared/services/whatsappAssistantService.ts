@@ -12,6 +12,7 @@ import { retrieveRelevantChunks } from "./knowledgeRetrievalService";
 import { withdrawConsentForPhone } from "./whatsappConsent";
 import { OPT_OUT_REPLY, isOptOutMessage } from "./whatsappPilot";
 import {
+  addExchange,
   attachContactNumber,
   closeLatestEnquiry,
   requestFollowUp,
@@ -346,6 +347,9 @@ export async function answerWhatsAppMessage(
       const result = await requestFollowUp(phoneHash, userMessage, { kind: intent.assistance });
       const reply = followUpReply(intent.assistance, result.reference, result.alreadyRequested);
       await appendTurn(phoneHash, userMessage, reply, new Date());
+      await addExchange(phoneHash, userMessage, reply).catch((err) =>
+        log.error("could not record the follow-up exchange", err)
+      );
       // The number is kept so the team can answer here; it is only ever kept for a request like this.
       await attachContactNumber(phoneHash, message.from).catch((err) =>
         log.error("could not keep the contact number", err)

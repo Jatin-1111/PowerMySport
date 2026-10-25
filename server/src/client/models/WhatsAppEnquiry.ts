@@ -22,6 +22,17 @@ export const ENQUIRY_RETENTION_SECONDS = 60 * 60 * 24 * 180;
 /** A parent who writes again within this long of the last message is still on the same topic. */
 export const ENQUIRY_IDLE_MS = 24 * 60 * 60 * 1000;
 
+/** The most recent exchanges kept on one enquiry. Older ones drop off, so a long chat stays bounded. */
+export const MAX_ENQUIRY_TURNS = 30;
+
+export interface EnquiryTurn {
+  at: Date;
+  /** What the parent said, or for a voice note what was heard, or for a photo a short label. */
+  parent: string;
+  /** What the assistant answered. */
+  assistant: string;
+}
+
 export const ASSISTANCE_KINDS = ["coach", "tournaments", "expert", "team", "other"] as const;
 export type AssistanceKind = (typeof ASSISTANCE_KINDS)[number];
 
@@ -44,7 +55,10 @@ export interface WhatsAppEnquiryDocument extends Document {
   level?: string;
   objective?: string;
   /** The assistant's latest answer on this topic, so the team sees what was advised. */
+  /** The assistant's latest answer, kept as its own field for lists and quick reading. */
   guidance?: string;
+  /** Every exchange on this topic, oldest first, so the team sees all the advice and not just the last. */
+  turns: EnquiryTurn[];
   assistance: AssistanceKind[];
   followUpStatus: FollowUpStatus;
   followUpSummary?: string;
@@ -74,6 +88,19 @@ const whatsAppEnquirySchema = new Schema<WhatsAppEnquiryDocument>(
     level: { type: String, maxlength: 60 },
     objective: { type: String, maxlength: 240 },
     guidance: { type: String, maxlength: 2000 },
+    turns: {
+      type: [
+        new Schema<EnquiryTurn>(
+          {
+            at: { type: Date, required: true },
+            parent: { type: String, required: true, maxlength: 500 },
+            assistant: { type: String, required: true, maxlength: 2000 },
+          },
+          { _id: false }
+        ),
+      ],
+      default: [],
+    },
     assistance: { type: [{ type: String, enum: ASSISTANCE_KINDS }], default: [] },
     followUpStatus: { type: String, enum: FOLLOW_UP_STATUSES, default: "none" },
     followUpSummary: { type: String, maxlength: 600 },

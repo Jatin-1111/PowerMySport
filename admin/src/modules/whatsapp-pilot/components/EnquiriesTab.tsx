@@ -11,6 +11,7 @@ import { toast } from "@/lib/toast";
 import {
   EnquiryFilters,
   EnquiryList,
+  EnquiryTurn,
   FollowUpStatus,
   WhatsAppEnquiry,
   whatsappPilotApi,
@@ -292,6 +293,26 @@ function EnquiryDrawer({
   const [phone, setPhone] = useState<string | null>(null);
   const [revealing, setRevealing] = useState(false);
   const savedNote = enquiry?.teamNote ?? "";
+  // The list does not carry the conversation, so it is fetched when the drawer opens.
+  const [turns, setTurns] = useState<EnquiryTurn[] | null>(null);
+  const [turnsFailed, setTurnsFailed] = useState(false);
+  const enquiryId = enquiry?.id;
+
+  useEffect(() => {
+    if (!enquiryId) return;
+    let cancelled = false;
+    whatsappPilotApi
+      .getEnquiry(enquiryId)
+      .then((full) => {
+        if (!cancelled) setTurns(full.turns ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setTurnsFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enquiryId]);
 
   if (!enquiry) return null;
 
@@ -349,10 +370,31 @@ function EnquiryDrawer({
         <DetailRow label="Objective" value={enquiry.objective ?? "—"} />
       </DetailSection>
 
-      <DetailSection title="Guidance given (latest answer)">
-        <p className="whitespace-pre-wrap break-words text-sm text-slate-700">
-          {enquiry.guidance ?? "—"}
-        </p>
+      <DetailSection title="Conversation">
+        {turnsFailed ? (
+          <p className="text-sm text-slate-500">The conversation could not be loaded.</p>
+        ) : turns === null ? (
+          <p className="text-sm text-slate-400">Loading...</p>
+        ) : turns.length === 0 ? (
+          // Enquiries from before every exchange was kept have only the latest answer.
+          <p className="whitespace-pre-wrap break-words text-sm text-slate-700">
+            {enquiry.guidance ?? "Nothing recorded."}
+          </p>
+        ) : (
+          <ol className="space-y-3">
+            {turns.map((turn, index) => (
+              <li key={`${turn.at}-${index}`} className="space-y-1.5">
+                <p className="text-xs text-slate-400">{when(turn.at)}</p>
+                <p className="ml-6 whitespace-pre-wrap break-words rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-900">
+                  {turn.parent}
+                </p>
+                <p className="mr-6 whitespace-pre-wrap break-words rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                  {turn.assistant}
+                </p>
+              </li>
+            ))}
+          </ol>
+        )}
       </DetailSection>
 
       <DetailSection title="Assistance">

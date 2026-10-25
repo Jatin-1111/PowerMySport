@@ -41,7 +41,8 @@ beforeEach(async () => {
 });
 
 const HASH = "hash-parent-1";
-const PHONE = "919812345678";
+// A number of its own for each run: the daily message count lives in Redis and outlasts a run.
+const PHONE = `9198${String(Date.now()).slice(-8)}`;
 const tool = (name: string) => ASSISTANT_CHAT_TOOLS.find((t: { name: string }) => t.name === name);
 const record = (args: Record<string, unknown>, userMessage = "my son plays tennis") =>
   tool("record_enquiry").execute(args, { phoneHash: HASH, userMessage });
@@ -249,5 +250,118 @@ describe("migration 68 (indexes)", () => {
 
     await down({ apply: true }, db);
     for (const spec of WHATSAPP_ENQUIRY_INDEXES) assert.ok(!(await names()).includes(spec.name));
+  });
+});
+
+describe("every exchange is kept", () => {
+  const { MAX_ENQUIRY_TURNS } = require("../client/models/WhatsAppEnquiry");
+  const {
+    FIRST_CONTACT_NOTICE,
+    FIRST_CONTACT_NOTICE_MEMBER,
+  } = require("../shared/services/whatsappPilot");
+
+  it("keeps each question and answer in order, with the latest answer also as the guidance", async () => {
+    await enquiries.recordTurn(HASH, "first question", "first answer", new Date(Date.now() - 3000));
+    await enquiries.recordTurn(
+      HASH,
+      "second question",
+      "second answer",
+      new Date(Date.now() - 2000)
+    );
+    await enquiries.recordTurn(HASH, "third question", "third answer", new Date(Date.now() - 1000));
+
+    const stored = await WhatsAppEnquiry.findOne({}).lean();
+    assert.deepEqual(
+      stored.turns.map((t: { parent: string; assistant: string }) => [t.parent, t.assistant]),
+      [
+        ["first question", "first answer"],
+        ["second question", "second answer"],
+        ["third question", "third answer"],
+      ]
+    );
+    assert.equal(stored.guidance, "third answer");
+    assert.equal(stored.turnCount, 3);
+    assert.ok(stored.turns.every((t: { at: Date }) => t.at instanceof Date));
+  });
+
+  it("keeps only the most recent exchanges on a very long topic", async () => {
+    for (let i = 1; i <= MAX_ENQUIRY_TURNS + 5; i++) {
+      await enquiries.recordTurn(HASH, `q${i}`, `a${i}`, new Date(Date.now() - 1000));
+    }
+    const stored = await WhatsAppEnquiry.findOne({}).lean();
+    assert.equal(stored.turns.length, MAX_ENQUIRY_TURNS);
+    assert.equal(stored.turns[0].parent, "q6", "the oldest five dropped off");
+    assert.equal(stored.turns.at(-1).parent, `q${MAX_ENQUIRY_TURNS + 5}`);
+    assert.equal(
+      stored.turnCount,
+      MAX_ENQUIRY_TURNS + 5,
+      "the count still says how many there were"
+    );
+  });
+
+  it("cuts a very long question or answer to what the model allows instead of failing", async () => {
+    await enquiries.recordTurn(
+      HASH,
+      "q".repeat(900),
+      "a".repeat(5000),
+      new Date(Date.now() - 1000)
+    );
+    const stored = await WhatsAppEnquiry.findOne({}).lean();
+    assert.equal(stored.turns[0].parent.length, 500);
+    assert.equal(stored.turns[0].assistant.length, 2000);
+  });
+
+  it("adds an exchange without changing the guidance or the message count", async () => {
+    await enquiries.recordTurn(HASH, "which sport?", "Try swimming.", new Date(Date.now() - 1000));
+    await enquiries.addExchange(
+      HASH,
+      "I would like help finding a coach",
+      "We have noted that. Your reference: PMS-ABCDE"
+    );
+
+    const stored = await WhatsAppEnquiry.findOne({}).lean();
+    assert.equal(stored.turns.length, 2);
+    assert.match(stored.turns[1].assistant, /PMS-ABCDE/);
+    assert.equal(stored.guidance, "Try swimming.");
+    assert.equal(stored.turnCount, 1);
+  });
+
+  it("an enquiry from before this change reads as having no exchanges, and gains them", async () => {
+    const reference = "PMS-OLD22";
+    await WhatsAppEnquiry.collection.insertOne({
+      phoneHash: HASH,
+      parentRef: enquiries.parentRefFor(HASH),
+      reference,
+      question: "old question",
+      guidance: "old answer",
+      assistance: [],
+      followUpStatus: "none",
+      closed: false,
+      turnCount: 1,
+      lastMessageAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    await enquiries.recordTurn(HASH, "a new message", "a new answer", new Date(Date.now() - 1000));
+    const stored = await WhatsAppEnquiry.findOne({ reference }).lean();
+    assert.equal(stored.turns.length, 1);
+    assert.equal(stored.guidance, "a new answer");
+  });
+
+  it("is deleted with the rest on STOP", async () => {
+    await enquiries.recordTurn(HASH, "q", "a", new Date(Date.now() - 1000));
+    await enquiries.forgetAllEnquiries(HASH);
+    assert.equal(await WhatsAppEnquiry.countDocuments({}), 0);
+  });
+
+  it("is promised to the parent in the first message, in both versions, and the promise matches the retention", () => {
+    for (const notice of [FIRST_CONTACT_NOTICE, FIRST_CONTACT_NOTICE_MEMBER]) {
+      assert.match(notice, /Our team can read your questions and my answers for up to 6 months/);
+      assert.match(notice, /improve PowerMySport/);
+      assert.match(notice, /STOP/);
+      assert.ok(!notice.includes("—"), "no em dashes in copy");
+    }
+    // Six months is what the enquiry expiry enforces: 180 days.
+    assert.equal(ENQUIRY_RETENTION_SECONDS, 60 * 60 * 24 * 180);
   });
 });

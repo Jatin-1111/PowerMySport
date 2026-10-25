@@ -26,6 +26,14 @@ export type FollowUpStatus = "none" | "new" | "contacted" | "done";
 export type AssistanceKind = "coach" | "tournaments" | "expert" | "team" | "other";
 export type EnquiryFeedback = "helpful" | "not_helpful";
 
+export interface EnquiryTurn {
+  at: string;
+  /** What the parent said (or what was heard from a voice note, or a label for a photo). */
+  parent: string;
+  /** What the assistant answered. */
+  assistant: string;
+}
+
 export interface WhatsAppEnquiry {
   id: string;
   reference: string;
@@ -36,6 +44,8 @@ export interface WhatsAppEnquiry {
   level?: string;
   objective?: string;
   guidance?: string;
+  /** Every exchange, oldest first. Only on a single enquiry, not in the list. */
+  turns?: EnquiryTurn[];
   assistance: AssistanceKind[];
   followUpStatus: FollowUpStatus;
   followUpSummary?: string;
@@ -99,6 +109,13 @@ export const whatsappPilotApi = {
   enquirySummary: async () => {
     const res = await axiosInstance.get<{ success: boolean; data: EnquirySummary }>(
       "/admin/whatsapp-pilot/enquiries/summary"
+    );
+    return res.data.data;
+  },
+
+  getEnquiry: async (id: string) => {
+    const res = await axiosInstance.get<{ success: boolean; data: WhatsAppEnquiry }>(
+      `/admin/whatsapp-pilot/enquiries/${id}`
     );
     return res.data.data;
   },

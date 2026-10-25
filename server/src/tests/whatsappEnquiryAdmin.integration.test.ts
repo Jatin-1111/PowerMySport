@@ -333,3 +333,52 @@ describe("migration 69 (indexes)", () => {
       assert.ok(!(await names()).includes(spec.name));
   });
 });
+
+describe("the full conversation", () => {
+  const talk = async (hash: string) => {
+    const doc = await seed(hash, { sport: "Tennis" }, "which sport suits my son?");
+    await enquiries.recordTurn(
+      hash,
+      "and the fees?",
+      "About 2000 a month.",
+      new Date(Date.now() - 500)
+    );
+    return doc;
+  };
+
+  it("is on one enquiry, oldest first, and not in the list", async () => {
+    const doc = await talk(HASH);
+    const token = await signedInAdmin(["notifications:view"]);
+
+    const detail = (await call("get", `${BASE}/${doc._id}`, token)).body.data;
+    assert.deepEqual(
+      detail.turns.map((t: { parent: string; assistant: string }) => [t.parent, t.assistant]),
+      [
+        ["which sport suits my son?", "Try the assessment."],
+        ["and the fees?", "About 2000 a month."],
+      ]
+    );
+
+    const list = (await call("get", BASE, token)).body.data;
+    assert.equal(list.rows[0].turns, undefined, "the list stays light");
+    assert.ok(
+      !JSON.stringify(list).includes("Try the assessment."),
+      "only the latest answer is in the list"
+    );
+  });
+
+  it("puts every answer, not just the last, in the export", async () => {
+    await talk(HASH);
+    const token = await signedInAdmin(["notifications:view"]);
+    const csv = (await call("get", `${BASE}/export.csv`, token)).text;
+    assert.ok(csv.includes("Try the assessment."));
+    assert.ok(csv.includes("About 2000 a month."));
+  });
+
+  it("does not return the conversation from a status or note change", async () => {
+    const doc = await talk(HASH);
+    const token = await signedInAdmin(["notifications:manage"]);
+    const res = await call("patch", `${BASE}/${doc._id}`, token, { teamNote: "called" });
+    assert.equal(res.body.data.turns, undefined);
+  });
+});

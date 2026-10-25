@@ -39,6 +39,8 @@ export interface EnquiryRow {
   level?: string;
   objective?: string;
   guidance?: string;
+  /** Every exchange on the topic. Present on a single enquiry and in the export, not in the list. */
+  turns?: Array<{ at: Date; parent: string; assistant: string }>;
   assistance: string[];
   followUpStatus: FollowUpStatus;
   followUpSummary?: string;
@@ -93,7 +95,7 @@ export function buildFilter(filters: EnquiryFilters): Record<string, unknown> {
   return filter;
 }
 
-const present = (doc: WhatsAppEnquiryDocument): EnquiryRow => ({
+const present = (doc: WhatsAppEnquiryDocument, withTurns = false): EnquiryRow => ({
   id: String(doc._id),
   reference: doc.reference,
   parentRef: doc.parentRef,
@@ -103,6 +105,15 @@ const present = (doc: WhatsAppEnquiryDocument): EnquiryRow => ({
   ...(doc.level ? { level: doc.level } : {}),
   ...(doc.objective ? { objective: doc.objective } : {}),
   ...(doc.guidance ? { guidance: doc.guidance } : {}),
+  ...(withTurns
+    ? {
+        turns: (doc.turns ?? []).map((t) => ({
+          at: t.at,
+          parent: t.parent,
+          assistant: t.assistant,
+        })),
+      }
+    : {}),
   assistance: doc.assistance,
   followUpStatus: doc.followUpStatus,
   ...(doc.followUpSummary ? { followUpSummary: doc.followUpSummary } : {}),
@@ -118,6 +129,8 @@ const present = (doc: WhatsAppEnquiryDocument): EnquiryRow => ({
 
 // Fields the admin never needs, kept out of every read.
 const HIDDEN = "-phoneHash";
+// The list is many rows, and each enquiry can hold a long conversation, so the list leaves it out.
+const HIDDEN_IN_LIST = "-phoneHash -turns";
 
 export async function listEnquiries(
   filters: EnquiryFilters,
@@ -130,14 +143,14 @@ export async function listEnquiries(
 
   const [docs, total] = await Promise.all([
     WhatsAppEnquiry.find(filter)
-      .select(HIDDEN)
+      .select(HIDDEN_IN_LIST)
       .sort({ lastMessageAt: -1 })
       .skip((current - 1) * take)
       .limit(take),
     WhatsAppEnquiry.countDocuments(filter),
   ]);
   return {
-    rows: docs.map(present),
+    rows: docs.map((doc) => present(doc)),
     total,
     page: current,
     totalPages: Math.max(Math.ceil(total / take), 1),
@@ -148,7 +161,7 @@ export async function getEnquiry(id: string): Promise<EnquiryRow> {
   if (!mongoose.isValidObjectId(id)) throw new AppError("That enquiry does not exist.", 404);
   const doc = await WhatsAppEnquiry.findById(id).select(HIDDEN);
   if (!doc) throw new AppError("That enquiry does not exist.", 404);
-  return present(doc);
+  return present(doc, true);
 }
 
 export async function updateEnquiryByTeam(
@@ -174,7 +187,7 @@ export async function updateEnquiryByTeam(
   if (Object.keys(set).length === 0) throw new AppError("Nothing to change.", 400);
 
   const doc = await WhatsAppEnquiry.findByIdAndUpdate(id, { $set: set }, { new: true }).select(
-    HIDDEN
+    HIDDEN_IN_LIST
   );
   if (!doc) throw new AppError("That enquiry does not exist.", 404);
   return present(doc);
@@ -270,7 +283,17 @@ const CSV_COLUMNS: Array<[string, (r: EnquiryRow) => unknown]> = [
   ["Sport", (r) => r.sport],
   ["Level", (r) => r.level],
   ["Objective", (r) => r.objective],
-  ["Guidance provided", (r) => r.guidance],
+  [
+    "Guidance provided",
+    // Every answer given on the topic, oldest first. A spreadsheet cell holds about 32,000 characters.
+    (r) =>
+      r.turns?.length
+        ? r.turns
+            .map((t) => t.assistant)
+            .join("\n---\n")
+            .slice(0, 20000)
+        : r.guidance,
+  ],
   ["Assistance required", (r) => r.assistance.join("; ")],
   ["Follow-up status", (r) => r.followUpStatus],
   ["Parent feedback", (r) => r.feedback],
@@ -286,7 +309,7 @@ export async function exportEnquiriesCsv(
     .select(HIDDEN)
     .sort({ createdAt: -1 })
     .limit(MAX_EXPORT_ROWS);
-  const rows = docs.map(present);
+  const rows = docs.map((doc) => present(doc, true));
   const lines = [
     CSV_COLUMNS.map(([header]) => csvCell(header)).join(","),
     ...rows.map((row) => CSV_COLUMNS.map(([, value]) => csvCell(value(row))).join(",")),

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import {
   ASSISTANCE_KINDS,
   ENQUIRY_FEEDBACK,
+  MAX_ENQUIRY_TURNS,
   ENQUIRY_IDLE_MS,
   WhatsAppEnquiry,
   type AssistanceKind,
@@ -140,6 +141,37 @@ export async function updateEnquiry(
   return enquiry;
 }
 
+/** One exchange, cut to what the model allows. The parent's side is flattened to one line. */
+function turnEntry(parentText: string, assistantText: string, at: Date) {
+  return {
+    at,
+    parent: (plain(parentText, MAX_QUESTION) ?? "(no text)").slice(0, MAX_QUESTION),
+    assistant: assistantText.slice(0, MAX_GUIDANCE) || "(no reply)",
+  };
+}
+
+/**
+ * Adds an exchange to the current topic without touching the latest guidance or the message count.
+ * For answers that are not advice, such as the confirmation a parent gets after asking for the team.
+ */
+export async function addExchange(
+  phoneHash: string,
+  parentText: string,
+  assistantText: string,
+  now: Date = new Date()
+): Promise<void> {
+  const enquiry = await currentEnquiry(phoneHash, parentText, now);
+  await WhatsAppEnquiry.updateOne(
+    { _id: enquiry._id },
+    {
+      $set: { lastMessageAt: now },
+      $push: {
+        turns: { $each: [turnEntry(parentText, assistantText, now)], $slice: -MAX_ENQUIRY_TURNS },
+      },
+    }
+  );
+}
+
 /**
  * Called once per turn with what was sent and what was answered. It keeps the latest guidance and
  * the count, and opens the enquiry if the assistant did not need to record anything this turn.
@@ -157,6 +189,7 @@ export async function recordTurn(
     {
       $set: { guidance: reply.slice(0, MAX_GUIDANCE), lastMessageAt: now },
       $inc: { turnCount: 1 },
+      $push: { turns: { $each: [turnEntry(userMessage, reply, now)], $slice: -MAX_ENQUIRY_TURNS } },
     }
   );
 }

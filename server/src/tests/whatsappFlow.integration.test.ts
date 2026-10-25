@@ -229,6 +229,18 @@ describe("asking the team to follow up on WhatsApp", () => {
     assert.ok(reply.reply.includes(enquiry.reference), "the parent is given the reference");
   });
 
+  it("the confirmation the parent got is on the enquiry, and the advice before it is not overwritten", async () => {
+    await talk();
+    const before = await WhatsAppEnquiry.findOne({}).lean();
+    await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
+
+    const after = await WhatsAppEnquiry.findOne({}).lean();
+    assert.equal(after.guidance, before.guidance, "the latest advice is still the advice");
+    const last = after.turns.at(-1);
+    assert.match(last.assistant, /Your reference: PMS-/);
+    assert.equal(last.parent, "I'd like help finding a coach or academy for my child.");
+  });
+
   it("keeps the parent's number, encrypted, so the team can answer here", async () => {
     await talk();
     await answer(msg("Find a coach or academy", "next_coach"), neverCalled([]));
