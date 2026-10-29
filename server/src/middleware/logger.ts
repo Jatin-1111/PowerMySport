@@ -8,6 +8,7 @@ import {
   formatClock,
   baseFields,
 } from "../utils/logger";
+import { redactPath } from "../utils/redactPath";
 import { getRequestContext } from "../utils/requestContext";
 
 /**
@@ -83,7 +84,7 @@ const METHOD_COLOUR: Record<string, (t: string) => string> = {
 const PATH_WIDTH = 44;
 
 const formatTarget = (req: Request): string => {
-  const target = req.originalUrl || req.url || req.path;
+  const target = redactPath(req.originalUrl || req.url || req.path);
   if (target.length <= PATH_WIDTH) return target;
   return `${target.slice(0, PATH_WIDTH - 1)}…`;
 };
@@ -201,7 +202,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
           method,
           // Production logs the pathname and the query *keys* only — query
           // values carry emails, tokens and invite codes.
-          path: IS_PROD ? req.path : req.originalUrl || req.url,
+          path: redactPath(
+            IS_PROD
+              ? (req.originalUrl || req.url).split("?")[0] || req.path
+              : req.originalUrl || req.url
+          ),
           ...(IS_PROD && queryKeysOf(req).length ? { queryKeys: queryKeysOf(req) } : {}),
           route: req.route?.path ? `${req.baseUrl || ""}${req.route.path}` : null,
           status,
@@ -249,7 +254,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
 
     // Dedupe key deliberately excludes duration — otherwise identical polling
     // requests never collapse.
-    logRaw(line, `${method} ${req.originalUrl} ${status}`);
+    logRaw(line, `${method} ${redactPath(req.originalUrl)} ${status}`);
 
     if (verbose) {
       const detail: string[] = [];
@@ -288,7 +293,7 @@ export const errorLogger = (err: any, req: Request, _res: Response, next: NextFu
         level: "error",
         msg: "request failed",
         method: req.method.toUpperCase(),
-        path: req.originalUrl || req.url,
+        path: redactPath(req.originalUrl || req.url),
         err: err?.name || "Error",
         errMsg: err?.message || String(err),
         stack: err?.stack ? String(err.stack) : undefined,
@@ -302,7 +307,7 @@ export const errorLogger = (err: any, req: Request, _res: Response, next: NextFu
     [
       colours.grey(clockWithMs()),
       colours.red(colours.bold("ERROR")),
-      `${req.method.toUpperCase()} ${req.originalUrl || req.url}`,
+      `${req.method.toUpperCase()} ${redactPath(req.originalUrl || req.url)}`,
       colours.red(`${err?.name || "Error"}: ${err?.message || String(err)}`),
       requestId ? colours.grey(`req=${requestId}`) : "",
     ]

@@ -1,3 +1,4 @@
+import { redactPath } from "./redactPath";
 import { AsyncLocalStorage } from "async_hooks";
 import { randomUUID } from "crypto";
 import type { NextFunction, Request, Response } from "express";
@@ -104,7 +105,7 @@ export const requestContextMiddleware = (req: Request, res: Response, next: Next
     // lines and a response header.
     requestId: inbound?.slice(0, 64) || randomUUID(),
     method: req.method.toUpperCase(),
-    path: req.path,
+    path: redactPath(req.path),
     startedAt: process.hrtime.bigint(),
     spans: freshSpans(),
   };

@@ -1,3 +1,4 @@
+import { redactPath } from "../utils/redactPath";
 import { NextFunction, Request, Response } from "express";
 import { getRequestContext } from "../utils/requestContext";
 
@@ -35,7 +36,7 @@ const buildRouteKey = (req: Request): string => {
   // `req.baseUrl`.
   const routePath = req.route?.path
     ? `${req.baseUrl || ""}${req.route.path}`
-    : normalizePath(req.path || req.url);
+    : normalizePath(redactPath(req.path || req.url));
   return `${req.method.toUpperCase()} ${routePath || "/"}`;
 };
 
