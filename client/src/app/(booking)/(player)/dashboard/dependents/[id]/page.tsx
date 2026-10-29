@@ -10,8 +10,8 @@ import { ProfileCompletionRing } from "@/modules/player/components/ProfileComple
 import { ProfileEditField } from "@/modules/player/components/ProfileEditField";
 import { ProfileEditPanel } from "@/modules/player/components/ProfileEditPanel";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { RankingLinkCard } from "@/modules/player/components/RankingLinkCard";
-import { PlannerSection } from "@/modules/planner/components/PlannerSection";
+import { ChildRankingAndPlanner } from "@/modules/player/components/ChildRankingAndPlanner";
+import { MyChildSection } from "@/modules/my-child/components/MyChildSection";
 import { formatDependentRelation } from "@/modules/player/data/dependentRelations";
 import {
   AGILITY_LABELS,
@@ -392,6 +392,8 @@ export default function DependentDetailPage() {
         )}
       </section>
 
+      {dependent._id && <MyChildSection childId={dependent._id} />}
+
       {/* ── Assessment results ── */}
       {(dependent.sportMatches?.length ?? 0) > 0 && (
         <section aria-labelledby="assessment-results" className="border-hairline border-t pt-10">
@@ -466,18 +468,14 @@ export default function DependentDetailPage() {
         </div>
       </section>
 
-      {/* ── Federation ranking ── Renders nothing unless this child plays a sport
-          whose ranking list we mirror, or already has a link. */}
+      {/* ── Federation ranking and planner ── Each renders itself only when it has something. */}
       {dependent._id && (
-        <RankingLinkCard
+        <ChildRankingAndPlanner
           dependentId={dependent._id}
           dependentName={dependent.name}
           sports={[dependent.chosenSport, ...(dependent.sportsFocus ?? [])]}
         />
       )}
-
-      {/* Renders itself only once a ranking is linked — see the component. */}
-      {dependent._id && <PlannerSection dependentId={dependent._id} />}
 
       {/* ── Account actions ── */}
       {isParent && (

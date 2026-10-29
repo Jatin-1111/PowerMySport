@@ -95,6 +95,12 @@ export const queryKeys = {
     forDependent: (dependentId: string) => ["season-plan", dependentId] as const,
   },
 
+  /** One child's sporting history: the header, tiles, academics and timeline, read as one. */
+  childHistory: {
+    forChild: (childId: string) => ["child-history", childId] as const,
+    shares: (childId: string) => ["child-history", childId, "shares"] as const,
+  },
+
   /** The server-judged planner for one child: verdicts and plan together. */
   planner: {
     /** Whether this parent has been through the planner's tour. Not per child. */
