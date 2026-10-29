@@ -7,12 +7,17 @@
 
 import { bootFactOnce } from "../../utils/boot";
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   DeleteObjectsCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
   S3ClientConfig,
+  UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
@@ -80,6 +85,7 @@ export class S3Service {
   private static readonly signedUrlCache = new Map<string, CachedSignedUrl>();
   private documentsBucket: string;
   private imagesBucket: string;
+  private childVideosBucket: string;
   private region: string;
   private s3Client: any;
 
@@ -88,6 +94,7 @@ export class S3Service {
     this.region = process.env.AWS_REGION || "ap-south-1";
     this.documentsBucket = process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
     this.imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
+    this.childVideosBucket = process.env.AWS_S3_CHILD_VIDEOS_BUCKET || "powermysport-child-videos";
 
     // This class is constructed in a dozen modules, several at import time, so
     // logging per-instance printed the same three lines five times at boot.
@@ -788,8 +795,11 @@ export class S3Service {
    * @param key - S3 object key
    * @param bucketType - Type of bucket ("documents" or "images")
    */
-  async deleteFile(key: string, bucketType: "documents" | "images" = "images"): Promise<void> {
-    const bucket = bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
+  async deleteFile(
+    key: string,
+    bucketType: "documents" | "images" | "childVideos" = "images"
+  ): Promise<void> {
+    const bucket = this.bucketFor(bucketType);
 
     const deleteCommand = new DeleteObjectCommand({
       Bucket: bucket,
@@ -804,10 +814,13 @@ export class S3Service {
    * @param keys - Array of S3 object keys
    * @param bucketType - Type of bucket ("documents" or "images")
    */
-  async deleteFiles(keys: string[], bucketType: "documents" | "images" = "images"): Promise<void> {
+  async deleteFiles(
+    keys: string[],
+    bucketType: "documents" | "images" | "childVideos" = "images"
+  ): Promise<void> {
     if (keys.length === 0) return;
 
-    const bucket = bucketType === "documents" ? this.documentsBucket : this.imagesBucket;
+    const bucket = this.bucketFor(bucketType);
 
     const deleteCommand = new DeleteObjectsCommand({
       Bucket: bucket,
@@ -909,6 +922,122 @@ export class S3Service {
     }
 
     return { valid: true };
+  }
+
+  private bucketFor(bucketType: "documents" | "images" | "childVideos"): string {
+    if (bucketType === "documents") return this.documentsBucket;
+    if (bucketType === "childVideos") return this.childVideosBucket;
+    return this.imagesBucket;
+  }
+
+  // ─── Child videos ──────────────────────────────────────────────────────────
+  //
+  // A parent's clip goes from their phone straight to a private bucket in parts, so the API
+  // server never carries the file. Nothing in this bucket is ever public: a viewer gets a link
+  // that works for a few minutes. These methods only talk to storage; the rules (who may
+  // upload, how much, what a share allows) live in `ChildVideoService`.
+
+  /** Opens a multipart upload and returns its id. */
+  async createChildVideoUpload(key: string, contentType: string): Promise<string> {
+    const out = await this.s3Client.send(
+      new CreateMultipartUploadCommand({
+        Bucket: this.childVideosBucket,
+        Key: key,
+        ContentType: contentType,
+      })
+    );
+    if (!out.UploadId) throw new Error("Storage did not return an upload id");
+    return out.UploadId as string;
+  }
+
+  /**
+   * A link that accepts exactly one part of exactly `sizeBytes`. The length is part of the
+   * signature, so a client cannot send a larger part than the one it declared: the total stored
+   * can never exceed the size the server agreed to.
+   */
+  async presignChildVideoPart(
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    sizeBytes: number,
+    expiresIn: number = 3600
+  ): Promise<string> {
+    const command = new UploadPartCommand({
+      Bucket: this.childVideosBucket,
+      Key: key,
+      UploadId: uploadId,
+      PartNumber: partNumber,
+      ContentLength: sizeBytes,
+    });
+    return await getSignedUrl(this.s3Client, command, {
+      expiresIn,
+      signableHeaders: new Set(["content-length"]),
+    });
+  }
+
+  async completeChildVideoUpload(
+    key: string,
+    uploadId: string,
+    parts: Array<{ partNumber: number; etag: string }>
+  ): Promise<void> {
+    await this.s3Client.send(
+      new CompleteMultipartUploadCommand({
+        Bucket: this.childVideosBucket,
+        Key: key,
+        UploadId: uploadId,
+        MultipartUpload: {
+          Parts: [...parts]
+            .sort((a, b) => a.partNumber - b.partNumber)
+            .map((part) => ({ PartNumber: part.partNumber, ETag: part.etag })),
+        },
+      })
+    );
+  }
+
+  /** Stops an open upload and discards its parts. Quiet if it is already gone. */
+  async abortChildVideoUpload(key: string, uploadId: string): Promise<void> {
+    try {
+      await this.s3Client.send(
+        new AbortMultipartUploadCommand({
+          Bucket: this.childVideosBucket,
+          Key: key,
+          UploadId: uploadId,
+        })
+      );
+    } catch (error: any) {
+      if (error?.name !== "NoSuchUpload") throw error;
+    }
+  }
+
+  /** The stored object's real size, or null if there is no such object. */
+  async headChildVideo(key: string): Promise<{ sizeBytes: number } | null> {
+    try {
+      const out = await this.s3Client.send(
+        new HeadObjectCommand({ Bucket: this.childVideosBucket, Key: key })
+      );
+      return { sizeBytes: Number(out.ContentLength ?? 0) };
+    } catch (error: any) {
+      if (error?.name === "NotFound" || error?.$metadata?.httpStatusCode === 404) return null;
+      throw error;
+    }
+  }
+
+  /**
+   * A short-lived link to play a clip. The type is fixed by the server rather than taken from
+   * what the object says, and the browser is told to play it, not to treat it as a page.
+   */
+  async generateChildVideoPlaybackUrl(
+    key: string,
+    contentType: string,
+    expiresIn: number = 600
+  ): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.childVideosBucket,
+      Key: key,
+      ResponseContentType: contentType,
+      ResponseContentDisposition: "inline",
+    });
+    return await getSignedUrl(this.s3Client, command, { expiresIn });
   }
 }
 
