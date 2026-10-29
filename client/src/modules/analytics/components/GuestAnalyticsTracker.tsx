@@ -16,6 +16,14 @@ function readUtm(search: string): Record<string, string> {
   return utm;
 }
 
+/**
+ * Pages that are never tracked. A shared profile is opened by a link whose last segment is a
+ * secret, and the people who open it are strangers the family chose, not visitors to the site:
+ * recording their path would write the secret into the analytics store, and the sharing notice
+ * promises the link is counted and nothing else about the person is.
+ */
+export const isUntrackedPath = (pathname: string): boolean => pathname.startsWith("/share/");
+
 /** Short, non-identifying label for a clicked element. */
 function labelFor(el: Element): string {
   const tracked = el.getAttribute("data-track");
@@ -54,6 +62,11 @@ export function GuestAnalyticsTracker() {
     // Close out the previous page before recording the new one.
     recordExit();
 
+    if (isUntrackedPath(pathname)) {
+      currentPath.current = "";
+      return;
+    }
+
     currentPath.current = pathname;
     pageStart.current = Date.now();
     maxScroll.current = 0;
@@ -73,7 +86,8 @@ export function GuestAnalyticsTracker() {
 
   // Scroll depth, clicks, and unload handling (mounted once).
   useEffect(() => {
-    if (!isGuest()) return;
+    // A visitor who arrives on an untracked page never gets an id stored on their device.
+    if (!isGuest() || isUntrackedPath(window.location.pathname)) return;
     getGuestId();
 
     const onScroll = () => {
@@ -84,6 +98,7 @@ export function GuestAnalyticsTracker() {
     };
 
     const onClick = (event: MouseEvent) => {
+      if (isUntrackedPath(window.location.pathname)) return;
       const target = event.target as Element | null;
       const el = target?.closest("a, button, [data-track]");
       if (!el) return;
