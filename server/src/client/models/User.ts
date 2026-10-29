@@ -43,6 +43,8 @@ export interface UserDocument extends Document {
     privacy?: { accepted: boolean; acceptedAt?: Date; version?: string };
     /** The parent's agreement to the Parental Consent policy, given when adding a child. */
     parentalConsent?: { accepted: boolean; acceptedAt?: Date; version?: string };
+    /** The parent's agreement to PMS storing videos of their child, given before the first upload. */
+    childVideo?: { accepted: boolean; acceptedAt?: Date; version?: string };
   };
   /**
    * Whether this person agreed to get WhatsApp messages from us (Meta requires an
@@ -181,6 +183,11 @@ const userSchema = new Schema<UserDocument>(
         version: { type: String },
       },
       parentalConsent: {
+        accepted: { type: Boolean },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+      childVideo: {
         accepted: { type: Boolean },
         acceptedAt: { type: Date },
         version: { type: String },

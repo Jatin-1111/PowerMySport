@@ -122,6 +122,56 @@ export const CHILD_RECORDS: ChildRecordRule[] = [
     },
   },
   {
+    model: "ChildEvent",
+    field: "childId",
+    action: "remove",
+    why: "The sporting history is the child's own record, so it goes with them. Retention: kept until the child or the account is deleted.",
+    run: async (context) =>
+      (await import("../../../client/models/ChildEvent")).ChildEvent.deleteMany({
+        childId: idOf(context),
+      }),
+  },
+  {
+    model: "ChildAcademicProfile",
+    field: "childId",
+    action: "remove",
+    why: "Board, class year and school describe the child and are only meaningful beside their history, so they go with the profile.",
+    run: async (context) =>
+      (await import("../../../client/models/ChildAcademicProfile")).ChildAcademicProfile.deleteMany(
+        { childId: idOf(context) }
+      ),
+  },
+  {
+    model: "ChildVideo",
+    field: "childId",
+    action: "remove",
+    why: "A video of a child is removed with the child, and the stored file is deleted first so no copy is left behind in storage.",
+    run: async (context) =>
+      (await import("../../../client/services/ChildVideoCleanup")).removeChildVideos({
+        childId: idOf(context),
+      }),
+  },
+  {
+    model: "ChildShare",
+    field: "childId",
+    action: "remove",
+    why: "A shared link opens the child's profile, so it must stop working the moment the child is deleted.",
+    run: async (context) =>
+      (await import("../../../client/models/ChildShare")).ChildShare.deleteMany({
+        childId: idOf(context),
+      }),
+  },
+  {
+    model: "ContactRequest",
+    field: "childId",
+    action: "remove",
+    why: "A request holds a stranger's name and email and exists only to reach this family about this child, so it goes with them instead of waiting for its 90-day timer.",
+    run: async (context) =>
+      (await import("../../../client/models/ContactRequest")).ContactRequest.deleteMany({
+        childId: idOf(context),
+      }),
+  },
+  {
     model: "ScreeningRequest",
     field: "dependentId",
     action: "remove",

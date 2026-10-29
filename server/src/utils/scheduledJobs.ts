@@ -279,6 +279,21 @@ export const runScheduledCleanup = async (): Promise<void> => {
       log.error("Expert session maintenance failed:", expertErr);
     }
 
+    // ── Children's videos ────────────────────────────────────────────────────
+    // Uploads nobody finished, failed clips and clips left behind by a half-done delete.
+    // Isolated like the blocks around it so a storage outage cannot stop the rest.
+    try {
+      const { ChildVideoService } = await import("../client/services/ChildVideoService");
+      const swept = await ChildVideoService.sweep();
+      if (swept.abandoned + swept.failed + swept.orphaned > 0) {
+        log.info(
+          `Removed ${swept.abandoned} abandoned, ${swept.failed} failed and ${swept.orphaned} orphaned video(s)`
+        );
+      }
+    } catch (videoErr) {
+      log.error("Child video cleanup failed:", videoErr);
+    }
+
     // ── Recurring coaching programmes ────────────────────────────────────────
     // Isolated in its own try/catch like the expert block: a failure here must
     // not stop account-deletion finalisation from running.

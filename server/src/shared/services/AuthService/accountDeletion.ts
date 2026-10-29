@@ -142,6 +142,37 @@ export const cascadeDeleteUserData = async (userId: string): Promise<void> => {
       async () =>
         (await import("../../models/OpportunityFollow")).OpportunityFollow.deleteMany({ userId }),
     ],
+    // The sporting history and everything shared from it. Videos first, because their rows hold
+    // the only record of where the files are.
+    [
+      "ChildVideo",
+      async () =>
+        (await import("../../../client/services/ChildVideoCleanup")).removeChildVideos({ userId }),
+    ],
+    [
+      "ChildShare",
+      async () =>
+        (await import("../../../client/models/ChildShare")).ChildShare.deleteMany({ userId }),
+    ],
+    [
+      "ContactRequest",
+      async () =>
+        (await import("../../../client/models/ContactRequest")).ContactRequest.deleteMany({
+          userId,
+        }),
+    ],
+    [
+      "ChildEvent",
+      async () =>
+        (await import("../../../client/models/ChildEvent")).ChildEvent.deleteMany({ userId }),
+    ],
+    [
+      "ChildAcademicProfile",
+      async () =>
+        (
+          await import("../../../client/models/ChildAcademicProfile")
+        ).ChildAcademicProfile.deleteMany({ userId }),
+    ],
     // Before Player: a link is meaningless once its profile is gone, and a row
     // pointing at a deleted child would hold the unique index on that
     // registration number against a future legitimate claim.

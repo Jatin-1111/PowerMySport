@@ -14,6 +14,21 @@ export const LEGAL_POLICY_VERSION = "2026-04";
 export const PARENTAL_CONSENT_VERSION = "2026-10";
 
 /**
+ * The version of the video notice a parent agrees to before the first clip of a child is
+ * stored. It is a separate purpose from the Parental Consent policy, so it is asked and
+ * recorded on its own. Raise it when the wording changes; every parent is asked once more
+ * at their next upload.
+ */
+export const CHILD_VIDEO_CONSENT_VERSION = "2026-10";
+
+/**
+ * The version of the sharing notice a parent agrees to each time they create a link for a
+ * coach. It is stored on the link itself, so what a parent agreed to is a fact about that link.
+ * Raise it when the wording changes.
+ */
+export const CHILD_SHARING_CONSENT_VERSION = "2026-10";
+
+/**
  * Grace period (in ms) between a self-service deletion request and the
  * scheduled job actually finalizing it. Overridable for testing.
  */

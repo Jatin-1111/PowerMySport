@@ -70,6 +70,8 @@ import rankingRoutes from "./shared/routes/rankingRoutes";
 import rankingClaimRoutes from "./client/routes/rankingClaimRoutes";
 import whatsAppNoteRoutes from "./client/routes/whatsappNoteRoutes";
 import seasonPlanRoutes from "./client/routes/seasonPlanRoutes";
+import childHistoryRoutes from "./client/routes/childHistoryRoutes";
+import childShareRoutes from "./client/routes/childShareRoutes";
 import plannerRoutes from "./client/routes/plannerRoutes";
 import conciergeRoutes from "./shared/routes/conciergeRoutes";
 import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
@@ -211,6 +213,8 @@ app.use("/api/rankings", rankingRoutes);
 app.use("/api/ranking-claims", rankingClaimRoutes);
 app.use("/api/whatsapp-notes", whatsAppNoteRoutes);
 app.use("/api/season-plans", seasonPlanRoutes);
+app.use("/api/child-history", childHistoryRoutes);
+app.use("/api/share", childShareRoutes);
 app.use("/api/planner", plannerRoutes);
 app.use("/api/concierge", conciergeRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)

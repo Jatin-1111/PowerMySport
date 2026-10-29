@@ -1,5 +1,6 @@
 import type { ClientRateLimitInfo, Store } from "express-rate-limit";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { createHash } from "crypto";
 import redis from "../config/redis";
 
 /**
@@ -144,3 +145,76 @@ export const sendVerificationRateLimiter = rateLimit({
     message: "Too many verification requests. Please try again in an hour.",
   },
 });
+
+/**
+ * Limiters for the public share routes, which anyone on the internet can call with no account.
+ *
+ * Two of them, because they stop different things. The first is per IP: one source trying many
+ * tokens to find a live one (a token is 256 bits, so this is about noise and load, not about a
+ * guess succeeding). The second is per link: one link being opened in a loop, or its clips being
+ * streamed over and over, which costs the family storage egress. Both fail open when Redis is
+ * down, like every limiter here, so a Redis outage never locks a coach out of a profile.
+ *
+ * The per-link key is a hash of the token, never the token, so the secret does not sit in Redis.
+ *
+ * `store` is a parameter only so a test can pass an in-memory one: the Redis store deliberately
+ * never blocks when Redis is off, which is exactly the test setup.
+ */
+export const createPublicShareRateLimiter = (
+  store: Store = createRedisRateLimitStore("rl:share:ip:"),
+  max = 60
+) =>
+  rateLimit({
+    windowMs: 60 * 1000,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => (req.ip ? ipKeyGenerator(req.ip) : "anon"),
+    store,
+    message: { success: false, message: "Too many requests. Please try again in a minute." },
+  });
+
+export const createPublicShareTokenRateLimiter = (
+  store: Store = createRedisRateLimitStore("rl:share:token:"),
+  max = 120
+) =>
+  rateLimit({
+    windowMs: 60 * 1000,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) =>
+      createHash("sha256")
+        .update(String(req.params.token ?? ""))
+        .digest("hex")
+        .slice(0, 24),
+    store,
+    message: {
+      success: false,
+      message: "This link is being opened too often. Please try again in a minute.",
+    },
+  });
+
+/**
+ * Asking a family to get in touch writes a row and sends an email, so it has its own, much
+ * tighter, limit per source: a few a day is a person, more is a script. The database also caps
+ * how many one link can ever take, so this limit failing open with Redis down is not the only
+ * thing between a link and a flood.
+ */
+export const createContactRequestRateLimiter = (
+  store: Store = createRedisRateLimitStore("rl:share:contact:"),
+  max = 5
+) =>
+  rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => (req.ip ? ipKeyGenerator(req.ip) : "anon"),
+    store,
+    message: { success: false, message: "Too many requests. Please try again in an hour." },
+  });
+
+export const publicShareRateLimiter = createPublicShareRateLimiter();
+export const publicShareTokenRateLimiter = createPublicShareTokenRateLimiter();
+export const contactRequestRateLimiter = createContactRequestRateLimiter();
