@@ -22,6 +22,7 @@ export function CoachOnboardingForm() {
 
   return (
     <Card className="overflow-hidden border-slate-200 bg-white/90 shadow-sm">
+      {flow.confirmDialog}
       <div className="bg-deep-slate border-b border-slate-200 px-6 py-6 text-white">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>

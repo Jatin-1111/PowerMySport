@@ -21,6 +21,7 @@ import { htmlToText } from "@/modules/community/utils/sanitizeHtml";
 import RichTextCanvas from "./editor/RichTextCanvas";
 import ImageBlockUploader from "./editor/ImageBlockUploader";
 import BlogPreviewModal from "./BlogPreviewModal";
+import { useConfirm } from "@/modules/community/hooks/useConfirm";
 import CategoryPicker from "./CategoryPicker";
 import SubjectPicker, { type SelectedSubject } from "./SubjectPicker";
 import SignalQuestions from "./SignalQuestions";
@@ -75,6 +76,7 @@ const readSubjectFromSearchParams = (params: URLSearchParams): SelectedSubject |
 export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [confirm, confirmDialog] = useConfirm();
 
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -411,10 +413,18 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
     }
   };
 
-  const handleBackClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleBackClick = async (event: React.MouseEvent<HTMLAnchorElement>) => {
     if (!isDirty) return;
-    const proceed = window.confirm("You have unsaved changes. Leave without saving?");
-    if (!proceed) event.preventDefault();
+    // The dialog is asynchronous, so the link's own navigation has to be stopped
+    // now and redone by hand if the writer chooses to leave.
+    event.preventDefault();
+    const proceed = await confirm({
+      title: "Leave without saving?",
+      description: "You have unsaved changes that will be lost.",
+      confirmLabel: "Leave",
+      variant: "danger",
+    });
+    if (proceed) router.push("/experiences");
   };
 
   const saveIndicator = useMemo(() => {
@@ -450,6 +460,7 @@ export default function WriteBlogClient({ mode, blogId }: WriteBlogClientProps) 
 
   return (
     <div className="bg-paper relative min-h-[calc(100vh-5.5rem)]">
+      {confirmDialog}
       <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link

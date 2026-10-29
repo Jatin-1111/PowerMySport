@@ -4,6 +4,7 @@ import { adminApi } from "@/modules/admin/services/admin";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
 import { OpeningHours } from "@/modules/onboarding/components/OpeningHoursInput";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import { CoachVerificationDocument, ServiceMode } from "@/types";
 import {
   CreateCoachResponseData,
@@ -31,6 +32,7 @@ import {
  * relocation, not a rewrite.
  */
 export function useCoachOnboardingFlow() {
+  const [confirm, confirmDialog] = useConfirm();
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -466,9 +468,13 @@ export function useCoachOnboardingFlow() {
         const { status, data } = getApiConflictPayload(error);
 
         if (status === 409 && data?.requiresConversion) {
-          const shouldConvert = window.confirm(
-            data.message || "An account already exists. Convert it to a coach account to continue?"
-          );
+          const shouldConvert = await confirm({
+            title: "Convert the existing account?",
+            description:
+              data.message ||
+              "An account already exists. Convert it to a coach account to continue?",
+            confirmLabel: "Convert and continue",
+          });
 
           if (shouldConvert) {
             createResponse = await createCoach(true);
@@ -565,6 +571,7 @@ export function useCoachOnboardingFlow() {
   };
 
   return {
+    confirmDialog,
     step,
     setStep,
     loading,

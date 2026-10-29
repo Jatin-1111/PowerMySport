@@ -13,6 +13,7 @@ export function AddVenueForm() {
 
   return (
     <div className="min-h-dvh py-10 md:py-12">
+      {flow.confirmDialog}
       <div className="container mx-auto px-4">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-4xl font-semibold text-slate-900">Add Venue</h1>

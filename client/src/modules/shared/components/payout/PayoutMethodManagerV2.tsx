@@ -3,6 +3,7 @@
 import { Input } from "../../ui/Input";
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import { IPayoutMethod, PayoutMethodType } from "@/types";
 import { cn } from "@/utils/cn";
 import {
@@ -223,6 +224,7 @@ export function PayoutMethodManager({
   onDelete,
   onSetDefault,
 }: PayoutMethodManagerProps) {
+  const [confirm, confirmDialog] = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -372,7 +374,13 @@ export function PayoutMethodManager({
   };
 
   const handleDelete = async (methodId: string) => {
-    if (!window.confirm("Remove this payout method?")) return;
+    const confirmed = await confirm({
+      title: "Remove this payout method?",
+      message: "Payouts will no longer be sent to it.",
+      confirmLabel: "Remove",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setProcessingId(methodId);
     try {
@@ -409,6 +417,7 @@ export function PayoutMethodManager({
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       {/* Header */}
       <div className="rounded-xl border-0 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-start justify-between gap-4">

@@ -4,6 +4,7 @@ import { adminApi } from "@/modules/admin/services/admin";
 import { useRouter } from "next/navigation";
 import { getDefaultOpeningHours } from "@/modules/onboarding/components/OpeningHoursInput";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import {
   FormErrors,
   getApiConflictPayload,
@@ -21,6 +22,7 @@ import {
  */
 export function useAddVenueFlow() {
   const router = useRouter();
+  const [confirm, confirmDialog] = useConfirm();
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -424,10 +426,13 @@ export function useAddVenueFlow() {
       const { status, data } = getApiConflictPayload(error);
 
       if (status === 409 && data?.requiresConversion) {
-        const shouldConvert = window.confirm(
-          data.message ||
-            "An account already exists for this owner. Convert it to a venue lister to continue?"
-        );
+        const shouldConvert = await confirm({
+          title: "Convert the existing account?",
+          description:
+            data.message ||
+            "An account already exists for this owner. Convert it to a venue lister to continue?",
+          confirmLabel: "Convert and continue",
+        });
 
         if (shouldConvert) {
           try {
@@ -474,6 +479,7 @@ export function useAddVenueFlow() {
   };
 
   return {
+    confirmDialog,
     router,
     loading,
     currentStep,

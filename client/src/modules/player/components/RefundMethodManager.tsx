@@ -3,6 +3,7 @@
 import { Input } from "../../shared/ui/Input";
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import { cn } from "@/utils/cn";
 import {
   BadgeCheck,
@@ -49,6 +50,7 @@ export function RefundMethodManager({
   onDelete,
   onSetDefault,
 }: RefundMethodManagerProps) {
+  const [confirm, confirmDialog] = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -165,7 +167,13 @@ export function RefundMethodManager({
   };
 
   const handleDelete = async (methodId: string) => {
-    if (!window.confirm("Remove this refund method?")) return;
+    const confirmed = await confirm({
+      title: "Remove this refund method?",
+      message: "Refunds will no longer be sent to it.",
+      confirmLabel: "Remove",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setProcessingId(methodId);
     try {
@@ -202,6 +210,7 @@ export function RefundMethodManager({
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       {/* Header */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-start justify-between gap-4">

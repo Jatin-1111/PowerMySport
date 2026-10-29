@@ -42,11 +42,13 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 const MIN_SEARCH_LENGTH = 2;
 const SEARCH_DEBOUNCE_MS = 350;
 
 export default function FriendsPage() {
+  const [confirm, confirmDialog] = useConfirm();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [pendingRequests, setPendingRequests] = useState<FriendRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
@@ -147,13 +149,13 @@ export default function FriendsPage() {
   };
 
   const handleBlockUser = async (userId: string, userName: string) => {
-    if (
-      !confirm(
-        `Are you sure you want to block ${userName}? They will be removed from your friends list and won't be able to send you friend requests.`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: `Block ${userName}?`,
+      message: `${userName} will be removed from your friends list and won't be able to send you friend requests.`,
+      confirmLabel: "Block",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       await friendService.blockUser(userId);
@@ -270,6 +272,7 @@ export default function FriendsPage() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Friends" }]} />
 
       <PlayerPageHeader

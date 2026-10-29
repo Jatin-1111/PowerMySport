@@ -5,6 +5,7 @@ import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminEcommerceApi } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
+import { usePrompt } from "@/modules/shared/ui/usePrompt";
 const Input = ({
   error,
   className,
@@ -58,6 +59,7 @@ import { useState, useRef, useEffect } from "react";
 
 export default function AddProductPage() {
   const router = useRouter();
+  const [prompt, promptDialog] = usePrompt();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -200,10 +202,19 @@ export default function AddProductPage() {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleAddImageUrl = () => {
-    const url = window.prompt("Enter image URL:");
-    if (url && url.trim()) {
-      setImages((prev) => [...prev, url.trim()]);
+  const handleAddImageUrl = async () => {
+    const url = await prompt({
+      title: "Add an image by link",
+      label: "Image URL",
+      placeholder: "https://",
+      confirmLabel: "Add image",
+      validate: (value) =>
+        /^https?:\/\/\S+$/i.test(value)
+          ? null
+          : "Enter a full link starting with http:// or https://",
+    });
+    if (url) {
+      setImages((prev) => [...prev, url]);
     }
   };
 
@@ -309,6 +320,7 @@ export default function AddProductPage() {
 
   return (
     <div className="space-y-6">
+      {promptDialog}
       <AdminPageHeader
         badge="Commerce"
         title="New product"

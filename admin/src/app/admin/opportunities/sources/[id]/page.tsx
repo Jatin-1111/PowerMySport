@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConfirm } from "@/modules/shared/ui/useConfirm";
+import { usePrompt } from "@/modules/shared/ui/usePrompt";
 
 /** What the AI approver did, in the words an editor needs to decide whether to revert it. */
 const AUTO_ACTION_TEXT: Record<string, string> = {
@@ -47,6 +48,7 @@ const STATUS_TEXT: Record<string, string> = {
 
 export default function OpportunitySourceReviewPage() {
   const [confirm, confirmDialog] = useConfirm();
+  const [prompt, promptDialog] = usePrompt();
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
@@ -194,11 +196,17 @@ export default function OpportunitySourceReviewPage() {
       await reload();
     });
 
-  const reject = () => {
-    const reason = window.prompt("Why reject this? (kept for the next reviewer)");
-    if (!reason?.trim()) return;
+  const reject = async () => {
+    const reason = await prompt({
+      title: "Why reject this?",
+      description: "Kept for the next reviewer.",
+      label: "Reason",
+      confirmLabel: "Reject",
+      multiline: true,
+    });
+    if (!reason) return;
     void run("reject", async () => {
-      await opportunitySourceApi.reject(id, reason.trim());
+      await opportunitySourceApi.reject(id, reason);
       toast.success("Rejected.");
       await reload();
     });
@@ -227,6 +235,7 @@ export default function OpportunitySourceReviewPage() {
   return (
     <div className="space-y-6">
       {confirmDialog}
+      {promptDialog}
       <AdminPageHeader
         badge={
           drafted

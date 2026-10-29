@@ -1,4 +1,5 @@
 import { toast } from "@/lib/toast";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
 import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
@@ -38,6 +39,7 @@ const buildInitialFormData = () => ({
  */
 export function useVenueInventoryFlow() {
   const { user } = useAuthStore();
+  const [confirm, confirmDialog] = useConfirm();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -571,7 +573,13 @@ export function useVenueInventoryFlow() {
   };
 
   const handleDelete = async (venueId: string) => {
-    if (!confirm("Are you sure you want to delete this venue?")) return;
+    const confirmed = await confirm({
+      title: "Delete this venue?",
+      message: "This venue will be removed from your listings.",
+      confirmLabel: "Delete venue",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       await venueApi.deleteVenue(venueId);
@@ -600,6 +608,7 @@ export function useVenueInventoryFlow() {
       : null;
 
   return {
+    confirmDialog,
     venues,
     loading,
     showForm,

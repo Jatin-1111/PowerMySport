@@ -41,6 +41,7 @@ export default function VenueInventoryPage() {
 
   return (
     <div className="space-y-6 pb-10">
+      {flow.confirmDialog}
       {/* ── Page header ── */}
       <SlideUp delay={0}>
         <PlayerPageHeader

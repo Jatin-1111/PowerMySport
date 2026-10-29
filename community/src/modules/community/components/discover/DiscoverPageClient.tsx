@@ -18,9 +18,11 @@ import PlayerDetailsModal from "@/modules/community/components/discover/PlayerDe
 import { Search, Users, User, Plus, MessageSquare, X, LogIn } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useConfirm } from "@/modules/community/hooks/useConfirm";
 
 export default function DiscoverPageClient() {
   const router = useRouter();
+  const [confirm, confirmDialog] = useConfirm();
   const searchParams = useSearchParams();
 
   const initialQuery = searchParams.get("q") || "";
@@ -156,7 +158,13 @@ export default function DiscoverPageClient() {
   };
 
   const handleDeleteGroup = async (groupId: string) => {
-    if (!confirm("Are you sure you want to delete this community?")) return;
+    const confirmed = await confirm({
+      title: "Delete this community?",
+      description: "This community will be deleted for all of its members.",
+      confirmLabel: "Delete community",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await communityService.deleteGroup(groupId);
       setCommunities((prev) => prev.filter((c) => c.id !== groupId));
@@ -252,6 +260,7 @@ export default function DiscoverPageClient() {
 
   return (
     <div className="community-page-shell">
+      {confirmDialog}
       <div className="community-content-wrap">
         <CommunityPageHeader
           title="Discover"

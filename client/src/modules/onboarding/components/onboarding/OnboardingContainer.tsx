@@ -8,6 +8,7 @@ import {
   PresignedUrl,
   VenueCoach,
 } from "@/modules/onboarding/types/onboarding";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import { ArrowLeft, Check, CircleDot } from "lucide-react";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { buildStepGateFlow } from "@/flow/defineFlow";
@@ -94,6 +95,7 @@ const VENUE_ONBOARDING_FLOW = buildStepGateFlow<{ venueId: string }>(
 );
 
 function OnboardingFlow() {
+  const [confirm, confirmDialog] = useConfirm();
   const [isBooting, setIsBooting] = useState(true);
   const [isStepVisible, setIsStepVisible] = useState(false);
   const [venueId, setVenueId] = useState<string>("");
@@ -659,7 +661,13 @@ function OnboardingFlow() {
   const handleCancel = useCallback(async () => {
     if (!venueId) return;
 
-    const confirmed = confirm("Are you sure you want to cancel? Your progress will be lost.");
+    const confirmed = await confirm({
+      title: "Cancel onboarding?",
+      message: "Your progress will be lost.",
+      confirmLabel: "Cancel onboarding",
+      cancelLabel: "Keep going",
+      variant: "danger",
+    });
     if (!confirmed) return;
 
     setLoading(true);
@@ -671,7 +679,7 @@ function OnboardingFlow() {
     } finally {
       setLoading(false);
     }
-  }, [venueId, resetOnboardingFlow]);
+  }, [venueId, resetOnboardingFlow, confirm]);
 
   const handleStepJump = useCallback(
     (targetStep: OnboardingStep) => {
@@ -715,6 +723,7 @@ function OnboardingFlow() {
 
   return (
     <div className="min-h-screen py-10 md:py-12">
+      {confirmDialog}
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-8 text-center">

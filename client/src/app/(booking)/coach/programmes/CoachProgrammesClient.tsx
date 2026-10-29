@@ -23,6 +23,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
 import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { usePrompt } from "@/modules/shared/ui/usePrompt";
 import type { CoachEarningsSummary, CoachSessionOccurrence } from "@/types/coachPrograms";
 import { CalendarPlus, Link2, Plus, Users } from "lucide-react";
 import { useState } from "react";
@@ -37,6 +38,7 @@ import { useState } from "react";
 export const CoachProgrammesClient = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [prompt, promptDialog] = usePrompt();
 
   const { data: offerings = [], isPending } = useMyOfferings();
   const { data: sessions = [] } = useMyCoachSessions();
@@ -78,8 +80,18 @@ export const CoachProgrammesClient = () => {
       return "Cancelled. Your students keep their class and are owed a makeup";
     });
 
-  const setLink = (session: CoachSessionOccurrence) => {
-    const link = window.prompt("Paste the class link");
+  const setLink = async (session: CoachSessionOccurrence) => {
+    const link = await prompt({
+      title: "Class link",
+      label: "Link students use to join",
+      placeholder: "https://",
+      confirmLabel: "Save link",
+      inputType: "url",
+      validate: (value) =>
+        /^https?:\/\/\S+$/i.test(value)
+          ? null
+          : "Enter a full link starting with http:// or https://",
+    });
     if (!link) return;
     void run(session.id, async () => {
       await coachProgramsApi.setSessionLink(session.id, link);
@@ -87,14 +99,19 @@ export const CoachProgrammesClient = () => {
     });
   };
 
-  const scheduleMakeup = (session: CoachSessionOccurrence) => {
-    const when = window.prompt("When is the makeup class? (YYYY-MM-DD HH:mm, your local time)");
+  const scheduleMakeup = async (session: CoachSessionOccurrence) => {
+    // The picker returns local time as `YYYY-MM-DDTHH:mm`, which `Date` reads as
+    // local, the same as the typed format it replaces.
+    const when = await prompt({
+      title: "Schedule the makeup class",
+      label: "Date and time (your local time)",
+      confirmLabel: "Schedule",
+      inputType: "datetime-local",
+      validate: (value) =>
+        Number.isNaN(new Date(value).getTime()) ? "Pick a date and time." : null,
+    });
     if (!when) return;
-    const parsed = new Date(when.replace(" ", "T"));
-    if (Number.isNaN(parsed.getTime())) {
-      toast.error("Could not read that date");
-      return;
-    }
+    const parsed = new Date(when);
     void run(session.id, async () => {
       await coachProgramsApi.scheduleMakeup(session.id, parsed.toISOString());
       return "Makeup class scheduled";
@@ -114,6 +131,7 @@ export const CoachProgrammesClient = () => {
 
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
+      {promptDialog}
       <header className="mb-6">
         <h1 className="font-editorial text-2xl font-normal">My programmes</h1>
         <p className="text-muted-foreground mt-1 text-sm">

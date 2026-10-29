@@ -15,9 +15,11 @@ import { cn } from "@/utils/cn";
 import { Edit2, MapPin, Plus, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 export function AddressManagement() {
   const { user } = useAuthStore();
+  const [confirm, confirmDialog] = useConfirm();
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [defaultAddressId, setDefaultAddressId] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
@@ -154,7 +156,13 @@ export function AddressManagement() {
   };
 
   const handleDelete = async (addressId: string) => {
-    if (!confirm("Are you sure you want to delete this address?")) return;
+    const confirmed = await confirm({
+      title: "Delete this address?",
+      message: "This address will be removed from your account.",
+      confirmLabel: "Delete address",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(true);
     try {
@@ -191,6 +199,7 @@ export function AddressManagement() {
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       <div>
         <h2 className="text-2xl font-black text-slate-900">Manage Addresses</h2>
         <p className="text-sm text-slate-500">Add, update, or delete shipping addresses.</p>
