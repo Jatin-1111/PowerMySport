@@ -21,7 +21,6 @@ import {
 } from "@/modules/admin/services/opportunities";
 import { Card } from "@/modules/shared/ui/Card";
 import { AlertTriangle, ChevronDown, Copy, ExternalLink, Loader2 } from "lucide-react";
-import axios from "axios";
 import { useEffect, useState } from "react";
 
 import { readApiErrors } from "./apiErrors";
@@ -280,7 +279,10 @@ export function LeadsPanel() {
       const message = readApiErrors(error)[0] ?? "Could not start that.";
       // A lead that looks like an entry we have is the editor's call: say so, and
       // go on only if they confirm.
-      if (axios.isAxiosError(error) && error.response?.status === 409 && !force) {
+      // The status is read off `.response`, not via `axios.isAxiosError`: the
+      // shared instance rewraps failures as plain Errors, so that is never true.
+      const status = (error as { response?: { status?: number } } | null)?.response?.status;
+      if (status === 409 && !force) {
         if (
           /already have/.test(message) &&
           (await confirm({

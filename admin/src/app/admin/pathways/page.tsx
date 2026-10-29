@@ -16,19 +16,21 @@ import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
 import { Panel } from "@/modules/shared/ui/Panel";
 import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
 import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
-import axios from "axios";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-/** Pull the server's message (and pathed errors) out of an axios failure. */
+/**
+ * Pull the server's message (and pathed errors) out of a failed request. Not
+ * `axios.isAxiosError`: the shared instance's interceptor rewraps failures as a
+ * plain `Error` with `.response`, so that check is always false.
+ */
 export function readApiErrors(error: unknown): string[] {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { message?: string; errors?: string[] } | undefined;
-    if (data?.errors?.length) return data.errors;
-    if (data?.message) return [data.message];
-  }
+  const data = (error as { response?: { data?: { message?: string; errors?: string[] } } } | null)
+    ?.response?.data;
+  if (data?.errors?.length) return data.errors;
+  if (data?.message) return [data.message];
   return ["Something went wrong. Check the server logs."];
 }
 
