@@ -117,7 +117,9 @@ export const getVenue = asyncHandler(async (req: Request, res: Response): Promis
 
   const venue = await getVenueById(venueId);
 
-  if (!venue) {
+  // Only approved venues are public. Drafts and rejected venues exist from
+  // onboarding step 1; owners and admins read theirs through their own routes.
+  if (!venue || venue.approvalStatus !== "APPROVED") {
     throw new AppError("Venue not found", 404);
   }
 

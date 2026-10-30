@@ -6,7 +6,14 @@ import { KeyboardEvent, useEffect, useRef, useState } from "react";
 
 interface EmailVerificationModalProps {
   email: string;
-  venueId: string;
+  /** Used by the default venue requests. Not needed when `verifyCode` is given. */
+  venueId?: string;
+  /** Replaces the venue verify request; throw to show an error. */
+  verifyCode?: (code: string) => Promise<void>;
+  /** Replaces the venue resend request; throw to show an error. */
+  resendCode?: () => Promise<void>;
+  /** Send a fresh code when the modal opens (the flow has not sent one yet). */
+  sendOnOpen?: boolean;
   onVerified: () => void;
   onClose: () => void;
   showCloseButton?: boolean;
@@ -15,6 +22,9 @@ interface EmailVerificationModalProps {
 export default function EmailVerificationModal({
   email,
   venueId,
+  verifyCode,
+  resendCode,
+  sendOnOpen = false,
   onVerified,
   onClose,
   showCloseButton = true,
@@ -62,6 +72,16 @@ export default function EmailVerificationModal({
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  // Flows that have not emailed a code yet ask for one on open.
+  const sentOnOpenRef = useRef(false);
+  useEffect(() => {
+    if (!sendOnOpen || !resendCode || sentOnOpenRef.current) return;
+    sentOnOpenRef.current = true;
+    resendCode().catch((err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to send code");
+    });
+  }, [sendOnOpen, resendCode]);
 
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) return; // Only allow digits
@@ -120,6 +140,11 @@ export default function EmailVerificationModal({
     setLoading(true);
 
     try {
+      if (verifyCode) {
+        await verifyCode(verificationCode);
+        onVerified();
+        return;
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/venues/onboarding/verify-email`,
         {
@@ -156,6 +181,15 @@ export default function EmailVerificationModal({
     setLoading(true);
 
     try {
+      if (resendCode) {
+        await resendCode();
+        setTimeLeft(300);
+        setCanResend(false);
+        setResendCooldown(60);
+        setCode(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+        return;
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/venues/onboarding/send-verification`,
         {

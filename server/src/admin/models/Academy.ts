@@ -129,6 +129,8 @@ export interface AcademyDocument extends Document {
   refundPolicy: string;
 
   // KYC & Status
+  /** Contact email confirmed with a code. Required before submission. */
+  emailVerified: boolean;
   kycVerified: boolean;
   isActive: boolean; // Can go live only if approved AND kycVerified
   isApproved: boolean;
@@ -531,6 +533,10 @@ const academySchema = new Schema<AcademyDocument>(
     },
 
     // KYC & Status
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
     kycVerified: {
       type: Boolean,
       default: false,

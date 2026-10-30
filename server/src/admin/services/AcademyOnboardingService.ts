@@ -9,6 +9,8 @@ import { s3Service } from "../../shared/services/S3Service";
 import { encryptValue, isEncryptedValue } from "../../shared/utils/encryption";
 import { issueOnboardingToken } from "../../utils/academyOnboardingToken";
 import { log as __rootLog } from "../../utils/logger";
+import { AppError } from "../../utils/AppError";
+import { sendVerificationCode, verifyCode } from "../../shared/services/EmailVerificationService";
 const log = __rootLog.child("academyOnboarding");
 
 // `updateAcademyStep` writes with findByIdAndUpdate, which does not run the
@@ -92,9 +94,13 @@ export const startAcademyOnboarding = async (payload: {
   logoUrl?: string;
   logoKey?: string;
 }): Promise<{ academy: AcademyDocument; onboardingToken: string }> => {
+  // Only a draft whose email was confirmed blocks a new start. An unconfirmed
+  // draft proves nothing about who owns the address, so it must not lock the
+  // real owner out.
   const existingAcademy = await Academy.findOne({
     contactEmail: payload.ownerEmail,
     onboardingCompleted: false,
+    emailVerified: true,
   });
 
   if (existingAcademy) {
@@ -108,11 +114,8 @@ export const startAcademyOnboarding = async (payload: {
     counter += 1;
   }
 
-  // Do not create a new account here. Link an existing owner account only.
-  const existingOwner = await User.findOne({
-    $or: [{ email: payload.ownerEmail }, { phone: payload.ownerPhone }],
-  }).select("_id");
-
+  // No account is linked here: nobody has proved they own this email yet. The
+  // owner account is linked at approval, by the verified email only.
   // The caller has no account to authorise later steps against, so they are
   // handed this token once; only its hash is stored.
   const { token: onboardingToken, hash: onboardingTokenHash } = issueOnboardingToken();
@@ -131,7 +134,6 @@ export const startAcademyOnboarding = async (payload: {
     contactPersonName: payload.ownerName,
     contactEmail: payload.ownerEmail,
     contactPhone: payload.ownerPhone,
-    ownerId: existingOwner?._id,
     photos: [],
     photoKeys: [],
     location: {
@@ -285,6 +287,25 @@ export const updateAcademyStep = async (
   }
 
   return updatedAcademy;
+};
+
+/** Email the owner a confirmation code for the academy's contact address. */
+export const sendAcademyEmailCode = async (academyId: string): Promise<void> => {
+  const academy = await ensureAcademyExists(academyId);
+  if (academy.emailVerified) return;
+  const result = await sendVerificationCode(academy.contactEmail, academy.contactPersonName);
+  if (!result.success) {
+    throw new AppError(result.message, 429);
+  }
+};
+
+export const verifyAcademyEmail = async (academyId: string, code: string): Promise<void> => {
+  const academy = await ensureAcademyExists(academyId);
+  const result = await verifyCode(academy.contactEmail, code);
+  if (!result.success) {
+    throw new AppError(result.message, 400);
+  }
+  await Academy.findByIdAndUpdate(academyId, { emailVerified: true });
 };
 
 export const getAcademyOnboardingProgress = async (
@@ -563,6 +584,9 @@ export const confirmAcademyDocuments = async (
 export const submitAcademyForApproval = async (academyId: string): Promise<AcademyDocument> => {
   const academy = await ensureAcademyExists(academyId);
 
+  if (!academy.emailVerified) {
+    throw new AppError("Verify your email address before submitting for review", 403);
+  }
   if (academy.onboardingStep < 7) {
     throw new Error("All 7 onboarding steps must be completed before submission");
   }
@@ -657,9 +681,28 @@ export const getAcademyOnboardingDetails = async (
 
 export const approveAcademy = async (academyId: string): Promise<AcademyDocument | null> => {
   const academy = await ensureAcademyExists(academyId);
+  if (!academy.onboardingCompleted) {
+    throw new AppError("This academy has not submitted its onboarding for review", 409);
+  }
+
+  // Link the owner by the verified contact email only; a phone number is not
+  // proof of identity. Other roles keep separate credentials from academy owners.
+  let ownerId = academy.ownerId;
+  if (!ownerId) {
+    const owner = await User.findOne({ email: academy.contactEmail }).select("_id role");
+    if (owner && owner.role !== "Academy") {
+      throw new AppError(
+        "An account with this email already exists under a different role. The owner must register the academy with a separate email address.",
+        409
+      );
+    }
+    ownerId = owner?._id;
+  }
+
   const updatedAcademy = await Academy.findByIdAndUpdate(
     academyId,
     {
+      ...(ownerId ? { ownerId } : {}),
       isApproved: true,
       ...(academy.kycVerified ? { isActive: true } : {}),
     },

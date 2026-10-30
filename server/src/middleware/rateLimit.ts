@@ -134,6 +134,22 @@ export const dependentsWriteRateLimiter = createDependentsWriteRateLimiter();
  * hour per IP. The per-email and per-phone limits stop one target being flooded;
  * this stops one source trying many. Fails open if Redis is down.
  */
+/**
+ * Academy onboarding start is public and creates a record per call. Per source
+ * address, hourly.
+ */
+export const academyStartRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:academy:start:"),
+  message: {
+    success: false,
+    message: "Too many academy sign-ups from this address. Please try again in an hour.",
+  },
+});
+
 export const sendVerificationRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,

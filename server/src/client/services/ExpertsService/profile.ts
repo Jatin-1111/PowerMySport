@@ -279,8 +279,13 @@ export const submitExpertForReview = async (userId: string) => {
 };
 
 export const approveExpert = async (expertId: string) => {
-  const current = await Expert.findById(expertId).select("sports");
+  const current = await Expert.findById(expertId).select("sports verificationStatus");
   if (!current) throw new Error("Expert not found");
+  // A REJECTED expert can still be approved (the admin "Approve anyway" action),
+  // but a profile that was never submitted for review cannot.
+  if (current.verificationStatus === "UNVERIFIED") {
+    throw new Error("This expert has not submitted their profile for review");
+  }
 
   const expert = await Expert.findByIdAndUpdate(
     expertId,

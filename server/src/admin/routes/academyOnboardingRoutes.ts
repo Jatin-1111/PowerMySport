@@ -8,6 +8,8 @@ import {
   getDocumentUploadUrlsHandler,
   confirmDocumentsHandler,
   submitAcademyHandler,
+  sendAcademyEmailCodeHandler,
+  verifyAcademyEmailHandler,
   listApprovedAcademiesHandler,
   getAcademyProfileHandler,
   listPendingAcademiesHandler,
@@ -31,6 +33,7 @@ import {
   getAcademyAnalyticsHandler,
 } from "../../client/controllers/academyAnalyticsController";
 import { validateRequest } from "../../middleware/validation";
+import { academyStartRateLimiter, sendVerificationRateLimiter } from "../../middleware/rateLimit";
 import {
   academyOnboardingStep1Schema,
   academyOnboardingStep2Schema,
@@ -101,6 +104,7 @@ const validateAcademyStep = (req: Request, res: Response, next: NextFunction) =>
  */
 router.post(
   "/onboarding/start",
+  academyStartRateLimiter,
   validateRequest(academyOnboardingStep1Schema),
   startAcademyOnboardingHandler
 );
@@ -162,6 +166,15 @@ router.post(
  * POST: Submit academy for approval
  * POST /api/academies/onboarding/:academyId/submit
  */
+router.post(
+  "/onboarding/:academyId/send-verification",
+  sendVerificationRateLimiter,
+  ...onboardingAccess,
+  sendAcademyEmailCodeHandler
+);
+
+router.post("/onboarding/:academyId/verify-email", ...onboardingAccess, verifyAcademyEmailHandler);
+
 router.post("/onboarding/:academyId/submit", ...onboardingAccess, submitAcademyHandler);
 
 /**

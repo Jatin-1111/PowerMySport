@@ -8,6 +8,8 @@ import {
   getDocumentUploadPresignedUrls,
   confirmAcademyDocuments,
   submitAcademyForApproval,
+  sendAcademyEmailCode,
+  verifyAcademyEmail,
   getPendingAcademies,
   getAcademyOnboardingDetails,
   approveAcademy,
@@ -99,6 +101,34 @@ export const startAcademyOnboardingHandler = asyncHandler(
         onboardingToken,
       },
     });
+  }
+);
+
+/**
+ * POST: Email the owner a confirmation code for the contact address
+ * POST /api/academies/onboarding/:academyId/send-verification
+ */
+export const sendAcademyEmailCodeHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
+    await sendAcademyEmailCode(academyId);
+    res.status(200).json({ success: true, message: "Verification code sent" });
+  }
+);
+
+/**
+ * POST: Confirm the code
+ * POST /api/academies/onboarding/:academyId/verify-email   Body: { code }
+ */
+export const verifyAcademyEmailHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
+    const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+    if (!/^\d{6}$/.test(code)) {
+      throw new AppError("Enter the 6-digit code", 400);
+    }
+    await verifyAcademyEmail(academyId, code);
+    res.status(200).json({ success: true, message: "Email verified" });
   }
 );
 

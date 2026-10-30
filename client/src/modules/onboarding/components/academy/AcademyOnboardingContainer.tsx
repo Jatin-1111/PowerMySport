@@ -1,7 +1,10 @@
 "use client";
 
 import { toast } from "@/lib/toast";
-import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
+import {
+  academyOnboardingApi,
+  needsEmailVerification,
+} from "@/modules/onboarding/services/academy";
 import type {
   AcademyStep1Payload,
   AcademyStep2Payload,
@@ -21,6 +24,7 @@ import Step3Legal from "./Step3Legal";
 import Step4VenuesCoaches from "./Step4VenuesCoaches";
 import Step5Pricing from "./Step5Pricing";
 import Step6Payouts from "./Step6Payouts";
+import EmailVerificationModal from "../onboarding/EmailVerificationModal";
 
 const STORAGE_KEY = "academy_onboarding_progress";
 
@@ -52,6 +56,7 @@ export default function AcademyOnboardingContainer() {
   const [maxUnlockedStep, setMaxUnlockedStep] = useState<OnboardingStep>(1);
   const [academyId, setAcademyId] = useState<string>(resumeId);
   const [isLoading, setIsLoading] = useState(!!resumeId);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [formData, setFormData] = useState<SavedFormData>({});
 
   // Save progress and form data to localStorage for resilience
@@ -264,6 +269,30 @@ export default function AcademyOnboardingContainer() {
     }
   };
 
+  const completeSubmission = async () => {
+    await academyOnboardingApi.submitForApproval(academyId);
+    // Clear saved progress
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // ignore
+    }
+    toast.success("Academy submitted for approval");
+    router.push(`/academy/onboarding/success/${academyId}`);
+  };
+
+  const handleEmailVerified = async () => {
+    setShowEmailVerification(false);
+    try {
+      setIsLoading(true);
+      await completeSubmission();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit academy");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleStepSubmit = async (
     stepNumber: OnboardingStep,
     data:
@@ -281,16 +310,17 @@ export default function AcademyOnboardingContainer() {
       saveStepData(stepNumber, data);
 
       if (stepNumber === 6) {
-        // Last step — submit for approval
-        await academyOnboardingApi.submitForApproval(academyId);
-        // Clear saved progress
+        // Last step — submit for approval. The contact email must be confirmed
+        // first; if it is not, ask for the code and finish after it.
         try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch {
-          // ignore
+          await completeSubmission();
+        } catch (error) {
+          if (needsEmailVerification(error)) {
+            setShowEmailVerification(true);
+            return;
+          }
+          throw error;
         }
-        toast.success("Academy submitted for approval");
-        router.push(`/academy/onboarding/success/${academyId}`);
       } else {
         const nextStep = (stepNumber + 1) as OnboardingStep;
         advanceStep(academyId, nextStep);
@@ -488,6 +518,17 @@ export default function AcademyOnboardingContainer() {
             />
           )}
         </div>
+
+        {showEmailVerification && academyId && (
+          <EmailVerificationModal
+            email={formData.step1?.ownerEmail || "your contact email"}
+            sendOnOpen
+            verifyCode={(code) => academyOnboardingApi.verifyEmailCode(academyId, code)}
+            resendCode={() => academyOnboardingApi.sendEmailCode(academyId)}
+            onVerified={handleEmailVerified}
+            onClose={() => setShowEmailVerification(false)}
+          />
+        )}
 
         {/* Help Text */}
         <div className="text-center text-sm text-slate-600">

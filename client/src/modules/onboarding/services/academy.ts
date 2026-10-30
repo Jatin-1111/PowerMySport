@@ -43,6 +43,16 @@ const withToken = (academyId: string) => {
   }
 };
 
+const serverMessage = (error: unknown, fallback: string): string =>
+  (error as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+
+/** True when the server refused a submit because the contact email is unconfirmed. */
+export const needsEmailVerification = (error: unknown): boolean => {
+  const response = (error as { response?: { status?: number; data?: { message?: string } } })
+    ?.response;
+  return response?.status === 403 && /verify your email/i.test(response.data?.message || "");
+};
+
 /**
  * Academy Onboarding API Service
  * Handles 6-step onboarding process
@@ -206,6 +216,32 @@ export const academyOnboardingApi = {
       withToken(data.academyId)
     );
     return response.data;
+  },
+
+  /** Email the owner a confirmation code for the contact address. */
+  sendEmailCode: async (academyId: string): Promise<void> => {
+    try {
+      await axiosInstance.post(
+        `${API_BASE}/${academyId}/send-verification`,
+        undefined,
+        withToken(academyId)
+      );
+    } catch (error) {
+      throw new Error(serverMessage(error, "Failed to send the code"));
+    }
+  },
+
+  /** Confirm the contact email with the emailed 6-digit code. */
+  verifyEmailCode: async (academyId: string, code: string): Promise<void> => {
+    try {
+      await axiosInstance.post(
+        `${API_BASE}/${academyId}/verify-email`,
+        { code },
+        withToken(academyId)
+      );
+    } catch (error) {
+      throw new Error(serverMessage(error, "Verification failed"));
+    }
   },
 
   /**

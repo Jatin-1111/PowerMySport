@@ -491,7 +491,23 @@ describe("academy profile and onboarding", () => {
     const stored = await Academy.collection.findOne({
       _id: new mongoose.Types.ObjectId(academyId),
     });
-    assert.equal(String(stored.ownerId), owner.id, "start links the existing owner account");
+    assert.equal(
+      stored.ownerId ?? null,
+      null,
+      "start no longer links an account by email or phone"
+    );
+
+    // Nobody proved they own that email yet, so the account has no access.
+    const beforeLink = await request(app)
+      .get(`/api/academies/onboarding/${academyId}/progress`)
+      .set("Authorization", `Bearer ${tokenFor(owner.id, owner.email, "Academy")}`);
+    assert.equal(beforeLink.status, 404);
+
+    // Approval links the owner (covered in academyEmailVerification tests).
+    await Academy.collection.updateOne(
+      { _id: new mongoose.Types.ObjectId(academyId) },
+      { $set: { ownerId: new mongoose.Types.ObjectId(owner.id) } }
+    );
 
     const asOwner = await request(app)
       .get(`/api/academies/onboarding/${academyId}/progress`)

@@ -4,6 +4,7 @@ import { Coach, CoachDocument, CoachDocumentFile, CoachVerificationStatus } from
 import { s3Service } from "../../shared/services/S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../../types/index";
 import { log as __rootLog } from "../../utils/logger";
+import { AppError } from "../../utils/AppError";
 const log = __rootLog.child("coach");
 
 const COACH_LISTING_SELECT =
@@ -437,6 +438,10 @@ export const updateCoachVerificationStatus = async (
   const coach = await Coach.findById(coachId);
   if (!coach) {
     throw new Error("Coach not found");
+  }
+
+  if (status === "VERIFIED" && (coach.verificationStatus ?? "UNVERIFIED") === "UNVERIFIED") {
+    throw new AppError("This coach has not submitted verification yet", 409);
   }
 
   coach.verificationStatus = status;

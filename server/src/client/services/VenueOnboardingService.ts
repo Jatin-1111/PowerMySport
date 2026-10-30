@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { User } from "../models/User";
 import { Venue, VenueDocument } from "../models/Venue";
 import {
@@ -13,6 +14,8 @@ import { sendEmail } from "../../utils/email";
 import { s3Service } from "../../shared/services/S3Service";
 import { NotificationService } from "./NotificationService";
 import { log as __rootLog } from "../../utils/logger";
+import { AppError } from "../../utils/AppError";
+import { requestPasswordReset } from "../../shared/services/AuthService/passwordManagement";
 const log = __rootLog.child("venueOnboarding");
 
 /**
@@ -373,6 +376,14 @@ export const finalizeVenueOnboarding = async (
     })
   );
 
+  const existing = await Venue.findById(payload.venueId).select("emailVerified");
+  if (!existing) {
+    throw new Error("Venue not found");
+  }
+  if (!existing.emailVerified) {
+    throw new AppError("Verify your email address before submitting for review", 403);
+  }
+
   // Update venue with images, cover photo, and documents
   const venue = await Venue.findByIdAndUpdate(
     payload.venueId,
@@ -408,7 +419,9 @@ export const getPendingVenues = async (
   page: number;
   totalPages: number;
 }> => {
-  const query: any = { approvalStatus: { $ne: "APPROVED" } };
+  // A venue exists from step 1, so a draft that never reached document upload
+  // is not a submission and does not belong in the review queue.
+  const query: any = { approvalStatus: { $ne: "APPROVED" }, "documents.0": { $exists: true } };
 
   if (approvalStatus) {
     query.approvalStatus = approvalStatus;
@@ -460,25 +473,49 @@ export const approveVenue = async (venueId: string): Promise<VenueDocument | nul
     throw new Error("Venue not found");
   }
 
-  // Check if user already exists for this venue owner
-  let user = await User.findOne({
-    $or: [{ email: venue.ownerEmail }, { phone: venue.ownerPhone }],
-  });
+  if (
+    !venue.documents?.length ||
+    (venue.images?.length ?? 0) < UPLOAD_CONSTRAINTS.IMAGES.MIN_COUNT
+  ) {
+    throw new AppError("This venue has not finished onboarding (images and documents)", 409);
+  }
 
-  let tempPassword: string | undefined;
+  // The owner's email must have been confirmed during onboarding: approval
+  // creates (or links) an account for it and sends account email there.
+  if (!venue.emailVerified) {
+    throw new AppError("The owner has not verified their email address", 409);
+  }
+
+  // Match by the verified email only. A phone number is not proof of identity,
+  // so it never links a venue to an account. Coaches, parents and other roles
+  // keep separate credentials from venue listers.
+  const existingByEmail = await User.findOne({ email: venue.ownerEmail });
+  if (existingByEmail && existingByEmail.role !== "VenueLister") {
+    throw new AppError(
+      "An account with this email already exists under a different role. The owner must register the venue with a separate email address.",
+      409
+    );
+  }
+  if (!existingByEmail && (await User.exists({ phone: venue.ownerPhone }))) {
+    throw new AppError(
+      "This phone number already belongs to another account. Ask the owner for a different number.",
+      409
+    );
+  }
+
+  let user = existingByEmail;
   let isNewUser = false;
 
-  // If user doesn't exist, create a new VENUE_LISTER account
+  // No one is told a password. The account gets an unguessable one and the owner
+  // sets their own through the standard reset link sent below.
   if (!user) {
-    // Generate temporary password
-    tempPassword = Math.random().toString(36).slice(-8) + "!A1";
     isNewUser = true;
 
     user = new User({
       name: venue.ownerName,
       email: venue.ownerEmail,
       phone: venue.ownerPhone,
-      password: tempPassword, // User model will hash this
+      password: `${crypto.randomBytes(24).toString("base64url")}!A1`, // User model will hash this
       role: "VenueLister",
       venueListerProfile: {
         businessDetails: {
@@ -510,19 +547,26 @@ export const approveVenue = async (venueId: string): Promise<VenueDocument | nul
 
   await venue.save();
 
-  // Send approval email with credentials (if new user)
+  // New account: send the standard set-password link (the account has no usable
+  // password until the owner follows it).
+  if (isNewUser) {
+    try {
+      await requestPasswordReset(venue.ownerEmail);
+    } catch (error) {
+      log.error("Failed to send set-password email to new venue lister:", error);
+    }
+  }
+
+  // Send approval email (explains how to set a password for a new account)
   try {
-    const credentialsSection =
-      isNewUser && tempPassword
-        ? `
+    const credentialsSection = isNewUser
+      ? `
           <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
-            <strong>🔐 Your Login Credentials:</strong>
-            <p><strong>Email:</strong> ${venue.ownerEmail}</p>
-            <p><strong>Temporary Password:</strong> ${tempPassword}</p>
-            <p><em>Please login and change your password immediately for security.</em></p>
+            <strong>Set your password:</strong>
+            <p>We created an account for ${venue.ownerEmail}. A separate email has a link to set your password. If it does not arrive, use "Forgot password" on the login page.</p>
           </div>
         `
-        : "";
+      : "";
 
     const approvalEmailHtml = `
       <!DOCTYPE html>
@@ -658,7 +702,7 @@ export const approveVenue = async (venueId: string): Promise<VenueDocument | nul
           venueName: venue.name,
           approvedAt: new Date().toISOString(),
           isNewUser,
-          ...(isNewUser && tempPassword ? { hasCredentials: true } : {}),
+          ...(isNewUser ? { hasCredentials: true } : {}),
         },
       }).catch((err: Error) => log.error("Failed to send venue approval notification:", err));
     }
