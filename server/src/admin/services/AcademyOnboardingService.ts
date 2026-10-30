@@ -3,7 +3,7 @@ import { User } from "../../client/models/User";
 import SubscriptionPlan from "../../client/models/SubscriptionPlan";
 import SessionPackage from "../../client/models/SessionPackage";
 import { IAcademyPendingReview, IOnboardingUploadUrl } from "../../types/index";
-import { sendEmail } from "../../utils/email";
+import { escapeHtml, sendEmail } from "../../utils/email";
 import { NotificationService } from "../../client/services/NotificationService";
 import { s3Service } from "../../shared/services/S3Service";
 import { encryptValue, isEncryptedValue } from "../../shared/utils/encryption";
@@ -617,7 +617,7 @@ export const submitAcademyForApproval = async (academyId: string): Promise<Acade
       subject: "Academy Submission Received - Under Review",
       html: `
         <h2>Submission Received</h2>
-        <p>Your academy "${academy.name}" has been submitted for review.</p>
+        <p>Your academy "${escapeHtml(academy.name)}" has been submitted for review.</p>
         <p>Our team will verify your documents and get back to you within 3-5 business days.</p>
       `,
     });
@@ -772,8 +772,8 @@ export const rejectAcademy = async (
       subject: "Academy Submission - Additional Information Needed",
       html: `
         <h2>Additional Information Needed</h2>
-        <p>Thank you for submitting your academy "${academy.name}".</p>
-        <p><strong>Reason:</strong> ${rejectionReason}</p>
+        <p>Thank you for submitting your academy "${escapeHtml(academy.name)}".</p>
+        <p><strong>Reason:</strong> ${escapeHtml(rejectionReason)}</p>
         <p>Please update the required information and resubmit.</p>
       `,
     });

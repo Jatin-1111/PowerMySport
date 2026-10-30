@@ -10,7 +10,7 @@ import {
   IVenueOnboardingStep3,
   IVenueOnboardingStep4,
 } from "../../types/index";
-import { sendEmail } from "../../utils/email";
+import { escapeHtml, sendEmail } from "../../utils/email";
 import { s3Service } from "../../shared/services/S3Service";
 import { NotificationService } from "./NotificationService";
 import { log as __rootLog } from "../../utils/logger";
@@ -141,6 +141,9 @@ export const updateVenueDetails = async (
   const venue = await Venue.findById(payload.venueId);
   if (!venue) {
     throw new Error("Venue not found");
+  }
+  if (venue.approvalStatus === "APPROVED") {
+    throw new AppError("This venue is approved. Edit it from the venue dashboard.", 409);
   }
 
   // Update venue details
@@ -376,9 +379,12 @@ export const finalizeVenueOnboarding = async (
     })
   );
 
-  const existing = await Venue.findById(payload.venueId).select("emailVerified");
+  const existing = await Venue.findById(payload.venueId).select("emailVerified approvalStatus");
   if (!existing) {
     throw new Error("Venue not found");
+  }
+  if (existing.approvalStatus === "APPROVED") {
+    throw new AppError("This venue is already approved", 409);
   }
   if (!existing.emailVerified) {
     throw new AppError("Verify your email address before submitting for review", 403);
@@ -563,7 +569,7 @@ export const approveVenue = async (venueId: string): Promise<VenueDocument | nul
       ? `
           <div class="info-box" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
             <strong>Set your password:</strong>
-            <p>We created an account for ${venue.ownerEmail}. A separate email has a link to set your password. If it does not arrive, use "Forgot password" on the login page.</p>
+            <p>We created an account for ${escapeHtml(venue.ownerEmail)}. A separate email has a link to set your password. If it does not arrive, use "Forgot password" on the login page.</p>
           </div>
         `
       : "";
@@ -638,22 +644,22 @@ export const approveVenue = async (venueId: string): Promise<VenueDocument | nul
       </head>
       <body>
         <div class="header">
-          <h1>🎉 Congratulations!</h1>
+          <h1>Congratulations!</h1>
           <p>Your venue has been approved!</p>
         </div>
         <div class="content">
-          <p>Hi ${venue.ownerName},</p>
+          <p>Hi ${escapeHtml(venue.ownerName)},</p>
           
-          <p>We're thrilled to inform you that your venue <strong>"${venue.name}"</strong> has been approved and is now live on PowerMySport!</p>
+          <p>We're thrilled to inform you that your venue <strong>"${escapeHtml(venue.name)}"</strong> has been approved and is now live on PowerMySport!</p>
 
           ${credentialsSection}
 
           <div class="venue-details">
             <h3>Approved Venue Details:</h3>
-            <p><strong>Venue Name:</strong> ${venue.name}</p>
-            <p><strong>Address:</strong> ${venue.address}</p>
+            <p><strong>Venue Name:</strong> ${escapeHtml(venue.name)}</p>
+            <p><strong>Address:</strong> ${escapeHtml(venue.address)}</p>
             <p><strong>Price per Hour:</strong> ₹${venue.pricePerHour}</p>
-            <p><strong>Contact Phone:</strong> ${venue.ownerPhone}</p>
+            <p><strong>Contact Phone:</strong> ${escapeHtml(venue.ownerPhone)}</p>
           </div>
 
           <div class="info-box">
@@ -684,7 +690,7 @@ export const approveVenue = async (venueId: string): Promise<VenueDocument | nul
 
     await sendEmail({
       to: venue.ownerEmail,
-      subject: `🎉 Your Venue "${venue.name}" Has Been Approved!`,
+      subject: `Your Venue "${venue.name}" Has Been Approved!`,
       html: approvalEmailHtml,
     });
 
@@ -778,11 +784,11 @@ export const rejectVenue = async (
             <p>Your submission requires attention</p>
           </div>
           <div class="content">
-            <p>Hi ${venue.ownerName},</p>
-            <p>Thank you for submitting your venue <strong>"${venue.name}"</strong> on PowerMySport. After careful review, we were unable to approve your application at this time.</p>
+            <p>Hi ${escapeHtml(venue.ownerName)},</p>
+            <p>Thank you for submitting your venue <strong>"${escapeHtml(venue.name)}"</strong> on PowerMySport. After careful review, we were unable to approve your application at this time.</p>
             <div class="reason-box">
               <strong>❌ Reason for Rejection:</strong>
-              <p>${reason}</p>
+              <p>${escapeHtml(reason)}</p>
             </div>
             <div class="info-box">
               <strong>💡 What you can do:</strong>
@@ -806,7 +812,7 @@ export const rejectVenue = async (
 
       await sendEmail({
         to: ownerEmail,
-        subject: `Update on Your Venue Application — "${venue.name}"`,
+        subject: `Update on Your Venue Application: "${venue.name}"`,
         html: rejectionEmailHtml,
       });
 
@@ -883,14 +889,14 @@ export const markVenueForReview = async (
             <p>We're looking at your submission</p>
           </div>
           <div class="content">
-            <p>Hi ${venue.ownerName},</p>
-            <p>Your venue <strong>"${venue.name}"</strong> is currently under active review by our team. We'll get back to you shortly with a decision.</p>
+            <p>Hi ${escapeHtml(venue.ownerName)},</p>
+            <p>Your venue <strong>"${escapeHtml(venue.name)}"</strong> is currently under active review by our team. We'll get back to you shortly with a decision.</p>
             ${
               notes
                 ? `
             <div class="notes-box">
               <strong>📋 Reviewer Notes:</strong>
-              <p>${notes}</p>
+              <p>${escapeHtml(notes)}</p>
             </div>`
                 : ""
             }
