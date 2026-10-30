@@ -20,7 +20,16 @@ export interface AdminExpertPayoutMethod {
 
 export type AdminExpertVerificationStatus = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
 
+export interface AdminExpertProofFile {
+  type: "ID_PROOF" | "ACHIEVEMENT_PROOF";
+  fileName: string;
+  /** Short-lived signed link, added by the server on read. */
+  url?: string;
+}
+
 export interface AdminExpert {
+  verificationDocuments?: AdminExpertProofFile[];
+  achievementProofLink?: string;
   id: string;
   _id?: string;
   name?: string;

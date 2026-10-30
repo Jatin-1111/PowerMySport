@@ -3,6 +3,7 @@
 import { authApi } from "@/modules/auth/services/auth";
 import { expertApi, type ExpertAvailabilityWindow } from "@/modules/expert/services/expert";
 import { ExpertPhotoUpload } from "@/modules/expert/components/ExpertPhotoUpload";
+import { ExpertProofSection } from "@/modules/expert/components/ExpertProofSection";
 import {
   TaxPayoutInfoStep,
   EMPTY_TAX_PAYOUT_INFO,
@@ -43,7 +44,6 @@ import { toast } from "sonner";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const SESSION_MODES = ["ONLINE", "IN_PERSON", "BOTH"] as const;
-
 const field =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100";
 const label =
@@ -641,6 +641,7 @@ function ExpertOnboardingContent() {
                   e.g. Batting technique, Penalty kicks, Serve & return, Mental conditioning…
                 </p>
               </div>
+              <ExpertProofSection />
             </div>
           </SlideUp>
         )}

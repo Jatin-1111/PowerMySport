@@ -67,7 +67,21 @@ export const withFreshPhoto = async <T extends { photoUrl?: string | undefined }
   expert: any
 ): Promise<T> => {
   const photoUrl = await s3Service.refreshOwnedImageUrl(serialized.photoUrl, ownerUserId(expert));
-  return photoUrl === serialized.photoUrl ? serialized : ({ ...serialized, photoUrl } as T);
+  const withPhoto =
+    photoUrl === serialized.photoUrl ? serialized : ({ ...serialized, photoUrl } as T);
+
+  // Private views (owner and admin) carry proof documents; sign a link for each.
+  // The public serializer has no such field, so this is a no-op there.
+  const docs = (serialized as { verificationDocuments?: { s3Key: string }[] })
+    .verificationDocuments;
+  if (!docs?.length) return withPhoto;
+  const signed = await Promise.all(
+    docs.map(async (d) => ({
+      ...d,
+      url: await s3Service.generateCachedDownloadUrl(d.s3Key, "verification", 3600),
+    }))
+  );
+  return { ...withPhoto, verificationDocuments: signed } as T;
 };
 
 /**
@@ -154,6 +168,14 @@ export const serializeExpertFull = (expert: any) => ({
   panNumber: expert.panNumber ? decryptValue(expert.panNumber) : expert.panNumber,
   gstNumber: expert.gstNumber,
   payoutMethods: (expert.payoutMethods || []).map(decryptPayoutMethod),
+  // Keys and names only; `withFreshPhoto` adds a short-lived signed link.
+  verificationDocuments: (expert.verificationDocuments || []).map((d: any) => ({
+    type: d.type,
+    fileName: d.fileName,
+    s3Key: d.s3Key,
+    uploadedAt: d.uploadedAt,
+  })),
+  achievementProofLink: expert.achievementProofLink,
 });
 
 /**

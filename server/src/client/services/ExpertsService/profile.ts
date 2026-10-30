@@ -233,6 +233,68 @@ export const setExpertActive = async (expertId: string, isActive: boolean) => {
   return withFreshPhoto(serializeExpertFull(expert), expert);
 };
 
+const PROOF_TYPES = ["ID_PROOF", "ACHIEVEMENT_PROOF"] as const;
+const MAX_PROOF_FILES = 6;
+
+/**
+ * Save the expert's proof: uploaded files (by storage key, which must sit under
+ * this expert's own folder) and an optional public-record link. Replaces the
+ * previous set; it does not touch review status.
+ */
+export const setExpertVerificationProof = async (
+  userId: string,
+  payload: { documents?: unknown; achievementProofLink?: unknown }
+) => {
+  const current = await Expert.findOne({ userId: toObjectId(userId) }).select("verificationStatus");
+  if (!current) throw new Error("Expert profile not found");
+  if (current.verificationStatus === "PENDING" || current.verificationStatus === "APPROVED") {
+    throw new Error("Proof can be changed only before submission or after a rejection");
+  }
+
+  const update: Record<string, unknown> = {};
+
+  if (payload.documents !== undefined) {
+    if (!Array.isArray(payload.documents) || payload.documents.length > MAX_PROOF_FILES) {
+      throw new Error(`Provide at most ${MAX_PROOF_FILES} documents`);
+    }
+    const prefix = `experts/${current._id.toString()}/documents/`;
+    update.verificationDocuments = payload.documents.map((raw: any) => {
+      const type = String(raw?.type);
+      const s3Key = String(raw?.s3Key || "");
+      const fileName = String(raw?.fileName || "").slice(0, 200);
+      if (!(PROOF_TYPES as readonly string[]).includes(type)) {
+        throw new Error("Invalid document type");
+      }
+      if (!s3Key.startsWith(prefix) || s3Key.includes("..") || !fileName) {
+        throw new Error("Invalid document reference");
+      }
+      return { type, s3Key, fileName, uploadedAt: new Date() };
+    });
+  }
+
+  if (payload.achievementProofLink !== undefined) {
+    const link = String(payload.achievementProofLink || "").trim();
+    if (link) {
+      let parsed: URL;
+      try {
+        parsed = new URL(link);
+      } catch {
+        throw new Error("The achievement link must be a valid URL");
+      }
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        throw new Error("The achievement link must start with http:// or https://");
+      }
+    }
+    update.achievementProofLink = link;
+  }
+
+  const expert = await Expert.findByIdAndUpdate(current._id, update, { new: true })
+    .populate("userId", "name email")
+    .lean();
+  if (!expert) throw new Error("Expert profile not found");
+  return withFreshPhoto(serializeExpertFull(expert), expert);
+};
+
 export const submitExpertForReview = async (userId: string) => {
   const current = await Expert.findOne({
     userId: toObjectId(userId),
@@ -258,6 +320,12 @@ export const submitExpertForReview = async (userId: string) => {
     !current.inPersonAddress?.trim()
   ) {
     missing.push("an in-person location");
+  }
+  const hasProofFile = (type: string) =>
+    (current.verificationDocuments || []).some((d: { type: string }) => d.type === type);
+  if (!hasProofFile("ID_PROOF")) missing.push("an ID document");
+  if (!hasProofFile("ACHIEVEMENT_PROOF") && !current.achievementProofLink?.trim()) {
+    missing.push("proof of your achievements (a file or a link)");
   }
   if (!current.panNumber?.trim()) missing.push("a PAN number");
   if (!current.payoutMethods || current.payoutMethods.length === 0) {

@@ -29,7 +29,9 @@ import {
   submitExpertForReview,
   approveExpert,
   rejectExpert,
+  setExpertVerificationProof,
 } from "../services/ExpertsService";
+import { s3Service } from "../../shared/services/S3Service";
 import {
   sendExpertAdminCredentialsEmail,
   sendExpertApprovedEmail,
@@ -539,6 +541,45 @@ export const getMyProfile = async (req: Request, res: Response): Promise<void> =
     res.json({ success: true, message: "Profile retrieved", data });
   } catch (e) {
     fail(res, e, 404);
+  }
+};
+
+export const getVerificationUploadUrl = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const { fileName, contentType, documentType } = req.body || {};
+    if (typeof fileName !== "string" || typeof contentType !== "string") {
+      throw new Error("fileName and contentType are required");
+    }
+    if (documentType !== "ID_PROOF" && documentType !== "ACHIEVEMENT_PROOF") {
+      throw new Error("documentType must be ID_PROOF or ACHIEVEMENT_PROOF");
+    }
+    if (!["application/pdf", "image/jpeg", "image/png"].includes(contentType)) {
+      throw new Error("Invalid content type. Allowed: application/pdf, image/jpeg, image/png");
+    }
+    const expert = await Expert.findOne({ userId }).select("_id");
+    if (!expert) throw new Error("Expert profile not found");
+    const data = await s3Service.generateExpertVerificationUploadUrl(
+      fileName,
+      contentType,
+      expert._id.toString(),
+      documentType
+    );
+    res.json({ success: true, message: "Upload URL generated", data });
+  } catch (e) {
+    fail(res, e);
+  }
+};
+
+export const saveMyVerificationProof = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = requireAuth(req, res);
+    if (!userId) return;
+    const data = await setExpertVerificationProof(userId, req.body || {});
+    res.json({ success: true, message: "Proof saved", data });
+  } catch (e) {
+    fail(res, e);
   }
 };
 

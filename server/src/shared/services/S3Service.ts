@@ -422,6 +422,32 @@ export class S3Service {
   }
 
   /**
+   * Presigned upload URL for an expert's ID or achievement proof. Same shape as
+   * the coach version; the key is namespaced by expert id so a saved key can be
+   * checked against its owner.
+   */
+  async generateExpertVerificationUploadUrl(
+    fileName: string,
+    contentType: string,
+    expertId: string,
+    documentType: "ID_PROOF" | "ACHIEVEMENT_PROOF"
+  ): Promise<UploadUrlResponse> {
+    const fileExtension = this.resolveSafeExtension(fileName, contentType);
+    const sanitizedFileName = `${documentType.toLowerCase()}_${Date.now()}.${fileExtension}`;
+    const key = `experts/${expertId}/documents/${sanitizedFileName}`;
+
+    const putCommand = new PutObjectCommand({
+      Bucket: this.documentsBucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    const uploadUrl = await getSignedUrl(this.s3Client, putCommand, { expiresIn: 3600 });
+    const downloadUrl = await this.generateDownloadUrl(key, "verification", 3600);
+
+    return { uploadUrl, downloadUrl, fileName: sanitizedFileName, key };
+  }
+
+  /**
    * Generate presigned upload URL for an admin-submitted federation/tournament
    * data source (PDF). Same shape as generateCoachVerificationUploadUrl — the
    * downloadUrl here is only ever used server-side to fetch bytes for Gemini

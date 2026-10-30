@@ -515,6 +515,54 @@ export function ExpertAdminPanel({
         </DetailSection>
       )}
 
+      <DetailSection title="Proof submitted">
+        {(() => {
+          const files = expert.verificationDocuments || [];
+          const idFile = files.find((f) => f.type === "ID_PROOF");
+          const achievementFile = files.find((f) => f.type === "ACHIEVEMENT_PROOF");
+          const open = (file?: { fileName: string; url?: string }) =>
+            file ? (
+              file.url ? (
+                <a
+                  href={file.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-power-orange-solid font-medium hover:underline"
+                >
+                  {file.fileName}
+                </a>
+              ) : (
+                file.fileName
+              )
+            ) : (
+              "Not provided"
+            );
+          return (
+            <>
+              <DetailRow label="ID document" value={open(idFile)} />
+              <DetailRow label="Achievement file" value={open(achievementFile)} />
+              <DetailRow
+                label="Achievement link"
+                value={
+                  expert.achievementProofLink ? (
+                    <a
+                      href={expert.achievementProofLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-power-orange-solid break-all font-medium hover:underline"
+                    >
+                      {expert.achievementProofLink}
+                    </a>
+                  ) : (
+                    "Not provided"
+                  )
+                }
+              />
+            </>
+          );
+        })()}
+      </DetailSection>
+
       <DetailSection title="Tax & payout info">
         <DetailRow label="PAN number" value={expert.panNumber || "Not provided"} />
         {expert.gstNumber && <DetailRow label="GST number" value={expert.gstNumber} />}

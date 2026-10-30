@@ -19,6 +19,17 @@ export interface ExpertAvailabilityWindow {
 
 export type ExpertVerificationStatus = "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
 
+export type ExpertProofType = "ID_PROOF" | "ACHIEVEMENT_PROOF";
+
+/** An uploaded proof file. `url` is a short-lived signed link added on read. */
+export interface ExpertProofFile {
+  type: ExpertProofType;
+  fileName: string;
+  s3Key: string;
+  uploadedAt?: string;
+  url?: string;
+}
+
 export interface Expert {
   id: string;
   _id?: string;
@@ -51,6 +62,8 @@ export interface Expert {
   panNumber?: string;
   gstNumber?: string;
   payoutMethods?: IPayoutMethod[];
+  verificationDocuments?: ExpertProofFile[];
+  achievementProofLink?: string;
 }
 
 export interface OpenSlot {
@@ -359,6 +372,23 @@ export const expertApi = {
     >
   ): Promise<ApiResponse<Expert>> => {
     const res = await axiosInstance.patch(`/experts/me`, patch);
+    return res.data;
+  },
+
+  getVerificationUploadUrl: async (payload: {
+    fileName: string;
+    contentType: string;
+    documentType: ExpertProofType;
+  }): Promise<ApiResponse<{ uploadUrl: string; key: string; fileName: string }>> => {
+    const res = await axiosInstance.post(`/experts/me/verification/upload-url`, payload);
+    return res.data;
+  },
+
+  saveVerificationProof: async (payload: {
+    documents?: { type: ExpertProofType; s3Key: string; fileName: string }[];
+    achievementProofLink?: string;
+  }): Promise<ApiResponse<Expert>> => {
+    const res = await axiosInstance.put(`/experts/me/verification`, payload);
     return res.data;
   },
 

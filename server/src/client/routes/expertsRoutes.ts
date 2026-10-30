@@ -54,6 +54,18 @@ router.post("/admin/:expertId/reject", authMiddleware, adminMiddleware, expert.r
 // ── Expert self-service (literal /me before /:expertId) ───────────────────────
 router.get("/me", authMiddleware, expert.getMyProfile);
 router.patch("/me", expertMutationRateLimiter, authMiddleware, expert.updateMyProfile);
+router.post(
+  "/me/verification/upload-url",
+  expertMutationRateLimiter,
+  authMiddleware,
+  expert.getVerificationUploadUrl
+);
+router.put(
+  "/me/verification",
+  expertMutationRateLimiter,
+  authMiddleware,
+  expert.saveMyVerificationProof
+);
 router.post("/me/review", expertMutationRateLimiter, authMiddleware, expert.submitForReview);
 
 // ── Session routes (literal /sessions before /:expertId) ─────────────────────

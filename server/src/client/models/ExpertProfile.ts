@@ -21,6 +21,14 @@ export interface ExpertAvailabilityWindow {
   end: string; // "HH:mm"
 }
 
+/** Evidence submitted for review. Only the storage key is kept; links are signed on read. */
+export interface ExpertVerificationFile {
+  type: "ID_PROOF" | "ACHIEVEMENT_PROOF";
+  s3Key: string;
+  fileName: string;
+  uploadedAt: Date;
+}
+
 export interface ExpertDocument extends Document {
   userId: mongoose.Types.ObjectId;
   bio: string;
@@ -51,6 +59,10 @@ export interface ExpertDocument extends Document {
   rating: number;
   reviewCount: number;
   payoutMethods: IPayoutMethod[];
+  /** ID proof and achievement proof uploads, reviewed by an admin. */
+  verificationDocuments?: ExpertVerificationFile[];
+  /** A public record (ranking page, federation profile) that backs `achievements`. */
+  achievementProofLink?: string;
   /** PAN — stored encrypted at rest. Required to submit for review. */
   panNumber?: string;
   /** GST number — optional; not every individual expert is GST-registered. */
@@ -125,6 +137,18 @@ const expertSchema = new Schema<ExpertDocument>(
       ],
       default: [],
     },
+    verificationDocuments: {
+      type: [
+        {
+          type: { type: String, enum: ["ID_PROOF", "ACHIEVEMENT_PROOF"], required: true },
+          s3Key: { type: String, required: true },
+          fileName: { type: String, required: true, maxlength: 200 },
+          uploadedAt: { type: Date, default: Date.now },
+        },
+      ],
+      default: [],
+    },
+    achievementProofLink: { type: String, trim: true, maxlength: 500 },
     // PAN — encrypted at rest (see pre("save") hook below).
     panNumber: { type: String, trim: true, get: (v: string) => decryptValue(v) },
     // GST — not encrypted: a business-registration number, semi-public by
