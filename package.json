@@ -12,10 +12,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky",
-    "dev:client": "cd client && npm run dev",
-    "dev:admin": "cd admin && npm run dev",
-    "dev:community": "cd community && npm run dev",
-    "dev:server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "admin": "cd admin && npm run dev",
+    "community": "cd community && npm run dev",
+    "server": "cd server && npm run dev",
     "deploy:server": "cd server && npm run deploy"
   },
   "devDependencies": {

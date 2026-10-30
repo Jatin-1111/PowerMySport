@@ -12,7 +12,7 @@ import {
 import { ADMIN_ROLES } from "../constants/adminPermissions";
 import Admin from "../admin/models/Admin";
 import { cacheAdminAuth, getCachedAdminAuth, type AdminAuthRecord } from "../utils/adminAuthCache";
-import redis from "../config/redis";
+import redis, { REDIS_ENABLED } from "../config/redis";
 import { log as __rootLog } from "../utils/logger";
 const log = __rootLog.child("auth");
 
@@ -62,7 +62,9 @@ const touchAuthActivity = (userId: string): void => {
       }
     })
     .catch((error) => {
-      log.error("Redis error during touchAuthActivity:", error);
+      if (REDIS_ENABLED) {
+        log.error("Redis error during touchAuthActivity:", error);
+      }
     });
 };
 
@@ -89,7 +91,9 @@ const getCachedAccountStatus = async (userId: string): Promise<CachedAccountStat
     return raw ? (JSON.parse(raw) as CachedAccountStatus) : null;
   } catch (error) {
     // Fail open: treat as a cache miss and fall through to Mongo below.
-    log.error("Redis error reading cached account status:", error);
+    if (REDIS_ENABLED) {
+      log.error("Redis error reading cached account status:", error);
+    }
     return null;
   }
 };
@@ -103,7 +107,9 @@ const cacheAccountStatus = (userId: string, status: CachedAccountStatus): void =
       ACCOUNT_STATUS_CACHE_TTL_SECONDS
     )
     .catch((error) => {
-      log.error("Failed to cache account status:", error);
+      if (REDIS_ENABLED) {
+        log.error("Failed to cache account status:", error);
+      }
     });
 };
 
@@ -119,7 +125,9 @@ const cacheAccountStatus = (userId: string, status: CachedAccountStatus): void =
  */
 export const invalidateAccountStatusCache = (userId: string): void => {
   redis.del(accountStatusCacheKey(userId)).catch((error) => {
-    log.error("Failed to invalidate cached account status:", error);
+    if (REDIS_ENABLED) {
+      log.error("Failed to invalidate cached account status:", error);
+    }
   });
 };
 

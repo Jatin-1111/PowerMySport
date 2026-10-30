@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import redis from "../../config/redis";
+import redis, { REDIS_ENABLED } from "../../config/redis";
 import { AppError } from "../../utils/AppError";
 import { log as __rootLog } from "../../utils/logger";
 import { RankingEntry } from "../../shared/models/RankingEntry";
@@ -84,7 +84,9 @@ const isLocked = async (sportSlug: string, regNo: string): Promise<boolean> => {
     const raw = await redis.get(failureKey(sportSlug, regNo));
     return raw !== null && Number(raw) >= MAX_FAILURES_PER_REG_NO;
   } catch (error) {
-    log.error("Redis error reading claim lockout:", error);
+    if (REDIS_ENABLED) {
+      log.error("Redis error reading claim lockout:", error);
+    }
     return false; // fail open
   }
 };
@@ -101,7 +103,9 @@ const recordFailure = async (sportSlug: string, regNo: string): Promise<void> =>
       log.warn(`Ranking claim locked out for ${sportSlug}/${regNo} after ${count} failures`);
     }
   } catch (error) {
-    log.error("Redis error recording claim failure:", error);
+    if (REDIS_ENABLED) {
+      log.error("Redis error recording claim failure:", error);
+    }
   }
 };
 
@@ -109,7 +113,9 @@ const clearFailures = async (sportSlug: string, regNo: string): Promise<void> =>
   try {
     await redis.del(failureKey(sportSlug, regNo));
   } catch (error) {
-    log.error("Redis error clearing claim failures:", error);
+    if (REDIS_ENABLED) {
+      log.error("Redis error clearing claim failures:", error);
+    }
   }
 };
 

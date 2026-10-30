@@ -1,4 +1,4 @@
-import redis from "../../config/redis";
+import redis, { REDIS_ENABLED } from "../../config/redis";
 import { User } from "../../client/models/User";
 import { getNotificationSocket } from "../../client/sockets/notificationSocket";
 import { log as __rootLog } from "../../utils/logger";
@@ -52,7 +52,9 @@ export const markUserOnline = async (userId: string, socketId: string): Promise<
     await redis.hset(key, socketId, "1");
     await redis.expire(key, PRESENCE_TTL_S);
   } catch (err) {
-    log.error("[presence] markUserOnline redis error:", err);
+    if (REDIS_ENABLED) {
+      log.error("[presence] markUserOnline redis error:", err);
+    }
   }
   await persistLastActive(userId);
   emitPresenceUpdate(userId, true);
@@ -74,7 +76,9 @@ export const markUserOffline = async (userId: string, socketId: string): Promise
       await redis.del(key); // clean up immediately — don't wait for TTL
     }
   } catch (err) {
-    log.error("[presence] markUserOffline redis error:", err);
+    if (REDIS_ENABLED) {
+      log.error("[presence] markUserOffline redis error:", err);
+    }
   }
   await persistLastActive(userId, true);
   emitPresenceUpdate(userId, isStillOnline);
