@@ -27,6 +27,9 @@ interface VerificationStep3Props {
   onSubmit: () => void;
 }
 
+const hasUploaded = (docs: CoachVerificationDocument[], type: CoachVerificationDocument["type"]) =>
+  docs.some((doc) => doc.type === type && Boolean(doc.url));
+
 export function VerificationStep3({
   serviceMode,
   venueImages,
@@ -46,6 +49,10 @@ export function VerificationStep3({
   onBack,
   onSubmit,
 }: VerificationStep3Props) {
+  const hasIdProof = hasUploaded(verificationDocs, "ID_PROOF");
+  const hasCertification = hasUploaded(verificationDocs, "CERTIFICATION");
+  const proofComplete = hasIdProof && hasCertification;
+
   return (
     <div className="space-y-5">
       {serviceMode === "OWN_VENUE" && (
@@ -144,7 +151,23 @@ export function VerificationStep3({
 
       <div className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm font-semibold text-slate-900">Verification Documents (Optional)</p>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">
+              Verification Documents (Required)
+            </p>
+            <p className="mt-1 text-xs text-slate-600">
+              Upload an ID proof and at least one certification. Background check and insurance
+              documents are optional.
+            </p>
+            <ul className="mt-2 space-y-0.5 text-xs">
+              <li className={hasIdProof ? "text-emerald-700" : "text-slate-600"}>
+                {hasIdProof ? "ID proof uploaded" : "ID proof still needed"}
+              </li>
+              <li className={hasCertification ? "text-emerald-700" : "text-slate-600"}>
+                {hasCertification ? "Certification uploaded" : "Certification still needed"}
+              </li>
+            </ul>
+          </div>
           <Button
             type="button"
             variant="secondary"
@@ -249,7 +272,11 @@ export function VerificationStep3({
           type="button"
           variant="primary"
           disabled={
-            saving || isLockedByReview || uploadingDocIndex !== null || isUploadingVenueImage
+            saving ||
+            isLockedByReview ||
+            uploadingDocIndex !== null ||
+            isUploadingVenueImage ||
+            !proofComplete
           }
           onClick={onSubmit}
           className="w-full sm:w-auto"

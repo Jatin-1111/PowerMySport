@@ -365,8 +365,12 @@ export interface CoachVerificationSubmission {
 
 export const submitCoachVerification = async (
   userId: string,
-  payload: CoachVerificationSubmission
+  payload: CoachVerificationSubmission,
+  // An admin submitting on a coach's behalf vouches for them and may store
+  // fewer documents; a coach submitting for themselves may not.
+  options: { requireProof?: boolean } = {}
 ): Promise<CoachDocument> => {
+  const { requireProof = true } = options;
   const coach = await Coach.findOne({ userId });
   if (!coach) {
     throw new Error("Coach profile not found");
@@ -382,6 +386,17 @@ export const submitCoachVerification = async (
   }
 
   const documents = payload.documents || [];
+
+  // Verified means evidence is on file: an ID proof and at least one credential.
+  // Background check and safeguarding documents stay optional.
+  const hasDocument = (type: CoachDocumentFile["type"]) =>
+    documents.some((doc) => doc.type === type && Boolean(doc.url));
+  if (requireProof && (!hasDocument("ID_PROOF") || !hasDocument("CERTIFICATION"))) {
+    throw new AppError(
+      "Upload an ID proof and at least one certification to submit for verification",
+      400
+    );
+  }
 
   coach.verificationDocuments = documents.map((doc) => ({
     ...doc,

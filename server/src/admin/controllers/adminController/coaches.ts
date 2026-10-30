@@ -212,9 +212,11 @@ export const submitCoachVerificationAdminHandler = asyncHandler(
 
     const payload = req.body as { documents?: any[] };
 
-    const submitted = await submitCoachVerification((coach.userId as any).toString(), {
-      documents: payload.documents || [],
-    });
+    const submitted = await submitCoachVerification(
+      (coach.userId as any).toString(),
+      { documents: payload.documents || [] },
+      { requireProof: false }
+    );
 
     res.status(200).json({
       success: true,
