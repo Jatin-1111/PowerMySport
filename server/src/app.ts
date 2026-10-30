@@ -22,6 +22,7 @@ import {
 
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
+import providerChangeRoutes from "./admin/routes/providerChangeRoutes";
 import pathwayGuideAdminRoutes from "./admin/routes/pathwayGuideAdminRoutes";
 import opportunityAdminRoutes from "./admin/routes/opportunityAdminRoutes";
 import opportunitySourceAdminRoutes from "./admin/routes/opportunitySourceAdminRoutes";
@@ -255,6 +256,7 @@ app.use("/api/community/blog", blogRoutes);
 app.use("/api/community", communityRoutes);
 
 // Admin Domain
+app.use("/api/admin/provider-changes", providerChangeRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/pathway-guides", pathwayGuideAdminRoutes);
 app.use("/api/admin/opportunities", opportunityAdminRoutes);

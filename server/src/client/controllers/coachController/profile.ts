@@ -11,6 +11,11 @@ import { transformDocument } from "../../../middleware/responseTransform";
 import { log } from "./shared";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { AppError } from "../../../utils/AppError";
+import { Coach } from "../../models/Coach";
+import {
+  pendingChangesUpdate,
+  reconcileClaimChanges,
+} from "../../../shared/services/pendingChanges";
 
 /** Fields a coach may change on their own profile via PUT /api/coaches/:coachId. */
 const COACH_SELF_EDITABLE_FIELDS = [
@@ -238,14 +243,35 @@ export const updateCoachProfile = asyncHandler(
       }
     }
 
-    const coach = await updateCoach(coachId, updates);
+    // After verification the claim fields (sports, certifications) are what an
+    // admin reviewed: an edit to one is held for review and the approved value
+    // stays live.
+    let heldForReview = false;
+    let toApply: Record<string, unknown> = updates;
+    if (existingCoach.verificationStatus === "VERIFIED") {
+      const { rest, pending, changed } = reconcileClaimChanges(
+        "coach",
+        { sports: existingCoach.sports, certifications: existingCoach.certifications },
+        existingCoach.pendingChanges?.fields,
+        updates
+      );
+      toApply = rest;
+      if (changed) {
+        await Coach.updateOne({ _id: coachId }, pendingChangesUpdate(pending));
+      }
+      heldForReview = Boolean(pending);
+    }
+
+    const coach = await updateCoach(coachId, toApply);
 
     // Convert to JSON and transform _id to id
     const coachData = transformDocument(coach?.toJSON());
 
     res.status(200).json({
       success: true,
-      message: "Coach profile updated successfully",
+      message: heldForReview
+        ? "Profile updated. Your sports and certifications changes are waiting for review; the verified values stay live until then."
+        : "Coach profile updated successfully",
       data: coachData,
     });
   }

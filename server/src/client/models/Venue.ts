@@ -47,6 +47,8 @@ export interface VenueDocument extends Document {
   documents: VenueDocumentFile[];
   rejectionReason?: string;
   reviewNotes?: string;
+  /** Claim-field edits awaiting admin review; the approved values stay live. */
+  pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
   rating: number;
   reviewCount: number;
   hasCoaches: boolean;
@@ -345,6 +347,11 @@ const venueSchema = new Schema<VenueDocument>(
       type: String,
       enum: ["PENDING", "APPROVED", "REJECTED", "REVIEW"],
       default: "PENDING",
+    },
+    // Claim-field edits made after approval, held until an admin approves them.
+    pendingChanges: {
+      fields: { type: Schema.Types.Mixed },
+      submittedAt: { type: Date },
     },
     hasCoaches: {
       type: Boolean,

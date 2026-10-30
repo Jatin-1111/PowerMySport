@@ -50,6 +50,8 @@ export interface ExpertDocument extends Document {
   inPersonAddress?: string;
   isActive: boolean;
   verificationStatus: "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
+  /** Claim-field edits awaiting admin review; the approved values stay live. */
+  pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
   rejectionReason?: string;
   /** Snapshot of `sports` taken the moment an admin approves this expert —
    *  pathway-verification eligibility checks against this, not the live
@@ -117,6 +119,11 @@ const expertSchema = new Schema<ExpertDocument>(
       index: true,
     },
     rejectionReason: { type: String, trim: true },
+    // Claim-field edits made after approval, held until an admin approves them.
+    pendingChanges: {
+      fields: { type: Schema.Types.Mixed },
+      submittedAt: { type: Date },
+    },
     approvedSports: { type: [String] },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },

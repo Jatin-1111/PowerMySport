@@ -39,6 +39,7 @@ import {
   Webhook,
   Stethoscope,
   X,
+  FilePenLine,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -181,6 +182,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             icon: CheckCircle,
           },
           { href: "/admin/experts", label: "Experts", icon: ShieldCheck },
+          { href: "/admin/provider-changes", label: "Provider Changes", icon: FilePenLine },
         ],
       },
       {

@@ -244,7 +244,9 @@ export const updateVenueDetails = asyncHandler(
 
     res.status(200).json({
       success: true,
-      message: "Venue updated successfully",
+      message: venue.pendingChanges?.fields
+        ? "Venue updated. Your name, address or location change is waiting for review; the approved details stay live until then."
+        : "Venue updated successfully",
       data: venueData,
     });
   }

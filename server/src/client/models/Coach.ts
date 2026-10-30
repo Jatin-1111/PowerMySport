@@ -55,6 +55,8 @@ export interface CoachDocument extends Document {
   verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
+  /** Claim-field edits awaiting admin review; the approved values stay live. */
+  pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
   onboardingProgressStep?: 1 | 2 | 3;
   activeSubscriptionId?: mongoose.Types.ObjectId | null;
   subscriptionStatus?: "NONE" | "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
@@ -285,6 +287,11 @@ const coachSchema = new Schema<CoachDocument>(
     verificationNotes: {
       type: String,
       default: "",
+    },
+    // Claim-field edits made after approval, held until an admin approves them.
+    pendingChanges: {
+      fields: { type: Schema.Types.Mixed },
+      submittedAt: { type: Date },
     },
     onboardingProgressStep: {
       type: Number,

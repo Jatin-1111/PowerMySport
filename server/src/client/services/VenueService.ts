@@ -3,6 +3,7 @@ import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../../types/index";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
 import { log as __rootLog } from "../../utils/logger";
+import { pendingChangesUpdate, reconcileClaimChanges } from "../../shared/services/pendingChanges";
 const log = __rootLog.child("venue");
 
 // Matches the GST_REGEX used in ExpertsService.ts / Venue's own schema validator.
@@ -163,7 +164,7 @@ export const createVenue = async (payload: CreateVenuePayload): Promise<VenueDoc
  * admin team's working notes. Admin callers opt out via `forAdmin`.
  */
 const VENUE_PUBLIC_EXCLUDE =
-  "-payoutMethods -documents -ownerEmail -ownerPhone -emailVerified -reviewNotes -rejectionReason";
+  "-payoutMethods -documents -ownerEmail -ownerPhone -emailVerified -reviewNotes -rejectionReason -pendingChanges";
 
 export const getVenueById = async (
   id: string,
@@ -271,6 +272,7 @@ export const findVenuesNearby = async (
                 emailVerified: 0,
                 reviewNotes: 0,
                 rejectionReason: 0,
+                pendingChanges: 0,
               },
             },
           ],
@@ -404,7 +406,28 @@ export const updateVenue = async (
     sanitized.gstNumber = "";
   }
 
-  return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
+  // After approval the claim fields (name, address, location) are what an admin
+  // reviewed: an edit to one is held for review and the approved value stays live.
+  const venue = await Venue.findOne({ _id: id, ownerId }).select(
+    "approvalStatus name address location pendingChanges"
+  );
+  if (!venue) return null;
+  if (venue.approvalStatus !== "APPROVED") {
+    return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
+  }
+
+  const { rest, pending, changed } = reconcileClaimChanges(
+    "venue",
+    venue.toObject() as unknown as Record<string, unknown>,
+    venue.pendingChanges?.fields,
+    sanitized
+  );
+  const op: Record<string, unknown> = { ...(changed ? pendingChangesUpdate(pending) : {}) };
+  if (Object.keys(rest).length) {
+    op.$set = { ...((op.$set as Record<string, unknown>) || {}), ...rest };
+  }
+  if (Object.keys(op).length === 0) return Venue.findById(id);
+  return Venue.findOneAndUpdate({ _id: id, ownerId }, op, { new: true });
 };
 
 export const deleteVenue = async (id: string, ownerId: string): Promise<VenueDocument | null> => {

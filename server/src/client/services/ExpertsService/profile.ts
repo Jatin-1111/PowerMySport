@@ -1,6 +1,10 @@
 import { User } from "../../models/User";
 import { Expert } from "../../models/ExpertProfile";
 import { encryptValue } from "../../../shared/utils/encryption";
+import {
+  pendingChangesUpdate,
+  reconcileClaimChanges,
+} from "../../../shared/services/pendingChanges";
 import { isSupportedSport, SUPPORTED_SPORTS } from "../../../shared/constants/supportedSports";
 import {
   toObjectId,
@@ -396,8 +400,29 @@ export const getMyExpertProfile = async (userId: string) => {
 };
 
 export const updateMyExpertProfile = async (userId: string, patch: Record<string, unknown>) => {
-  const update = sanitizeProfilePatch(patch);
-  const expert = await Expert.findOneAndUpdate({ userId: toObjectId(userId) }, update, {
+  let update = sanitizeProfilePatch(patch);
+  const op: Record<string, unknown> = {};
+
+  // After approval the claim fields (sports, achievements) are what an admin
+  // reviewed: an edit to one is held for review and the approved value stays live.
+  const existing = await Expert.findOne({ userId: toObjectId(userId) }).select(
+    "verificationStatus sports achievements pendingChanges"
+  );
+  if (existing?.verificationStatus === "APPROVED") {
+    const { rest, pending, changed } = reconcileClaimChanges(
+      "expert",
+      existing.toObject() as unknown as Record<string, unknown>,
+      existing.pendingChanges?.fields,
+      update
+    );
+    update = rest;
+    if (changed) Object.assign(op, pendingChangesUpdate(pending));
+  }
+  if (Object.keys(update).length) {
+    op.$set = { ...((op.$set as Record<string, unknown>) || {}), ...update };
+  }
+
+  const expert = await Expert.findOneAndUpdate({ userId: toObjectId(userId) }, op, {
     new: true,
   })
     .populate("userId", "name email")

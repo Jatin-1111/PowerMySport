@@ -588,7 +588,13 @@ export const updateMyProfile = async (req: Request, res: Response): Promise<void
     const userId = requireAuth(req, res);
     if (!userId) return;
     const data = await updateMyExpertProfile(userId, req.body || {});
-    res.json({ success: true, message: "Profile updated", data });
+    res.json({
+      success: true,
+      message: data.pendingChanges
+        ? "Profile updated. Your sports and achievements changes are waiting for review; the approved values stay live until then."
+        : "Profile updated",
+      data,
+    });
   } catch (e) {
     fail(res, e);
   }

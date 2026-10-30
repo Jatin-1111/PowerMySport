@@ -176,6 +176,7 @@ export const serializeExpertFull = (expert: any) => ({
     uploadedAt: d.uploadedAt,
   })),
   achievementProofLink: expert.achievementProofLink,
+  pendingChanges: expert.pendingChanges?.fields ? expert.pendingChanges : undefined,
 });
 
 /**
