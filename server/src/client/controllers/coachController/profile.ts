@@ -12,6 +12,23 @@ import { log } from "./shared";
 import { asyncHandler } from "../../../middleware/asyncHandler";
 import { AppError } from "../../../utils/AppError";
 
+/** Fields a coach may change on their own profile via PUT /api/coaches/:coachId. */
+const COACH_SELF_EDITABLE_FIELDS = [
+  "bio",
+  "certifications",
+  "sports",
+  "hourlyRate",
+  "sportPricing",
+  "serviceMode",
+  "ownVenueDetails",
+  "baseLocation",
+  "serviceRadiusKm",
+  "travelBufferTime",
+  "availability",
+  "availabilityBySport",
+  "gstNumber",
+] as const;
+
 /**
  * Create a new coach profile
  * POST /api/coaches
@@ -198,7 +215,13 @@ export const updateCoachProfile = asyncHandler(
     }
 
     // Handle ownVenueDetails validation and preservation
-    const updates = { ...req.body };
+    // `updateCoach` assigns every key it is given, so the owner route must pass
+    // only profile fields. Verification, rating, subscription and payout state
+    // are set by the verification flow, the review system and their own routes.
+    const updates: Record<string, unknown> & { ownVenueDetails?: any } = {};
+    for (const field of COACH_SELF_EDITABLE_FIELDS) {
+      if (req.body?.[field] !== undefined) updates[field] = req.body[field];
+    }
     const newServiceMode = updates.serviceMode || existingCoach.serviceMode;
 
     // Handle service mode specific logic
