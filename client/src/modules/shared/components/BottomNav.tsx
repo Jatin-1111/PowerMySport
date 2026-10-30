@@ -2,6 +2,7 @@
 
 import { Badge } from "../ui/Badge";
 import { cn } from "@/utils/cn";
+import { findActiveHref } from "../utils/activeNavHref";
 import { type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,12 +22,7 @@ interface BottomNavProps {
 export function BottomNav({ items, className }: BottomNavProps) {
   const pathname = usePathname();
 
-  const isItemActive = (href: string) => {
-    if (href === "/") {
-      return pathname === "/";
-    }
-    return pathname === href || pathname.startsWith(`${href}/`);
-  };
+  const activeHref = findActiveHref(items, pathname);
 
   return (
     <nav
@@ -41,7 +37,7 @@ export function BottomNav({ items, className }: BottomNavProps) {
       <div className="flex h-14 items-center justify-around overflow-x-auto px-1">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = isItemActive(item.href);
+          const active = item.href === activeHref;
           const badgeText = item.badge ? `, ${item.badge} pending` : "";
 
           return (
