@@ -103,7 +103,7 @@ export function MyChildSection({ childId }: { childId: string }) {
       )}
 
       {history && (
-        <div className="mt-8 space-y-8">
+        <div className="mt-10 space-y-12">
           {tiles.length > 0 && (
             <div className="grid gap-4 sm:grid-cols-3">
               {tiles.map((tile) => (
