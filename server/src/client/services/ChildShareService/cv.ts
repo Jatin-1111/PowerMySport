@@ -85,6 +85,14 @@ const formatDate = (iso: string, precision: ChildSharePublicRow["datePrecision"]
 
 const dayOf = (iso: string) => formatDate(iso, "day");
 
+/** The academic lines worth drawing; a profile with nothing filled in yields none. */
+const academicFacts = (academics: NonNullable<ChildSharePublicView["academics"]>): string[] =>
+  [
+    academics.board ? `Board: ${BOARD_LABELS[academics.board]}` : null,
+    academics.school ? `School: ${academics.school}` : null,
+    academics.intendedField ? `Wants to study: ${academics.intendedField}` : null,
+  ].filter((fact): fact is string => fact !== null);
+
 const duration = (seconds: number): string =>
   `${Math.floor(seconds / 60)}:${String(Math.round(seconds) % 60).padStart(2, "0")}`;
 
@@ -195,25 +203,19 @@ export const renderCvPdf = (view: ChildSharePublicView): Promise<Buffer> =>
     for (const section of ORDER) {
       const rows = view.timeline.filter((row) => row.section === section);
       const academics = section === "academics" ? view.academics : null;
-      if (rows.length === 0 && !academics) continue;
+      const facts = academics ? academicFacts(academics) : [];
+      if (rows.length === 0 && facts.length === 0) continue;
 
       heading(SECTION_TITLES[section]);
 
-      if (academics) {
-        const facts = [
-          academics.board ? `Board: ${BOARD_LABELS[academics.board]}` : null,
-          academics.school ? `School: ${academics.school}` : null,
-          academics.intendedField ? `Wants to study: ${academics.intendedField}` : null,
-        ].filter(Boolean);
-        if (facts.length > 0) {
-          room(20);
-          doc
-            .font("Roboto")
-            .fontSize(10)
-            .fillColor(INK)
-            .text(facts.join("      "), MARGIN, doc.y, { width });
-          doc.moveDown(0.5);
-        }
+      if (facts.length > 0) {
+        room(20);
+        doc
+          .font("Roboto")
+          .fontSize(10)
+          .fillColor(INK)
+          .text(facts.join("      "), MARGIN, doc.y, { width });
+        doc.moveDown(0.5);
       }
 
       for (const row of rows) {
@@ -305,7 +307,11 @@ export const renderCvPdf = (view: ChildSharePublicView): Promise<Buffer> =>
         });
     }
 
-    if (view.timeline.length === 0 && view.videos.length === 0 && !view.academics) {
+    if (
+      view.timeline.length === 0 &&
+      view.videos.length === 0 &&
+      (!view.academics || academicFacts(view.academics).length === 0)
+    ) {
       doc
         .moveDown(1.5)
         .font("Roboto")
