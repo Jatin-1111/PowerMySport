@@ -37,7 +37,6 @@ const ROUTES = [
   "/experts",
   "/experts/sessions",
   "/payment",
-  "/saved",
   // shop
   "/shop",
   "/shop/cart",

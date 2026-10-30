@@ -108,7 +108,7 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       section: "Community",
     },
     {
-      href: "/saved",
+      href: "/dashboard/saved",
       label: "Saved",
       icon: Bookmark,
       section: "Community",
@@ -129,9 +129,9 @@ function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
       section: "Activity",
     },
     {
-      // Recurring coaching lives outside /dashboard because a class is not a
-      // booking — it belongs to a programme with its own schedule and ledger.
-      href: "/my-classes",
+      // A class is not a booking: it belongs to a programme with its own
+      // schedule and ledger, which is why it is a page of its own.
+      href: "/dashboard/my-classes",
       label: "My Classes",
       icon: CalendarRange,
       section: "Activity",

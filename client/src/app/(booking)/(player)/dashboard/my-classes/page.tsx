@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { MyClassesClient } from "./MyClassesClient";
 
 /**
- * Server shell for `/my-classes`. noindex — a signed-in student's own schedule.
+ * Server shell for `/dashboard/my-classes`. noindex — a signed-in student's own schedule.
  */
 export const metadata: Metadata = noindexMetadata("My classes");
 

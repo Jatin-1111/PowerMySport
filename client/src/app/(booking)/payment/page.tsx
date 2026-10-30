@@ -61,6 +61,7 @@ function PaymentPageContent() {
   // only difference is where the payer belongs afterwards: their classes.
   const offeringId = searchParams.get("offeringId") || "";
   const isProgrammeEnrolment = isSubscriptionPayment && Boolean(offeringId);
+  const afterPaymentHref = isProgrammeEnrolment ? "/dashboard/my-classes" : "/dashboard";
   const isMockPayment =
     searchParams.get("mode") === "mock" ||
     searchParams.get("mock") === "true" ||
@@ -359,11 +360,7 @@ function PaymentPageContent() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  variant="primary"
-                  className="w-full"
-                  onClick={() => router.push(isProgrammeEnrolment ? "/my-classes" : "/dashboard")}
-                >
+                <Button className="w-full" onClick={() => router.push(afterPaymentHref)}>
                   {isProgrammeEnrolment ? "Go to my classes" : "Go to dashboard"}
                 </Button>
                 <Button

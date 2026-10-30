@@ -31,7 +31,7 @@ Player account:
 - /dashboard — Player dashboard
 - /dashboard/my-bookings — Booking history & upcoming sessions (viewing existing bookings only — do not use this to suggest making a new booking while the marketplace is down)
 - /dashboard/wallet — Wallet & credits
-- /saved — Saved venues / coaches
+- /dashboard/saved — Saved venues / coaches
 - /notifications — Notifications
 - /settings — Account settings
 ${

@@ -46,7 +46,6 @@ export default function robots(): MetadataRoute.Robots {
           "/payment",
           "/checkout",
           "/booking",
-          "/saved",
           "/notifications",
         ],
       },
