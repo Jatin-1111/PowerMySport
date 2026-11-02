@@ -175,13 +175,12 @@ export default function AcademyOnboardingContainer() {
                 if (step >= 7) {
                   newFormData.step7 = {
                     academyId: idToUse,
-                    bankAccountName: academyData.bankAccountName || "",
-                    bankAccountNumber: academyData.bankAccountNumber || "",
-                    bankIfsc: academyData.bankIfsc || "",
-                    upiId: academyData.upiId || "",
+                    // Payout details are stored sealed and are never shown again: only
+                    // the frequency and the policies come back.
                     payoutFrequency: academyData.payoutFrequency || "monthly",
                     cancellationPolicy: academyData.cancellationPolicy || "",
                     refundPolicy: academyData.refundPolicy || "",
+                    agreeToTerms: false,
                   };
                 }
 

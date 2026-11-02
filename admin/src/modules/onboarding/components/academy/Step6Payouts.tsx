@@ -7,6 +7,11 @@ import type {
   AcademyPayoutFrequency,
   AcademyStep7Payload,
 } from "@/modules/onboarding/types/academy";
+import {
+  buildPayoutPayload,
+  validatePayoutForm,
+  type PayoutFormValues,
+} from "@/modules/onboarding/utils/academyPayoutForm";
 
 interface Step6PayoutsProps {
   academyId: string;
@@ -23,9 +28,10 @@ export default function Step6Payouts({
   onBack,
   previousData,
 }: Step6PayoutsProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PayoutFormValues>({
     bankAccountName: previousData?.bankAccountName || "",
     bankAccountNumber: previousData?.bankAccountNumber || "",
+    bankAccountNumberConfirm: previousData?.bankAccountNumberConfirm || "",
     bankIfsc: previousData?.bankIfsc || "",
     upiId: previousData?.upiId || "",
     payoutFrequency: (previousData?.payoutFrequency || "monthly") as AcademyPayoutFrequency,
@@ -38,42 +44,7 @@ export default function Step6Payouts({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-
-    const hasBankDetails =
-      formData.bankAccountNumber || formData.bankIfsc || formData.bankAccountName;
-    const hasUpi = formData.upiId.trim();
-
-    if (!hasBankDetails && !hasUpi) {
-      errors.paymentMethod = "Please provide either a bank account or UPI ID for payouts";
-    }
-
-    if (hasBankDetails) {
-      if (formData.bankAccountName.trim().length < 3) {
-        errors.bankAccountName = "Account holder name is required (min 3 characters)";
-      }
-      if (!/^\d{9,18}$/.test(formData.bankAccountNumber)) {
-        errors.bankAccountNumber = "Invalid account number (9-18 digits)";
-      }
-      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(formData.bankIfsc)) {
-        errors.bankIfsc = "Invalid IFSC code (e.g., SBIN0001234)";
-      }
-    }
-
-    if (hasUpi && !/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/.test(formData.upiId.trim())) {
-      errors.upiId = "Invalid UPI ID format (e.g., name@upi)";
-    }
-
-    if (formData.cancellationPolicy.trim().length < 10) {
-      errors.cancellationPolicy = "Please provide a clear cancellation policy (min 10 characters)";
-    }
-    if (formData.refundPolicy.trim().length < 10) {
-      errors.refundPolicy = "Please provide a clear refund policy (min 10 characters)";
-    }
-    if (!formData.agreedToTerms) {
-      errors.agreedToTerms = "You must agree to the terms and conditions";
-    }
-
+    const errors = validatePayoutForm(formData);
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -89,16 +60,7 @@ export default function Step6Payouts({
     setIsSubmitting(true);
 
     try {
-      const payload: AcademyStep7Payload = {
-        academyId,
-        bankAccountName: formData.bankAccountName.trim(),
-        bankAccountNumber: formData.bankAccountNumber,
-        bankIfsc: formData.bankIfsc,
-        upiId: formData.upiId.trim(),
-        payoutFrequency: formData.payoutFrequency,
-        cancellationPolicy: formData.cancellationPolicy.trim(),
-        refundPolicy: formData.refundPolicy.trim(),
-      };
+      const payload = buildPayoutPayload(academyId, formData);
       await onSubmit(payload);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to save payouts");
@@ -123,8 +85,8 @@ export default function Step6Payouts({
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="text-sm text-amber-800">
-            💡 Provide either a <strong>bank account</strong> or <strong>UPI ID</strong> (or both)
-            for receiving payouts.
+            Provide a <strong>bank account</strong>, a <strong>UPI ID</strong>, or both for
+            receiving payouts.
           </p>
         </div>
 
@@ -184,6 +146,37 @@ export default function Step6Payouts({
             </div>
 
             <div>
+              <label
+                htmlFor="admin-payout-number-confirm"
+                className="mb-1 block text-sm font-medium text-slate-900"
+              >
+                Confirm Account Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="admin-payout-number-confirm"
+                type="text"
+                value={formData.bankAccountNumberConfirm}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    bankAccountNumberConfirm: e.target.value.replace(/\D/g, ""),
+                  }))
+                }
+                // Typed again on purpose: pasting would copy a mistake across.
+                onPaste={(e) => e.preventDefault()}
+                className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
+                  fieldErrors.bankAccountNumberConfirm
+                    ? "border-red-300 bg-red-50"
+                    : "border-slate-300 bg-white"
+                }`}
+                disabled={isSubmitting}
+              />
+              {fieldErrors.bankAccountNumberConfirm && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.bankAccountNumberConfirm}</p>
+              )}
+            </div>
+
+            <div>
               <label className="mb-1 block text-sm font-medium text-slate-900">
                 IFSC Code <span className="text-red-500">*</span>
               </label>
@@ -230,7 +223,7 @@ export default function Step6Payouts({
                   upiId: "",
                 }));
             }}
-            placeholder="username@upi"
+            placeholder="name@okhdfcbank"
             className={`focus:ring-power-orange-solid w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 ${
               fieldErrors.upiId ? "border-red-300 bg-red-50" : "border-slate-300 bg-white"
             }`}
@@ -325,7 +318,8 @@ export default function Step6Payouts({
               disabled={isSubmitting}
             />
             <span className="text-sm text-blue-900">
-              I agree to PowerMySport Terms & Conditions and confirm all information is accurate
+              The academy owner has agreed to the PowerMySport Partner Terms, and I confirm all
+              information is accurate
             </span>
           </label>
           {fieldErrors.agreedToTerms && (

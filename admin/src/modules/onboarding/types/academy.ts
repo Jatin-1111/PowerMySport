@@ -263,13 +263,16 @@ export interface AcademyStep6Payload {
 
 export interface AcademyStep7Payload {
   academyId: string;
-  bankAccountNumber: string;
-  bankIfsc: string;
-  bankAccountName: string;
-  upiId: string;
+  /** Bank details are all or nothing; a UPI ID alone is fine. */
+  bankAccountNumber?: string;
+  bankAccountNumberConfirm?: string;
+  bankIfsc?: string;
+  bankAccountName?: string;
+  upiId?: string;
   payoutFrequency: "weekly" | "biweekly" | "monthly";
   cancellationPolicy: string;
   refundPolicy: string;
+  agreeToTerms: boolean;
 }
 
 export interface ConfirmImagesPayload {

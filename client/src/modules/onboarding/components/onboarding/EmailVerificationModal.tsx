@@ -229,11 +229,17 @@ export default function EmailVerificationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="email-verification-title"
+        className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+      >
         {/* Close button */}
         {showCloseButton && (
           <button
             onClick={onClose}
+            aria-label="Close"
             className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
             disabled={loading}
           >
@@ -246,9 +252,11 @@ export default function EmailVerificationModal({
           <div className="bg-power-orange/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
             <Mail size={30} className="text-power-orange" />
           </div>
-          <h2 className="mb-2 text-2xl font-bold text-slate-900">Verify Your Email</h2>
+          <h2 id="email-verification-title" className="mb-2 text-2xl font-bold text-slate-900">
+            Verify Your Email
+          </h2>
           <p className="text-sm text-slate-600">
-            We've sent a 6-digit code to
+            We&apos;ve sent a 6-digit code to
             <br />
             <span className="font-semibold text-slate-900">{email}</span>
           </p>
@@ -296,7 +304,7 @@ export default function EmailVerificationModal({
 
         {/* Resend */}
         <div className="text-center text-sm">
-          <span className="text-slate-600">Didn't receive the code? </span>
+          <span className="text-slate-600">Didn&apos;t receive the code? </span>
           {resendCooldown > 0 ? (
             <span className="text-slate-400">Resend in {resendCooldown}s</span>
           ) : (
