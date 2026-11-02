@@ -5,6 +5,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAddVenueFlow } from "@/modules/admin/hooks/useAddVenueFlow";
 
 const pushMock = vi.fn();
+// The conversion prompt is an in-app dialog (useConfirm), not window.confirm.
+const confirmMock = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/shared/ui/useConfirm", () => ({
+  useConfirm: () => [confirmMock, null],
+}));
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
 }));
@@ -53,6 +59,7 @@ function fillStep1(result: { current: ReturnType<typeof useAddVenueFlow> }) {
 }
 
 beforeEach(() => {
+  confirmMock.mockReset();
   pushMock.mockReset();
   toastError.mockReset();
   toastSuccess.mockReset();
@@ -270,7 +277,7 @@ describe("useAddVenueFlow — handlePublish", () => {
       },
     };
     updateVenue.mockRejectedValueOnce(conflictError).mockResolvedValueOnce({ success: true });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    confirmMock.mockResolvedValue(true);
 
     const { result } = renderHook(() => useAddVenueFlow());
     await toReadyToPublish(result);
@@ -292,7 +299,7 @@ describe("useAddVenueFlow — handlePublish", () => {
       response: { status: 409, data: { requiresConversion: true } },
     };
     updateVenue.mockRejectedValueOnce(conflictError);
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+    confirmMock.mockResolvedValue(false);
 
     const { result } = renderHook(() => useAddVenueFlow());
     await toReadyToPublish(result);

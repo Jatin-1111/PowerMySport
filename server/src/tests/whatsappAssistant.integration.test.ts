@@ -268,9 +268,11 @@ describe("replyToWhatsAppMessage", () => {
     );
     // No user, so nothing from either account; the number's own hash for its notes, and the
     // parent's message, which the plan tools check themselves.
+    // `outbound` is the empty channel a tool uses to ask for something after the reply.
     assert.deepEqual(contexts[0], {
       phoneHash: hashPhone(PHONE),
       userMessage: "check his ranking",
+      outbound: {},
     });
     assert.match(seen[0]!.systemPrompt, /not identified/);
   });

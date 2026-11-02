@@ -6,6 +6,12 @@ import { useCoachOnboardingFlow } from "@/modules/admin/hooks/useCoachOnboarding
 
 const toastError = vi.fn();
 const toastSuccess = vi.fn();
+// The conversion prompt is an in-app dialog (useConfirm), not window.confirm.
+const confirmMock = vi.hoisted(() => vi.fn());
+vi.mock("@/modules/shared/ui/useConfirm", () => ({
+  useConfirm: () => [confirmMock, null],
+}));
+
 vi.mock("@/lib/toast", () => ({
   toast: {
     error: (...args: unknown[]) => toastError(...args),
@@ -53,6 +59,7 @@ function fillStep1(result: { current: Hook }) {
 }
 
 beforeEach(() => {
+  confirmMock.mockReset();
   toastError.mockReset();
   toastSuccess.mockReset();
   createCoach.mockReset();
@@ -258,7 +265,7 @@ describe("useCoachOnboardingFlow — handleSubmit", () => {
       .mockRejectedValueOnce(conflictError)
       .mockResolvedValueOnce({ success: true, data: { coach: { id: "coach-2" } } });
     approveCoachVerification.mockResolvedValue({ success: true });
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    confirmMock.mockResolvedValue(true);
 
     const { result } = renderHook(() => useCoachOnboardingFlow());
     await toReadyToSubmit(result);
