@@ -60,6 +60,7 @@ export default function AcademyOnboardingContainer() {
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [formData, setFormData] = useState<AcademyFormData>({});
   const [payoutSaved, setPayoutSaved] = useState(false);
+  const [resumed, setResumed] = useState(false);
 
   const unlockedStep = Math.min(savedStep + 1, LAST_ACADEMY_STEP) as AcademyStepNumber;
 
@@ -75,7 +76,14 @@ export default function AcademyOnboardingContainer() {
         const response = await academyOnboardingApi.getProgress(idToLoad);
         if (cancelled || !response.data) return;
         const serverStep = response.data.currentStep;
-        const academy = response.data.data as unknown as OnboardingAcademy;
+        const academy = response.data.data as unknown as OnboardingAcademy & { lifecycle?: string };
+        // Already sent for review: there is nothing left to fill in.
+        if (academy.lifecycle === "SUBMITTED") {
+          forget();
+          router.replace(`/academy/onboarding/success/${idToLoad}`);
+          return;
+        }
+        setResumed(true);
         setAcademyId(idToLoad);
         setSavedStep(serverStep || 0);
         setCurrentStep(resumeStepFor(serverStep));
@@ -85,9 +93,10 @@ export default function AcademyOnboardingContainer() {
         if (!resumeId) router.replace(pageUrl(idToLoad));
       } catch {
         if (!cancelled) {
-          // Without the sign-up's own token (another device) or a signed-in owner, the server refuses.
-          setLoadFailed(true);
           forget();
+          // Without the sign-up's own token (another device) or a signed-in owner, the server
+          // refuses. An id that was only remembered, not asked for, just starts a new sign-up.
+          if (resumeId) setLoadFailed(true);
         }
       } finally {
         if (!cancelled) setBooting(false);
@@ -250,6 +259,7 @@ export default function AcademyOnboardingContainer() {
                   type="button"
                   disabled={!open}
                   onClick={() => goToStep(number)}
+                  aria-label={`Step ${number}: ${title}`}
                   aria-current={number === currentStep ? "step" : undefined}
                   className={`flex w-full flex-col items-center ${open ? "cursor-pointer" : "cursor-not-allowed"}`}
                 >
@@ -277,11 +287,12 @@ export default function AcademyOnboardingContainer() {
           })}
         </ol>
 
-        {resumeId && savedStep >= 1 && currentStep > 1 && (
+        {resumed && savedStep >= 1 && currentStep > 1 && (
           <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
             <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
             <span>
-              Continuing from step {currentStep}. Steps 1 to {savedStep} are saved.
+              Continuing from step {currentStep}.{" "}
+              {savedStep === 1 ? "Step 1 is saved." : `Steps 1 to ${savedStep} are saved.`}
             </span>
           </div>
         )}

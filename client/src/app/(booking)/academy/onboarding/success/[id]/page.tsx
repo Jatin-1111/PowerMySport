@@ -66,7 +66,7 @@ export default function AcademySubmissionSuccessPage() {
           {/* Timeline */}
           <div className="rounded-lg bg-slate-50 p-4">
             <p className="text-sm font-medium text-slate-600">
-              ⏱️ Expected Approval Time:{" "}
+              Expected approval time:{" "}
               <span className="font-semibold text-slate-900">24-48 hours</span>
             </p>
           </div>

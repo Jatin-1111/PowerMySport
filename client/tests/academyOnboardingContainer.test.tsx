@@ -125,8 +125,12 @@ describe("academy sign-up container", () => {
     api.getProgress.mockResolvedValue({ data: { currentStep: 2, data: academy } });
     render(<AcademyOnboardingContainer />);
     await screen.findByText("three");
-    expect((screen.getByRole("button", { name: /^5/ }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole("button", { name: /^3/ }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: /^Step 5/ }) as HTMLButtonElement).disabled).toBe(
+      true
+    );
+    expect((screen.getByRole("button", { name: /^Step 3/ }) as HTMLButtonElement).disabled).toBe(
+      false
+    );
   });
 
   it("says so when the sign-up cannot be opened on this device", async () => {
@@ -134,6 +138,32 @@ describe("academy sign-up container", () => {
     api.getProgress.mockRejectedValue(new Error("403"));
     render(<AcademyOnboardingContainer />);
     expect(await screen.findByText("We could not open this sign-up")).toBeTruthy();
+  });
+
+  it("starts a fresh sign-up, with no error, when only a remembered id fails to load", async () => {
+    localStorage.setItem("academy_onboarding_current", "old1");
+    api.getProgress.mockRejectedValue(new Error("404"));
+    render(<AcademyOnboardingContainer />);
+    await screen.findByText("one");
+    expect(screen.queryByText("We could not open this sign-up")).toBeNull();
+    expect(localStorage.getItem("academy_onboarding_current")).toBeNull();
+  });
+
+  it("sends an already submitted sign-up to its success page", async () => {
+    search = "resumeId=a1";
+    api.getProgress.mockResolvedValue({
+      data: { currentStep: 7, data: { ...academy, lifecycle: "SUBMITTED" } },
+    });
+    render(<AcademyOnboardingContainer />);
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/academy/onboarding/success/a1"));
+  });
+
+  it("does not say 'continuing' right after a new sign-up is created", async () => {
+    api.startOnboarding.mockResolvedValue({ data: { academyId: "a1" } });
+    render(<AcademyOnboardingContainer />);
+    click("save one");
+    await screen.findByText("two");
+    expect(screen.queryByText(/Continuing from step/)).toBeNull();
   });
 
   it("submits after step 7 and goes to the success page", async () => {
