@@ -9,6 +9,14 @@ import type { OwnAcademy, StatusView } from "../types";
 const ONBOARDING = "/academy/onboarding";
 
 /**
+ * The setup form finds the academy to resume from the URL or from an id the
+ * browser stored when the sign-up began. A signed-in owner on another device
+ * has neither, and would get a blank first step that starts a second academy.
+ * Passing the id makes the form load the one this account owns.
+ */
+const setupHref = (academy: OwnAcademy): string => `${ONBOARDING}?resumeId=${academy.id}`;
+
+/**
  * Turns where the academy stands into one message and one next action.
  *
  * Every state names what is true, what happens next, and who has to act. The
@@ -40,7 +48,7 @@ export const describeAcademyStatus = (academy: OwnAcademy | null): StatusView =>
         body: `Next is ${academyStepTitle(next).toLowerCase()}. We start reviewing your academy once every step is done and submitted.`,
         primary: {
           label: `Continue with ${academyStepTitle(next).toLowerCase()}`,
-          href: ONBOARDING,
+          href: setupHref(academy),
         },
         steps: "setup",
         showFigures: false,
@@ -77,7 +85,7 @@ export const describeAcademyStatus = (academy: OwnAcademy | null): StatusView =>
         body: academy.rejectionReason
           ? "This is what our team asked you to fix. Update your details, then submit again."
           : "Our team asked for changes. Update your details, then submit again.",
-        primary: { label: "Update your details", href: ONBOARDING },
+        primary: { label: "Update your details", href: setupHref(academy) },
         steps: null,
         showFigures: false,
       };

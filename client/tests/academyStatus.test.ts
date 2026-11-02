@@ -43,6 +43,19 @@ describe("describeAcademyStatus", () => {
     expect(view.primary?.label).toBe("Continue with venues");
   });
 
+  it("resumes the owner's own academy instead of opening a blank sign-up", () => {
+    const draft = describeAcademyStatus(academy({ id: "abc123", onboardingStep: 3 }));
+    expect(draft.primary?.href).toBe("/academy/onboarding?resumeId=abc123");
+
+    const rejected = describeAcademyStatus(
+      academy({ id: "abc123", lifecycle: "REJECTED", onboardingStep: 7 })
+    );
+    expect(rejected.primary?.href).toBe("/academy/onboarding?resumeId=abc123");
+
+    // No academy yet: a fresh sign-up is exactly right.
+    expect(describeAcademyStatus(null).primary?.href).toBe("/academy/onboarding");
+  });
+
   it("does not run past the last step", () => {
     const view = describeAcademyStatus(academy({ onboardingStep: 7 }));
     expect(view.headline).toBe("7 of 7 steps saved");
@@ -64,7 +77,7 @@ describe("describeAcademyStatus", () => {
       academy({ lifecycle: "REJECTED", onboardingStep: 7, rejectionReason: "PAN unreadable." })
     );
     expect(view.tone).toBe("alert");
-    expect(view.primary?.href).toBe("/academy/onboarding");
+    expect(view.primary?.href).toBe("/academy/onboarding?resumeId=a1");
     expect(view.body).toContain("what our team asked you to fix");
   });
 
