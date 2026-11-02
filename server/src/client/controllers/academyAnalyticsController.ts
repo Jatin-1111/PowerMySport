@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { getAcademyEarnings, getAcademyAnalytics } from "../services/AcademyAnalyticsService";
+import { getOwnAcademySummary, getOwnAcademyVenues } from "../services/AcademyOwnerService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
@@ -20,5 +21,25 @@ export const getAcademyAnalyticsHandler = asyncHandler(
     }
     const data = await getAcademyAnalytics(req.user.id);
     res.status(200).json({ success: true, message: "Academy analytics retrieved", data });
+  }
+);
+
+export const getMyAcademyHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+    const data = await getOwnAcademySummary(req.user.id);
+    res.status(200).json({ success: true, message: "Academy retrieved", data });
+  }
+);
+
+export const getMyAcademyVenuesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+    const data = await getOwnAcademyVenues(req.user.id);
+    res.status(200).json({ success: true, message: "Academy venues retrieved", data });
   }
 );

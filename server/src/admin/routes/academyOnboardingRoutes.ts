@@ -31,6 +31,8 @@ import { requireAcademyOnboardingAccess } from "../../middleware/academyOnboardi
 import {
   getAcademyEarningsHandler,
   getAcademyAnalyticsHandler,
+  getMyAcademyHandler,
+  getMyAcademyVenuesHandler,
 } from "../../client/controllers/academyAnalyticsController";
 import { validateRequest } from "../../middleware/validation";
 import { academyStartRateLimiter, sendVerificationRateLimiter } from "../../middleware/rateLimit";
@@ -184,6 +186,13 @@ router.post("/onboarding/:academyId/submit", ...onboardingAccess, submitAcademyH
 router.get("/", listApprovedAcademiesHandler);
 
 /**
+ * GET: The signed-in owner's own academy and where it stands in review.
+ * GET /api/academies/my
+ * Declared before `/:slug`, which would otherwise read "my" as a slug.
+ */
+router.get("/my", authMiddleware, getMyAcademyHandler);
+
+/**
  * GET: Single academy profile
  * GET /api/academies/:slug
  */
@@ -292,5 +301,6 @@ router.post("/:academyId/packages", authMiddleware, createSessionPackageHandler)
 // Academy owner analytics (authenticated, not admin)
 router.get("/my/earnings", authMiddleware, getAcademyEarningsHandler);
 router.get("/my/analytics", authMiddleware, getAcademyAnalyticsHandler);
+router.get("/my/venues", authMiddleware, getMyAcademyVenuesHandler);
 
 export default router;
