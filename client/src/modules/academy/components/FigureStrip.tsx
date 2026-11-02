@@ -1,24 +1,8 @@
 import { StatTile } from "@/modules/shared/ui/StatTile";
-import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { FIGURE_GRID } from "@/modules/shared/ui/FigureGrid";
 import type { EarningsData } from "@/types";
 import type { AcademyAnalyticsSummary } from "../types";
 import { formatRupees, monthTrend, plural } from "../utils/format";
-
-const GRID = "grid gap-3 sm:grid-cols-2 xl:grid-cols-[1.35fr_1fr_1fr_1fr]";
-
-export function FigureStripSkeleton() {
-  return (
-    <div className={GRID} aria-hidden="true">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="bg-paper-deep rounded-xl p-5">
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="mt-5 h-9 w-2/3" />
-          <Skeleton className="mt-4 h-4 w-3/4" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /**
  * Four figures, the first one wider and outlined because it is the one the page
@@ -38,7 +22,7 @@ export function FigureStrip({
   const trend = monthTrend(earnings.thisMonth.total, earnings.lastMonth.total);
 
   return (
-    <div className={GRID}>
+    <div className={FIGURE_GRID}>
       <StatTile
         emphasis
         label="Earned this month"

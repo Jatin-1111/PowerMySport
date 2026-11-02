@@ -1,12 +1,10 @@
 import { Button } from "@/modules/shared/ui/Button";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
 import { cn } from "@/utils/cn";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { OwnAcademy, StatusView } from "../types";
 import { StepList } from "./StepList";
-
-export const TEXT_LINK =
-  "text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink inline-flex items-center gap-1.5 rounded-sm font-semibold underline underline-offset-4 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 
 /**
  * The one panel that answers "where does my academy stand, and what do I do

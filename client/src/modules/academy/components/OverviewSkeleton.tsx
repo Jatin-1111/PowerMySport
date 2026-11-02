@@ -1,5 +1,5 @@
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import { FigureStripSkeleton } from "./FigureStrip";
+import { FigureGridSkeleton } from "@/modules/shared/ui/FigureGrid";
 
 /** Same silhouette as the loaded page, so nothing jumps when the data arrives. */
 export function OverviewSkeleton() {
@@ -15,7 +15,7 @@ export function OverviewSkeleton() {
         <Skeleton className="h-8 w-28" />
       </div>
       <div aria-hidden="true">
-        <FigureStripSkeleton />
+        <FigureGridSkeleton />
       </div>
     </div>
   );

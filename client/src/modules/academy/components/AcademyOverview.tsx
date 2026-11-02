@@ -7,11 +7,13 @@ import Link from "next/link";
 import { useAcademyOverview } from "../hooks/useAcademyOverview";
 import { describeAcademyStatus } from "../utils/academyStatus";
 import { AtAGlance } from "./AtAGlance";
-import { FigureStrip, FigureStripSkeleton } from "./FigureStrip";
+import { FigureGridSkeleton } from "@/modules/shared/ui/FigureGrid";
+import { FigureStrip } from "./FigureStrip";
 import { OverviewSkeleton } from "./OverviewSkeleton";
 import { RecentBookings } from "./RecentBookings";
-import { StatusBand, TEXT_LINK } from "./StatusBand";
-import { StatusTag } from "./StatusTag";
+import { StatusBand } from "./StatusBand";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { StatusTag } from "@/modules/shared/ui/StatusTag";
 
 /**
  * The academy owner's landing page. It answers three questions in order: where
@@ -71,7 +73,7 @@ export function AcademyOverview() {
       {wantsFigures && data && (
         <>
           {earnings.isPending ? (
-            <FigureStripSkeleton />
+            <FigureGridSkeleton />
           ) : earnings.isError ? (
             <div role="alert" className="bg-paper-deep max-w-xl rounded-xl p-5">
               <p className="text-ink font-medium">We could not load your earnings</p>

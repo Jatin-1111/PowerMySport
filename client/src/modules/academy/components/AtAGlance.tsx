@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import type { AcademyAnalyticsSummary, OwnAcademy } from "../types";
 import { plural } from "../utils/format";
-import { TEXT_LINK } from "./StatusBand";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
 
 /**
  * Facts about the listing, as a definition list. Rows come only from data we

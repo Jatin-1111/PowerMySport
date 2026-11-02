@@ -1,5 +1,7 @@
 import { cn } from "@/utils/cn";
-import type { StatusTone } from "../types";
+
+/** How a status tag is coloured. Colour is never the only signal: the tag always has text. */
+export type StatusTone = "neutral" | "pending" | "live" | "alert";
 
 const TONES: Record<StatusTone, string> = {
   neutral: "border-hairline bg-paper-deep text-ink-body",

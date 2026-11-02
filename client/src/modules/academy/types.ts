@@ -1,3 +1,5 @@
+import type { StatusTone } from "@/modules/shared/ui/StatusTag";
+
 /** Where an academy stands in review. Mirrors the server's one provider vocabulary. */
 export type AcademyLifecycle =
   "DRAFT" | "SUBMITTED" | "NEEDS_INFO" | "APPROVED" | "REJECTED" | "SUSPENDED";
@@ -47,8 +49,7 @@ export interface StatusAction {
 /** Which list, if any, sits beside the status message. */
 export type StatusSteps = "setup" | "review" | null;
 
-/** How the status tag is coloured. Colour is never the only signal: the tag always has text. */
-export type StatusTone = "neutral" | "pending" | "live" | "alert";
+export type { StatusTone };
 
 export interface StatusView {
   tone: StatusTone;

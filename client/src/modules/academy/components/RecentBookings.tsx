@@ -2,7 +2,7 @@ import type { Booking } from "@/types";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { bookingKey, bookingPlayerName, formatRupees, formatShortDate } from "../utils/format";
-import { TEXT_LINK } from "./StatusBand";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
 
 const VISIBLE = 5;
 
