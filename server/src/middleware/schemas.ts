@@ -1349,19 +1349,82 @@ export const academyOnboardingStep6Schema = z
  */
 export const academyOnboardingStep7Schema = z
   .object({
-    bankAccountName: z.string().min(2, "Account holder name required"),
-    bankAccountNumber: z.string().min(8, "Account number too short"),
-    bankAccountNumberConfirm: z.string().min(8, "Account number too short"),
-    bankIfsc: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code format"),
-    upiId: z.string().regex(/^[a-zA-Z0-9._-]+@[a-zA-Z]{3,}$/, "Invalid UPI ID format"),
+    // Payout details: a complete bank account, a UPI ID, or both. Same rule as a
+    // coach's or an expert's payout methods ("bank transfer or UPI"), and the same
+    // rule submission applies. Bank details are all-or-nothing.
+    bankAccountName: z.string().trim().optional(),
+    bankAccountNumber: z.string().trim().optional(),
+    bankAccountNumberConfirm: z.string().trim().optional(),
+    bankIfsc: z.string().trim().optional(),
+    upiId: z.string().trim().optional(),
     payoutFrequency: z.enum(["weekly", "biweekly", "monthly"]),
-    cancellationPolicy: z.string().min(10, "Cancellation policy required"),
-    refundPolicy: z.string().min(10, "Refund policy required"),
+    cancellationPolicy: z
+      .string()
+      .trim()
+      .min(10, "Cancellation policy required")
+      .max(2000, "Keep the cancellation policy under 2000 characters"),
+    refundPolicy: z
+      .string()
+      .trim()
+      .min(10, "Refund policy required")
+      .max(2000, "Keep the refund policy under 2000 characters"),
     agreeToTerms: z.boolean().refine((val) => val === true, "You must agree to the terms"),
   })
-  .refine((data) => data.bankAccountNumber === data.bankAccountNumberConfirm, {
-    message: "Account numbers do not match",
-    path: ["bankAccountNumberConfirm"],
+  .superRefine((data, ctx) => {
+    const has = (value?: string) => Boolean(value && value.length > 0);
+    const anyBank =
+      has(data.bankAccountName) ||
+      has(data.bankAccountNumber) ||
+      has(data.bankAccountNumberConfirm) ||
+      has(data.bankIfsc);
+    const hasUpi = has(data.upiId);
+
+    if (!anyBank && !hasUpi) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["upiId"],
+        message: "Provide a bank account or a UPI ID for payouts",
+      });
+    }
+
+    if (anyBank) {
+      if (!has(data.bankAccountName) || (data.bankAccountName as string).length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["bankAccountName"],
+          message: "Account holder name required",
+        });
+      }
+      if (!/^\d{9,18}$/.test(data.bankAccountNumber ?? "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["bankAccountNumber"],
+          message: "Account number must be 9 to 18 digits",
+        });
+      }
+      if (data.bankAccountNumber !== data.bankAccountNumberConfirm) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["bankAccountNumberConfirm"],
+          message: "Account numbers do not match",
+        });
+      }
+      if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(data.bankIfsc ?? "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["bankIfsc"],
+          message: "Invalid IFSC code format",
+        });
+      }
+    }
+
+    if (hasUpi && !/^[a-zA-Z0-9._-]+@[a-zA-Z]{3,}$/.test(data.upiId as string)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["upiId"],
+        message: "Invalid UPI ID format",
+      });
+    }
   })
   .strip();
 

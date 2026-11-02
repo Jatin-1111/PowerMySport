@@ -316,13 +316,18 @@ export const updateAcademyStep = async (
   }
 
   if (stepNumber === 7) {
-    updateData.bankAccountNumber = sealPayoutValue(payload.bankAccountNumber);
-    updateData.bankIfsc = sealPayoutValue(payload.bankIfsc);
-    updateData.bankAccountName = payload.bankAccountName;
-    updateData.upiId = sealPayoutValue(payload.upiId);
+    // A bank account, a UPI ID, or both. Whatever was not given is cleared, so
+    // sending UPI only after a bank account replaces it instead of keeping stale
+    // details. Values are trimmed here because the request body is not replaced
+    // by the validator's cleaned copy.
+    const given = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+    updateData.bankAccountNumber = sealPayoutValue(given(payload.bankAccountNumber));
+    updateData.bankIfsc = sealPayoutValue(given(payload.bankIfsc));
+    updateData.bankAccountName = given(payload.bankAccountName);
+    updateData.upiId = sealPayoutValue(given(payload.upiId));
     updateData.payoutFrequency = payload.payoutFrequency;
-    updateData.cancellationPolicy = payload.cancellationPolicy;
-    updateData.refundPolicy = payload.refundPolicy;
+    updateData.cancellationPolicy = given(payload.cancellationPolicy);
+    updateData.refundPolicy = given(payload.refundPolicy);
   }
 
   if (stepNumber > academy.onboardingStep) {

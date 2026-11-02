@@ -283,13 +283,16 @@ export interface AcademyPricingPayload {
   trialSessionPrice?: number;
 }
 
-/** Server step 7. The account number is typed twice and the terms must be agreed. */
+/**
+ * Server step 7. A complete bank account (typed twice), a UPI ID, or both; bank
+ * details are all or nothing. The terms must be agreed.
+ */
 export interface AcademyPayoutsPayload {
-  bankAccountName: string;
-  bankAccountNumber: string;
-  bankAccountNumberConfirm: string;
-  bankIfsc: string;
-  upiId: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankAccountNumberConfirm?: string;
+  bankIfsc?: string;
+  upiId?: string;
   payoutFrequency: AcademyPayoutFrequency;
   cancellationPolicy: string;
   refundPolicy: string;

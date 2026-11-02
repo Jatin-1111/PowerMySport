@@ -270,6 +270,75 @@ describe("academy sign-up journey", () => {
     assert.equal(await bad({ trialsessionOffered: true, trialSessionPrice: 0 }), 200);
   });
 
+  it("takes a bank account, a UPI ID, or both, and replaces what was saved before", async () => {
+    const { id, token } = await start();
+    const {
+      bankAccountName,
+      bankAccountNumber,
+      bankAccountNumberConfirm,
+      bankIfsc,
+      upiId,
+      ...rest
+    } = payloads[7];
+    void bankAccountName;
+    void bankAccountNumber;
+    void bankAccountNumberConfirm;
+    void bankIfsc;
+
+    // Bank account only.
+    const bankOnly = {
+      ...rest,
+      bankAccountName: "Journey Academy",
+      bankAccountNumber: "123456789012",
+      bankAccountNumberConfirm: "123456789012",
+      bankIfsc: "HDFC0001234",
+    };
+    assert.equal((await saveStep(id, token, 7, bankOnly)).status, 200);
+    let stored = await col("academies").findOne({ _id: new mongoose.Types.ObjectId(id) });
+    assert.ok(stored?.bankAccountNumber);
+    assert.equal(stored?.upiId, "");
+
+    // UPI only replaces the bank details instead of leaving them behind.
+    assert.equal((await saveStep(id, token, 7, { ...rest, upiId })).status, 200);
+    stored = await col("academies").findOne({ _id: new mongoose.Types.ObjectId(id) });
+    assert.ok(stored?.upiId);
+    assert.equal(stored?.bankAccountNumber, "");
+    assert.equal(stored?.bankIfsc, "");
+
+    // Neither is refused.
+    assert.equal((await saveStep(id, token, 7, rest)).status, 400);
+  });
+
+  it("treats bank details as all or nothing, and holds the account number to digits", async () => {
+    const { id, token } = await start();
+    const base = { ...payloads[7] };
+    const bad = async (change: Record<string, unknown>) =>
+      (await saveStep(id, token, 7, { ...base, ...change })).status;
+
+    assert.equal(await bad({ bankIfsc: "" }), 400);
+    assert.equal(await bad({ bankAccountName: "" }), 400);
+    assert.equal(
+      await bad({ bankAccountNumber: "12345678", bankAccountNumberConfirm: "12345678" }),
+      400
+    );
+    assert.equal(
+      await bad({
+        bankAccountNumber: "1234 5678 9012",
+        bankAccountNumberConfirm: "1234 5678 9012",
+      }),
+      400
+    );
+    assert.equal(
+      await bad({ bankAccountNumber: "1".repeat(19), bankAccountNumberConfirm: "1".repeat(19) }),
+      400
+    );
+    assert.equal(await bad({ bankIfsc: "hdfc0001234" }), 400);
+    assert.equal(await bad({ upiId: "not-a-upi" }), 400);
+    assert.equal(await bad({ cancellationPolicy: "x".repeat(2001) }), 400);
+    assert.equal(await bad({ payoutFrequency: "daily" }), 400);
+    assert.equal(await bad({}), 200);
+  });
+
   it("needs the payout confirmation and the terms to match", async () => {
     const { id, token } = await start();
     const mismatch = await saveStep(id, token, 7, {
