@@ -23,11 +23,11 @@ vi.mock("../src/modules/booking/services/booking", () => ({
   },
 }));
 
-import { SessionCheckIn } from "../src/modules/coach/components/bookings/SessionCheckIn";
+import { SessionCheckIn } from "../src/modules/shared/components/bookings/SessionCheckIn";
 import {
   normalizeCheckInCode,
   useSessionCheckIn,
-} from "../src/modules/coach/hooks/useSessionCheckIn";
+} from "../src/modules/shared/hooks/useSessionCheckIn";
 import type { Booking } from "../src/types";
 
 const started = {

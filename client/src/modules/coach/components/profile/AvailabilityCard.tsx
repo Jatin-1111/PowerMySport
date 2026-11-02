@@ -4,7 +4,11 @@ import { TEXT_LINK } from "@/modules/shared/ui/textLink";
 import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
 import { IAvailability } from "@/types";
 import { Plus, Trash2 } from "lucide-react";
-import { FIELD_INPUT, FIELD_LABEL, ProfileSection } from "./ProfileSection";
+import {
+  FIELD_INPUT,
+  FIELD_LABEL,
+  ProfileSection,
+} from "@/modules/shared/components/settings/ProfileSection";
 
 interface AvailabilityCardProps {
   sports: string[];

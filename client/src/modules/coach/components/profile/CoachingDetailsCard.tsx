@@ -13,7 +13,7 @@ import {
   FormActions,
   ProfileFacts,
   ProfileSection,
-} from "./ProfileSection";
+} from "@/modules/shared/components/settings/ProfileSection";
 
 interface CoachingForm {
   selectedSports: string[];

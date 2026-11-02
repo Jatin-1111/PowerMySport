@@ -1,8 +1,8 @@
 import { Button } from "@/modules/shared/ui/Button";
 import { bookingPlayerName } from "@/modules/shared/utils/bookingDisplay";
 import type { Booking } from "@/types";
-import type { CheckInMessage } from "../../hooks/useSessionCheckIn";
-import { whenLabel } from "../../utils/overview";
+import type { CheckInMessage } from "@/modules/shared/hooks/useSessionCheckIn";
+import { whenLabel } from "@/modules/shared/utils/bookingTime";
 
 /**
  * Starts a session from the client's 8-character code. One field and one
@@ -16,6 +16,10 @@ export function SessionCheckIn({
   message,
   startedBooking,
   onSubmit,
+  title = "Start a session",
+  description = "Enter the 8-character code your client shows you when they arrive.",
+  submitLabel = "Start session",
+  startedTitleOf = bookingPlayerName,
 }: {
   code: string;
   onCodeChange: (value: string) => void;
@@ -23,6 +27,12 @@ export function SessionCheckIn({
   message: CheckInMessage | null;
   startedBooking: Booking | null;
   onSubmit: () => void;
+  /** Wording for who is being checked in; the defaults suit a coach. */
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  /** The first words of the line that confirms which booking started. */
+  startedTitleOf?: (booking: Booking) => string;
 }) {
   return (
     <section
@@ -31,11 +41,9 @@ export function SessionCheckIn({
     >
       <div className="xl:col-span-5">
         <h2 id="check-in-heading" className="text-ink text-base font-semibold">
-          Start a session
+          {title}
         </h2>
-        <p className="text-ink-body mt-1 max-w-[44ch] text-pretty text-sm">
-          Enter the 8-character code your client shows you when they arrive.
-        </p>
+        <p className="text-ink-body mt-1 max-w-[44ch] text-pretty text-sm">{description}</p>
       </div>
 
       <form
@@ -62,7 +70,7 @@ export function SessionCheckIn({
             className="border-ink/25 text-ink placeholder:text-ink-ash focus:border-ink focus-visible:ring-ink min-h-11 w-full max-w-[16rem] rounded-md border bg-white px-3 font-mono uppercase tracking-[0.3em] focus:outline-none focus-visible:ring-2"
           />
           <Button type="submit" variant="secondary" className="min-h-11" disabled={loading}>
-            {loading ? "Checking" : "Start session"}
+            {loading ? "Checking" : submitLabel}
           </Button>
         </div>
 
@@ -77,7 +85,7 @@ export function SessionCheckIn({
           )}
           {startedBooking && (
             <p className="text-ink-body mt-1">
-              {bookingPlayerName(startedBooking)},{" "}
+              {startedTitleOf(startedBooking)},{" "}
               <span className="capitalize">{startedBooking.sport}</span>,{" "}
               {whenLabel(startedBooking, new Date())}
             </p>

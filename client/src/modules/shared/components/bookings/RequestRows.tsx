@@ -1,23 +1,25 @@
 import { Button } from "@/modules/shared/ui/Button";
-import { bookingKey, bookingPlayerName } from "@/modules/shared/utils/bookingDisplay";
+import { bookingKey } from "@/modules/shared/utils/bookingDisplay";
+import { whenLabel } from "@/modules/shared/utils/bookingTime";
 import { formatRupees } from "@/modules/shared/utils/figures";
-import type { Booking, Coach } from "@/types";
-import { bookingPlace } from "../../utils/bookings";
-import { whenLabel } from "../../utils/overview";
-
-const DECLINE_LINK =
-  "text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink ring-offset-paper-deep min-h-11 rounded-sm px-1 text-sm font-semibold underline underline-offset-4 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50";
+import type { Booking } from "@/types";
 
 /**
- * Requests waiting on the coach, first on the page and set apart on a tonal
- * band. Each row carries its own Confirm and Decline so a request is answered
- * where it is read. There is no undo for either answer, so the buttons name
- * what they do.
+ * Requests waiting on a provider (a coach or a venue), first on the page and
+ * set apart on a tonal band. Each row carries its own Confirm and Decline so a
+ * request is answered where it is read. There is no undo for either answer, so
+ * the buttons name what they do.
+ *
+ * `titleOf` is the first line (a venue cannot see who booked, so it leads with
+ * the venue; a coach leads with the client). `placeOf` is an optional third
+ * line, left out when empty.
  */
 export function RequestRows({
   requests,
   now,
-  coach,
+  titleOf,
+  placeOf,
+  amountOf = (booking) => booking.totalAmount,
   approvingId,
   rejectingId,
   onApprove,
@@ -25,7 +27,10 @@ export function RequestRows({
 }: {
   requests: Booking[];
   now: Date;
-  coach: Coach | null;
+  titleOf: (booking: Booking) => string;
+  placeOf?: (booking: Booking) => string;
+  /** What the provider is paid for the booking; defaults to the booking total. */
+  amountOf?: (booking: Booking) => number;
   approvingId: string | null;
   rejectingId: string | null;
   onApprove: (bookingId: string) => void;
@@ -49,7 +54,8 @@ export function RequestRows({
         {requests.map((booking, index) => {
           const id = booking.id || bookingKey(booking, index);
           const busy = approvingId === id || rejectingId === id;
-          const name = bookingPlayerName(booking);
+          const title = titleOf(booking);
+          const place = placeOf?.(booking);
 
           return (
             <li
@@ -57,16 +63,16 @@ export function RequestRows({
               className="border-ink/15 flex flex-col gap-4 border-t py-5 first:border-t-0 first:pt-0 sm:flex-row sm:items-center sm:justify-between"
             >
               <div className="min-w-0">
-                <p className="text-ink font-medium">{name}</p>
+                <p className="text-ink font-medium">{title}</p>
                 <p className="text-ink-body text-sm">
                   <span className="capitalize">{booking.sport}</span>, {whenLabel(booking, now)}
                 </p>
-                <p className="text-ink-body text-sm">{bookingPlace(booking, coach)}</p>
+                {place && <p className="text-ink-body text-sm">{place}</p>}
               </div>
 
               <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:shrink-0">
                 <p className="text-ink font-medium tabular-nums">
-                  {formatRupees(booking.totalAmount)}
+                  {formatRupees(amountOf(booking))}
                 </p>
                 <Button
                   size="sm"
@@ -74,16 +80,16 @@ export function RequestRows({
                   className="min-h-11"
                   onClick={() => onApprove(id)}
                   disabled={busy}
-                  aria-label={`Confirm booking for ${name}`}
+                  aria-label={`Confirm booking for ${title}`}
                 >
                   {approvingId === id ? "Confirming" : "Confirm"}
                 </Button>
                 <button
                   type="button"
-                  className={DECLINE_LINK}
+                  className="text-ink decoration-ink/30 hover:decoration-ink focus-visible:ring-ink ring-offset-paper-deep min-h-11 rounded-sm px-1 text-sm font-semibold underline underline-offset-4 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50"
                   onClick={() => onReject(id)}
                   disabled={busy}
-                  aria-label={`Decline booking for ${name}`}
+                  aria-label={`Decline booking for ${title}`}
                 >
                   {rejectingId === id ? "Declining" : "Decline"}
                 </button>

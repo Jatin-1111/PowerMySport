@@ -1,24 +1,33 @@
 import { StatusTag } from "@/modules/shared/ui/StatusTag";
-import { bookingKey, bookingPlayerName } from "@/modules/shared/utils/bookingDisplay";
+import { bookingKey } from "@/modules/shared/utils/bookingDisplay";
+import { bookingStatusView } from "@/modules/shared/utils/bookingGroups";
+import { whenLabel } from "@/modules/shared/utils/bookingTime";
 import { formatRupees } from "@/modules/shared/utils/figures";
-import type { Booking, Coach } from "@/types";
-import { bookingPlace, bookingStatusView } from "../../utils/bookings";
-import { whenLabel } from "../../utils/overview";
+import type { Booking } from "@/types";
 
-/** Sessions as a ruled list: when, who and where, then the amount and the status. */
+/**
+ * Sessions as a ruled list: when, who and where, then the amount and the
+ * status. `titleOf` and `placeOf` are as in RequestRows.
+ */
 export function SessionRows({
   sessions,
   now,
-  coach,
+  titleOf,
+  placeOf,
+  amountOf = (booking) => booking.totalAmount,
 }: {
   sessions: Booking[];
   now: Date;
-  coach: Coach | null;
+  titleOf: (booking: Booking) => string;
+  placeOf?: (booking: Booking) => string;
+  /** What the provider is paid for the booking; defaults to the booking total. */
+  amountOf?: (booking: Booking) => number;
 }) {
   return (
     <ul className="border-hairline border-t">
       {sessions.map((booking, index) => {
         const status = bookingStatusView(booking.status);
+        const place = placeOf?.(booking);
         return (
           <li
             key={bookingKey(booking, index)}
@@ -26,15 +35,14 @@ export function SessionRows({
           >
             <p className="text-ink font-medium tabular-nums">{whenLabel(booking, now)}</p>
             <div className="min-w-0">
-              <p className="text-ink truncate font-medium">{bookingPlayerName(booking)}</p>
+              <p className="text-ink truncate font-medium">{titleOf(booking)}</p>
               <p className="text-ink-body truncate text-sm">
-                <span className="capitalize">{booking.sport}</span>, {bookingPlace(booking, coach)}
+                <span className="capitalize">{booking.sport}</span>
+                {place ? `, ${place}` : ""}
               </p>
             </div>
             <div className="flex items-center gap-4 sm:justify-end">
-              <p className="text-ink font-medium tabular-nums">
-                {formatRupees(booking.totalAmount)}
-              </p>
+              <p className="text-ink font-medium tabular-nums">{formatRupees(amountOf(booking))}</p>
               <StatusTag tone={status.tone}>{status.tag}</StatusTag>
             </div>
           </li>

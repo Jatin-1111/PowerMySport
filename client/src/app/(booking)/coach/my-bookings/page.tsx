@@ -2,12 +2,13 @@
 
 import { toast } from "@/lib/toast";
 import { bookingApi } from "@/modules/booking/services/booking";
-import { RequestRows } from "@/modules/coach/components/bookings/RequestRows";
-import { SessionCheckIn } from "@/modules/coach/components/bookings/SessionCheckIn";
-import { SessionRows } from "@/modules/coach/components/bookings/SessionRows";
-import { useSessionCheckIn } from "@/modules/coach/hooks/useSessionCheckIn";
+import { RequestRows } from "@/modules/shared/components/bookings/RequestRows";
+import { SessionCheckIn } from "@/modules/shared/components/bookings/SessionCheckIn";
+import { SessionRows } from "@/modules/shared/components/bookings/SessionRows";
+import { useSessionCheckIn } from "@/modules/shared/hooks/useSessionCheckIn";
 import { coachApi } from "@/modules/coach/services/coach";
 import {
+  bookingPlace,
   countByFilter,
   filterSessions,
   requestsOf,
@@ -17,6 +18,7 @@ import { Button } from "@/modules/shared/ui/Button";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
 import { TEXT_LINK } from "@/modules/shared/ui/textLink";
 import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
+import { bookingPlayerName } from "@/modules/shared/utils/bookingDisplay";
 import { plural } from "@/modules/shared/utils/figures";
 import type { Booking, Coach } from "@/types";
 import { ArrowRight } from "lucide-react";
@@ -216,7 +218,8 @@ export default function CoachBookingsPage() {
         <RequestRows
           requests={requests}
           now={now}
-          coach={currentCoach}
+          titleOf={bookingPlayerName}
+          placeOf={(booking) => bookingPlace(booking, currentCoach)}
           approvingId={approvingId}
           rejectingId={rejectingId}
           onApprove={handleApproveBooking}
@@ -255,7 +258,12 @@ export default function CoachBookingsPage() {
               : "Nothing here yet."}
           </p>
         ) : (
-          <SessionRows sessions={pageSessions} now={now} coach={currentCoach} />
+          <SessionRows
+            sessions={pageSessions}
+            now={now}
+            titleOf={bookingPlayerName}
+            placeOf={(booking) => bookingPlace(booking, currentCoach)}
+          />
         )}
 
         {totalPages > 1 && (

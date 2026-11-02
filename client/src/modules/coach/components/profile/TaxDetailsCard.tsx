@@ -5,7 +5,7 @@ import {
   FIELD_LABEL,
   FormActions,
   ProfileSection,
-} from "./ProfileSection";
+} from "@/modules/shared/components/settings/ProfileSection";
 
 interface TaxDetailsCardProps {
   gstNumber?: string;

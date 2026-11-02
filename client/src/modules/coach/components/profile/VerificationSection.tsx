@@ -2,7 +2,7 @@ import { StatusTag } from "@/modules/shared/ui/StatusTag";
 import type { CoachVerificationDocument } from "@/types";
 import { Check } from "lucide-react";
 import type { VerificationView } from "../../utils/overview";
-import { ProfileSection } from "./ProfileSection";
+import { ProfileSection } from "@/modules/shared/components/settings/ProfileSection";
 
 /**
  * Where the coach's review stands, in words, and the documents our team has on

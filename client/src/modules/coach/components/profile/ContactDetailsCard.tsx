@@ -6,7 +6,7 @@ import {
   FormActions,
   ProfileFacts,
   ProfileSection,
-} from "./ProfileSection";
+} from "@/modules/shared/components/settings/ProfileSection";
 
 interface ContactForm {
   name: string;

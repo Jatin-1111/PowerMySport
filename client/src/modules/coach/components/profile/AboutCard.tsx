@@ -1,4 +1,10 @@
-import { EditLink, FIELD_INPUT, FIELD_LABEL, FormActions, ProfileSection } from "./ProfileSection";
+import {
+  EditLink,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FormActions,
+  ProfileSection,
+} from "@/modules/shared/components/settings/ProfileSection";
 
 interface AboutCardProps {
   bio: string;
