@@ -3,7 +3,9 @@
 import { toast } from "@/lib/toast";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { RequestRows } from "@/modules/coach/components/bookings/RequestRows";
+import { SessionCheckIn } from "@/modules/coach/components/bookings/SessionCheckIn";
 import { SessionRows } from "@/modules/coach/components/bookings/SessionRows";
+import { useSessionCheckIn } from "@/modules/coach/hooks/useSessionCheckIn";
 import { coachApi } from "@/modules/coach/services/coach";
 import {
   countByFilter,
@@ -41,6 +43,15 @@ export default function CoachBookingsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+
+  // A started session is in progress now; reflect it in the list without a refetch.
+  const checkIn = useSessionCheckIn((started) =>
+    setAllCoachBookings((prev) =>
+      prev.map((booking) =>
+        idOf(booking) === idOf(started) ? { ...booking, status: started.status } : booking
+      )
+    )
+  );
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -212,6 +223,15 @@ export default function CoachBookingsPage() {
           onReject={handleRejectBooking}
         />
       )}
+
+      <SessionCheckIn
+        code={checkIn.code}
+        onCodeChange={checkIn.setCode}
+        loading={checkIn.loading}
+        message={checkIn.message}
+        startedBooking={checkIn.startedBooking}
+        onSubmit={() => void checkIn.submit()}
+      />
 
       <section aria-labelledby="sessions-heading">
         <h2 id="sessions-heading" className="sr-only">
