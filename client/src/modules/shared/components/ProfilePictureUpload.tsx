@@ -10,6 +10,8 @@ interface ProfilePictureUploadProps {
   currentPhotoUrl?: string;
   onUploadSuccess?: (user: User) => void;
   size?: "sm" | "md" | "lg" | "xl";
+  /** `compact`: a small avatar with a text link, for a page header. */
+  variant?: "default" | "compact";
 }
 
 const sizeClasses = {
@@ -23,6 +25,7 @@ export default function ProfilePictureUpload({
   currentPhotoUrl,
   onUploadSuccess,
   size = "lg",
+  variant = "default",
 }: ProfilePictureUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentPhotoUrl || null);
@@ -84,6 +87,59 @@ export default function ProfilePictureUpload({
       setUploading(false);
     }
   };
+
+  if (variant === "compact") {
+    return (
+      <div className="flex shrink-0 flex-col items-center gap-2">
+        <div className="relative">
+          <div className="border-hairline bg-paper-deep flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border">
+            {previewUrl ? (
+              <Image
+                src={previewUrl}
+                alt="Your profile photo"
+                width={80}
+                height={80}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <svg
+                className="text-ink-ash h-1/2 w-1/2"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            )}
+          </div>
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-white" />
+            </div>
+          )}
+        </div>
+        <label className="focus-within:ring-ink cursor-pointer rounded-sm focus-within:ring-2 focus-within:ring-offset-2">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            disabled={uploading}
+            className="sr-only"
+          />
+          <span
+            title="JPG, PNG or WebP, up to 5MB"
+            className="text-ink decoration-ink/30 hover:decoration-ink text-sm font-semibold underline underline-offset-4 transition-colors duration-200"
+          >
+            {uploading ? "Uploading" : "Change photo"}
+          </span>
+        </label>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center space-y-4">

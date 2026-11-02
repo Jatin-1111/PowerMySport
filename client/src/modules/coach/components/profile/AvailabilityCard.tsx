@@ -1,8 +1,10 @@
 import { DAYS } from "@/modules/coach/utils/profileFlow";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
 import { IAvailability } from "@/types";
-import { Clock3, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import { FIELD_INPUT, FIELD_LABEL, ProfileSection } from "./ProfileSection";
 
 interface AvailabilityCardProps {
   sports: string[];
@@ -16,6 +18,11 @@ interface AvailabilityCardProps {
   onSave: () => void;
 }
 
+/**
+ * The weekly hours clients can book, set per sport. This section is always
+ * editable (the rows are the form), so the add link and the save button are
+ * always there; nothing is saved until the coach saves.
+ */
 export function AvailabilityCard({
   sports,
   activeSportTab,
@@ -27,62 +34,63 @@ export function AvailabilityCard({
   onUpdateTimeSlot,
   onSave,
 }: AvailabilityCardProps) {
+  const slots = availabilityBySport[activeSportTab] || [];
+
   return (
-    <Card className="border border-slate-200 bg-white shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">Availability / Time Slots</h3>
-        <Button
+    <ProfileSection
+      id="availability"
+      title="Availability"
+      description="The weekly hours clients can book you, set separately for each sport."
+      action={
+        <button
           type="button"
-          variant="secondary"
-          className="flex w-full items-center justify-center gap-2 sm:w-auto"
           onClick={onAddTimeSlot}
           disabled={!activeSportTab}
+          className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm disabled:opacity-50`}
         >
-          <Plus size={16} />
-          Add Slot
-        </Button>
-      </div>
+          <Plus size={16} strokeWidth={1.5} aria-hidden="true" />
+          Add a time slot
+        </button>
+      }
+    >
+      {sports.length > 1 && (
+        <UnderlineFilter
+          label="Sport"
+          value={activeSportTab}
+          onChange={setActiveSportTab}
+          items={sports.map((sport) => ({
+            label: sport,
+            value: sport,
+            count: (availabilityBySport[sport] || []).length,
+          }))}
+          className="mb-6"
+        />
+      )}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {sports.map((sport) => (
-          <button
-            key={sport}
-            type="button"
-            onClick={() => setActiveSportTab(sport)}
-            className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
-              activeSportTab === sport
-                ? "border-power-orange text-power-orange bg-orange-50"
-                : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            {sport}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-3">
-        {!activeSportTab ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-            No sports found for this coach profile.
-          </div>
-        ) : (availabilityBySport[activeSportTab] || []).length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-            No time slots added yet for {activeSportTab}.
-          </div>
-        ) : (
-          (availabilityBySport[activeSportTab] || []).map((slot, index) => (
-            <div
+      {!activeSportTab ? (
+        <p className="text-ink-body">No sports are listed on your profile yet.</p>
+      ) : slots.length === 0 ? (
+        <p className="text-ink-body max-w-[56ch] text-pretty">
+          No time slots for {activeSportTab} yet. Add one to let clients book you.
+        </p>
+      ) : (
+        <ul>
+          {slots.map((slot, index) => (
+            <li
               key={`${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}-${index}`}
-              className="border-hairline grid gap-3 border-b pb-4 last:border-b-0 last:pb-0 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
+              className="border-hairline grid gap-3 border-b pb-5 pt-5 first:pt-0 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
             >
               <div>
-                <label className="mb-1 block text-sm text-slate-600">Day</label>
+                <label htmlFor={`slot-day-${index}`} className={FIELD_LABEL}>
+                  Day
+                </label>
                 <select
+                  id={`slot-day-${index}`}
                   value={slot.dayOfWeek}
                   onChange={(event) =>
                     onUpdateTimeSlot(index, "dayOfWeek", Number(event.target.value))
                   }
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  className={FIELD_INPUT}
                 >
                   {DAYS.map((day) => (
                     <option key={day.value} value={day.value}>
@@ -93,50 +101,55 @@ export function AvailabilityCard({
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-600">Start time</label>
+                <label htmlFor={`slot-start-${index}`} className={FIELD_LABEL}>
+                  From
+                </label>
                 <input
+                  id={`slot-start-${index}`}
                   type="time"
                   value={slot.startTime}
                   onChange={(event) => onUpdateTimeSlot(index, "startTime", event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  className={FIELD_INPUT}
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-600">End time</label>
+                <label htmlFor={`slot-end-${index}`} className={FIELD_LABEL}>
+                  To
+                </label>
                 <input
+                  id={`slot-end-${index}`}
                   type="time"
                   value={slot.endTime}
                   onChange={(event) => onUpdateTimeSlot(index, "endTime", event.target.value)}
-                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  className={FIELD_INPUT}
                 />
               </div>
 
               <button
                 type="button"
                 onClick={() => onRemoveTimeSlot(index)}
-                className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
-                aria-label="Remove time slot"
+                className="text-ink hover:bg-paper-deep focus-visible:ring-ink inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2"
+                aria-label={`Remove ${DAYS.find((d) => d.value === slot.dayOfWeek)?.label ?? ""} time slot`}
               >
-                <Trash2 size={16} />
+                <Trash2 size={18} strokeWidth={1.5} aria-hidden="true" />
               </button>
-            </div>
-          ))
-        )}
-      </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-6">
         <Button
           type="button"
-          variant="primary"
+          variant="secondary"
           onClick={onSave}
           disabled={savingAvailability}
-          className="flex w-full items-center justify-center gap-2 sm:w-auto"
+          className="min-h-11"
         >
-          <Clock3 size={16} />
-          {savingAvailability ? "Saving..." : "Save Time Slots"}
+          {savingAvailability ? "Saving" : "Save time slots"}
         </Button>
       </div>
-    </Card>
+    </ProfileSection>
   );
 }

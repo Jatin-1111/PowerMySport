@@ -1,5 +1,4 @@
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { EditLink, FIELD_INPUT, FIELD_LABEL, FormActions, ProfileSection } from "./ProfileSection";
 
 interface AboutCardProps {
   bio: string;
@@ -23,57 +22,38 @@ export function AboutCard({
   onCancel,
 }: AboutCardProps) {
   return (
-    <Card className="border border-slate-200 bg-white shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">About You</h3>
-        {!isEditing && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onEditClick}
-            className="w-full sm:w-auto"
-          >
-            Edit About
-          </Button>
-        )}
-      </div>
+    <ProfileSection
+      id="about"
+      title="About you"
+      description="What clients read first on your public profile."
+      action={!isEditing && <EditLink onClick={onEditClick} label="Edit about" />}
+    >
       {isEditing ? (
-        <div className="space-y-3">
-          <textarea
-            value={aboutForm.bio}
-            onChange={(event) => setAboutForm({ bio: event.target.value })}
-            rows={5}
-            className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
-            placeholder="Tell players about your experience and coaching style"
-          />
-          <div className="grid gap-2 sm:flex">
-            <Button
-              type="button"
-              size="sm"
-              onClick={onSave}
-              loading={isSaving}
-              className="w-full sm:w-auto"
-            >
-              Save
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSaving}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
+        <div className="max-w-[60ch] space-y-4">
+          <div>
+            <label htmlFor="coach-bio" className={FIELD_LABEL}>
+              Your bio
+            </label>
+            <textarea
+              id="coach-bio"
+              value={aboutForm.bio}
+              onChange={(event) => setAboutForm({ bio: event.target.value })}
+              rows={6}
+              className={FIELD_INPUT}
+              placeholder="Your experience, who you coach and how you run a session"
+            />
           </div>
+          <FormActions onSave={onSave} onCancel={onCancel} saving={isSaving} />
         </div>
+      ) : bio ? (
+        <p className="text-ink-body max-w-[60ch] whitespace-pre-wrap text-pretty leading-relaxed">
+          {bio}
+        </p>
       ) : (
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-          {bio || "No bio added yet"}
+        <p className="text-ink-body max-w-[60ch] text-pretty">
+          No bio yet. Add a few lines about your experience and how you coach.
         </p>
       )}
-    </Card>
+    </ProfileSection>
   );
 }

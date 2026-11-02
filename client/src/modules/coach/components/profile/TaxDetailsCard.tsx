@@ -1,5 +1,11 @@
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import {
+  EditLink,
+  FIELD_HINT,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FormActions,
+  ProfileSection,
+} from "./ProfileSection";
 
 interface TaxDetailsCardProps {
   gstNumber?: string;
@@ -23,65 +29,37 @@ export function TaxDetailsCard({
   onCancel,
 }: TaxDetailsCardProps) {
   return (
-    <Card className="border border-slate-200 bg-white shadow-sm">
-      <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">Tax Details</h3>
-        {!isEditing && (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onEditClick}
-            className="w-full sm:w-auto"
-          >
-            Edit Tax Details
-          </Button>
-        )}
-      </div>
+    <ProfileSection
+      id="tax"
+      title="Tax details"
+      description="Add a GST number only if you are GST-registered. It appears on your booking invoices."
+      action={!isEditing && <EditLink onClick={onEditClick} label="Edit tax details" />}
+    >
       {isEditing ? (
-        <div className="space-y-3">
+        <div className="max-w-md space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              GST Number (optional)
+            <label htmlFor="coach-gst" className={FIELD_LABEL}>
+              GST number (optional)
             </label>
             <input
+              id="coach-gst"
               autoCapitalize="characters"
               autoComplete="off"
               value={taxForm.gstNumber}
               maxLength={15}
               onChange={(e) => setTaxForm({ gstNumber: e.target.value.toUpperCase() })}
-              placeholder="e.g. 22AAAAA0000A1Z5"
-              className="focus:border-power-orange w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none"
+              placeholder="22AAAAA0000A1Z5"
+              className={`${FIELD_INPUT} font-mono uppercase tracking-wider`}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Only if you&apos;re GST-registered, shown on your booking invoices.
-            </p>
+            <p className={FIELD_HINT}>15 characters.</p>
           </div>
-          <div className="grid gap-2 sm:flex">
-            <Button
-              type="button"
-              size="sm"
-              onClick={onSave}
-              loading={isSaving}
-              className="w-full sm:w-auto"
-            >
-              Save
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={onCancel}
-              disabled={isSaving}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-          </div>
+          <FormActions onSave={onSave} onCancel={onCancel} saving={isSaving} />
         </div>
+      ) : gstNumber ? (
+        <p className="text-ink font-mono font-medium tracking-wider">{gstNumber}</p>
       ) : (
-        <p className="text-sm text-slate-700">{gstNumber || "No GST number added yet"}</p>
+        <p className="text-ink-body">No GST number added.</p>
       )}
-    </Card>
+    </ProfileSection>
   );
 }

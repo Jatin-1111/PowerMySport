@@ -1,8 +1,6 @@
 import { toast } from "@/lib/toast";
 import { useFetchProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
-import { useAuthStore } from "@/modules/auth/store/authStore";
-import { bookingApi } from "@/modules/booking/services/booking";
 import { coachApi } from "@/modules/coach/services/coach";
 import {
   ALLOWED_VENUE_IMAGE_TYPES,
@@ -15,8 +13,7 @@ import {
   sortAvailabilitySlots,
   validateAvailabilityBySport,
 } from "@/modules/coach/utils/profileFlow";
-import { Booking, Coach, IAvailability, ServiceMode, User } from "@/types";
-import { useRouter } from "next/navigation";
+import { Coach, IAvailability, ServiceMode, User } from "@/types";
 import { useRef, useState, useEffect } from "react";
 
 /**
@@ -25,10 +22,8 @@ import { useRef, useState, useEffect } from "react";
  * only where it lives.
  */
 export function useCoachProfileFlow() {
-  const router = useRouter();
   // Shared cached profile fetch (one entry across all consumers).
   const fetchAuthProfile = useFetchProfile();
-  const { logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [coachProfile, setCoachProfile] = useState<Coach | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -77,15 +72,12 @@ export function useCoachProfileFlow() {
     serviceRadiusKmInput: "10",
     travelBufferTimeInput: "30",
   });
-  const [checkInCode, setCheckInCode] = useState("");
-  const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInMessage, setCheckInMessage] = useState<string | null>(null);
-  const [checkedInBooking, setCheckedInBooking] = useState<Booking | null>(null);
 
   const loadUser = async () => {
     try {
       // Shared cache: one profile entry across every consumer.
-      await fetchAuthProfile();
+      const profile = await fetchAuthProfile();
+      if (profile) setUser(profile);
     } catch (error) {
       console.error("Failed to load user:", error);
     }
@@ -122,40 +114,6 @@ export function useCoachProfileFlow() {
     loadUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleCoachCheckIn = async () => {
-    const normalizedCode = checkInCode.trim().toUpperCase();
-    if (!normalizedCode) {
-      setCheckInMessage("Please enter a check-in code.");
-      return;
-    }
-
-    if (normalizedCode.length !== 8) {
-      setCheckInMessage("Enter the full 8-character check-in code.");
-      return;
-    }
-
-    try {
-      setCheckInLoading(true);
-      setCheckInMessage(null);
-      setCheckedInBooking(null);
-
-      const response = await bookingApi.checkInBookingByCode(normalizedCode);
-
-      if (response.success && response.data) {
-        setCheckedInBooking(response.data);
-        setCheckInMessage("Check-in confirmed. Session is now IN_PROGRESS.");
-        setCheckInCode("");
-        return;
-      }
-
-      setCheckInMessage(response.message || "Unable to verify check-in code.");
-    } catch (error: any) {
-      setCheckInMessage(error?.response?.data?.message || "Unable to verify check-in code.");
-    } finally {
-      setCheckInLoading(false);
-    }
-  };
 
   const handleEditProfileClick = () => {
     if (!user) return;
@@ -647,17 +605,6 @@ export function useCoachProfileFlow() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authApi.logout();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    } finally {
-      logout();
-      router.push("/");
-    }
-  };
-
   const addTimeSlot = () => {
     if (!activeSportTab) {
       return;
@@ -828,19 +775,10 @@ export function useCoachProfileFlow() {
     handleVenueImagesSelected,
     handleSaveVenueImages,
 
-    checkInCode,
-    setCheckInCode,
-    checkInLoading,
-    checkInMessage,
-    checkedInBooking,
-    handleCoachCheckIn,
-
     addTimeSlot,
     removeTimeSlot,
     updateTimeSlot,
     handleSaveAvailability,
-
-    handleLogout,
 
     badge,
     status,
