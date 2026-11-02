@@ -221,7 +221,7 @@ export const getVenueListerBookings = async (
       .lean(),
   ]);
 
-  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
+  return { bookings: bookings.map(withId), total, page, totalPages: Math.ceil(total / limit) };
 };
 
 /**
