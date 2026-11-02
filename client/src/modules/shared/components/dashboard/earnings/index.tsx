@@ -310,13 +310,10 @@ export function RecentTransactionsList({
           </div>
 
           {/* Amount + status */}
-          <div className="flex flex-shrink-0 flex-col items-end gap-1">
-            <span className="flex items-center gap-0.5 text-sm font-bold text-slate-800">
+          <div className="flex-shrink-0">
+            <span className="flex items-center gap-0.5 text-sm font-bold tabular-nums text-slate-800">
               <IndianRupee className="h-3.5 w-3.5 text-slate-400" strokeWidth={2.5} />
               {fmtAmount(tx.amount)}
-            </span>
-            <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
-              Completed
             </span>
           </div>
         </li>

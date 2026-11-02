@@ -142,7 +142,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
         <PayoutBanner
           payoutMethod={venuePayoutMethod}
           payoutHref="/venue-lister/payouts"
-          ctaLabel="Set Up Payout Method"
+          ctaLabel="Set up payouts"
         />
       )}
       {children}
