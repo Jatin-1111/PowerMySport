@@ -88,26 +88,6 @@ const payloads = {
     panDocumentUrl: "https://example.test/pan.pdf",
     aadhaarLast4: "1234",
   },
-  4: {
-    academyVenues: [
-      {
-        name: "Main Courts",
-        address: "5 Court Lane, Connaught Place",
-        city: "Delhi",
-        state: "Delhi",
-        pincode: "110001",
-        location: { type: "Point", coordinates: [77.21, 28.614] },
-        sports: ["Tennis"],
-        pricePerHour: 50000,
-        amenities: ["Parking"],
-        openingHours,
-        allowExternalCoaches: true,
-        generalImages: [img("g1"), img("g2"), img("g3")],
-        sportImages: { Tennis: [img("t1"), img("t2"), img("t3"), img("t4"), img("t5")] },
-        coverPhotoUrl: img("cover"),
-      },
-    ],
-  },
   5: {
     academyCoaches: [
       { firstName: "Asha", lastName: "Rao", email: "asha@example.com", sports: ["Tennis"] },
@@ -131,6 +111,36 @@ const payloads = {
     refundPolicy: "Refunds are processed within seven days of cancellation.",
     agreeToTerms: true,
   },
+};
+
+/** Step 4 with photos stored where the upload links put them: venues/<academyId>/images/. */
+const venuesPayload = (academyId: string) => {
+  const key = (name: string) => `venues/${academyId}/images/${name}.jpg`;
+  const general = ["g1", "g2", "g3"];
+  const tennis = ["t1", "t2", "t3", "t4", "t5"];
+  return {
+    academyVenues: [
+      {
+        name: "Main Courts",
+        address: "5 Court Lane, Connaught Place",
+        city: "Delhi",
+        state: "Delhi",
+        pincode: "110001",
+        location: { type: "Point", coordinates: [77.21, 28.614] },
+        sports: ["Tennis"],
+        pricePerHour: 50000,
+        amenities: ["Parking"],
+        openingHours,
+        allowExternalCoaches: true,
+        generalImages: general.map(img),
+        generalImageKeys: general.map(key),
+        sportImages: { Tennis: tennis.map(img) },
+        sportImageKeys: { Tennis: tennis.map(key) },
+        coverPhotoUrl: img("g1"),
+        coverPhotoKey: key("g1"),
+      },
+    ],
+  };
 };
 
 const start = async () => {
@@ -166,7 +176,8 @@ describe("academy sign-up journey", () => {
     const { id, token } = await start();
 
     for (const step of [2, 3, 4, 5, 6, 7] as const) {
-      const response = await saveStep(id, token, step, payloads[step]);
+      const body = step === 4 ? venuesPayload(id) : payloads[step];
+      const response = await saveStep(id, token, step, body);
       assert.equal(response.status, 200, `step ${step}: ${JSON.stringify(response.body)}`);
     }
 
@@ -192,7 +203,8 @@ describe("academy sign-up journey", () => {
   it("refuses submission until the last step is reached", async () => {
     const { id, token } = await start();
     for (const step of [2, 3, 4, 5, 6] as const) {
-      assert.equal((await saveStep(id, token, step, payloads[step])).status, 200);
+      const body = step === 4 ? venuesPayload(id) : payloads[step];
+      assert.equal((await saveStep(id, token, step, body)).status, 200);
     }
     await verifyEmail(id, token);
     const early = await request(app)
@@ -247,5 +259,66 @@ describe("academy sign-up journey", () => {
     assert.equal(mismatch.status, 400);
     const notAgreed = await saveStep(id, token, 7, { ...payloads[7], agreeToTerms: false });
     assert.equal(notAgreed.status, 400);
+  });
+  describe("venue photos", () => {
+    const withVenue = (id: string, change: (venue: Record<string, any>) => void) => {
+      const payload = venuesPayload(id);
+      change(payload.academyVenues[0] as Record<string, any>);
+      return payload;
+    };
+
+    it("refuses a photo address that did not come from our upload links", async () => {
+      const { id, token } = await start();
+      const response = await saveStep(
+        id,
+        token,
+        4,
+        withVenue(id, (v) => {
+          v.generalImageKeys[0] = "elsewhere/not-ours.jpg";
+        })
+      );
+      assert.equal(response.status, 400);
+      assert.match(response.body.message, /uploaded through the form/);
+    });
+
+    it("refuses another academy's photo keys", async () => {
+      const { id, token } = await start();
+      const response = await saveStep(
+        id,
+        token,
+        4,
+        withVenue(id, (v) => {
+          v.sportImageKeys.Tennis[0] = "venues/someone-else/images/t1.jpg";
+        })
+      );
+      assert.equal(response.status, 400);
+    });
+
+    it("refuses photos sent without their storage keys", async () => {
+      const { id, token } = await start();
+      const response = await saveStep(
+        id,
+        token,
+        4,
+        withVenue(id, (v) => {
+          v.generalImageKeys = [];
+        })
+      );
+      assert.equal(response.status, 400);
+    });
+
+    it("refuses a cover photo that is not one of the general photos", async () => {
+      const { id, token } = await start();
+      const response = await saveStep(
+        id,
+        token,
+        4,
+        withVenue(id, (v) => {
+          v.coverPhotoUrl = "https://example.test/other.jpg";
+        })
+      );
+      assert.equal(response.status, 400);
+      assert.match(response.body.message, /cover photo/);
+    });
   });
 });

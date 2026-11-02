@@ -211,6 +211,46 @@ export const startAcademyOnboarding = async (payload: {
   return { academy, onboardingToken };
 };
 
+/**
+ * Every venue photo must be one we issued an upload link for, for this academy.
+ * The photos are shown on public pages, so an address typed in from anywhere else
+ * (another site, a tracking link, something unsuitable) is refused. Uploads are
+ * stored under `venues/<academyId>/images/`.
+ */
+const assertVenuePhotosAreOurs = (academyId: string, venues: Record<string, any>[]): void => {
+  const prefix = `venues/${academyId}/images/`;
+  venues.forEach((venue, index) => {
+    const name = `Venue ${index + 1}`;
+    const sets: { label: string; urls: string[]; keys: string[] }[] = [
+      {
+        label: `${name} general photos`,
+        urls: venue.generalImages ?? [],
+        keys: venue.generalImageKeys ?? [],
+      },
+      ...Object.keys(venue.sportImages ?? {}).map((sport) => ({
+        label: `${name} ${sport} photos`,
+        urls: venue.sportImages[sport] ?? [],
+        keys: venue.sportImageKeys?.[sport] ?? [],
+      })),
+    ];
+    for (const { label, urls, keys } of sets) {
+      if (keys.length !== urls.length) {
+        throw new AppError(`${label} must be uploaded through the form`, 400);
+      }
+      if (
+        keys.some(
+          (key: string) => typeof key !== "string" || !key.startsWith(prefix) || key.includes("..")
+        )
+      ) {
+        throw new AppError(`${label} must be uploaded through the form`, 400);
+      }
+    }
+    if (!(venue.generalImages ?? []).includes(venue.coverPhotoUrl)) {
+      throw new AppError(`${name} cover photo must be one of its general photos`, 400);
+    }
+  });
+};
+
 export const updateAcademyStep = async (
   academyId: string,
   stepNumber: number,
@@ -247,7 +287,9 @@ export const updateAcademyStep = async (
   }
 
   if (stepNumber === 4) {
-    updateData.academyVenues = payload.academyVenues || [];
+    const venues = (payload.academyVenues as Record<string, any>[]) || [];
+    assertVenuePhotosAreOurs(academyId, venues);
+    updateData.academyVenues = venues;
   }
 
   if (stepNumber === 5) {

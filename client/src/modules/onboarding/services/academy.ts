@@ -1,4 +1,6 @@
 import axiosInstance from "@/lib/api/axios";
+import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import { photoFileProblem } from "@/modules/onboarding/utils/academyVenueRules";
 import {
   AcademyListResponse,
   AcademyStep1Payload,
@@ -119,7 +121,9 @@ export const academyOnboardingApi = {
    */
   getImageUploadUrls: async (
     academyId: string,
-    imageTypes: ("logo" | "coverPhoto" | "galleryPhotos")[]
+    imageTypes: (
+      "logo" | "coverPhoto" | "galleryPhotos" | "academyVenue_general" | "academyVenue_sport"
+    )[]
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${academyId}/image-upload-urls`,
@@ -127,6 +131,41 @@ export const academyOnboardingApi = {
       withToken(academyId)
     );
     return response.data;
+  },
+
+  /**
+   * Upload one venue photo: a general photo of the venue, or a photo for one
+   * sport. Checks the file first, gets a fresh upload link (links last an hour,
+   * so one is fetched per photo, never reused), uploads straight to storage, and
+   * returns the address and storage key to save with the venue. Throws an Error
+   * whose message is fit to show the owner.
+   */
+  uploadVenuePhoto: async (
+    academyId: string,
+    kind: "general" | "sport",
+    file: File
+  ): Promise<{ url: string; key: string }> => {
+    const problem = photoFileProblem(file);
+    if (problem) throw new Error(problem);
+
+    const type = kind === "general" ? "academyVenue_general" : "academyVenue_sport";
+    let link: PresignedUrl | undefined;
+    try {
+      const response = await academyOnboardingApi.getImageUploadUrls(academyId, [type]);
+      link = response.data?.uploadUrls?.find((u) => u.field.startsWith(type));
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      throw new Error(message || "Could not start the upload. Try again.");
+    }
+    if (!link) throw new Error("Could not start the upload. Try again.");
+
+    try {
+      await uploadFileToPresignedUrl(file, link.uploadUrl, link.contentType);
+    } catch {
+      throw new Error("The upload failed. Check your connection and try again.");
+    }
+    return { url: link.downloadUrl, key: link.s3Key };
   },
 
   /**
