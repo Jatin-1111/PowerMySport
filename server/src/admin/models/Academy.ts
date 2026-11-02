@@ -41,23 +41,17 @@ export interface AcademyCoachOwnVenue {
   location?: IGeoLocation;
 }
 
+/**
+ * A coach an academy says works there. Only a name, an email and sports are
+ * kept: this is a person who has not agreed to be listed, so no contact number,
+ * bio, rate or location is stored. (Older records may still carry those fields;
+ * nothing reads them.)
+ */
 export interface AcademyOwnedCoach {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  bio: string;
-  profilePhotoUrl?: string;
-  profilePhotoKey?: string;
   sports: string[];
-  hourlyRate: number;
-  sportPricing?: Record<string, number>;
-  serviceMode: "OWN_VENUE" | "FREELANCE" | "HYBRID";
-  baseLocation?: IGeoLocation;
-  serviceRadiusKm?: number;
-  travelBufferTime?: number;
-  ownVenueDetails?: AcademyCoachOwnVenue;
-  certifications?: string[];
 }
 
 export interface AcademyDocument extends Document {

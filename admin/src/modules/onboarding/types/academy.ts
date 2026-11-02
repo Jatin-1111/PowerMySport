@@ -76,26 +76,15 @@ export interface AcademyCoachOwnVenueInput {
   };
 }
 
+/**
+ * A coach the academy says works there. Only a name, an email and sports are
+ * collected: these people have not agreed to be listed.
+ */
 export interface AcademyOwnedCoachInput {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  bio: string;
-  profilePhotoUrl?: string;
-  profilePhotoKey?: string;
   sports: string[];
-  hourlyRate: number;
-  sportPricing?: Record<string, number>;
-  serviceMode: AcademyCoachServiceMode;
-  baseLocation?: {
-    type: "Point";
-    coordinates: [number, number];
-  };
-  serviceRadiusKm?: number;
-  travelBufferTime?: number;
-  ownVenueDetails?: AcademyCoachOwnVenueInput;
-  certifications?: string[];
 }
 
 export interface AcademyOwner {

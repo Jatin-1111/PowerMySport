@@ -251,7 +251,16 @@ export const updateAcademyStep = async (
   }
 
   if (stepNumber === 5) {
-    updateData.academyCoaches = payload.academyCoaches || [];
+    // Name, email and sports only, even if a caller sends more: these are people
+    // who have not agreed to be listed, so nothing else about them is stored.
+    updateData.academyCoaches = ((payload.academyCoaches as Record<string, unknown>[]) || []).map(
+      (coach) => ({
+        firstName: String(coach.firstName).trim(),
+        lastName: String(coach.lastName).trim(),
+        email: String(coach.email).trim().toLowerCase(),
+        sports: coach.sports,
+      })
+    );
     updateData.venueIds = [];
     updateData.coachIds = [];
   }

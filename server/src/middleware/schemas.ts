@@ -1272,41 +1272,21 @@ export const academyOnboardingStep4Schema = z
  */
 export const academyOnboardingStep5Schema = z
   .object({
+    // Optional: an academy can add coaches later. Only a name, an email and the
+    // sports are kept. Anything else a client sends is dropped (zod strips
+    // unknown keys), so contact details and profiles of people who have not
+    // agreed to be listed are never stored.
     academyCoaches: z
       .array(
         z.object({
-          firstName: z.string().min(2, "Coach first name required"),
-          lastName: z.string().min(2, "Coach last name required"),
-          email: z.string().email("Coach email must be valid"),
-          phone: z.string().regex(/^[+]?[0-9]{10,14}$/, "Coach phone must be valid"),
-          bio: z.string().min(20, "Coach bio must be at least 20 characters"),
-          profilePhotoUrl: z.string().url().optional(),
-          profilePhotoKey: z.string().optional(),
+          firstName: z.string().trim().min(2, "Coach first name required").max(60),
+          lastName: z.string().trim().min(2, "Coach last name required").max(60),
+          email: z.string().trim().toLowerCase().email("Coach email must be valid"),
           sports: z.array(z.string()).min(1, "Select at least one sport"),
-          hourlyRate: z.number().min(0, "Hourly rate must be non-negative"),
-          sportPricing: z
-            .record(z.string(), z.number().min(0, "Price must be non-negative"))
-            .optional(),
-          serviceMode: z.enum(["OWN_VENUE", "FREELANCE", "HYBRID"]),
-          baseLocation: geoLocationSchema.optional(),
-          serviceRadiusKm: z.number().min(0).optional(),
-          travelBufferTime: z.number().min(0).optional(),
-          ownVenueDetails: z
-            .object({
-              name: z.string().min(2).optional(),
-              address: z.string().min(5).optional(),
-              description: z.string().max(500).optional(),
-              openingHours: z.string().optional(),
-              amenities: z.array(z.string()).optional(),
-              images: z.array(z.string().url("Own-venue image URL must be valid")),
-              imageS3Keys: z.array(z.string()).optional(),
-              location: geoLocationSchema.optional(),
-            })
-            .optional(),
-          certifications: z.array(z.string()).optional(),
         })
       )
-      .min(1, "At least one in-house coach is required"),
+      .max(50, "Add up to 50 coaches")
+      .default([]),
   })
   .strip();
 
