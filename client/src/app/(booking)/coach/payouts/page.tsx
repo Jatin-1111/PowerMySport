@@ -1,10 +1,25 @@
 "use client";
 
 import { PayoutMethodManager } from "@/modules/shared/components/payout/PayoutMethodManagerV2";
+import { PayoutsPage } from "@/modules/shared/components/payout/PayoutsPage";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
-import { BadgeIndianRupee, Info, ShieldCheck, Zap } from "lucide-react";
-import React, { useCallback } from "react";
+import { useCallback } from "react";
+
+const FACTS = [
+  {
+    term: "When you are paid",
+    detail: "Your primary method is used when a session is completed and its funds are released.",
+  },
+  {
+    term: "Stored encrypted",
+    detail: "Your bank or UPI details are encrypted at rest and are not shared with other parties.",
+  },
+  {
+    term: "More than one method",
+    detail: "Add as many as you like and choose which one is primary.",
+  },
+];
 
 export default function CoachPayoutsPage() {
   const handleLoad = useCallback(async (): Promise<IPayoutMethod[]> => {
@@ -60,26 +75,11 @@ export default function CoachPayoutsPage() {
   }, []);
 
   return (
-    <div className="space-y-6 sm:space-y-8">
-      {/* ── Page header ── */}
-      <div className="rounded-xl border border-slate-200 bg-blue-50 p-4 shadow-sm sm:p-6">
-        <div className="flex flex-col items-start gap-4 sm:flex-row">
-          <div className="bg-power-orange/15 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
-            <BadgeIndianRupee size={24} className="text-power-orange" />
-          </div>
-          <div>
-            <h1 className="font-editorial text-xl font-normal text-slate-900 sm:text-2xl">
-              Payouts
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Manage how you receive earnings from your coaching sessions. Your payout method is
-              used when a booking is completed and funds are released.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Payout manager ── */}
+    <PayoutsPage
+      consoleLabel="Coach console"
+      intro="Where we send what you earn from your coaching sessions."
+      facts={FACTS}
+    >
       <PayoutMethodManager
         ownerType="Coach"
         onLoad={handleLoad}
@@ -88,45 +88,6 @@ export default function CoachPayoutsPage() {
         onDelete={handleDelete}
         onSetDefault={handleSetDefault}
       />
-
-      {/* ── Info cards ── */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <InfoCard
-          icon={Zap}
-          title="Fast Payouts"
-          description="Earnings are released within 2–3 business days after a session is completed."
-        />
-        <InfoCard
-          icon={ShieldCheck}
-          title="Secure & Encrypted"
-          description="Your banking details are AES-256 encrypted at rest and never shared with third parties."
-        />
-        <InfoCard
-          icon={Info}
-          title="Multiple Methods"
-          description="Add more than one payout method and choose the primary one for payouts."
-        />
-      </div>
-    </div>
-  );
-}
-
-function InfoCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-      <div className="bg-power-orange/15 mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
-        <Icon size={20} className="text-power-orange" />
-      </div>
-      <p className="mb-2 text-base font-bold text-slate-900">{title}</p>
-      <p className="text-sm leading-relaxed text-slate-600">{description}</p>
-    </div>
+    </PayoutsPage>
   );
 }

@@ -1,27 +1,23 @@
 "use client";
 
-import { Input } from "../../ui/Input";
 import { toast } from "@/lib/toast";
+import { ProfileFacts } from "@/modules/shared/components/settings/ProfileSection";
 import { Button } from "@/modules/shared/ui/Button";
-import { IPayoutMethod, PayoutMethodType } from "@/types";
-import { cn } from "@/utils/cn";
-import {
-  AlertTriangle,
-  BadgeCheck,
-  Banknote,
-  CreditCard,
-  Eye,
-  EyeOff,
-  Loader2,
-  Lock,
-  PencilLine,
-  Smartphone,
-  Trash2,
-  Wallet,
-} from "lucide-react";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { StatusTag } from "@/modules/shared/ui/StatusTag";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import type { IPayoutMethod } from "@/types";
 import { useEffect, useRef, useState } from "react";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import {
+  draftFrom,
+  draftPayload,
+  emptyDraft,
+  methodFacts,
+  methodLabel,
+  PayoutFields,
+  validateDraft,
+  type PayoutDraft,
+} from "./PayoutFields";
 
 interface PayoutMethodManagerProps {
   /** Who owns this payout method UI */
@@ -34,78 +30,23 @@ interface PayoutMethodManagerProps {
   onDelete: () => Promise<void>;
 }
 
-type TabId = PayoutMethodType;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const maskAccountNumber = (num: string) =>
-  num.length > 4 ? "•".repeat(num.length - 4) + num.slice(-4) : num;
-
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
-function FieldRow({ label, value, masked }: { label: string; value: string; masked?: boolean }) {
-  return (
-    <div className="flex items-center justify-between py-2">
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-600">{label}</p>
-      <p className="ml-3 truncate text-right text-sm font-semibold text-slate-900">
-        {masked ? maskAccountNumber(value) : value}
-      </p>
-    </div>
-  );
-}
-
-function StatusBadge({ hasMethod }: { hasMethod: boolean }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
-        hasMethod ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
-      )}
-    >
-      {hasMethod ? (
-        <>
-          <BadgeCheck size={12} />
-          Payout method saved
-        </>
-      ) : (
-        <>
-          <AlertTriangle size={12} />
-          Not configured
-        </>
-      )}
-    </span>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
-export function PayoutMethodManager({
-  ownerType,
-  onLoad,
-  onSave,
-  onDelete,
-}: PayoutMethodManagerProps) {
+/**
+ * One payout method for an account: what is saved, or the form to add or
+ * change it. Removing asks twice, because the second press is the only
+ * confirmation: the first turns the button into "Confirm remove" for four
+ * seconds. There is no card around it; the page it sits on supplies the frame.
+ */
+export function PayoutMethodManager({ onLoad, onSave, onDelete }: PayoutMethodManagerProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [current, setCurrent] = useState<IPayoutMethod | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("BANK_TRANSFER");
-
-  // Bank form state
-  const [accountHolderName, setAccountHolderName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [confirmAccountNumber, setConfirmAccountNumber] = useState("");
-  const [ifscCode, setIfscCode] = useState("");
-  const [bankName, setBankName] = useState("");
-
-  // UPI form state
-  const [upiId, setUpiId] = useState("");
+  const [draft, setDraft] = useState<PayoutDraft>(emptyDraft);
 
   const confirmDeleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load existing method
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -113,113 +54,44 @@ export function PayoutMethodManager({
       .then((method) => {
         if (!mounted) return;
         setCurrent(method);
-        if (method) {
-          setActiveTab(method.type);
-          prefillForm(method);
-        }
+        if (method) setDraft(draftFrom(method));
       })
       .catch(() => {
-        if (!mounted) return;
-        toast.error("Failed to load payout method");
+        if (mounted) toast.error("Failed to load payout method");
       })
       .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) setLoading(false);
       });
     return () => {
       mounted = false;
     };
   }, [onLoad]);
 
-  function prefillForm(method: IPayoutMethod) {
-    if (method.type === "BANK_TRANSFER") {
-      setAccountHolderName(method.accountHolderName ?? "");
-      setAccountNumber(method.accountNumber ?? "");
-      setConfirmAccountNumber(method.accountNumber ?? "");
-      setIfscCode(method.ifscCode ?? "");
-      setBankName(method.bankName ?? "");
-      setUpiId("");
-    } else {
-      setUpiId(method.upiId ?? "");
-      setAccountHolderName("");
-      setAccountNumber("");
-      setConfirmAccountNumber("");
-      setIfscCode("");
-      setBankName("");
-    }
-  }
+  useEffect(
+    () => () => {
+      if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
+    },
+    []
+  );
 
-  function resetForm() {
-    if (current) {
-      setActiveTab(current.type);
-      prefillForm(current);
-    } else {
-      setActiveTab("BANK_TRANSFER");
-      setAccountHolderName("");
-      setAccountNumber("");
-      setConfirmAccountNumber("");
-      setIfscCode("");
-      setBankName("");
-      setUpiId("");
-    }
+  const stopEditing = (saved: IPayoutMethod | null) => {
+    setDraft(saved ? draftFrom(saved) : emptyDraft());
     setEditing(false);
     setConfirmDelete(false);
-  }
+  };
 
   const handleSave = async () => {
-    // Validation
-    if (activeTab === "BANK_TRANSFER") {
-      if (!accountHolderName.trim()) {
-        toast.error("Account holder name is required");
-        return;
-      }
-      if (!accountNumber.trim()) {
-        toast.error("Account number is required");
-        return;
-      }
-      if (accountNumber !== confirmAccountNumber) {
-        toast.error("Account numbers don't match");
-        return;
-      }
-      if (!ifscCode.trim()) {
-        toast.error("IFSC code is required");
-        return;
-      }
-      if (!/^[A-Za-z]{4}0[A-Za-z0-9]{6}$/.test(ifscCode.trim())) {
-        toast.error("Invalid IFSC code format (e.g. SBIN0001234)");
-        return;
-      }
-      if (!bankName.trim()) {
-        toast.error("Bank name is required");
-        return;
-      }
-    } else {
-      if (!upiId.trim()) {
-        toast.error("UPI ID is required");
-        return;
-      }
-      if (!/^[\w.\-+]+@[\w]+$/.test(upiId.trim())) {
-        toast.error("Invalid UPI ID format (e.g. yourname@okaxis)");
-        return;
-      }
+    const problem = validateDraft(draft);
+    if (problem) {
+      toast.error(problem);
+      return;
     }
-
-    const payload: Omit<IPayoutMethod, "addedAt" | "updatedAt"> =
-      activeTab === "BANK_TRANSFER"
-        ? {
-            type: "BANK_TRANSFER",
-            accountHolderName: accountHolderName.trim(),
-            accountNumber: accountNumber.trim(),
-            ifscCode: ifscCode.trim().toUpperCase(),
-            bankName: bankName.trim(),
-          }
-        : { type: "UPI", upiId: upiId.trim() };
 
     setSaving(true);
     try {
-      const saved = await onSave(payload);
+      const saved = await onSave(draftPayload(draft));
       setCurrent(saved);
-      setEditing(false);
+      stopEditing(saved);
       toast.success("Payout method saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save payout method");
@@ -231,19 +103,15 @@ export function PayoutMethodManager({
   const handleDelete = async () => {
     if (!confirmDelete) {
       setConfirmDelete(true);
-      confirmDeleteTimerRef.current = setTimeout(() => {
-        setConfirmDelete(false);
-      }, 4000);
+      confirmDeleteTimerRef.current = setTimeout(() => setConfirmDelete(false), 4000);
       return;
     }
-    if (confirmDeleteTimerRef.current) {
-      clearTimeout(confirmDeleteTimerRef.current);
-    }
+    if (confirmDeleteTimerRef.current) clearTimeout(confirmDeleteTimerRef.current);
     setDeleting(true);
     try {
       await onDelete();
       setCurrent(null);
-      resetForm();
+      stopEditing(null);
       toast.success("Payout method removed");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to remove payout method");
@@ -253,299 +121,106 @@ export function PayoutMethodManager({
     }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center">
-        <Loader2 className="text-power-orange animate-spin" size={28} />
+      <div role="status" aria-busy="true" className="space-y-4">
+        <span className="sr-only">Loading your payout method</span>
+        <Skeleton aria-hidden="true" className="h-6 w-40" />
+        <Skeleton aria-hidden="true" className="h-32 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* ── Header card ── */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <Wallet size={20} className="text-power-orange" />
-              <h2 className="text-lg font-bold text-slate-900">Payout Method</h2>
-            </div>
-            <p className="text-sm text-slate-600">
-              Where you&apos;d like to receive your earnings from bookings.
-            </p>
-          </div>
-          <StatusBadge hasMethod={Boolean(current)} />
-        </div>
-
-        {/* ── Current method display ── */}
-        {current && !editing ? (
-          <div className="mt-6 space-y-1">
-            {current.type === "BANK_TRANSFER" ? (
-              <>
-                <div className="mb-4 flex items-center gap-2">
-                  <CreditCard size={16} className="text-power-orange" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    Bank Transfer
-                  </span>
-                </div>
-                <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <FieldRow label="Account Holder" value={current.accountHolderName!} />
-                  <FieldRow label="Account Number" value={current.accountNumber!} masked />
-                  <FieldRow label="Bank" value={`${current.bankName}, ${current.ifscCode}`} />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="mb-4 flex items-center gap-2">
-                  <Smartphone size={16} className="text-power-orange" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                    UPI
-                  </span>
-                </div>
-                <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <FieldRow label="UPI ID" value={current.upiId!} />
-                </div>
-              </>
-            )}
-
-            {current.updatedAt && (
-              <p className="mt-4 border-t border-slate-200 pt-4 text-xs text-slate-500">
-                Last updated:{" "}
-                {new Date(current.updatedAt).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </p>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-2 pt-4">
-              <Button onClick={() => setEditing(true)} variant="outline" size="sm">
-                <PencilLine size={16} />
-                Edit
-              </Button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors",
-                  confirmDelete
-                    ? "bg-red-600 text-white hover:bg-red-700"
-                    : "text-red-600 hover:bg-red-50"
-                )}
-              >
-                {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-                {confirmDelete ? "Confirm Remove" : "Remove"}
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {/* ── No method CTA ── */}
-        {!current && !editing && (
-          <div className="mt-6 py-6 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-50">
-              <Banknote size={26} className="text-amber-600" />
-            </div>
-            <p className="mb-4 text-sm text-slate-600">
-              You haven&apos;t added a payout method yet. Add one to start receiving payments for
-              your bookings.
-            </p>
-            <Button onClick={() => setEditing(true)} variant="primary" size="md">
-              <Wallet size={18} />
-              Add Payout Method
-            </Button>
-          </div>
-        )}
+    <section aria-labelledby="payout-method-heading">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        <h2 id="payout-method-heading" className="text-ink text-base font-semibold">
+          Payout method
+        </h2>
+        <StatusTag tone={current ? "live" : "pending"}>
+          {current ? "Saved" : "Not set up"}
+        </StatusTag>
       </div>
 
-      {/* ── Edit / Add form ── */}
-      {editing && (
-        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm duration-300">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-            <h3 className="text-base font-bold text-slate-900">
-              {current ? "Update Payout Method" : "Add Payout Method"}
-            </h3>
+      {editing ? (
+        <form
+          className="mt-5 space-y-8"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void handleSave();
+          }}
+        >
+          <PayoutFields draft={draft} onChange={setDraft} disabled={saving} />
+          <div className="border-hairline flex flex-wrap items-center gap-x-6 gap-y-3 border-t pt-6">
+            <Button type="submit" disabled={saving} className="min-h-11">
+              {saving ? "Saving" : current ? "Save changes" : "Save payout method"}
+            </Button>
             <button
-              onClick={resetForm}
-              className="text-sm font-medium text-slate-500 hover:text-slate-700"
+              type="button"
+              onClick={() => stopEditing(current)}
+              disabled={saving}
+              className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm disabled:opacity-50`}
             >
               Cancel
             </button>
           </div>
-
-          {/* Tab selector */}
-          <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
-            {(["BANK_TRANSFER", "UPI"] as TabId[]).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-2 rounded-md py-2 text-sm font-semibold transition-all",
-                  activeTab === tab
-                    ? "text-power-orange border-power-orange/20 border bg-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                {tab === "BANK_TRANSFER" ? (
-                  <>
-                    <CreditCard size={16} />
-                    Bank Transfer
-                  </>
-                ) : (
-                  <>
-                    <Smartphone size={16} />
-                    UPI
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Bank Transfer Form */}
-          {activeTab === "BANK_TRANSFER" && (
-            <div className="space-y-4">
-              <FormFieldGroup
-                label="Account Holder Name"
-                value={accountHolderName}
-                onChange={setAccountHolderName}
-                placeholder="As per your bank records"
-              />
-              <FormFieldGroup
-                label="Account Number"
-                value={accountNumber}
-                onChange={setAccountNumber}
-                placeholder="Enter account number"
-                type="password"
-              />
-              <FormFieldGroup
-                label="Confirm Account Number"
-                value={confirmAccountNumber}
-                onChange={setConfirmAccountNumber}
-                placeholder="Re-enter account number"
-                type="password"
-              />
-              <FormFieldGroup
-                label="IFSC Code"
-                value={ifscCode}
-                onChange={(v) => setIfscCode(v.toUpperCase())}
-                placeholder="e.g. SBIN0001234"
-                maxLength={11}
-                hint="Format: 4 letters + 0 + 6 alphanumeric characters"
-              />
-              <FormFieldGroup
-                label="Bank Name"
-                value={bankName}
-                onChange={setBankName}
-                placeholder="e.g. State Bank of India"
-              />
-            </div>
+        </form>
+      ) : current ? (
+        <div className="mt-5">
+          <p className="text-ink-body mb-3 text-sm">{methodLabel(current.type)}</p>
+          <ProfileFacts rows={methodFacts(current)} />
+          {current.updatedAt && (
+            <p className="text-ink-body mt-3 text-sm">
+              Last updated{" "}
+              {new Date(current.updatedAt).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
           )}
-
-          {/* UPI Form */}
-          {activeTab === "UPI" && (
-            <div className="space-y-4">
-              <FormFieldGroup
-                label="UPI ID"
-                value={upiId}
-                onChange={setUpiId}
-                placeholder="yourname@okaxis"
-                hint="Format: name@bankname (e.g., john@okaxis)"
-              />
-              <div className="flex items-start gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-blue-900">
-                <Lock size={16} className="mt-0.5 shrink-0 text-indigo-600" />
-                <p>
-                  We only store your UPI ID to process payouts. Your data is encrypted and we will
-                  never initiate unauthorized debits.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex gap-3 pt-2">
-            <Button onClick={handleSave} disabled={saving} variant="primary" fullWidth size="lg">
-              {saving ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                <>
-                  <BadgeCheck size={18} />
-                  Save Payout Method
-                </>
-              )}
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Button
+              variant="secondary"
+              className="min-h-11"
+              onClick={() => {
+                setDraft(draftFrom(current));
+                setEditing(true);
+              }}
+            >
+              Change method
             </Button>
-            <Button onClick={resetForm} variant="outline" size="lg">
-              Cancel
-            </Button>
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={deleting}
+              className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm disabled:opacity-50 ${
+                confirmDelete ? "text-red-800 decoration-red-800" : ""
+              }`}
+            >
+              {deleting ? "Removing" : confirmDelete ? "Press again to remove" : "Remove"}
+            </button>
           </div>
-
-          <p className="text-center text-xs text-slate-500">
-            <Lock size={12} className="mr-1 inline" />
-            Your banking details are encrypted and stored securely
+        </div>
+      ) : (
+        <div className="mt-5">
+          <p className="text-ink-body max-w-[52ch] text-pretty">
+            You have not added a payout method yet. Add a bank account or UPI ID so earnings from
+            bookings can reach you.
           </p>
+          <div className="mt-5">
+            <Button
+              className="min-h-11"
+              onClick={() => {
+                setDraft(emptyDraft());
+                setEditing(true);
+              }}
+            >
+              Add a payout method
+            </Button>
+          </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
-
-// ─── Internal FormFieldGroup Component ────────────────────────────────────────
-
-interface FormFieldGroupProps {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  type?: "text" | "password";
-  maxLength?: number;
-  hint?: string;
-}
-
-function FormFieldGroup({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  maxLength,
-  hint,
-}: FormFieldGroupProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const isPassword = type === "password";
-  const inputType = isPassword ? (showPassword ? "text" : "password") : "text";
-
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-slate-700">{label}</label>
-      <div className="relative">
-        <Input
-          type={inputType}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          className={cn("pr-10", isPassword && "font-mono tracking-widest")}
-        />
-        {isPassword && (
-          <button
-            type="button"
-            onClick={() => setShowPassword((s) => !s)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-700"
-            tabIndex={-1}
-          >
-            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-        )}
-      </div>
-      {hint && <p className="text-xs text-slate-500">{hint}</p>}
-    </div>
-  );
-}
-
-// ─── Main Component

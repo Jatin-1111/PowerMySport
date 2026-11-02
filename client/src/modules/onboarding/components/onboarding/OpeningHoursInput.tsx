@@ -1,4 +1,6 @@
-import React from "react";
+import { FIELD_INPUT } from "@/modules/shared/components/settings/ProfileSection";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { cn } from "@/utils/cn";
 
 export interface DaySlot {
   startTime: string;
@@ -26,6 +28,9 @@ interface OpeningHoursInputProps {
   value: OpeningHours;
   onChange: (hours: OpeningHours) => void;
 }
+
+/** A time box sized to its content, not the full row. */
+const TIME_INPUT = cn(FIELD_INPUT, "w-36 tabular-nums");
 
 const DAYS = [
   { key: "monday", label: "Monday" },
@@ -196,85 +201,91 @@ export default function OpeningHoursInput({ value, onChange }: OpeningHoursInput
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <label className="block text-sm font-semibold text-slate-900">Opening Hours</label>
+    <div>
+      <div className="flex items-center justify-between gap-4">
+        <span className="sr-only">Opening hours</span>
         <button
           type="button"
           onClick={copyToAllDays}
-          className="text-power-orange text-sm font-semibold hover:text-orange-600"
+          className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm`}
         >
           Copy Monday to all days
         </button>
       </div>
 
-      <div className="space-y-3">
+      <ul className="border-hairline border-t">
         {DAYS.map(({ key, label }) => {
           const dayHours = normalizeDayHours(value[key]);
+          const slots = dayHours.slots || [];
           return (
-            <div key={key} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={dayHours.isOpen}
-                    onChange={() => handleDayToggle(key)}
-                    className="accent-power-orange h-4 w-4 rounded"
-                  />
-                  <span className="text-sm font-medium text-slate-700">{label}</span>
-                </div>
-
-                {dayHours.isOpen && (
-                  <button
-                    type="button"
-                    onClick={() => addSlot(key)}
-                    className="text-power-orange text-sm font-semibold hover:text-orange-600"
-                  >
-                    Add slot
-                  </button>
-                )}
-              </div>
+            <li
+              key={key}
+              className="border-hairline grid gap-x-6 gap-y-2 border-b py-3 sm:grid-cols-[9rem_minmax(0,1fr)]"
+            >
+              <label className="flex min-h-11 cursor-pointer items-center gap-3 self-start">
+                <input
+                  type="checkbox"
+                  checked={dayHours.isOpen}
+                  onChange={() => handleDayToggle(key)}
+                  className="accent-ink h-4 w-4"
+                />
+                <span className="text-ink text-sm font-medium">{label}</span>
+              </label>
 
               {dayHours.isOpen ? (
                 <div className="space-y-2">
-                  {(dayHours.slots || []).map((slot, slotIndex) => (
-                    <div key={`${key}-${slotIndex}`} className="flex items-center gap-2">
+                  {slots.map((slot, slotIndex) => (
+                    <div
+                      key={`${key}-${slotIndex}`}
+                      className="flex flex-wrap items-center gap-x-3 gap-y-1"
+                    >
                       <input
                         type="time"
+                        aria-label={`${label}, slot ${slotIndex + 1} opens`}
                         value={slot.startTime}
                         onChange={(e) =>
                           handleSlotTimeChange(key, slotIndex, "startTime", e.target.value)
                         }
-                        className="focus:ring-power-orange rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
+                        className={TIME_INPUT}
                       />
-                      <span className="text-sm text-slate-500">to</span>
+                      <span className="text-ink-body text-sm">to</span>
                       <input
                         type="time"
+                        aria-label={`${label}, slot ${slotIndex + 1} closes`}
                         value={slot.endTime}
                         onChange={(e) =>
                           handleSlotTimeChange(key, slotIndex, "endTime", e.target.value)
                         }
-                        className="focus:ring-power-orange rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-900 focus:border-transparent focus:ring-2"
+                        className={TIME_INPUT}
                       />
-                      {(dayHours.slots || []).length > 1 && (
+                      {slots.length > 1 && (
                         <button
                           type="button"
                           onClick={() => removeSlot(key, slotIndex)}
-                          className="text-sm font-medium text-red-600 hover:text-red-700"
+                          aria-label={`Remove ${label} slot ${slotIndex + 1}`}
+                          className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm`}
                         >
                           Remove
                         </button>
                       )}
                     </div>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => addSlot(key)}
+                    aria-label={`Add another ${label} slot`}
+                    className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm`}
+                  >
+                    Add a slot
+                  </button>
                 </div>
               ) : (
-                <span className="text-sm italic text-slate-500">Closed</span>
+                <p className="text-ink-body flex min-h-11 items-center text-sm">Closed</p>
               )}
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

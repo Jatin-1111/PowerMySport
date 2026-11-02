@@ -1,10 +1,25 @@
 "use client";
 
 import { PayoutMethodManager } from "@/modules/shared/components/payout/PayoutMethodManagerV2";
+import { PayoutsPage } from "@/modules/shared/components/payout/PayoutsPage";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
-import { BadgeIndianRupee, Info, ShieldCheck, Zap } from "lucide-react";
-import React, { useCallback } from "react";
+import { useCallback } from "react";
+
+const FACTS = [
+  {
+    term: "When you are paid",
+    detail: "Your primary method is used when a completed session's payment is released.",
+  },
+  {
+    term: "Stored encrypted",
+    detail: "Your bank or UPI details are encrypted at rest and are not shared with other parties.",
+  },
+  {
+    term: "More than one method",
+    detail: "Add as many as you like and choose which one is primary.",
+  },
+];
 
 export default function ExpertPayoutsPage() {
   const handleLoad = useCallback(async (): Promise<IPayoutMethod[]> => {
@@ -60,75 +75,21 @@ export default function ExpertPayoutsPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-6 py-8 sm:space-y-8">
-      {/* ── Page header ── */}
-      <div className="bg-ink relative overflow-hidden rounded-2xl p-6 text-white shadow-lg sm:p-8">
-        <div className="bg-power-orange/20 pointer-events-none absolute -right-16 -top-12 h-40 w-40 rounded-full blur-3xl" />
-        <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/10">
-            <BadgeIndianRupee size={22} className="text-power-orange" />
-          </div>
-          <div>
-            <span className="inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
-              Expert
-            </span>
-            <h1 className="font-editorial mt-3 text-2xl font-light sm:text-3xl">Payout Settings</h1>
-            <p className="mt-1 max-w-xl text-sm text-slate-200">
-              Manage how you receive earnings from your expert sessions. Your payout method is used
-              when a completed session's payment is released to you.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Payout manager ── */}
-      <PayoutMethodManager
-        ownerType="Expert"
-        onLoad={handleLoad}
-        onAdd={handleAdd}
-        onUpdate={handleUpdate}
-        onDelete={handleDelete}
-        onSetDefault={handleSetDefault}
-      />
-
-      {/* ── Info cards ── */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <InfoCard
-          icon={Zap}
-          title="Fast Payouts"
-          description="Earnings are released within 24 hours of a session being marked completed."
+    <div className="mx-auto max-w-5xl px-6 py-8">
+      <PayoutsPage
+        consoleLabel="Expert console"
+        intro="Where we send what you earn from your expert sessions."
+        facts={FACTS}
+      >
+        <PayoutMethodManager
+          ownerType="Expert"
+          onLoad={handleLoad}
+          onAdd={handleAdd}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+          onSetDefault={handleSetDefault}
         />
-        <InfoCard
-          icon={ShieldCheck}
-          title="Secure & Encrypted"
-          description="Your banking details are AES-256 encrypted at rest and never shared with third parties."
-        />
-        <InfoCard
-          icon={Info}
-          title="Multiple Methods"
-          description="Add more than one payout method and choose the primary one for payouts."
-        />
-      </div>
-    </div>
-  );
-}
-
-function InfoCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border-0 bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6">
-      <div className="bg-power-orange/15 mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
-        <Icon size={20} className="text-power-orange" />
-      </div>
-      <p className="mb-2 text-base font-bold text-slate-900">{title}</p>
-      <p className="text-sm leading-relaxed text-slate-600">{description}</p>
+      </PayoutsPage>
     </div>
   );
 }

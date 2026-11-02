@@ -1,10 +1,26 @@
 "use client";
 
 import { PayoutMethodManager } from "@/modules/shared/components/payout/PayoutMethodManager";
+import { PayoutsPage } from "@/modules/shared/components/payout/PayoutsPage";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
-import { BadgeIndianRupee, Building2, Info, ShieldCheck, Zap } from "lucide-react";
-import React, { useCallback } from "react";
+import { useCallback } from "react";
+
+const FACTS = [
+  {
+    term: "One method for every venue",
+    detail: "Earnings from each of your venues are paid to the same account.",
+  },
+  {
+    term: "Stored encrypted",
+    detail: "Your bank or UPI details are encrypted at rest and are not shared with other parties.",
+  },
+  {
+    term: "Changing it later",
+    detail:
+      "A new method applies to future payouts. A payout already in progress goes to the method it was started with.",
+  },
+];
 
 export default function VenuePayoutsPage() {
   const handleLoad = useCallback(async (): Promise<IPayoutMethod | null> => {
@@ -31,77 +47,17 @@ export default function VenuePayoutsPage() {
   }, []);
 
   return (
-    <div className="space-y-8">
-      {/* ── Page header ── */}
-      <div className="rounded-xl border border-slate-200 bg-green-50 p-6 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="bg-power-orange/15 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
-            <BadgeIndianRupee size={24} className="text-power-orange" />
-          </div>
-          <div>
-            <h1 className="font-editorial text-2xl font-normal text-slate-900">Payout Settings</h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Manage how you receive earnings from venue bookings. The payout method you set here
-              applies to all your listed venues.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Payout manager ── */}
+    <PayoutsPage
+      consoleLabel="Venue console"
+      intro="Where we send what your venues earn from bookings."
+      facts={FACTS}
+    >
       <PayoutMethodManager
         ownerType="VENUE"
         onLoad={handleLoad}
         onSave={handleSave}
         onDelete={handleDelete}
       />
-
-      {/* ── Info cards ── */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <InfoCard
-          icon={Building2}
-          title="All Venues Covered"
-          description="One payout method covers all venues under your account. Earnings from each venue flow to the same account."
-        />
-        <InfoCard
-          icon={ShieldCheck}
-          title="Secure & Encrypted"
-          description="Your banking details are AES-256 encrypted at rest and never shared with third parties."
-        />
-        <InfoCard
-          icon={Zap}
-          title="Fast Settlements"
-          description="Venue booking earnings are settled within 2–3 business days after a confirmed session ends."
-        />
-      </div>
-
-      <div className="flex items-start gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-4 text-sm text-blue-900">
-        <Info size={16} className="mt-0.5 flex-shrink-0 shrink-0 text-indigo-600" />
-        <p>
-          You can update your payout method at any time. Changes will apply to future payouts.
-          In-progress payouts will be sent to the previously saved method.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function InfoCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-      <div className="bg-power-orange/15 mb-3 flex h-10 w-10 items-center justify-center rounded-lg">
-        <Icon size={20} className="text-power-orange" />
-      </div>
-      <p className="mb-2 text-base font-bold text-slate-900">{title}</p>
-      <p className="text-sm leading-relaxed text-slate-600">{description}</p>
-    </div>
+    </PayoutsPage>
   );
 }
