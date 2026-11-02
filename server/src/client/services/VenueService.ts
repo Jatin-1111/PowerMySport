@@ -164,7 +164,7 @@ export const createVenue = async (payload: CreateVenuePayload): Promise<VenueDoc
  * admin team's working notes. Admin callers opt out via `forAdmin`.
  */
 const VENUE_PUBLIC_EXCLUDE =
-  "-payoutMethods -documents -ownerEmail -ownerPhone -emailVerified -reviewNotes -rejectionReason -pendingChanges";
+  "-payoutMethods -documents -ownerEmail -ownerPhone -emailVerified -reviewNotes -rejectionReason -pendingChanges -lifecycle";
 
 export const getVenueById = async (
   id: string,
@@ -273,6 +273,7 @@ export const findVenuesNearby = async (
                 reviewNotes: 0,
                 rejectionReason: 0,
                 pendingChanges: 0,
+                lifecycle: 0,
               },
             },
           ],

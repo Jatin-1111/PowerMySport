@@ -1,6 +1,11 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IPayoutMethod } from "./Coach";
 import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
+import {
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
 
 /**
  * Expert = an elite/ex-professional player who offers paid 1:1 sessions.
@@ -52,6 +57,8 @@ export interface ExpertDocument extends Document {
   verificationStatus: "UNVERIFIED" | "PENDING" | "APPROVED" | "REJECTED";
   /** Claim-field edits awaiting admin review; the approved values stay live. */
   pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
   rejectionReason?: string;
   /** Snapshot of `sports` taken the moment an admin approves this expert —
    *  pathway-verification eligibility checks against this, not the live
@@ -119,6 +126,9 @@ const expertSchema = new Schema<ExpertDocument>(
       index: true,
     },
     rejectionReason: { type: String, trim: true },
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
     // Claim-field edits made after approval, held until an admin approves them.
     pendingChanges: {
       fields: { type: Schema.Types.Mixed },
@@ -206,6 +216,8 @@ expertSchema.index({
   sports: "text",
   city: "text",
 });
+
+attachLifecycleSync(expertSchema, "expert");
 
 export const Expert =
   mongoose.models.Expert || mongoose.model<ExpertDocument>("Expert", expertSchema);

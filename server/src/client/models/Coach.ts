@@ -1,6 +1,11 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IAvailability, IOwnVenueDetails, ServiceMode } from "../../types/index";
 import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
+import {
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
 
 export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
 
@@ -55,6 +60,8 @@ export interface CoachDocument extends Document {
   verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
   /** Claim-field edits awaiting admin review; the approved values stay live. */
   pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
   onboardingProgressStep?: 1 | 2 | 3;
@@ -288,6 +295,9 @@ const coachSchema = new Schema<CoachDocument>(
       type: String,
       default: "",
     },
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
     // Claim-field edits made after approval, held until an admin approves them.
     pendingChanges: {
       fields: { type: Schema.Types.Mixed },
@@ -492,5 +502,7 @@ coachSchema.index({
 // cover the sort.
 coachSchema.index({ verificationStatus: 1, createdAt: -1 });
 coachSchema.index({ createdAt: -1 });
+
+attachLifecycleSync(coachSchema, "coach");
 
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

@@ -1,6 +1,11 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation, OpeningHours } from "../../types/index";
 import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
+import {
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
 
 export interface AcademyOwnedVenue {
   name: string;
@@ -135,6 +140,8 @@ export interface AcademyDocument extends Document {
   isActive: boolean; // Can go live only if approved AND kycVerified
   isApproved: boolean;
   rejectionReason?: string; // If rejected, store reason
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
   onboardingStep: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   onboardingCompleted: boolean;
   /** SHA-256 of the capability token issued at `start`. Never selected by default. */
@@ -550,6 +557,9 @@ const academySchema = new Schema<AcademyDocument>(
       type: Boolean,
       default: false,
     },
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
     rejectionReason: {
       type: String,
       optional: true,
@@ -632,6 +642,8 @@ academySchema.index({ isApproved: 1, isActive: 1, sports: 1 });
 // getPendingCounts' countDocuments({onboardingCompleted:true,isApproved:false})
 // hit on every admin dashboard load.
 academySchema.index({ onboardingCompleted: 1, isApproved: 1, createdAt: -1 });
+
+attachLifecycleSync(academySchema, "academy");
 
 const Academy =
   mongoose.models.Academy || mongoose.model<AcademyDocument>("Academy", academySchema);

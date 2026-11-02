@@ -3,6 +3,11 @@ import { IGeoLocation } from "../../types/index";
 import { IPayoutMethod } from "./Coach";
 import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
 import { log as __rootLog } from "../../utils/logger";
+import {
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
 const log = __rootLog.child("venue");
 
 // Matches the GST_REGEX used in ExpertsService.ts / Academy's Step3Legal.tsx —
@@ -45,6 +50,8 @@ export interface VenueDocument extends Document {
   allowExternalCoaches: boolean;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
   documents: VenueDocumentFile[];
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
   rejectionReason?: string;
   reviewNotes?: string;
   /** Claim-field edits awaiting admin review; the approved values stay live. */
@@ -409,6 +416,9 @@ const venueSchema = new Schema<VenueDocument>(
         },
       },
     ],
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
     rejectionReason: {
       type: String,
       optional: true,
@@ -694,5 +704,7 @@ venueSchema.methods.refreshAllUrls = async function () {
   await this.refreshDocumentUrls();
   return this;
 };
+
+attachLifecycleSync(venueSchema, "venue");
 
 export const Venue = mongoose.model<VenueDocument>("Venue", venueSchema, "venues");

@@ -13,6 +13,7 @@
     "deploy": "node scripts/deploy.js",
     "recreate:redis": "node scripts/recreate-redis.js",
     "migrate": "ts-node src/migrations/index.ts",
+    "report:lifecycle-drift": "ts-node src/scripts/reportLifecycleDrift.ts",
     "migrate:venue-images": "ts-node src/migrations/10_migrate_venue_images.ts",
     "migrate:wallet-paise": "ts-node src/migrations/20_fix_wallet_transaction_paise.ts",
     "migrate:backfill-booking-events": "ts-node src/migrations/21_backfill_booking_created_events.ts",

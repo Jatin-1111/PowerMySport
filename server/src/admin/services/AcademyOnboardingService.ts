@@ -603,6 +603,8 @@ export const submitAcademyForApproval = async (academyId: string): Promise<Acade
       onboardingCompleted: true,
       isApproved: false,
       kycVerified: false,
+      // A resubmission is a fresh submission, not a standing rejection.
+      rejectionReason: "",
     },
     { new: true }
   );
