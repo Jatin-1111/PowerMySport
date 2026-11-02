@@ -69,7 +69,7 @@ export default function CoachPayoutsPage() {
           </div>
           <div>
             <h1 className="font-editorial text-xl font-normal text-slate-900 sm:text-2xl">
-              Payout Settings
+              Payouts
             </h1>
             <p className="mt-1 text-sm text-slate-600">
               Manage how you receive earnings from your coaching sessions. Your payout method is

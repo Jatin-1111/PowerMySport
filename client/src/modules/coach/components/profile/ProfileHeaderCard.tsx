@@ -1,4 +1,4 @@
-import { Card } from "@/modules/shared/ui/Card";
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import ProfilePictureUpload from "@/modules/shared/components/ProfilePictureUpload";
 import { Coach, User } from "@/types";
 import { LucideIcon } from "lucide-react";
@@ -27,8 +27,8 @@ export function ProfileHeaderCard({
   const BadgeIcon = badge.icon;
 
   return (
-    <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm">
-      <div className="bg-slate-50 px-4 py-5 sm:px-6 md:px-8">
+    <section aria-label="Profile summary">
+      <div>
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
             <ProfilePictureUpload
@@ -39,12 +39,10 @@ export function ProfileHeaderCard({
               size="xl"
             />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Coach Dashboard
-              </p>
-              <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl md:text-4xl">
+              <p className="text-sm text-slate-600">Profile</p>
+              <h1 className="font-editorial text-3xl font-light tracking-tight text-slate-900 sm:text-4xl">
                 {user?.name || "Coach"}
-              </h2>
+              </h1>
               <div className="mt-2 space-y-1">
                 {user?.email && (
                   <p className="break-all text-sm font-medium text-slate-600">{user.email}</p>
@@ -56,7 +54,7 @@ export function ProfileHeaderCard({
 
           <div className="flex flex-wrap items-center gap-3">
             <span
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${badge.className}`}
+              className={`inline-flex items-center gap-2 rounded-sm px-3 py-1 text-xs font-semibold ${badge.className}`}
             >
               <BadgeIcon size={14} />
               {badge.label}
@@ -64,50 +62,35 @@ export function ProfileHeaderCard({
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+        <div className="bg-paper-deep text-ink-body mt-6 rounded-xl px-4 py-3 text-sm">
           {guidance}
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Sports</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{sportsCount}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Starting Price
-            </p>
-            <p className="text-power-orange mt-1 text-xl font-bold sm:text-2xl">
-              ₹{basePrice || 0}/hr
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Service Mode
-            </p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">
-              {coachProfile?.serviceMode === "OWN_VENUE"
-                ? "Own Venue"
-                : coachProfile?.serviceMode === "HYBRID"
-                  ? "Hybrid"
-                  : "Freelance"}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Time Slots
-            </p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{totalSlots}</p>
-          </div>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <StatTile label="Sports" value={sportsCount} />
+          <StatTile label="Starting price" value={`₹${basePrice || 0}/hr`} />
+          <StatTile
+            label="Service mode"
+            value={
+              <span className="text-2xl sm:text-3xl">
+                {coachProfile?.serviceMode === "OWN_VENUE"
+                  ? "Own venue"
+                  : coachProfile?.serviceMode === "HYBRID"
+                    ? "Hybrid"
+                    : "Freelance"}
+              </span>
+            }
+          />
+          <StatTile label="Time slots" value={totalSlots} />
         </div>
 
         {coachProfile?.verificationNotes && (
           <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            <p className="mb-1 font-semibold">Rejection Notes:</p>
+            <p className="mb-1 font-semibold">Rejection notes</p>
             {coachProfile.verificationNotes}
           </div>
         )}
       </div>
-    </Card>
+    </section>
   );
 }

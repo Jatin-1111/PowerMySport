@@ -138,7 +138,7 @@ function NoteTypeBadge({ type }: { type: NoteType }) {
   const cfg = NOTE_TYPE_CONFIG[type];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}
+      className={`inline-flex items-center gap-1 rounded-sm px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}
     >
       {cfg.icon}
       {cfg.label}
@@ -243,12 +243,12 @@ function BookingRow({ booking }: { booking: Booking }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {booking.sport && (
-            <span className="rounded-full border border-orange-200 bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+            <span className="rounded-sm border border-orange-200 bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
               {booking.sport}
             </span>
           )}
           <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getBookingStatusClass(booking.status)}`}
+            className={`rounded-sm px-2.5 py-0.5 text-xs font-medium ${getBookingStatusClass(booking.status)}`}
           >
             {formatStatusLabel(booking.status)}
           </span>
@@ -383,8 +383,8 @@ export default function ClientProfilePage() {
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-6xl px-4 py-8">
+      <div>
+        <div>
           {/* Back button skeleton */}
           <div className="mb-6 h-8 w-28 animate-pulse rounded-lg bg-slate-200" />
           {/* Header skeleton */}
@@ -417,7 +417,7 @@ export default function ClientProfilePage() {
   // ── Error state ───────────────────────────────────────────────────────────
   if (error || !client) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
         <div className="max-w-sm text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <AlertTriangle size={28} className="text-red-500" />
@@ -438,8 +438,8 @@ export default function ClientProfilePage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div>
+      <div>
         {/* Back button */}
         <motion.button
           initial={{ opacity: 0, x: -8 }}
@@ -484,7 +484,7 @@ export default function ClientProfilePage() {
                     {client.name}
                   </h1>
                   <span
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                    className={`rounded-sm border px-2.5 py-0.5 text-xs font-semibold ${
                       client.isActive
                         ? "border-emerald-200 bg-emerald-100 text-emerald-700"
                         : "border-slate-200 bg-slate-100 text-slate-500"
@@ -500,7 +500,7 @@ export default function ClientProfilePage() {
                     {client.sports.map((sport) => (
                       <span
                         key={sport}
-                        className="rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700"
+                        className="rounded-sm border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700"
                       >
                         {sport}
                       </span>
@@ -549,7 +549,7 @@ export default function ClientProfilePage() {
                   <FileText size={17} className="text-power-orange" />
                   Session Notes
                   {client.notes.length > 0 && (
-                    <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    <span className="ml-1 rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                       {client.notes.length}
                     </span>
                   )}
@@ -704,7 +704,7 @@ export default function ClientProfilePage() {
                   <Calendar size={17} className="text-power-orange" />
                   Session History
                   {client.bookings.length > 0 && (
-                    <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                    <span className="ml-1 rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                       {client.bookings.length}
                     </span>
                   )}

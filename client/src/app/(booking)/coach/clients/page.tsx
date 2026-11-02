@@ -55,11 +55,11 @@ function ClientCardSkeleton() {
           <div className="h-4 w-2/3 rounded bg-slate-200" />
           <div className="h-3 w-1/2 rounded bg-slate-100" />
         </div>
-        <div className="h-6 w-16 rounded-full bg-slate-100" />
+        <div className="h-6 w-16 rounded-sm bg-slate-100" />
       </div>
       <div className="mb-5 flex gap-2">
-        <div className="h-6 w-20 rounded-full bg-slate-100" />
-        <div className="h-6 w-16 rounded-full bg-slate-100" />
+        <div className="h-6 w-20 rounded-sm bg-slate-100" />
+        <div className="h-6 w-16 rounded-sm bg-slate-100" />
       </div>
       <div className="mb-5 flex justify-between">
         <div className="h-10 w-24 rounded-xl bg-slate-100" />
@@ -99,7 +99,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
           <p className="truncate text-sm text-slate-500">{client.email}</p>
         </div>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+          className={`shrink-0 rounded-sm px-2.5 py-1 text-xs font-semibold ${
             client.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
           }`}
         >
@@ -113,7 +113,7 @@ function ClientCard({ client }: { client: ClientSummary }) {
           {client.sports.map((sport) => (
             <span
               key={sport}
-              className="inline-flex items-center gap-1 rounded-full border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-600"
+              className="inline-flex items-center gap-1 rounded-sm border border-orange-100 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700"
             >
               <Dumbbell className="h-3 w-3" />
               {sport}
@@ -221,8 +221,8 @@ export default function CoachClientsPage() {
   const tabs: FilterTab[] = ["All", "Active", "Inactive"];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
+    <div>
+      <div className="space-y-8">
         {/* ── page header ── */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
@@ -231,16 +231,11 @@ export default function CoachClientsPage() {
           className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <div className="mb-1 flex items-center gap-3">
-              <div className="bg-power-orange flex h-10 w-10 items-center justify-center rounded-xl">
-                <Users className="h-5 w-5 text-white" />
-              </div>
-              <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
-                Clients &amp; Athletes
-              </h1>
-            </div>
-            <p className="ml-[52px] text-sm text-slate-500">
-              Manage your roster, track sessions, and view athlete profiles.
+            <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
+              Clients
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              Everyone you coach, with their sessions and your notes.
             </p>
           </div>
         </motion.div>

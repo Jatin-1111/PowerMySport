@@ -424,29 +424,19 @@ export default function CoachBillingPage() {
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl space-y-3 px-2 py-2 sm:space-y-4 sm:px-3 sm:py-3 lg:px-4">
-        <Card className="overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-md">
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_45%,#fff5e8_100%)] p-4 sm:p-6">
-            <div className="relative z-10 max-w-3xl space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                <Sparkles size={12} /> Package builder
-              </span>
-              <h1 className="font-editorial text-2xl font-light text-slate-950 sm:text-3xl lg:text-4xl">
-                Create subscription packages that feel premium and easy to buy.
-              </h1>
-              <p className="max-w-2xl text-xs leading-5 text-slate-600 sm:text-sm lg:text-base">
-                Shape monthly, quarterly, or yearly packages with clear pricing, precise limits, and
-                a polished player-facing preview. The price you enter is converted to paise on save,
-                so the backend gets clean numeric data.
-              </p>
-            </div>
-            <div className="bg-turf-green/15 pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full blur-3xl" />
-            <div className="bg-power-orange/20 pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full blur-3xl" />
-          </div>
-        </Card>
+    <div>
+      <div className="space-y-6">
+        <header className="max-w-3xl">
+          <h1 className="font-editorial text-ink text-balance text-3xl font-light tracking-tight sm:text-4xl">
+            Client packages
+          </h1>
+          <p className="text-ink-body mt-2 max-w-[56ch] text-pretty">
+            Monthly, quarterly or yearly packages your clients can subscribe to. Build one, check
+            the preview, then switch it on.
+          </p>
+        </header>
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[
             {
               label: "Total packages",
@@ -479,7 +469,7 @@ export default function CoachBillingPage() {
               icon: Coins,
             },
           ].map((item) => (
-            <Card key={item.label} className="border-slate-200 bg-white/90 shadow-sm">
+            <Card key={item.label} className="border-slate-200 bg-white">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-medium text-slate-500 sm:text-sm">{item.label}</p>
@@ -496,7 +486,7 @@ export default function CoachBillingPage() {
         </div>
 
         {activeSubscriptions.length > 0 ? (
-          <Card className="border-slate-200 bg-white/95 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+          <Card className="border-slate-200 bg-white">
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-bold text-slate-950 sm:text-xl">Active subscribers</h2>
@@ -504,7 +494,7 @@ export default function CoachBillingPage() {
                   Players currently subscribed to your packages.
                 </p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              <span className="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                 {activeSubscriptions.length} active
               </span>
             </div>
@@ -542,7 +532,7 @@ export default function CoachBillingPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      <span className="rounded-md bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                         {subscription.status}
                       </span>
                     </div>
@@ -554,7 +544,7 @@ export default function CoachBillingPage() {
         ) : null}
 
         <div className="grid gap-3 lg:gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <Card className="border-slate-200 bg-white">
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -562,7 +552,7 @@ export default function CoachBillingPage() {
                     {editingPackage ? "Edit package" : "Build a package"}
                   </h2>
                   {editingPackage ? (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                    <span className="rounded-md bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
                       Editing existing package
                     </span>
                   ) : null}
@@ -572,7 +562,7 @@ export default function CoachBillingPage() {
                   updates as you type.
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <span className="rounded-md bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                 Optimized for player conversion
               </span>
             </div>
@@ -626,7 +616,7 @@ export default function CoachBillingPage() {
                             </div>
                             <div className="flex justify-end">
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${active ? "bg-turf-green text-white" : "bg-slate-100 text-slate-600"}`}
+                                className={`rounded-md px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${active ? "bg-turf-green text-white" : "bg-slate-100 text-slate-600"}`}
                               >
                                 {option.cadence}
                               </span>
@@ -711,7 +701,7 @@ export default function CoachBillingPage() {
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${form.isActive ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}
+                      className={`rounded-md px-3 py-1 text-xs font-semibold ${form.isActive ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}
                     >
                       {form.isActive ? "Active" : "Inactive"}
                     </span>
@@ -789,7 +779,7 @@ export default function CoachBillingPage() {
                       {featureList.map((feature) => (
                         <span
                           key={feature}
-                          className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 sm:px-3 sm:py-1"
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 sm:px-3 sm:py-1"
                         >
                           <Zap size={10} className="text-turf-green hidden sm:block" />
                           <Zap size={10} className="text-turf-green sm:hidden" />
@@ -854,7 +844,7 @@ export default function CoachBillingPage() {
           </Card>
 
           <div className="space-y-3">
-            <Card className="border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)] xl:sticky xl:top-6">
+            <Card className="border-slate-200 bg-white xl:sticky xl:top-6">
               <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-slate-950 sm:text-2xl">Live preview</h2>
@@ -863,7 +853,7 @@ export default function CoachBillingPage() {
                   </p>
                 </div>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold sm:px-3 sm:py-1 ${form.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+                  className={`rounded-md px-2 py-0.5 text-xs font-semibold sm:px-3 sm:py-1 ${form.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
                 >
                   {form.isActive ? "Visible" : "Hidden"}
                 </span>
@@ -883,7 +873,7 @@ export default function CoachBillingPage() {
                         "Add a short description to explain who this package is for."}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 text-left shadow-sm sm:text-right">
+                  <div className="rounded-2xl bg-white px-4 py-3 text-left sm:text-right">
                     <p className="text-2xl font-bold text-slate-950">
                       {previewPrice
                         ? formatCurrencyFromPaise(Math.round(previewPrice * 100))
@@ -897,30 +887,30 @@ export default function CoachBillingPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
+                  <span className="rounded-md bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
                     {form.frequency}
                   </span>
                   {Number.isInteger(parseOptionalWholeNumber(form.maxStudents)) ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       Up to {parseOptionalWholeNumber(form.maxStudents)} students
                     </span>
                   ) : (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       Flexible student count
                     </span>
                   )}
                   {Number.isInteger(parseOptionalWholeNumber(form.maxSessions)) ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       {parseOptionalWholeNumber(form.maxSessions)} sessions
                     </span>
                   ) : (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       Flexible session count
                     </span>
                   )}
                 </div>
 
-                <div className="mt-3 rounded-2xl border border-slate-200 bg-white/90 p-3">
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3">
                   <p className="text-sm font-semibold text-slate-900">Included features</p>
                   <div className="mt-3 space-y-2">
                     {featureList.length > 0 ? (
@@ -960,7 +950,7 @@ export default function CoachBillingPage() {
               </div>
             </Card>
 
-            <Card className="border-slate-200 bg-white/90 shadow-sm">
+            <Card className="border-slate-200 bg-white">
               <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-slate-950">Publishing checklist</h2>
@@ -990,7 +980,7 @@ export default function CoachBillingPage() {
           </div>
         </div>
 
-        <Card className="border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        <Card className="border-slate-200 bg-white">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-slate-950">Your packages</h2>
@@ -1027,7 +1017,7 @@ export default function CoachBillingPage() {
                 return (
                   <div
                     key={pkg._id || pkg.id}
-                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
@@ -1037,7 +1027,7 @@ export default function CoachBillingPage() {
                         </p>
                       </div>
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pkg.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+                        className={`rounded-md px-2.5 py-1 text-xs font-semibold ${pkg.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
                       >
                         {pkg.isActive ? "Active" : "Inactive"}
                       </span>
@@ -1065,20 +1055,20 @@ export default function CoachBillingPage() {
 
                     <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-600">
                       {typeof pkg.maxStudents === "number" ? (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           Up to {pkg.maxStudents} students
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           Unlimited students
                         </span>
                       )}
                       {typeof pkg.maxSessions === "number" ? (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           {pkg.maxSessions} sessions
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           Unlimited sessions
                         </span>
                       )}

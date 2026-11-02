@@ -9,7 +9,7 @@ import { CoachProgrammesClient } from "./CoachProgrammesClient";
  *
  * noindex — this is a signed-in coach's own management console.
  */
-export const metadata: Metadata = noindexMetadata("My coaching programmes");
+export const metadata: Metadata = noindexMetadata("Programmes");
 
 export default function Page() {
   return <CoachProgrammesClient />;

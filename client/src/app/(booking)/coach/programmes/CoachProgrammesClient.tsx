@@ -133,7 +133,7 @@ export const CoachProgrammesClient = () => {
     <main className="mx-auto w-full max-w-4xl px-4 py-8">
       {promptDialog}
       <header className="mb-6">
-        <h1 className="font-editorial text-2xl font-normal">My programmes</h1>
+        <h1 className="font-editorial text-2xl font-normal">Programmes</h1>
         <p className="text-muted-foreground mt-1 text-sm">
           Regular classes you run every week, one-to-one or as a batch, in person or online.
         </p>

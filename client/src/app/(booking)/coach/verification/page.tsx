@@ -32,7 +32,7 @@ export default function CoachVerificationPage() {
             </p>
           </div>
           <span
-            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${flow.badge.className}`}
+            className={`inline-flex items-center rounded-sm px-3 py-1 text-xs font-semibold ${flow.badge.className}`}
           >
             {flow.badge.label}
           </span>

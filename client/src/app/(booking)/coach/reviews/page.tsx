@@ -213,8 +213,8 @@ export default function CoachReviewsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      <div className="max-w-4xl">
         {/* ── Page Header ─────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
@@ -222,9 +222,7 @@ export default function CoachReviewsPage() {
           transition={{ duration: 0.45 }}
           className="mb-8"
         >
-          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
-            Reviews &amp; Ratings
-          </h1>
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">Reviews</h1>
           <p className="mt-1 text-sm text-slate-500">
             See what your clients are saying about your coaching.
           </p>
@@ -296,7 +294,7 @@ export default function CoachReviewsPage() {
             <button
               key={tab.value}
               onClick={() => setActiveFilter(tab.value)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 activeFilter === tab.value
                   ? "bg-power-orange-solid text-white shadow-sm"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
@@ -377,7 +375,7 @@ function ReviewCard({ review }: { review: ReviewItem }) {
             <span className="font-semibold text-slate-800">{name}</span>
             {/* Verified badge placeholder — ReviewItem has no isVerified field; keeping for UI completeness */}
             {(review as ReviewItem & { isVerified?: boolean }).isVerified && (
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600 ring-1 ring-emerald-200">
+              <span className="rounded-sm bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
                 Verified
               </span>
             )}

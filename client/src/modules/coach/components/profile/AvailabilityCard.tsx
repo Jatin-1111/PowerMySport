@@ -73,12 +73,10 @@ export function AvailabilityCard({
           (availabilityBySport[activeSportTab] || []).map((slot, index) => (
             <div
               key={`${slot.dayOfWeek}-${slot.startTime}-${slot.endTime}-${index}`}
-              className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
+              className="border-hairline grid gap-3 border-b pb-4 last:border-b-0 last:pb-0 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"
             >
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Day
-                </label>
+                <label className="mb-1 block text-sm text-slate-600">Day</label>
                 <select
                   value={slot.dayOfWeek}
                   onChange={(event) =>
@@ -95,9 +93,7 @@ export function AvailabilityCard({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Start Time
-                </label>
+                <label className="mb-1 block text-sm text-slate-600">Start time</label>
                 <input
                   type="time"
                   value={slot.startTime}
@@ -107,9 +103,7 @@ export function AvailabilityCard({
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  End Time
-                </label>
+                <label className="mb-1 block text-sm text-slate-600">End time</label>
                 <input
                   type="time"
                   value={slot.endTime}
