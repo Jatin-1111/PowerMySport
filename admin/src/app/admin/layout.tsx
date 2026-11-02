@@ -40,6 +40,7 @@ import {
   Stethoscope,
   X,
   FilePenLine,
+  ListChecks,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -67,6 +68,7 @@ const isAdminRouteActive = (pathname: string, href: string) =>
   href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
 const NAV_BADGE_KEYS: Record<string, keyof PendingCounts> = {
+  "/admin/review-queue": "reviewQueue",
   "/admin/academy-onboarding": "academyOnboarding",
   "/admin/coach-verification": "coachVerification",
   "/admin/venue-approval": "venueApprovals",
@@ -158,6 +160,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {
         title: "People",
         items: [
+          { href: "/admin/review-queue", label: "Review Queue", icon: ListChecks },
           { href: "/admin/users", label: "Users", icon: Users },
           { href: "/admin/coaches", label: "Coaches", icon: Users },
           {

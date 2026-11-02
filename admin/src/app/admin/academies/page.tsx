@@ -1,5 +1,6 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import {
   adminApi,
@@ -10,7 +11,7 @@ import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
 import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
 import { Pagination } from "@/modules/shared/ui/Pagination";
 import { Panel } from "@/modules/shared/ui/Panel";
-import { StatusBadge, type StatusTone } from "@/modules/shared/ui/StatusBadge";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { Tabs } from "@/modules/shared/ui/Tabs";
 import { toast } from "sonner";
 import { Eye, Plus, ShieldAlert } from "lucide-react";
@@ -28,13 +29,6 @@ type QueueFilter = "pending" | "approved" | "rejected";
 type ActionMode = "APPROVE" | "KYC" | "REJECT" | "SUSPEND";
 
 const PAGE_SIZE = 10;
-
-const academyStatus = (academy: AcademyAdminQueueRecord): { label: string; tone: StatusTone } => {
-  if (academy.rejectionReason) return { label: "Rejected", tone: "red" };
-  if (academy.isActive) return { label: "Live", tone: "green" };
-  if (academy.isApproved) return { label: "Approved", tone: "blue" };
-  return { label: "Pending", tone: "amber" };
-};
 
 const formatDate = (value?: string) => {
   if (!value) return "N/A";
@@ -385,11 +379,7 @@ export default function AdminAcademiesPage() {
                               <h3 className="text-base font-semibold text-slate-900">
                                 {academy.name}
                               </h3>
-                              <StatusBadge
-                                size="sm"
-                                status={academyStatus(academy).label}
-                                tone={academyStatus(academy).tone}
-                              />
+                              <LifecycleBadge kind="academy" source={academy} size="sm" />
                             </div>
                             <p className="mt-1 text-sm text-slate-600">
                               {academy.city || "Location unavailable"} •{" "}
@@ -439,10 +429,7 @@ export default function AdminAcademiesPage() {
                     {selectedAcademy.legalName || selectedAcademy.name}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <StatusBadge
-                      status={academyStatus(selectedAcademy).label}
-                      tone={academyStatus(selectedAcademy).tone}
-                    />
+                    <LifecycleBadge kind="academy" source={selectedAcademy} />
                     <StatusBadge
                       status={`Step ${selectedAcademy.onboardingStep || 1}`}
                       tone="slate"
@@ -515,10 +502,17 @@ export default function AdminAcademiesPage() {
                   />
                 </div>
 
+                <p id="approve-needs-kyc" className="text-xs text-slate-500">
+                  {selectedAcademy.kycVerified
+                    ? "KYC is verified. Approving makes the academy live."
+                    : "Mark KYC verified first. Approving then makes the academy live."}
+                </p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button
                     type="button"
                     onClick={() => openAction("APPROVE")}
+                    disabled={!selectedAcademy.kycVerified}
+                    aria-describedby="approve-needs-kyc"
                     className={btn("primary")}
                   >
                     Approve academy
@@ -526,9 +520,10 @@ export default function AdminAcademiesPage() {
                   <button
                     type="button"
                     onClick={() => openAction("KYC")}
+                    disabled={Boolean(selectedAcademy.kycVerified)}
                     className={btn("outline")}
                   >
-                    Mark KYC verified
+                    {selectedAcademy.kycVerified ? "KYC verified" : "Mark KYC verified"}
                   </button>
                   <button
                     type="button"

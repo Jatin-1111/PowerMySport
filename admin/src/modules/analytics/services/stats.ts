@@ -19,6 +19,8 @@ export interface PendingCounts {
   conciergeRequests: number;
   webhookErrors: number;
   dataSourcesPending: number;
+  /** Everyone waiting on an admin across coaches, experts, venues and academies. */
+  reviewQueue: number;
 }
 
 export interface UserData {

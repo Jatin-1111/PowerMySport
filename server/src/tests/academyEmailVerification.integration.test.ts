@@ -180,7 +180,7 @@ describe("academy approval links the owner", () => {
     const started = await start();
     await col("academies").updateOne(
       { _id: new mongoose.Types.ObjectId(started.id) },
-      { $set: { onboardingCompleted: true, emailVerified: true } }
+      { $set: { onboardingCompleted: true, emailVerified: true, kycVerified: true } }
     );
     return new mongoose.Types.ObjectId(started.id);
   };

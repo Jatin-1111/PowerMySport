@@ -14,6 +14,7 @@ import { DataSourceSubmission } from "../../../shared/models/DataSourceSubmissio
 import { WebhookRecoveryService } from "../../../shared/controllers/WebhookController";
 import { getLatencyProfiles, getObservabilitySnapshot } from "../../../middleware/observability";
 import { asyncHandler } from "../../../middleware/asyncHandler";
+import { countReviewQueue } from "../../../shared/services/reviewQueue";
 
 export const getPublicPlatformStats = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
@@ -222,6 +223,7 @@ export const getPendingCounts = asyncHandler(async (req: Request, res: Response)
     supportTickets,
     conciergeRequests,
     dataSourcesPending,
+    reviewQueue,
   ] = await Promise.all([
     Academy.countDocuments({ onboardingCompleted: true, isApproved: false }),
     Coach.countDocuments({ verificationStatus: "PENDING" }),
@@ -231,6 +233,7 @@ export const getPendingCounts = asyncHandler(async (req: Request, res: Response)
     SupportTicket.countDocuments({ status: "OPEN" }),
     ConciergeRequest.countDocuments({ status: "pending" }),
     DataSourceSubmission.countDocuments({ status: "PENDING_REVIEW" }),
+    countReviewQueue(),
   ]);
 
   res.status(200).json({
@@ -246,6 +249,7 @@ export const getPendingCounts = asyncHandler(async (req: Request, res: Response)
       conciergeRequests,
       webhookErrors: WebhookRecoveryService.listErrors().length,
       dataSourcesPending,
+      reviewQueue,
     },
   });
 });

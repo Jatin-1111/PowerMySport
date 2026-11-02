@@ -664,6 +664,9 @@ export const getPendingAcademies = async (
       ownerPhone: a.contactPhone,
       isApproved: a.isApproved,
       kycVerified: a.kycVerified,
+      isActive: a.isActive,
+      rejectionReason: a.rejectionReason,
+      lifecycle: a.lifecycle,
       submittedAt: a.createdAt,
       lastReviewedAt: a.updatedAt,
     })),
@@ -686,6 +689,11 @@ export const approveAcademy = async (academyId: string): Promise<AcademyDocument
   if (!academy.onboardingCompleted) {
     throw new AppError("This academy has not submitted its onboarding for review", 409);
   }
+  // One decision, no half-approved state: the KYC check comes first, and
+  // approving then makes the academy live.
+  if (!academy.kycVerified) {
+    throw new AppError("Run the KYC check before approving this academy", 409);
+  }
 
   // Link the owner by the verified contact email only; a phone number is not
   // proof of identity. Other roles keep separate credentials from academy owners.
@@ -706,7 +714,7 @@ export const approveAcademy = async (academyId: string): Promise<AcademyDocument
     {
       ...(ownerId ? { ownerId } : {}),
       isApproved: true,
-      ...(academy.kycVerified ? { isActive: true } : {}),
+      isActive: true,
     },
     { new: true }
   );
@@ -807,10 +815,12 @@ export const rejectAcademy = async (
 export const markAcademyKycVerified = async (
   academyId: string
 ): Promise<AcademyDocument | null> => {
-  await ensureAcademyExists(academyId);
+  const academy = await ensureAcademyExists(academyId);
+  // The KYC check alone does not list an academy; Approve does. An academy that
+  // was already approved (and is waiting on this check) goes live now.
   const updatedAcademy = await Academy.findByIdAndUpdate(
     academyId,
-    { kycVerified: true, isActive: true },
+    { kycVerified: true, ...(academy.isApproved ? { isActive: true } : {}) },
     { new: true }
   );
 
