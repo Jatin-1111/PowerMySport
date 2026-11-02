@@ -5,6 +5,7 @@ import {
   deleteCoach,
   getCoachById,
   getCoachByUserId,
+  summarizeChecks,
   updateCoach,
 } from "../../services/CoachService";
 import { transformDocument } from "../../../middleware/responseTransform";
@@ -145,6 +146,12 @@ export const getCoach = asyncHandler(async (req: Request, res: Response): Promis
 
   // Convert to JSON and transform _id to id
   const coachData = transformDocument(coach.toJSON());
+
+  // What was checked, from the document types only (never the files).
+  const reviewed = await Coach.findById(coachId)
+    .select("verificationDocuments.type")
+    .lean<{ verificationDocuments?: { type?: string }[] }>();
+  (coachData as Record<string, unknown>).checks = summarizeChecks(reviewed?.verificationDocuments);
 
   res.status(200).json({
     success: true,

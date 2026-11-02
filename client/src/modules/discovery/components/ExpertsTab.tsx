@@ -355,6 +355,7 @@ export function ExpertsTab({
                       details={[primarySport, expert.languages?.[0]].filter(Boolean).join(" · ")}
                       price={formatInr(expert.sessionFee)}
                       priceUnit="per session"
+                      checked={expert.checks}
                     />
                   </StaggerItem>
                 );

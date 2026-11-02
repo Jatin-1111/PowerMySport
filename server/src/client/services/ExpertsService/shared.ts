@@ -93,9 +93,21 @@ export const withFreshPhoto = async <T extends { photoUrl?: string | undefined }
  * everything `serializeExpertFull` adds, and userId/phone, which are never
  * serialized by any expert view.
  */
+/** What an expert's reviewed proof covers, as plain labels. Files and links stay private. */
+export const expertChecks = (expert: any): string[] => {
+  const types = new Set((expert?.verificationDocuments || []).map((d: any) => d.type));
+  const checks: string[] = [];
+  if (types.has("ID_PROOF")) checks.push("ID");
+  if (types.has("ACHIEVEMENT_PROOF") || expert?.achievementProofLink?.trim()) {
+    checks.push("Achievements");
+  }
+  return checks;
+};
+
 export const serializeExpertPublic = (expert: any) => {
   const { name } = expertUserName(expert);
   return {
+    checks: expertChecks(expert),
     id: expert._id?.toString(),
     _id: expert._id?.toString(),
     name,

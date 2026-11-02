@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { getAllSports, searchSports } from "../controller/sportsController";
+import { getAllSports, getDiscoverySports, searchSports } from "../controller/sportsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
 
 // Public routes (Cached for 1 hour since sports rarely change)
+// Sports change rarely, but a newly listed provider should show up soon.
+router.get("/discovery", cacheResponse(300), getDiscoverySports);
 router.get("/", cacheResponse(3600), getAllSports);
 router.get("/search", cacheResponse(3600), searchSports);
 

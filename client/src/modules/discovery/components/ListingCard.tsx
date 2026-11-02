@@ -32,6 +32,8 @@ export interface ListingCardProps {
   subtitle?: string;
   /** What, under the location: sports, languages. */
   details?: string;
+  /** What our team reviewed for this provider, e.g. ["ID", "Certificate"]. Omitted when empty. */
+  checked?: string[];
   price: string;
   /** "per session", "per hour". Omit when the price line is words, not an amount. */
   priceUnit?: string;
@@ -61,6 +63,7 @@ export function ListingCard({
   rating,
   subtitle,
   details,
+  checked,
   price,
   priceUnit,
   saved = false,
@@ -133,6 +136,11 @@ export function ListingCard({
 
         {subtitle && <p className="text-ink-muted mt-1 line-clamp-1 text-sm">{subtitle}</p>}
         {details && <p className="text-ink-body mt-0.5 line-clamp-1 text-sm">{details}</p>}
+        {checked && checked.length > 0 && (
+          <p className="text-ink-muted mt-0.5 line-clamp-1 text-xs">
+            Checked: {checked.join(", ")}
+          </p>
+        )}
 
         <div className="mt-auto flex items-baseline justify-between gap-3 pt-4">
           <p className="text-sm">

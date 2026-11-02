@@ -44,6 +44,8 @@ export interface Expert {
   sessionDurationMinutes?: number;
   timezone?: string;
   hasAvailability?: boolean;
+  /** What our team reviewed, as plain labels. Never the documents. */
+  checks?: string[];
   city?: string;
   languages?: string[];
   photoUrl?: string;

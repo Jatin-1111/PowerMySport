@@ -1,5 +1,6 @@
 "use client";
 
+import { sportsApi } from "@/modules/sports/services/sports";
 import {
   PriceRangeSection,
   RatingSection,
@@ -47,16 +48,6 @@ type AcademyCard = OnboardingAcademy & {
   ageGroups?: ("kids" | "teens" | "adults" | "all")[];
 };
 
-const SPORT_OPTIONS = [
-  "Basketball",
-  "Cricket",
-  "Football",
-  "Badminton",
-  "Tennis",
-  "Volleyball",
-  "Kabaddi",
-  "Swimming",
-];
 const AGE_GROUP_OPTIONS = [
   { value: "", label: "Age Group" },
   { value: "kids", label: "Kids (5-12)" },
@@ -121,6 +112,7 @@ export default function AcademiesTab() {
   const [ageGroupFilter, setAgeGroupFilter] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [sportOptions, setSportOptions] = useState<string[]>([]);
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
@@ -137,6 +129,19 @@ export default function AcademiesTab() {
       }),
     [appliedSearch, sportFilter]
   );
+
+  useEffect(() => {
+    let live = true;
+    sportsApi
+      .getDiscoverySports()
+      .then((sports) => {
+        if (live) setSportOptions(sports.map((s) => s.name));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     const followed = clientFollowStore.getByKind("academy").map((item) => item.id);
@@ -304,7 +309,7 @@ export default function AcademiesTab() {
             className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
           >
             <option value="">All Sports</option>
-            {SPORT_OPTIONS.map((sport) => (
+            {sportOptions.map((sport) => (
               <option key={sport} value={sport}>
                 {sport}
               </option>

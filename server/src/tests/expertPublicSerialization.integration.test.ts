@@ -35,6 +35,7 @@ const PUBLIC_KEYS = [
   "_id",
   "achievements",
   "bio",
+  "checks", // plain labels of what was reviewed (ID, Achievements), never files
   "city",
   "expertise",
   "hasAvailability",

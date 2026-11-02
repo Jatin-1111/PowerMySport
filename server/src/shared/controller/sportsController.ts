@@ -4,6 +4,16 @@ import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
 /**
+ * GET /api/sports/discovery
+ * The filter list for the booking pages: supported sports plus sports in use.
+ */
+export const getDiscoverySports = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    res.json({ success: true, data: await sportsService.getDiscoverySports() });
+  }
+);
+
+/**
  * GET /api/sports
  * Get all verified sports
  */

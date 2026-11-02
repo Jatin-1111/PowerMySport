@@ -441,6 +441,73 @@ function CoachesTabContent() {
 
   const hasFilters = activeFilters.length > 0 || appliedSportFilter !== "";
 
+  const coachHasRate = (coach: (typeof filteredCoaches)[number]) => {
+    const rate = Number(getStartingRate(coach));
+    return Number.isFinite(rate) && rate > 0;
+  };
+  const bookableCoaches = filteredCoaches.filter(coachHasRate);
+  const enquiryCoaches = filteredCoaches.filter((coach) => !coachHasRate(coach));
+
+  const renderCoachCard = (coach: (typeof filteredCoaches)[number], idx: number) => {
+    const coachId = String(coach.id || coach._id || "");
+    const key = coachId || `${String(coach.userId)}-${idx}`;
+    const startingRate = Number(getStartingRate(coach));
+    const hasRate = Number.isFinite(startingRate) && startingRate > 0;
+    const primarySport = coach.sports[0] || "General";
+    const dist = getDistanceFromUser(coach);
+    const showDist = sortBy === "nearest" && userLocation !== null && dist !== null;
+    const coachRoute = `/coaches/${coachId}`;
+    const isFollowed = followedCoachIds.includes(coachId);
+    const badge = getVerificationBadge(coach);
+    const name = getDisplayName(coach);
+    const initials = getInitials(coach);
+    const city = getServingCity(coach);
+
+    const onToggleFollow = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!coachId) return;
+      clientFollowStore.toggle({
+        kind: "coach",
+        id: coachId,
+        label: name,
+        subtitle: coach.sports.join(", "),
+        href: coachRoute,
+      });
+      setFollowedCoachIds(clientFollowStore.getByKind("coach").map((i) => i.id));
+    };
+
+    return (
+      <StaggerItem key={key} className="h-full">
+        <ListingCard
+          href={coachRoute}
+          title={name}
+          media={
+            <CoachImageWithFallback
+              sources={getCoachImages(coach)}
+              alt={name}
+              fallbackLabel={initials}
+              className={LISTING_IMAGE_CLASS}
+            />
+          }
+          badge={badge.label === "Verified" ? "Verified" : undefined}
+          rating={
+            Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0
+              ? { value: Number(coach.rating) }
+              : undefined
+          }
+          subtitle={city ? `${city}${showDist ? ` · ${formatDistanceKm(dist!)}` : ""}` : undefined}
+          details={coach.sports.slice(0, 2).join(" · ") || primarySport}
+          price={hasRate ? `₹${startingRate}` : "Contact us"}
+          priceUnit={hasRate ? "per hour" : undefined}
+          checked={coach.checks}
+          saved={isFollowed}
+          saveLabel={isFollowed ? "Unsave coach" : "Save coach"}
+          onToggleSave={onToggleFollow}
+        />
+      </StaggerItem>
+    );
+  };
+
   return (
     <div>
       <FilterBar
@@ -606,70 +673,31 @@ function CoachesTabContent() {
               </h2>
             </div>
 
-            <StaggerContainer className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredCoaches.map((coach, idx) => {
-                const coachId = String(coach.id || coach._id || "");
-                const key = coachId || `${String(coach.userId)}-${idx}`;
-                const startingRate = Number(getStartingRate(coach));
-                const hasRate = Number.isFinite(startingRate) && startingRate > 0;
-                const primarySport = coach.sports[0] || "General";
-                const dist = getDistanceFromUser(coach);
-                const showDist = sortBy === "nearest" && userLocation !== null && dist !== null;
-                const coachRoute = `/coaches/${coachId}`;
-                const isFollowed = followedCoachIds.includes(coachId);
-                const badge = getVerificationBadge(coach);
-                const name = getDisplayName(coach);
-                const initials = getInitials(coach);
-                const city = getServingCity(coach);
+            {bookableCoaches.length > 0 && (
+              <StaggerContainer className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {bookableCoaches.map(renderCoachCard)}
+              </StaggerContainer>
+            )}
 
-                const onToggleFollow = (e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  if (!coachId) return;
-                  clientFollowStore.toggle({
-                    kind: "coach",
-                    id: coachId,
-                    label: name,
-                    subtitle: coach.sports.join(", "),
-                    href: coachRoute,
-                  });
-                  setFollowedCoachIds(clientFollowStore.getByKind("coach").map((i) => i.id));
-                };
-
-                return (
-                  <StaggerItem key={key} className="h-full">
-                    <ListingCard
-                      href={coachRoute}
-                      title={name}
-                      media={
-                        <CoachImageWithFallback
-                          sources={getCoachImages(coach)}
-                          alt={name}
-                          fallbackLabel={initials}
-                          className={LISTING_IMAGE_CLASS}
-                        />
-                      }
-                      badge={badge.label === "Verified" ? "Verified" : undefined}
-                      rating={
-                        Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0
-                          ? { value: Number(coach.rating) }
-                          : undefined
-                      }
-                      subtitle={
-                        city
-                          ? `${city}${showDist ? ` · ${formatDistanceKm(dist!)}` : ""}`
-                          : undefined
-                      }
-                      details={coach.sports.slice(0, 2).join(" · ") || primarySport}
-                      price={hasRate ? `₹${startingRate}` : "Contact us"}
-                      priceUnit={hasRate ? "per hour" : undefined}
-                      saved={isFollowed}
-                      saveLabel={isFollowed ? "Unsave coach" : "Save coach"}
-                      onToggleSave={onToggleFollow}
-                    />
-                  </StaggerItem>
-                );
-              })}
-            </StaggerContainer>
+            {enquiryCoaches.length > 0 && (
+              <section
+                aria-labelledby="coach-enquiry-heading"
+                className={bookableCoaches.length > 0 ? "mt-16" : ""}
+              >
+                <h3
+                  id="coach-enquiry-heading"
+                  className="font-title text-lg font-bold text-slate-900"
+                >
+                  Ask first
+                </h3>
+                <p className="text-ink-muted mt-1 max-w-2xl text-sm">
+                  These coaches have not listed a rate yet. Open a profile to see what they offer.
+                </p>
+                <StaggerContainer className="mt-6 grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {enquiryCoaches.map(renderCoachCard)}
+                </StaggerContainer>
+              </section>
+            )}
           </>
         )}
       </div>

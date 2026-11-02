@@ -12,6 +12,31 @@ const COACH_LISTING_SELECT =
 
 const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
 
+const CHECK_LABELS: Record<string, string> = {
+  ID_PROOF: "ID",
+  CERTIFICATION: "Certificate",
+  BACKGROUND_CHECK: "Background check",
+  INSURANCE: "Insurance",
+};
+
+/**
+ * What a coach's reviewed documents cover, as plain labels for a public card.
+ * Only the document types are read; the files and links stay private.
+ */
+export const summarizeChecks = (docs?: { type?: string }[]): string[] => {
+  const types = new Set((docs || []).map((d) => d.type));
+  return Object.keys(CHECK_LABELS)
+    .filter((type) => types.has(type))
+    .map((type) => CHECK_LABELS[type] as string);
+};
+
+const withChecks = <T extends object>(coach: T): T => {
+  const { verificationDocuments, ...rest } = coach as T & {
+    verificationDocuments?: { type?: string }[];
+  };
+  return { ...rest, checks: summarizeChecks(verificationDocuments) } as unknown as T;
+};
+
 /**
  * What the PUBLIC coach profile may serve: the listing fields plus the extras
  * the detail page reads. An allowlist on purpose. The Coach document carries
@@ -297,6 +322,7 @@ export const findCoachesNearby = async (
           verifiedAt: 1,
           baseLocation: 1,
           serviceRadiusKm: 1,
+          "verificationDocuments.type": 1,
         },
       },
     ];
@@ -310,7 +336,9 @@ export const findCoachesNearby = async (
     })) as CoachDocument[];
 
     return Promise.all(
-      populatedCoaches.map((coach) => refreshCoachMediaUrls(coach, { includeVenueImages: false }))
+      populatedCoaches.map((coach) =>
+        refreshCoachMediaUrls(withChecks(coach), { includeVenueImages: false })
+      )
     );
   } catch (error) {
     throw new Error(
@@ -335,7 +363,7 @@ export const getAllCoaches = async (
     }
 
     const coaches = await Coach.find(query)
-      .select(COACH_LISTING_SELECT)
+      .select(`${COACH_LISTING_SELECT} verificationDocuments.type`)
       .sort({ rating: -1, reviewCount: -1, _id: 1 })
       .skip(skip)
       .limit(limit)
@@ -346,7 +374,9 @@ export const getAllCoaches = async (
       .lean();
 
     return Promise.all(
-      coaches.map((coach) => refreshCoachMediaUrls(coach, { includeVenueImages: false }))
+      coaches.map((coach) =>
+        refreshCoachMediaUrls(withChecks(coach), { includeVenueImages: false })
+      )
     );
   } catch (error) {
     throw new Error(

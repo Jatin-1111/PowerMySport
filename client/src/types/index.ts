@@ -239,6 +239,8 @@ export interface CoachUserRef {
 export interface Coach {
   _id?: string;
   id: string;
+  /** What our team reviewed, as plain labels. Never the documents. */
+  checks?: string[];
   userId: string | CoachUserRef;
   photoUrl?: string;
   profileImage?: string;

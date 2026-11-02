@@ -23,7 +23,7 @@ export function SportChips({
   useEffect(() => {
     let live = true;
     sportsApi
-      .getAllSports()
+      .getDiscoverySports()
       .then((all) => {
         if (!live) return;
         setSports(

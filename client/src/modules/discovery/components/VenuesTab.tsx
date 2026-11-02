@@ -91,7 +91,7 @@ export default function VenuesTab() {
 
   const loadSportOptions = async () => {
     try {
-      const sports = await sportsApi.getAllSports();
+      const sports = await sportsApi.getDiscoverySports();
       const names = sports
         .map((s) => s.name)
         .filter(Boolean)

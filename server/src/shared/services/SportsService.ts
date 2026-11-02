@@ -1,4 +1,9 @@
 import { Sport, SportDocument } from "../models/Sport";
+import { Venue } from "../../client/models/Venue";
+import { Coach } from "../../client/models/Coach";
+import { Expert } from "../../client/models/ExpertProfile";
+import Academy from "../../admin/models/Academy";
+import { SUPPORTED_SPORTS } from "../constants/supportedSports";
 import { GoogleGenAI } from "@google/genai";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
 import { bootFact } from "../../utils/boot";
@@ -22,6 +27,38 @@ export class SportsService {
     } else {
       log.warn("GEMINI_API_KEY not found in environment variables");
     }
+  }
+
+  /**
+   * The sports parents can filter by: the supported sports, plus any other
+   * directory sport that a listed provider (approved venue, verified coach,
+   * active expert, live academy) really offers, so nobody becomes unfindable.
+   * Free-text sports that are not in the directory are ignored.
+   */
+  async getDiscoverySports(): Promise<{ name: string; slug: string; supported: boolean }[]> {
+    const [directory, ...used] = await Promise.all([
+      Sport.find({ isVerified: true }).select("name slug").lean(),
+      Venue.distinct("sports", { approvalStatus: "APPROVED" }),
+      Coach.distinct("sports", { verificationStatus: "VERIFIED", isVerified: true }),
+      Expert.distinct("sports", { isActive: true }),
+      Academy.distinct("sports", { isApproved: true, kycVerified: true, isActive: true }),
+    ]);
+
+    const byName = new Map(directory.map((s) => [s.name.trim().toLowerCase(), s]));
+    const result = new Map<string, { name: string; slug: string; supported: boolean }>();
+
+    for (const sport of SUPPORTED_SPORTS) {
+      result.set(sport.name.toLowerCase(), { name: sport.name, slug: sport.slug, supported: true });
+    }
+    for (const raw of used.flat() as string[]) {
+      const key = String(raw).trim().toLowerCase();
+      const known = byName.get(key);
+      if (known && !result.has(key)) {
+        result.set(key, { name: known.name, slug: known.slug, supported: false });
+      }
+    }
+
+    return [...result.values()].sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
