@@ -204,6 +204,98 @@ export interface AcademyStep6Payload {
   refundPolicy: string;
 }
 
+// ── Server-numbered step payloads ────────────────────────────────────────────
+// What the server's step 4 to 7 validators expect. These replace the
+// AcademyStep4Payload to AcademyStep6Payload shapes above, which belong to the
+// old six-step form and are removed as each step is rebuilt.
+
+export interface AcademyOpeningDay {
+  isOpen: boolean;
+  openTime?: string;
+  closeTime?: string;
+  slots?: { startTime: string; endTime: string }[];
+}
+
+export interface AcademyOpeningHours {
+  monday: AcademyOpeningDay;
+  tuesday: AcademyOpeningDay;
+  wednesday: AcademyOpeningDay;
+  thursday: AcademyOpeningDay;
+  friday: AcademyOpeningDay;
+  saturday: AcademyOpeningDay;
+  sunday: AcademyOpeningDay;
+}
+
+/** A facility the academy teaches at. Prices are in paise. */
+export interface AcademyVenueInput {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  placeId?: string;
+  location: { type: "Point"; coordinates: [number, number] };
+  sports: string[];
+  pricePerHour: number;
+  sportPricing?: Record<string, number>;
+  amenities: string[];
+  description?: string;
+  openingHours: AcademyOpeningHours;
+  allowExternalCoaches: boolean;
+  /** At least 3. */
+  generalImages: string[];
+  generalImageKeys: string[];
+  /** At least 5 for every sport the venue lists. */
+  sportImages: Record<string, string[]>;
+  sportImageKeys: Record<string, string[]>;
+  coverPhotoUrl: string;
+  coverPhotoKey?: string;
+}
+
+/** A coach the academy says works there: a name, an email and sports, nothing more. */
+export interface AcademyCoachInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  sports: string[];
+}
+
+/** Server step 4. */
+export interface AcademyVenuesPayload {
+  academyVenues: AcademyVenueInput[];
+}
+
+/** Server step 5. Optional: an empty list is fine. */
+export interface AcademyCoachesPayload {
+  academyCoaches: AcademyCoachInput[];
+}
+
+/**
+ * Server step 6. Money is in paise. Subscription plans and session packages are
+ * not collected at sign-up: they are created from the academy's dashboard after
+ * approval.
+ */
+export interface AcademyPricingPayload {
+  sessionRatePerHour: number;
+  batchTimings: AcademyBatchTiming[];
+  maxBatchSize: number;
+  trialsessionOffered: boolean;
+  trialSessionPrice?: number;
+}
+
+/** Server step 7. The account number is typed twice and the terms must be agreed. */
+export interface AcademyPayoutsPayload {
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankAccountNumberConfirm: string;
+  bankIfsc: string;
+  upiId: string;
+  payoutFrequency: AcademyPayoutFrequency;
+  cancellationPolicy: string;
+  refundPolicy: string;
+  agreeToTerms: boolean;
+}
+
 export interface ConfirmImagesPayload {
   academyId: string;
   logoUrl?: string;

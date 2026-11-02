@@ -1302,6 +1302,10 @@ export const academyOnboardingStep6Schema = z
     maxBatchSize: z.number().min(1, "Batch size must be at least 1"),
     trialsessionOffered: z.boolean(),
     trialSessionPrice: z.number().min(0).optional(),
+    // Optional and not saved by this step: subscription plans and session
+    // packages are created from the academy's dashboard after approval
+    // (POST /academies/:academyId/subscriptions and /packages), so sign-up does
+    // not ask for them.
     subscriptionPlans: z
       .array(
         z.object({
@@ -1314,7 +1318,7 @@ export const academyOnboardingStep6Schema = z
           description: z.string().max(150).optional(),
         })
       )
-      .min(1, "At least one subscription plan required"),
+      .optional(),
     sessionPackages: z
       .array(
         z.object({
