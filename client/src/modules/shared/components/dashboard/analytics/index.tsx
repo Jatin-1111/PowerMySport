@@ -23,13 +23,13 @@ export function KpiCard({
   delay?: number;
 }) {
   return (
-    <SlideUp delay={delay ?? 0}>
-      <div className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-orange-300">
+    <SlideUp delay={delay ?? 0} className="h-full">
+      <div className="group flex h-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-orange-300">
         <div className="text-power-orange flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50">
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm text-slate-500">{label}</p>
+          <p className="text-sm leading-snug text-slate-600">{label}</p>
           <p className={`mt-0.5 text-2xl font-semibold text-slate-900 ${valueClass ?? ""}`}>
             {value}
           </p>
@@ -97,17 +97,11 @@ export function SparklineBarChart({ data }: { data: Array<{ label: string; count
       {/* X-axis: first and last labels only */}
       {data.length > 0 && (
         <>
-          <text x={PAD.left + barW / 2} y={H - 4} textAnchor="middle" fontSize={10} fill="#94a3b8">
+          <text x={PAD.left} y={H - 4} textAnchor="start" fontSize={10} fill="#94a3b8">
             {data[0].label}
           </text>
           {data.length > 1 && (
-            <text
-              x={PAD.left + (barCount - 1) * (barW + gap) + barW / 2}
-              y={H - 4}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#94a3b8"
-            >
+            <text x={PAD.left + chartW} y={H - 4} textAnchor="end" fontSize={10} fill="#94a3b8">
               {data[data.length - 1].label}
             </text>
           )}

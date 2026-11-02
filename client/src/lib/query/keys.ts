@@ -22,6 +22,13 @@ export const queryKeys = {
     unreadCount: ["notifications", "unread-count"] as const,
   },
 
+  /** The academy owner's console overview. */
+  academy: {
+    mine: ["academy", "mine"] as const,
+    earnings: ["academy", "earnings"] as const,
+    analytics: ["academy", "analytics"] as const,
+  },
+
   /**
    * The user-oriented dashboard.
    *

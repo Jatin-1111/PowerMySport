@@ -46,7 +46,7 @@ export default function AcademyReviewsPage() {
         const res = await axiosInstance.get<{
           success: boolean;
           data?: Venue[];
-        }>("/venues/my-venues");
+        }>("/academies/my/venues");
         const list: Venue[] = res.data?.data ?? [];
         setVenues(list);
         if (list.length > 0) {
@@ -127,8 +127,8 @@ export default function AcademyReviewsPage() {
   // ── No venues ─────────────────────────────────────────────────────────────
   if (venues.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
+      <div>
+        <div className="mx-auto max-w-2xl py-12">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -146,11 +146,11 @@ export default function AcademyReviewsPage() {
               </p>
             </div>
             <Link
-              href="/academy/venues"
+              href="/academy/onboarding"
               className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               <Building2 size={16} />
-              Manage venues
+              Add venues
             </Link>
           </motion.div>
         </div>
@@ -162,8 +162,8 @@ export default function AcademyReviewsPage() {
   const selectedVenue = venues.find((v) => (v.id ?? v._id) === selectedVenueId);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      <div className="max-w-4xl">
         {/* ── Page Header ─────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}

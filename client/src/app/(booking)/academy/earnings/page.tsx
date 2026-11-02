@@ -4,6 +4,7 @@ import { StatTile } from "@/modules/shared/ui/StatTile";
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { Button } from "@/modules/shared/ui/Button";
+import { bookingKey } from "@/modules/academy/utils/format";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import type { Booking, EarningsData, MonthlyEarning, SportEarning, User } from "@/types";
 import { motion } from "framer-motion";
@@ -250,8 +251,8 @@ function RecentTransactions({ bookings }: { bookings: Booking[] }) {
 
   return (
     <div className="flex flex-col divide-y divide-slate-50">
-      {bookings.slice(0, 10).map((b) => (
-        <div key={b.id} className="flex items-center justify-between gap-3 py-3">
+      {bookings.slice(0, 10).map((b, index) => (
+        <div key={bookingKey(b, index)} className="flex items-center justify-between gap-3 py-3">
           <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-50">
               <IndianRupee className="text-power-orange h-4 w-4" />
@@ -326,7 +327,7 @@ export default function AcademyEarningsPage() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-400">
           <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
           <p className="text-sm font-medium">Loading earnings…</p>
@@ -338,7 +339,7 @@ export default function AcademyEarningsPage() {
   // ── Error ────────────────────────────────────────────────────────────────
   if (error || !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
         <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
             <IndianRupee className="h-5 w-5 text-red-400" />
@@ -357,8 +358,8 @@ export default function AcademyEarningsPage() {
 
   // ── Main content ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
+    <div>
+      <div className="flex flex-col gap-8">
         {/* ── Page header ── */}
         <SlideUp delay={0}>
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -436,7 +437,7 @@ export default function AcademyEarningsPage() {
 
         {/* ── Two-column section ── */}
         <SlideUp delay={0.15}>
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+          <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 xl:grid-cols-2">
             {/* By sport */}
             <div className="flex flex-col gap-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
               <div>

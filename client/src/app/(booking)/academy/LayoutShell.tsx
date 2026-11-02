@@ -11,12 +11,13 @@ import {
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
   BarChart2,
-  Building2,
+  Bell,
+  ClipboardList,
+  Globe,
+  IndianRupee,
   LayoutDashboard,
   Settings,
   Star,
-  TrendingUp,
-  Bell,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
@@ -42,51 +43,26 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
   };
 
   const navItems: DashboardNavItem[] = [
-    {
-      href: "/academy/onboarding",
-      label: "Onboarding",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/academy",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/booking?tab=academies",
-      label: "Public Profile",
-      icon: Building2,
-    },
+    { href: "/academy", label: "Overview", icon: LayoutDashboard },
+    { href: "/academy/onboarding", label: "Academy setup", icon: ClipboardList },
+    // This is the directory where academies are listed, not the owner's own page:
+    // the overview links to that once the academy is live.
+    { href: "/booking?tab=academies", label: "Academy directory", icon: Globe },
     // Venues, Coaches, Plans and Bookings were listed here but none of those
     // routes exist — four 404s in the console partners are onboarded into. They
     // are removed rather than stubbed; `tests/navLinks.test.ts` now fails the
     // build if a nav href stops resolving to a real page.
-    {
-      href: "/academy/earnings",
-      label: "Earnings",
-      icon: TrendingUp,
-    },
-    {
-      href: "/academy/reviews",
-      label: "Reviews",
-      icon: Star,
-    },
-    {
-      href: "/academy/analytics",
-      label: "Analytics",
-      icon: BarChart2,
-    },
+    { href: "/academy/earnings", label: "Earnings", icon: IndianRupee, section: "Performance" },
+    { href: "/academy/reviews", label: "Reviews", icon: Star, section: "Performance" },
+    { href: "/academy/analytics", label: "Analytics", icon: BarChart2, section: "Performance" },
     {
       href: "/academy/notifications",
       label: "Notifications",
       icon: Bell,
       badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+      section: "Account",
     },
-    {
-      href: "/academy/settings",
-      label: "Settings",
-      icon: Settings,
-    },
+    { href: "/academy/settings", label: "Settings", icon: Settings, section: "Account" },
   ];
 
   if (guard !== "allowed") {
@@ -95,7 +71,7 @@ export default function AcademyLayout({ children }: { children: React.ReactNode 
 
   return (
     <DashboardShell
-      dashboardLabel="Academy Owner Dashboard"
+      dashboardLabel="Academy console"
       userName={user?.name}
       navItems={navItems}
       onLogout={handleLogout}

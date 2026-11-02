@@ -205,7 +205,7 @@ export default function AcademyOnboardingContainer() {
 
   if (loadFailed) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
         <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-6 text-center">
           <h1 className="mb-2 text-xl font-bold text-slate-900">We could not open this sign-up</h1>
           <p className="mb-4 text-sm text-slate-600">
@@ -227,7 +227,7 @@ export default function AcademyOnboardingContainer() {
   const back = (step: number) => () => goToStep(step);
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8">
+    <div className="py-2">
       <div className="mx-auto max-w-4xl">
         <p className="mx-auto mb-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center text-xs text-amber-700">
           Early access, bookings aren&apos;t open yet. Submit your details now and our team will
@@ -386,7 +386,7 @@ export default function AcademyOnboardingContainer() {
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-[50vh] items-center justify-center">
       <div className="text-center">
         <div className="bg-power-orange/20 mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full">
           <div className="border-power-orange border-3 h-8 w-8 animate-spin rounded-full border-t-transparent" />
