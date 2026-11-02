@@ -483,6 +483,136 @@ export async function checkRefundStatus(transactionId: string): Promise<RefundSt
 }
 
 /**
+ * What follows a card refund reaching COMPLETED: the parent booking flips to
+ * PROCESSED so the admin panel and player UI update, and the payer is told.
+ * Shared by the status poller and the refund webhook so the two paths cannot
+ * drift: whichever sees COMPLETED first does this, and the other finds the
+ * refund already COMPLETED and skips it.
+ */
+async function onCardRefundCompleted(transaction: any): Promise<void> {
+  if (transaction.bookingId) {
+    await Booking.updateOne(
+      { _id: transaction.bookingId, refundStatus: { $ne: "PROCESSED" } },
+      { $set: { refundStatus: "PROCESSED" } }
+    ).catch(() => {});
+  }
+
+  const user = await User.findById(transaction.userId);
+  if (user) {
+    await NotificationService.send(
+      {
+        userId: user._id.toString(),
+        type: "PAYMENT_REFUND",
+        title: "Refund completed",
+        message: `Your refund of ₹${((transaction.refundAmount || 0) / 100).toLocaleString("en-IN")} has been completed.`,
+        data: {
+          amount: transaction.refundAmount || 0,
+          method: "ORIGINAL_CARD",
+          transactionId: transaction._id.toString(),
+        },
+      },
+      { sendEmail: true, sendPush: true }
+    );
+  }
+}
+
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+
+const firstString = (...values: unknown[]): string | undefined => {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+};
+
+/**
+ * Apply a PhonePe refund webhook (`pg.refund.completed` / `pg.refund.failed`) to
+ * the payment it refunds.
+ *
+ * The refund is found by the refund ids PhonePe echoes back (our
+ * `merchantRefundId`, or the gateway `refundId` stored at initiation). Failing
+ * that, by the original order id, but only for a payment whose refund is still
+ * in flight (INITIATED/PENDING), since a payment carries at most one refund. States other than
+ * COMPLETED/FAILED (accepted, pending) change nothing.
+ *
+ * Idempotent: a redelivery, or the poller getting there first, finds the refund
+ * already in its final state and does nothing. A COMPLETED refund is never walked
+ * back by a later FAILED event. A FAILED refund goes back to FAILED, which is the
+ * state `claimRefund` accepts, so it stays retryable, and finance is alerted
+ * because nothing else will tell them.
+ *
+ * Returns the transaction acted on, or null when the event matched none.
+ */
+export async function reconcileRefundFromWebhookPayload(rawPayload: unknown): Promise<any | null> {
+  const body = asRecord(rawPayload);
+  const sources = [asRecord(body.payload), body, asRecord(body.data)];
+  const pick = (key: string) => firstString(...sources.map((source) => source[key]));
+
+  const state = (pick("state") || "").toUpperCase();
+  if (state !== "COMPLETED" && state !== "FAILED") return null;
+
+  const merchantRefundId = pick("merchantRefundId");
+  const refundId = pick("refundId");
+  const originalMerchantOrderId = pick("originalMerchantOrderId");
+
+  const identifiers: Array<Record<string, string>> = [];
+  if (merchantRefundId) identifiers.push({ refundMerchantId: merchantRefundId });
+  if (refundId) identifiers.push({ refundId });
+
+  let transaction: any = null;
+  for (const Model of [BookingPaymentTransaction, CoachSubscriptionPaymentTransaction] as any[]) {
+    transaction = identifiers.length ? await Model.findOne({ $or: identifiers }) : null;
+    if (!transaction && originalMerchantOrderId) {
+      transaction = await Model.findOne({
+        merchantOrderId: originalMerchantOrderId,
+        // PhonePe answers an initiation with PENDING, which is stored as-is.
+        refundState: { $in: ["INITIATED", "PENDING"] },
+      });
+    }
+    if (transaction) break;
+  }
+
+  if (!transaction) {
+    log.warn(
+      `Refund webhook matched no payment (refundId=${refundId}, merchantRefundId=${merchantRefundId}, order=${originalMerchantOrderId})`
+    );
+    return null;
+  }
+
+  if (transaction.refundState === "COMPLETED" || transaction.refundState === state) {
+    return transaction;
+  }
+
+  transaction.refundState = state;
+  if (refundId && !transaction.refundId) transaction.refundId = refundId;
+  await transaction.save();
+
+  if (state === "COMPLETED") {
+    await onCardRefundCompleted(transaction);
+    return transaction;
+  }
+
+  const errorCode = pick("errorCode");
+  const detailedErrorCode = pick("detailedErrorCode");
+  log.error(
+    `PhonePe refund FAILED for transaction ${transaction._id} (refundId=${refundId}, errorCode=${errorCode}, detailedErrorCode=${detailedErrorCode})`
+  );
+  try {
+    await sendEmail({
+      to: process.env.EMAIL_FROM || "teams@powermysport.com",
+      subject: `[Alert] PhonePe refund failed: ${refundId || transaction._id}`,
+      html: `<p>PhonePe reported a failed refund. The payment is released for retry from the admin panel.</p>
+        <p>Transaction: ${transaction._id}<br>Refund id: ${refundId || "n/a"}<br>Amount: ₹${((transaction.refundAmount || 0) / 100).toLocaleString("en-IN")}<br>Error: ${errorCode || "n/a"} / ${detailedErrorCode || "n/a"}</p>`,
+    });
+  } catch (emailError) {
+    log.error("Failed to send refund-failed alert:", emailError);
+  }
+
+  return transaction;
+}
+
+/**
  * Bulk check pending refunds and update their status
  * Used by scheduled jobs to poll refund statuses
  */
@@ -508,32 +638,7 @@ export async function updatePendingRefundStatuses(): Promise<{
 
       if (status.state === "COMPLETED") {
         completed++;
-        // Flip the parent booking to PROCESSED so admin panel and player UI update.
-        if (transaction.bookingId) {
-          const { Booking } = await import("../../client/models/Booking");
-          await Booking.updateOne(
-            { _id: transaction.bookingId, refundStatus: { $ne: "PROCESSED" } },
-            { $set: { refundStatus: "PROCESSED" } }
-          ).catch(() => {});
-        }
-        // Send completion notification
-        const user = await User.findById(transaction.userId);
-        if (user) {
-          await NotificationService.send(
-            {
-              userId: user._id.toString(),
-              type: "PAYMENT_REFUND",
-              title: "Refund completed",
-              message: `Your refund of ₹${((transaction.refundAmount || 0) / 100).toLocaleString("en-IN")} has been completed.`,
-              data: {
-                amount: transaction.refundAmount || 0,
-                method: "ORIGINAL_CARD",
-                transactionId: transaction._id.toString(),
-              },
-            },
-            { sendEmail: true, sendPush: true }
-          );
-        }
+        await onCardRefundCompleted(transaction);
       } else if (status.state === "FAILED") {
         failed++;
       }

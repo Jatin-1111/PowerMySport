@@ -5,6 +5,8 @@ import { BookingPaymentTransaction } from "../../models/BookingPayment";
 import { recordBookingEventFor } from "../../services/BookingEventService";
 import { WalletService } from "../../services/WalletService";
 import { updatePaymentStatus } from "../../services/BookingService";
+import { reconcileRefundFromWebhookPayload } from "../../services/RefundService";
+import { isPhonePeRefundEvent } from "../../../shared/services/phonepeWebhookAuth";
 import {
   getPhonePeOrderStatus,
   initiatePhonePePayment,
@@ -172,7 +174,22 @@ export const handlePhonePeCallback = asyncHandler(
     const callback = validatePhonePeCallback(authorizationHeader, rawBody);
     const payload = callback.payload || {};
 
-    const merchantOrderId = payload.originalMerchantOrderId;
+    // A refund callback names the ORIGINAL order and a COMPLETED/FAILED state, the
+    // same shape as an order callback. Treated as one it would re-mark a paid
+    // booking PAID, or a failed refund as a failed payment, so it only ever
+    // updates the refund.
+    if (isPhonePeRefundEvent({ event: callback.event, payload })) {
+      await reconcileRefundFromWebhookPayload({ event: callback.event, payload });
+      res.status(200).json({
+        success: true,
+        message: "PhonePe refund callback processed",
+      });
+      return;
+    }
+
+    // Order callbacks carry `merchantOrderId`; `originalMerchantOrderId` is the
+    // refund-callback field, so reading only that rejected every order callback.
+    const merchantOrderId = payload.merchantOrderId || payload.originalMerchantOrderId;
     if (!merchantOrderId) {
       throw new AppError("Missing merchant order id in callback", 400);
     }

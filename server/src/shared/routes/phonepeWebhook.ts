@@ -9,31 +9,28 @@
  * and the OutboxService worker processes reconciliation asynchronously via:
  *   - reconcileCoachSubscriptionPaymentFromWebhookPayload()
  *   - reconcileBookingPaymentFromWebhookPayload()
+ * Refund events (pg.refund.*) go to reconcileRefundFromWebhookPayload() instead.
+ *
+ * Authentication follows the scheme chosen on the PhonePe dashboard (SHA
+ * `Authorization` header or HMAC checksum headers); see phonepeWebhookAuth.ts.
  *
  * Mounted at: /api/payments/phonepe/webhook (see app.ts)
  *
- * E-COMMERCE order webhooks are handled separately by WebhookController
- * in shared/controllers/WebhookController.ts (mounted at /api/v1/webhooks/phonepe).
+ * The shop's /api/v1/webhooks/phonepe URL (WebhookController) hands its requests
+ * to the same receiver, so a webhook registered at either URL is authenticated and
+ * processed identically; shop orders are reconciled by the outbox worker.
  */
 import express from "express";
 import crypto from "crypto";
 import PaymentWebhookEvent from "../models/PaymentWebhookEvent";
 import OutboxMessage from "../models/OutboxMessage";
+import { verifyPhonePeWebhookAuth } from "../services/phonepeWebhookAuth";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("phonepeWebhook");
 
 const router = express.Router();
 
-const getSignatureHeader = (req: express.Request) =>
-  (req.headers["x-phonepe-signature"] || req.headers["x-callback-signature"] || "") as string;
-
-router.post("/webhook", async (req, res) => {
-  const secret = process.env.PHONEPE_WEBHOOK_SECRET;
-  if (!secret) {
-    log.error("PHONEPE_WEBHOOK_SECRET not configured");
-    return res.status(500).send("server misconfigured");
-  }
-
+export const receivePhonePeWebhook = async (req: express.Request, res: express.Response) => {
   // Use the rawBody set by express.json verify middleware in app.ts
   const rawBody = (req as any).rawBody as string | undefined;
   if (!rawBody) {
@@ -41,21 +38,15 @@ router.post("/webhook", async (req, res) => {
     return res.status(400).send("raw body required");
   }
 
-  const signature = (getSignatureHeader(req) || "").trim();
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(Buffer.from(rawBody, "utf8"))
-    .digest("hex");
-
-  try {
-    const a = Buffer.from(expected, "utf8");
-    const b = Buffer.from(signature, "utf8");
-    if (!signature || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      log.warn("PhonePe webhook signature mismatch");
-      return res.status(401).send("invalid signature");
+  const auth = verifyPhonePeWebhookAuth(req.headers, Buffer.from(rawBody, "utf8"));
+  if (!auth.ok) {
+    if (auth.reason === "NOT_CONFIGURED") {
+      log.error(
+        "No PhonePe webhook credentials configured (PHONEPE_CALLBACK_USERNAME/PASSWORD or PHONEPE_WEBHOOK_SECRET)"
+      );
+      return res.status(500).send("server misconfigured");
     }
-  } catch (err) {
-    log.error("signature verify error", err);
+    log.warn(`PhonePe webhook rejected: ${auth.reason}`);
     return res.status(401).send("invalid signature");
   }
 
@@ -119,6 +110,8 @@ router.post("/webhook", async (req, res) => {
   }
 
   return res.status(200).send("ok");
-});
+};
+
+router.post("/webhook", receivePhonePeWebhook);
 
 export default router;

@@ -2,6 +2,8 @@ import { reconcileBookingPaymentFromWebhookPayload } from "../../client/services
 import { reconcileCoachSubscriptionPaymentFromWebhookPayload } from "../../client/services/CoachSubscriptionPaymentService";
 import { reconcileExpertSessionPaymentFromWebhookPayload } from "../../client/services/ExpertsService";
 import { NotificationService } from "../../client/services/NotificationService";
+import { reconcileRefundFromWebhookPayload } from "../../client/services/RefundService";
+import { isPhonePeRefundEvent } from "./phonepeWebhookAuth";
 import { reconcileWalletTopUpFromWebhookPayload } from "../../client/services/WalletService";
 import { reconcileEcommerceOrderFromWebhookPayload } from "../../shop/services/EcommerceService";
 import { sendEmail } from "../../utils/email";
@@ -82,24 +84,31 @@ export const startOutboxWorker = () => {
             await event.save();
 
             try {
-              await reconcileCoachSubscriptionPaymentFromWebhookPayload(event.payload);
+              if (isPhonePeRefundEvent(event.payload)) {
+                // A refund event names the ORIGINAL order and a COMPLETED/FAILED
+                // state, so the payment reconcilers below would read a failed
+                // refund as a failed payment. It only ever updates the refund.
+                await reconcileRefundFromWebhookPayload(event.payload);
+              } else {
+                await reconcileCoachSubscriptionPaymentFromWebhookPayload(event.payload);
 
-              // Also try booking payment reconciliation — the webhook may be
-              // for a booking rather than a coach subscription.
-              await reconcileBookingPaymentFromWebhookPayload(event.payload);
+                // Also try booking payment reconciliation — the webhook may be
+                // for a booking rather than a coach subscription.
+                await reconcileBookingPaymentFromWebhookPayload(event.payload);
 
-              // Also try e-commerce order reconciliation — the webhook may be
-              // for a shop order (merchantOrderId prefix "O_").
-              await reconcileEcommerceOrderFromWebhookPayload(event.payload);
+                // Also try e-commerce order reconciliation — the webhook may be
+                // for a shop order (merchantOrderId prefix "O_").
+                await reconcileEcommerceOrderFromWebhookPayload(event.payload);
 
-              // Also try expert session reconciliation — the webhook may be
-              // for an expert session (merchantOrderId prefix "EXP_").
-              await reconcileExpertSessionPaymentFromWebhookPayload(event.payload);
+                // Also try expert session reconciliation — the webhook may be
+                // for an expert session (merchantOrderId prefix "EXP_").
+                await reconcileExpertSessionPaymentFromWebhookPayload(event.payload);
 
-              // And wallet top-ups (merchantOrderId prefix "WTOPUP-"). Without
-              // this a user who paid and closed the tab was charged and never
-              // credited: only their own browser calling verify credited them.
-              await reconcileWalletTopUpFromWebhookPayload(event.payload);
+                // And wallet top-ups (merchantOrderId prefix "WTOPUP-"). Without
+                // this a user who paid and closed the tab was charged and never
+                // credited: only their own browser calling verify credited them.
+                await reconcileWalletTopUpFromWebhookPayload(event.payload);
+              }
 
               event.status = "DONE";
               event.processedAt = new Date();

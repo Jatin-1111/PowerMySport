@@ -25,6 +25,8 @@ export interface PhonePeOrderStatusResult {
 
 export interface PhonePeCallbackResult {
   type: string;
+  /** PhonePe's documented discriminator, e.g. `checkout.order.completed`, `pg.refund.failed`. */
+  event?: string | undefined;
   payload: any;
 }
 
@@ -475,10 +477,13 @@ export const validatePhonePeCallback = (
     );
   }
 
-  let response: { type?: unknown; payload?: unknown };
+  // The SDK's CallbackResponse declares only `type` and `payload`, but the body
+  // PhonePe sends is {event, payload}; the class transformer keeps `event`.
+  let response: { type?: unknown; event?: unknown; payload?: unknown };
   try {
     response = client.validateCallback(username, password, authorizationHeader, bodyString) as {
       type?: unknown;
+      event?: unknown;
       payload?: unknown;
     };
   } catch (error) {
@@ -487,6 +492,7 @@ export const validatePhonePeCallback = (
 
   return {
     type: String(response.type),
+    event: typeof response.event === "string" ? response.event : undefined,
     payload: response.payload,
   };
 };
