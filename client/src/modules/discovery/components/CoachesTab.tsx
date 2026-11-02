@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  PriceRangeSection,
+  RatingSection,
+  SortSection,
+  priceRangeLabel,
+} from "@/modules/discovery/components/FilterSections";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
@@ -117,8 +123,8 @@ function CoachesTabContent() {
   const [appliedSportFilter, setAppliedSportFilter] = useState("");
   const [serviceModeFilter, setServiceModeFilter] = useState("ALL");
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [certifiedOnly, setCertifiedOnly] = useState(false);
+  const [minRate, setMinRate] = useState("");
   const [maxRate, setMaxRate] = useState("");
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
@@ -242,6 +248,7 @@ function CoachesTabContent() {
   };
 
   const applyFilters = (base: Coach[]) => {
+    const parsedMin = minRate ? Number(minRate) : undefined;
     const parsedMax = maxRate ? Number(maxRate) : undefined;
     const parsedRating = Number(minRating || 0);
     const term = normalizeSearchTerm(appliedSportFilter);
@@ -252,13 +259,13 @@ function CoachesTabContent() {
         !term ||
         coach.sports.some((s) => normalizeSearchTerm(s).includes(term)) ||
         name.includes(term) ||
+        normalizeSearchTerm(coach.ownVenueDetails?.address || "").includes(term) ||
         bio.includes(term);
       const matchMode = serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
       const rate = getComparableRate(coach);
       const matchRate =
-        parsedMax === undefined || isNaN(parsedMax) || (rate !== null && rate <= parsedMax);
-      const matchVerified =
-        !verifiedOnly || coach.isVerified || coach.verificationStatus === "VERIFIED";
+        (parsedMin === undefined || isNaN(parsedMin) || (rate !== null && rate >= parsedMin)) &&
+        (parsedMax === undefined || isNaN(parsedMax) || (rate !== null && rate <= parsedMax));
       const matchCertified =
         !certifiedOnly || (coach.certifications && coach.certifications.length > 0);
       return (
@@ -266,7 +273,6 @@ function CoachesTabContent() {
         matchMode &&
         matchRate &&
         (coach.rating || 0) >= parsedRating &&
-        matchVerified &&
         matchCertified
       );
     });
@@ -326,11 +332,11 @@ function CoachesTabContent() {
     coaches,
     appliedSportFilter,
     serviceModeFilter,
+    minRate,
     maxRate,
     minRating,
     sortBy,
     userLocation,
-    verifiedOnly,
     certifiedOnly,
   ]);
 
@@ -385,7 +391,6 @@ function CoachesTabContent() {
     setMaxRate("");
     setMinRating("0");
     setSortBy("relevance");
-    setVerifiedOnly(false);
     setCertifiedOnly(false);
   };
 
@@ -400,17 +405,16 @@ function CoachesTabContent() {
             ? "Freelance"
             : "Hybrid",
       onRemove: () => setServiceModeFilter("ALL"),
-      badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green",
-      iconClassName: "hover:text-emerald-700",
     });
   }
-  if (maxRate) {
+  if (minRate || maxRate) {
     activeFilters.push({
       id: "rate",
-      label: `Max ₹${maxRate}/hr`,
-      onRemove: () => setMaxRate(""),
-      badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green",
-      iconClassName: "hover:text-emerald-700",
+      label: priceRangeLabel(minRate, maxRate),
+      onRemove: () => {
+        setMinRate("");
+        setMaxRate("");
+      },
     });
   }
   if (Number(minRating) > 0) {
@@ -418,26 +422,13 @@ function CoachesTabContent() {
       id: "rating",
       label: `${minRating}+ ★`,
       onRemove: () => setMinRating("0"),
-      badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green",
-      iconClassName: "hover:text-emerald-700",
     });
   }
   if (sortBy !== "relevance") {
     activeFilters.push({
       id: "sort",
-      label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : sortBy === "nearest" ? "Nearest" : "Top Rated"}`,
+      label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : sortBy === "nearest" ? "Nearest" : "Top rated"}`,
       onRemove: () => setSortBy("relevance"),
-      badgeClassName: "bg-emerald-50 border-emerald-100 text-turf-green",
-      iconClassName: "hover:text-emerald-700",
-    });
-  }
-  if (verifiedOnly) {
-    activeFilters.push({
-      id: "verified",
-      label: "Verified",
-      onRemove: () => setVerifiedOnly(false),
-      badgeClassName: "bg-emerald-50 border-emerald-100 text-emerald-700",
-      iconClassName: "hover:text-emerald-900",
     });
   }
   if (certifiedOnly) {
@@ -445,8 +436,6 @@ function CoachesTabContent() {
       id: "certified",
       label: "Certified",
       onRemove: () => setCertifiedOnly(false),
-      badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700",
-      iconClassName: "hover:text-indigo-900",
     });
   }
 
@@ -457,7 +446,7 @@ function CoachesTabContent() {
       <FilterBar
         searchValue={sportInput}
         onSearchChange={setSportInput}
-        searchPlaceholder="Search sports or coach names…"
+        searchPlaceholder="Search by name, sport or city…"
         onSearchClear={() => setSportInput("")}
         onSubmit={handleSearch}
         isModalOpen={isFilterModalOpen}
@@ -501,45 +490,10 @@ function CoachesTabContent() {
           </div>
         </div>
 
-        {/* Max Rate */}
+        {/* Qualifications */}
         <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">
-            Maximum Hourly Rate (₹)
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-              ₹
-            </span>
-            <input
-              type="number"
-              min="0"
-              value={maxRate}
-              onChange={(e) => setMaxRate(e.target.value)}
-              placeholder="Max ₹/hr"
-              className="focus:border-turf-green w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {/* Industry Grade Filters: Verified and Certified */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">
-            Trust & Qualifications
-          </label>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Qualifications</label>
           <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setVerifiedOnly(!verifiedOnly)}
-              className={cn(
-                "flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
-                verifiedOnly
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-              )}
-            >
-              {verifiedOnly && <span className="font-bold text-emerald-600">✓</span>}
-              Verified Coaches Only
-            </button>
             <button
               type="button"
               onClick={() => setCertifiedOnly(!certifiedOnly)}
@@ -556,61 +510,21 @@ function CoachesTabContent() {
           </div>
         </div>
 
-        {/* Rating */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Minimum Rating</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { val: "0", label: "Any" },
-              { val: "3", label: "3+ ★" },
-              { val: "4", label: "4+ ★" },
-              { val: "4.5", label: "4.5+ ★" },
-            ].map((opt) => (
-              <button
-                key={opt.val}
-                type="button"
-                onClick={() => setMinRating(opt.val)}
-                className={cn(
-                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
-                  minRating === opt.val
-                    ? "border-turf-green text-turf-green bg-emerald-50"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <PriceRangeSection
+          label="Hourly Rate (₹/hr)"
+          min={minRate}
+          max={maxRate}
+          onMinChange={setMinRate}
+          onMaxChange={setMaxRate}
+        />
 
-        {/* Sort */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Sort By</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { val: "relevance", label: "Recommended" },
-              { val: "nearest", label: "Nearest" },
-              { val: "priceAsc", label: "Price (Low to High)" },
-              { val: "priceDesc", label: "Price (High to Low)" },
-              { val: "ratingDesc", label: "Top Rated" },
-            ].map((opt) => (
-              <button
-                key={opt.val}
-                type="button"
-                onClick={() => setSortBy(opt.val)}
-                className={cn(
-                  "col-span-1 rounded-xl border py-2.5 text-sm font-semibold transition-all",
-                  opt.val === "ratingDesc" && "col-span-2 sm:col-span-1",
-                  sortBy === opt.val
-                    ? "border-turf-green text-turf-green bg-emerald-50"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <RatingSection value={minRating} onChange={setMinRating} />
+
+        <SortSection
+          value={sortBy}
+          onChange={setSortBy}
+          extraOptions={[{ val: "nearest", label: "Nearest" }]}
+        />
       </FilterBar>
 
       {sortBy === "nearest" && hasLocationDenied && (

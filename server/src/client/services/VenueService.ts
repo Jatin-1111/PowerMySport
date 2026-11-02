@@ -333,10 +333,9 @@ export const getAllVenues = async (
   }
 
   if (filters?.search) {
-    query.name = {
-      $regex: buildSafeSearchRegexSource(filters.search),
-      $options: "i",
-    };
+    // One search box for name, address (which carries the city) or sport.
+    const regex = { $regex: buildSafeSearchRegexSource(filters.search), $options: "i" };
+    query.$or = [{ name: regex }, { address: regex }, { sports: regex }];
   }
 
   const skip = (page - 1) * limit;

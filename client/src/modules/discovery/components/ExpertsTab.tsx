@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  PriceRangeSection,
+  RatingSection,
+  SortSection,
+  priceRangeLabel,
+} from "@/modules/discovery/components/FilterSections";
+import { SportChips } from "@/modules/discovery/components/SportChips";
 import { FilterBar, type ActiveFilter } from "@/modules/discovery/components/FilterBar";
 import {
   LISTING_FALLBACK_CLASS,
@@ -95,6 +102,7 @@ export function ExpertsTab({
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [modeFilter, setModeFilter] = useState("ALL");
+  const [minFee, setMinFee] = useState("");
   const [maxFee, setMaxFee] = useState("");
   const [minRating, setMinRating] = useState("0");
   const [sortBy, setSortBy] = useState("relevance");
@@ -125,6 +133,7 @@ export function ExpertsTab({
 
   const filtered = useMemo(() => {
     const term = appliedSearch;
+    const parsedMin = minFee ? Number(minFee) : undefined;
     const parsedMax = maxFee ? Number(maxFee) : undefined;
     const parsedRating = Number(minRating || 0);
 
@@ -140,8 +149,10 @@ export function ExpertsTab({
       );
       const matchSearch = !term || haystack.includes(term);
       const matchMode = modeFilter === "ALL" || e.sessionMode === modeFilter;
+      const fee = Number(e.sessionFee || 0);
       const matchFee =
-        parsedMax === undefined || isNaN(parsedMax) || Number(e.sessionFee || 0) <= parsedMax;
+        (parsedMin === undefined || isNaN(parsedMin) || fee >= parsedMin) &&
+        (parsedMax === undefined || isNaN(parsedMax) || fee <= parsedMax);
       const matchRating = (e.rating || 0) >= parsedRating;
       return matchSearch && matchMode && matchFee && matchRating;
     });
@@ -167,7 +178,7 @@ export function ExpertsTab({
     else next = [...next].sort((a, b) => relevance(b) - relevance(a));
 
     return next;
-  }, [experts, appliedSearch, modeFilter, maxFee, minRating, sortBy]);
+  }, [experts, appliedSearch, modeFilter, minFee, maxFee, minRating, sortBy]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -178,6 +189,7 @@ export function ExpertsTab({
     setSearchInput("");
     setAppliedSearch("");
     setModeFilter("ALL");
+    setMinFee("");
     setMaxFee("");
     setMinRating("0");
     setSortBy("relevance");
@@ -190,11 +202,14 @@ export function ExpertsTab({
       label: modeLabel(modeFilter as Expert["sessionMode"]),
       onRemove: () => setModeFilter("ALL"),
     });
-  if (maxFee)
+  if (minFee || maxFee)
     activeFilters.push({
       id: "fee",
-      label: `Max ${formatInr(Number(maxFee))}`,
-      onRemove: () => setMaxFee(""),
+      label: priceRangeLabel(minFee, maxFee),
+      onRemove: () => {
+        setMinFee("");
+        setMaxFee("");
+      },
     });
   if (Number(minRating) > 0)
     activeFilters.push({
@@ -206,7 +221,7 @@ export function ExpertsTab({
     activeFilters.push({
       id: "sort",
       label: `Sort: ${
-        sortBy === "priceAsc" ? "Fee ↑" : sortBy === "priceDesc" ? "Fee ↓" : "Top rated"
+        sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : "Top rated"
       }`,
       onRemove: () => setSortBy("relevance"),
     });
@@ -219,13 +234,22 @@ export function ExpertsTab({
       <FilterBar
         searchValue={searchInput}
         onSearchChange={setSearchInput}
-        searchPlaceholder="Search by name, sport, or expertise…"
+        searchPlaceholder="Search by name, sport or city…"
         onSearchClear={() => setSearchInput("")}
         onSubmit={handleSearch}
         isModalOpen={isFilterModalOpen}
         onModalOpenChange={setIsFilterModalOpen}
         activeFilters={activeFilters}
         onClearAll={handleClear}
+        quickFilters={
+          <SportChips
+            value={appliedSearch}
+            onSelect={(sport) => {
+              setSearchInput(sport);
+              setAppliedSearch(normalize(sport));
+            }}
+          />
+        }
       >
         <div>
           <label className="mb-3 block text-sm font-bold text-slate-900">Session mode</label>
@@ -253,76 +277,17 @@ export function ExpertsTab({
           </div>
         </div>
 
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">
-            Maximum session fee (₹)
-          </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-              ₹
-            </span>
-            <input
-              type="number"
-              min="0"
-              value={maxFee}
-              onChange={(e) => setMaxFee(e.target.value)}
-              placeholder="Max fee"
-              className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
-            />
-          </div>
-        </div>
+        <PriceRangeSection
+          label="Session Fee (₹)"
+          min={minFee}
+          max={maxFee}
+          onMinChange={setMinFee}
+          onMaxChange={setMaxFee}
+        />
 
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Minimum rating</label>
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { val: "0", label: "Any" },
-              { val: "3", label: "3+ ★" },
-              { val: "4", label: "4+ ★" },
-              { val: "4.5", label: "4.5+ ★" },
-            ].map((opt) => (
-              <button
-                key={opt.val}
-                type="button"
-                onClick={() => setMinRating(opt.val)}
-                className={cn(
-                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
-                  minRating === opt.val
-                    ? "border-power-orange text-power-orange bg-orange-50"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <RatingSection value={minRating} onChange={setMinRating} />
 
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Sort by</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { val: "relevance", label: "Recommended" },
-              { val: "ratingDesc", label: "Top rated" },
-              { val: "priceAsc", label: "Fee (Low to High)" },
-              { val: "priceDesc", label: "Fee (High to Low)" },
-            ].map((opt) => (
-              <button
-                key={opt.val}
-                type="button"
-                onClick={() => setSortBy(opt.val)}
-                className={cn(
-                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
-                  sortBy === opt.val
-                    ? "border-power-orange text-power-orange bg-orange-50"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <SortSection value={sortBy} onChange={setSortBy} />
       </FilterBar>
 
       {/* ── Content ──────────────────────────────────────────────── */}

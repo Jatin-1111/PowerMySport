@@ -10,6 +10,8 @@ export const discoveryApi = {
     longitude?: number;
     maxDistance?: number;
     sport?: string;
+    /** Free text over name, address (city) and sport. */
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<DiscoveryResponse>> => {
@@ -25,6 +27,10 @@ export const discoveryApi = {
 
     if (params.sport) {
       queryParams.sport = params.sport;
+    }
+
+    if (params.search) {
+      queryParams.search = params.search;
     }
 
     if (params.page) {

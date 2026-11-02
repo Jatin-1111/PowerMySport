@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  PriceRangeSection,
+  RatingSection,
+  SortSection,
+  priceRangeLabel,
+} from "@/modules/discovery/components/FilterSections";
+import { SportChips } from "@/modules/discovery/components/SportChips";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
 import { academyOnboardingApi } from "@/modules/onboarding/services/academy";
@@ -13,7 +20,6 @@ import {
 } from "@/modules/discovery/components/ListingCard";
 import { cn } from "@/utils/cn";
 import {
-  BadgeCheck,
   Bath,
   Building2,
   Car,
@@ -109,13 +115,14 @@ export default function AcademiesTab() {
   const [totalAcademies, setTotalAcademies] = useState(0);
   const [followedAcademyIds, setFollowedAcademyIds] = useState<string[]>([]);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [cityInput, setCityInput] = useState("");
-  const [cityFilter, setCityFilter] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [appliedSearch, setAppliedSearch] = useState("");
   const [sportFilter, setSportFilter] = useState("");
   const [ageGroupFilter, setAgeGroupFilter] = useState("");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [verifiedOnly, setVerifiedOnly] = useState(true);
+  const [minRating, setMinRating] = useState("0");
+  const [sortBy, setSortBy] = useState("relevance");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
   const communityUrl = useMemo(
@@ -125,10 +132,10 @@ export default function AcademiesTab() {
           sidebar: "inbox",
           directory: "groups",
           panel: "discover",
-          q: cityFilter || sportFilter || undefined,
+          q: appliedSearch || sportFilter || undefined,
         },
       }),
-    [cityFilter, sportFilter]
+    [appliedSearch, sportFilter]
   );
 
   useEffect(() => {
@@ -138,13 +145,13 @@ export default function AcademiesTab() {
 
   useEffect(() => {
     void loadAcademies(currentPage);
-  }, [currentPage, cityFilter, sportFilter]);
+  }, [currentPage, appliedSearch, sportFilter]);
 
   const loadAcademies = async (page: number) => {
     setLoading(true);
     try {
       const response = await academyOnboardingApi.listApprovedAcademies(page, 12, {
-        city: cityFilter || undefined,
+        search: appliedSearch || undefined,
         sport: sportFilter || undefined,
       });
       const payload = response.data;
@@ -165,9 +172,10 @@ export default function AcademiesTab() {
   const displayedAcademies = useMemo(() => {
     const parsedMin = minPrice ? Number(minPrice) : undefined;
     const parsedMax = maxPrice ? Number(maxPrice) : undefined;
-    return academies.filter((academy) => {
+    const parsedRating = Number(minRating || 0);
+    const filtered = academies.filter((academy) => {
       const rupees = toRupees(academy.sessionRatePerHour);
-      if (verifiedOnly && !isVerifiedAcademy(academy)) return false;
+      if ((academy.rating || 0) < parsedRating) return false;
       if (!academyMatchesAgeGroup(academy, ageGroupFilter)) return false;
       if (parsedMin !== undefined && !isNaN(parsedMin) && (rupees ?? 0) < parsedMin) return false;
       if (parsedMax !== undefined && !isNaN(parsedMax) && (rupees ?? 0) > parsedMax) return false;
@@ -182,21 +190,28 @@ export default function AcademiesTab() {
 
       return true;
     });
-  }, [academies, ageGroupFilter, minPrice, maxPrice, verifiedOnly, selectedAmenities]);
+    const rate = (academy: AcademyCard) => toRupees(academy.sessionRatePerHour) ?? 0;
+    if (sortBy === "priceAsc") return [...filtered].sort((a, b) => rate(a) - rate(b));
+    if (sortBy === "priceDesc") return [...filtered].sort((a, b) => rate(b) - rate(a));
+    if (sortBy === "ratingDesc")
+      return [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    return filtered;
+  }, [academies, ageGroupFilter, minPrice, maxPrice, minRating, sortBy, selectedAmenities]);
 
   const handleApplySearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    setCityFilter(cityInput.trim());
+    setAppliedSearch(searchInput.trim());
   };
   const handleClearFilters = () => {
-    setCityInput("");
-    setCityFilter("");
+    setSearchInput("");
+    setAppliedSearch("");
     setSportFilter("");
     setAgeGroupFilter("");
     setMinPrice("");
     setMaxPrice("");
-    setVerifiedOnly(true);
+    setMinRating("0");
+    setSortBy("relevance");
     setSelectedAmenities([]);
     setCurrentPage(1);
   };
@@ -222,20 +237,25 @@ export default function AcademiesTab() {
   if (minPrice || maxPrice) {
     activeFilters.push({
       id: "price",
-      label: `${minPrice ? `₹${minPrice}` : "₹0"} - ${maxPrice ? `₹${maxPrice}` : "Max"}`,
+      label: priceRangeLabel(minPrice, maxPrice),
       onRemove: () => {
         setMinPrice("");
         setMaxPrice("");
       },
     });
   }
-  if (verifiedOnly) {
+  if (Number(minRating) > 0) {
     activeFilters.push({
-      id: "verified",
-      label: "Verified",
-      onRemove: () => setVerifiedOnly(false),
-      badgeClassName: "bg-emerald-50 border-emerald-100 text-emerald-700",
-      iconClassName: "hover:text-emerald-900",
+      id: "rating",
+      label: `${minRating}+ ★`,
+      onRemove: () => setMinRating("0"),
+    });
+  }
+  if (sortBy !== "relevance") {
+    activeFilters.push({
+      id: "sort",
+      label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : "Top rated"}`,
+      onRemove: () => setSortBy("relevance"),
     });
   }
   selectedAmenities.forEach((am) => {
@@ -243,26 +263,34 @@ export default function AcademiesTab() {
       id: `amenity-${am}`,
       label: am,
       onRemove: () => setSelectedAmenities((prev) => prev.filter((a) => a !== am)),
-      badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700",
-      iconClassName: "hover:text-blue-900",
     });
   });
 
   return (
     <div>
       <FilterBar
-        searchValue={cityInput}
-        onSearchChange={setCityInput}
-        searchPlaceholder="Search cities (Mumbai, Bengaluru…)"
+        searchValue={searchInput}
+        onSearchChange={setSearchInput}
+        searchPlaceholder="Search by name, sport or city…"
         onSearchClear={() => {
-          setCityInput("");
-          setCityFilter("");
+          setSearchInput("");
+          setAppliedSearch("");
+          setCurrentPage(1);
         }}
         onSubmit={handleApplySearch}
         isModalOpen={isFilterModalOpen}
         onModalOpenChange={setIsFilterModalOpen}
         activeFilters={activeFilters}
         onClearAll={handleClearFilters}
+        quickFilters={
+          <SportChips
+            value={sportFilter}
+            onSelect={(sport) => {
+              setSportFilter(sport);
+              setCurrentPage(1);
+            }}
+          />
+        }
       >
         {/* Sport */}
         <div>
@@ -306,40 +334,6 @@ export default function AcademiesTab() {
           </div>
         </div>
 
-        {/* Price range */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Price Range (₹/hr)</label>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                ₹
-              </span>
-              <input
-                type="number"
-                min="0"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="Min"
-                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
-              />
-            </div>
-            <div className="h-0.5 w-4 rounded-full bg-slate-300" />
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                ₹
-              </span>
-              <input
-                type="number"
-                min="0"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="Max"
-                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Amenities */}
         <div>
           <label className="mb-3 block text-sm font-bold text-slate-900">Facilities</label>
@@ -370,23 +364,17 @@ export default function AcademiesTab() {
           </div>
         </div>
 
-        {/* Verified toggle */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Trust</label>
-          <button
-            type="button"
-            onClick={() => setVerifiedOnly((v) => !v)}
-            className={cn(
-              "flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
-              verifiedOnly
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-            )}
-          >
-            {verifiedOnly && <BadgeCheck size={18} className="text-emerald-600" />}
-            {verifiedOnly ? "Verified Academies Only" : "Show All Academies"}
-          </button>
-        </div>
+        <PriceRangeSection
+          label="Price Range (₹/hr)"
+          min={minPrice}
+          max={maxPrice}
+          onMinChange={setMinPrice}
+          onMaxChange={setMaxPrice}
+        />
+
+        <RatingSection value={minRating} onChange={setMinRating} />
+
+        <SortSection value={sortBy} onChange={setSortBy} />
       </FilterBar>
 
       {/* ── Content ─────────────────────────────────────────────── */}

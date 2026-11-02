@@ -22,6 +22,7 @@ import {
 } from "../../admin/services/AcademyOnboardingService";
 import Academy from "../../admin/models/Academy";
 import { getPaginationParams } from "../../utils/pagination";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 import { ADMIN_ROLES } from "../../constants/adminPermissions";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
@@ -338,12 +339,20 @@ export const listApprovedAcademiesHandler = asyncHandler(
     const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const city = (req.query.city as string) || undefined;
     const sport = (req.query.sport as string) || undefined;
+    const rawSearch = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const search = rawSearch ? rawSearch.slice(0, 100) : undefined;
 
     const query: any = {
       isApproved: true,
       kycVerified: true,
       isActive: true,
     };
+
+    // One search box for name, city or sport.
+    if (search) {
+      const regex = { $regex: buildSafeSearchRegexSource(search), $options: "i" };
+      query.$or = [{ name: regex }, { city: regex }, { sports: regex }];
+    }
 
     if (city) {
       query.city = { $regex: city, $options: "i" };

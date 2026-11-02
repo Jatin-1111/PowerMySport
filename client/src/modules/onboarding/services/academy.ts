@@ -265,6 +265,8 @@ export const academyOnboardingApi = {
     filters?: {
       city?: string;
       sport?: string;
+      /** Free text over name, city and sport. */
+      search?: string;
       ageGroup?: string;
       minPrice?: number;
       maxPrice?: number;

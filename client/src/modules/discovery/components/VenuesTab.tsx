@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  PriceRangeSection,
+  RatingSection,
+  SortSection,
+  priceRangeLabel,
+} from "@/modules/discovery/components/FilterSections";
 import { getCommunityAppUrl } from "@/lib/community/url";
 import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
 import { SportChips } from "@/modules/discovery/components/SportChips";
@@ -100,7 +106,8 @@ export default function VenuesTab() {
     setLoading(true);
     try {
       const params: any = { page, limit: 20, include: "venues" };
-      if (sportFilter) params.sport = sportFilter;
+      // One search box: the server matches name, address (city) and sport.
+      if (sportFilter) params.search = sportFilter;
       const response = await discoveryApi.searchNearbyVenues(params);
       if (response.success && response.data) {
         setVenues(response.data.venues || []);
@@ -176,7 +183,7 @@ export default function VenuesTab() {
   if (minPrice || maxPrice) {
     activeFilters.push({
       id: "price",
-      label: `${minPrice ? `₹${minPrice}` : "₹0"} - ${maxPrice ? `₹${maxPrice}` : "Max"}`,
+      label: priceRangeLabel(minPrice, maxPrice),
       onRemove: () => {
         setMinPrice("");
         setMaxPrice("");
@@ -193,7 +200,7 @@ export default function VenuesTab() {
   if (sortBy !== "relevance") {
     activeFilters.push({
       id: "sort",
-      label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : "Top Rated"}`,
+      label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : "Top rated"}`,
       onRemove: () => setSortBy("relevance"),
     });
   }
@@ -202,8 +209,6 @@ export default function VenuesTab() {
       id: `amenity-${am}`,
       label: am,
       onRemove: () => setSelectedAmenities((prev) => prev.filter((a) => a !== am)),
-      badgeClassName: "bg-indigo-50 border-indigo-100 text-indigo-700",
-      iconClassName: "hover:text-blue-900",
     });
   });
 
@@ -214,7 +219,7 @@ export default function VenuesTab() {
       <FilterBar
         searchValue={sportInput}
         onSearchChange={setSportInput}
-        searchPlaceholder="Search sports or venue names…"
+        searchPlaceholder="Search by name, sport or city…"
         onSearchClear={() => setSportInput("")}
         onSubmit={handleSearch}
         isModalOpen={isFilterModalOpen}
@@ -232,67 +237,6 @@ export default function VenuesTab() {
           />
         }
       >
-        {/* Price range */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Price Range (₹/hr)</label>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                ₹
-              </span>
-              <input
-                type="number"
-                min="0"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                placeholder="Min"
-                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
-              />
-            </div>
-            <div className="h-0.5 w-4 rounded-full bg-slate-300" />
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                ₹
-              </span>
-              <input
-                type="number"
-                min="0"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="Max"
-                className="focus:border-power-orange w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-7 pr-3 text-sm text-slate-900 focus:bg-white focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Rating */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Minimum Rating</label>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { val: "0", label: "Any" },
-              { val: "3", label: "3+ ★" },
-              { val: "4", label: "4+ ★" },
-              { val: "4.5", label: "4.5+ ★" },
-            ].map((opt) => (
-              <button
-                key={opt.val}
-                type="button"
-                onClick={() => setMinRating(opt.val)}
-                className={cn(
-                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
-                  minRating === opt.val
-                    ? "border-power-orange text-power-orange bg-orange-50"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Amenities */}
         <div>
           <label className="mb-3 block text-sm font-bold text-slate-900">Amenities</label>
@@ -323,32 +267,17 @@ export default function VenuesTab() {
           </div>
         </div>
 
-        {/* Sort */}
-        <div>
-          <label className="mb-3 block text-sm font-bold text-slate-900">Sort By</label>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { val: "relevance", label: "Recommended" },
-              { val: "ratingDesc", label: "Top Rated" },
-              { val: "priceAsc", label: "Price (Low to High)" },
-              { val: "priceDesc", label: "Price (High to Low)" },
-            ].map((opt) => (
-              <button
-                key={opt.val}
-                type="button"
-                onClick={() => setSortBy(opt.val)}
-                className={cn(
-                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
-                  sortBy === opt.val
-                    ? "border-power-orange text-power-orange bg-orange-50"
-                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <PriceRangeSection
+          label="Price Range (₹/hr)"
+          min={minPrice}
+          max={maxPrice}
+          onMinChange={setMinPrice}
+          onMaxChange={setMaxPrice}
+        />
+
+        <RatingSection value={minRating} onChange={setMinRating} />
+
+        <SortSection value={sortBy} onChange={setSortBy} />
       </FilterBar>
 
       {/* ── Content ─────────────────────────────────────────────── */}

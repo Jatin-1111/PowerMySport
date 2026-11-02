@@ -22,6 +22,8 @@ interface DiscoveryContext {
   page: number;
   limit: number;
   sportFilter: string | undefined;
+  /** Free text over name, address and sport. Only the non-geo path applies it. */
+  search: string | undefined;
   latitude: number | undefined;
   longitude: number | undefined;
   radiusMeters: number;
@@ -35,6 +37,8 @@ const buildDiscoveryContext = (req: Request): DiscoveryContext => {
   const { sport } = req.query;
 
   const sportFilter = sport as string | undefined;
+  const rawSearch = typeof req.query.search === "string" ? req.query.search.trim() : "";
+  const search = rawSearch ? rawSearch.slice(0, 100) : undefined;
   const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
 
   const hasLocation = Boolean(lat && lng);
@@ -45,6 +49,7 @@ const buildDiscoveryContext = (req: Request): DiscoveryContext => {
     page,
     limit,
     sportFilter,
+    search,
     latitude,
     longitude,
     radiusMeters: radius ? parseInt(radius as string, 10) : 5000,
@@ -54,14 +59,11 @@ const buildDiscoveryContext = (req: Request): DiscoveryContext => {
 
 const fetchDiscoveryVenues = async (ctx: DiscoveryContext) => {
   if (!ctx.hasLocation || ctx.latitude === undefined || ctx.longitude === undefined) {
-    const venueFilters = ctx.sportFilter
-      ? {
-          sports: [ctx.sportFilter],
-          approvalStatus: "APPROVED" as const,
-        }
-      : {
-          approvalStatus: "APPROVED" as const,
-        };
+    const venueFilters = {
+      approvalStatus: "APPROVED" as const,
+      ...(ctx.sportFilter ? { sports: [ctx.sportFilter] } : {}),
+      ...(ctx.search ? { search: ctx.search } : {}),
+    };
     return getAllVenues(venueFilters, ctx.page, ctx.limit);
   }
 
