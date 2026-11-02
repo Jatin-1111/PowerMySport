@@ -4,6 +4,7 @@ import { Expert } from "../../models/ExpertProfile";
 import { Coach } from "../../models/Coach";
 import { Venue } from "../../models/Venue";
 import BookingInvitation from "../../models/BookingInvitation";
+import { withId } from "../../../utils/withId";
 import {
   projectExpertSessionAsBooking,
   type ExpertSessionForProjection,
@@ -275,7 +276,7 @@ export const getCoachBookings = async (
       .lean(),
   ]);
 
-  return { bookings, total, page, totalPages: Math.ceil(total / limit) };
+  return { bookings: bookings.map(withId), total, page, totalPages: Math.ceil(total / limit) };
 };
 
 /**

@@ -5,6 +5,7 @@ import { s3Service } from "../../shared/services/S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../../types/index";
 import { log as __rootLog } from "../../utils/logger";
 import { AppError } from "../../utils/AppError";
+import { withId } from "../../utils/withId";
 const log = __rootLog.child("coach");
 
 const COACH_LISTING_SELECT =
@@ -759,7 +760,7 @@ export const getCoachCalendar = async (
     : {};
 
   return {
-    bookings,
+    bookings: bookings.map(withId),
     blockedDates: (coach.blockedDates as any[]) ?? [],
     availability: coach.availability ?? [],
     availabilityBySport,
