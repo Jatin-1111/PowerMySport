@@ -17,19 +17,22 @@ import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
 import {
-  BadgeIndianRupee,
+  ArrowLeft,
+  Bell,
   BarChart2,
-  Calendar,
   CalendarDays,
   CalendarRange,
-  CreditCard,
-  Home,
+  ClipboardCheck,
+  IndianRupee,
+  Landmark,
+  LayoutDashboard,
+  MessagesSquare,
   Settings,
   ShieldCheck,
   Star,
+  Ticket,
   User,
   Users,
-  Bell,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -159,66 +162,49 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
     }
   };
 
+  // Grouped by what the coach is doing: running the week, checking how it is
+  // going, and looking after the account. One icon per destination.
   const navItems: DashboardNavItem[] = [
-    { href: "/", label: "Home", icon: Home },
-    { href: "/coach/profile", label: "Profile", icon: User },
+    { href: "/coach", label: "Overview", icon: LayoutDashboard },
     { href: "/coach/verification", label: "Verification", icon: ShieldCheck },
-    { href: "/coach/billing", label: "Billing & Plan", icon: CreditCard },
-    {
-      href: "/coach/payouts",
-      label: "Payouts",
-      icon: BadgeIndianRupee,
-    },
+    // The coach's inbox: booking requests to confirm or decline, and every
+    // session after that.
+    { href: "/coach/my-bookings", label: "Bookings", icon: ClipboardCheck, section: "Your week" },
+    { href: "/coach/schedule", label: "Schedule", icon: CalendarDays, section: "Your week" },
     {
       // Recurring classes, distinct from /coach/schedule (one-off availability):
       // a programme carries its own weekly pattern, roster and credit ledger.
       href: "/coach/programmes",
       label: "Programmes",
       icon: CalendarRange,
+      section: "Your week",
     },
-    {
-      href: "/coach/schedule",
-      label: "Schedule",
-      icon: CalendarDays,
-    },
-    {
-      href: "/coach/clients",
-      label: "Clients",
-      icon: Users,
-    },
-    {
-      href: "/coach/earnings",
-      label: "Earnings",
-      icon: BadgeIndianRupee,
-    },
-    {
-      href: "/coach/reviews",
-      label: "Reviews",
-      icon: Star,
-    },
-    {
-      href: "/coach/analytics",
-      label: "Analytics",
-      icon: BarChart2,
-    },
-    {
-      href: "/coach/my-bookings",
-      label: "My Bookings",
-      icon: Calendar,
-    },
+    { href: "/coach/clients", label: "Clients", icon: Users, section: "Your week" },
+    // The subscription packages a coach sells to clients, with who has bought them.
+    { href: "/coach/billing", label: "Client packages", icon: Ticket, section: "Your week" },
+    { href: "/coach/earnings", label: "Earnings", icon: IndianRupee, section: "Performance" },
+    { href: "/coach/reviews", label: "Reviews", icon: Star, section: "Performance" },
+    { href: "/coach/analytics", label: "Analytics", icon: BarChart2, section: "Performance" },
+    { href: "/coach/profile", label: "Profile", icon: User, section: "Account" },
+    { href: "/coach/payouts", label: "Payouts", icon: Landmark, section: "Account" },
     {
       href: "/coach/notifications",
       label: "Notifications",
       icon: Bell,
       badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+      section: "Account",
     },
-    { href: "/coach/settings", label: "Settings", icon: Settings },
+    { href: "/coach/settings", label: "Settings", icon: Settings, section: "Account" },
     {
       href: communityUrl,
       label: "Community",
-      icon: Users,
+      icon: MessagesSquare,
       external: true,
+      section: "Account",
     },
+    // The way out to the public site. It stays available even while the
+    // verification gate hides everything else.
+    { href: "/", label: "Back to the site", icon: ArrowLeft },
   ];
 
   const visibleNavItems = isVerificationLocked
@@ -274,7 +260,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
 
   return (
     <DashboardShell
-      dashboardLabel="Coach Dashboard"
+      dashboardLabel="Coach console"
       userName={user?.name}
       navItems={visibleNavItems}
       onLogout={handleLogout}
@@ -302,7 +288,7 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
         <PayoutBanner
           payoutMethod={coachPayoutMethod}
           payoutHref="/coach/payouts"
-          ctaLabel="Set Up Payout Method"
+          ctaLabel="Set up payouts"
         />
       )}
       {children}

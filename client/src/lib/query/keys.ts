@@ -22,6 +22,14 @@ export const queryKeys = {
     unreadCount: ["notifications", "unread-count"] as const,
   },
 
+  /** The coach's console overview. */
+  coachConsole: {
+    profile: ["coach-console", "profile"] as const,
+    earnings: ["coach-console", "earnings"] as const,
+    analytics: ["coach-console", "analytics"] as const,
+    bookings: ["coach-console", "bookings"] as const,
+  },
+
   /** The academy owner's console overview. */
   academy: {
     mine: ["academy", "mine"] as const,

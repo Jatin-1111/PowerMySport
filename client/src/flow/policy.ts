@@ -157,7 +157,7 @@ const CONSOLE_HOME: Record<UserRole, string> = {
   Player: "/dashboard",
   Parent: "/dashboard",
   VenueLister: "/venue-lister/inventory",
-  Coach: "/coach/profile",
+  Coach: "/coach",
   Academy: "/academy",
   EXPERT: "/expert/dashboard",
   Admin: "/admin/users",
