@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { onboardingApi } from "@/modules/onboarding/services/onboarding";
@@ -8,7 +9,6 @@ import { formatOpeningHours } from "@/modules/onboarding/utils/formatOpeningHour
 import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
 import { Pagination } from "@/modules/shared/ui/Pagination";
 import { Panel } from "@/modules/shared/ui/Panel";
-import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { ArrowLeft, Check, TriangleAlert, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
@@ -225,7 +225,7 @@ export default function AdminVenueApprovalPanel({
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-semibold text-slate-900">{venue.name}</h3>
-                      <StatusBadge status={venue.approvalStatus} size="sm" />
+                      <LifecycleBadge kind="venue" source={venue} size="sm" />
                     </div>
                     <p className="text-sm text-slate-600">
                       {venue.ownerEmail} · {venue.ownerPhone}
@@ -290,7 +290,7 @@ export default function AdminVenueApprovalPanel({
           badge="Commerce"
           title={selectedVenue.name}
           subtitle={selectedVenue.address}
-          action={<StatusBadge status={selectedVenue.approvalStatus} />}
+          action={<LifecycleBadge kind="venue" source={selectedVenue} />}
         />
 
         <button

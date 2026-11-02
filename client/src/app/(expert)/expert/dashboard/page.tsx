@@ -68,10 +68,10 @@ export default function ExpertDashboardPage() {
         <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
           <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
           <div>
-            <p className="font-semibold text-amber-900 dark:text-amber-300">Profile under review</p>
+            <p className="font-semibold text-amber-900 dark:text-amber-300">Submitted for review</p>
             <p className="mt-0.5 text-sm text-amber-800 dark:text-amber-400">
               Our team is reviewing your profile. You&apos;ll receive an email once it&apos;s
-              approved (typically 1–2 business days). In the meantime, you can update your profile
+              approved (usually within 3 to 5 days). In the meantime, you can update your profile
               and set your availability.
             </p>
           </div>

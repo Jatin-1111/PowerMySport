@@ -1,5 +1,6 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
@@ -145,10 +146,7 @@ export default function AdminExpertsPage() {
     {
       key: "verificationStatus",
       header: "Approval",
-      render: (e) => {
-        const status = e.verificationStatus || "APPROVED";
-        return <StatusBadge status={status} size="sm" />;
-      },
+      render: (e) => <LifecycleBadge kind="expert" source={e} size="sm" />,
     },
     {
       key: "status",
@@ -206,10 +204,7 @@ export default function AdminExpertsPage() {
         headerExtra={
           selected ? (
             <div className="flex items-center gap-2">
-              {selected.verificationStatus && selected.verificationStatus !== "APPROVED" && (
-                <StatusBadge status={selected.verificationStatus} size="sm" />
-              )}
-              <StatusBadge status={selected.isActive ? "ACTIVE" : "INACTIVE"} />
+              <LifecycleBadge kind="expert" source={selected} size="sm" />
             </div>
           ) : null
         }

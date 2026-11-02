@@ -1,5 +1,6 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
@@ -11,7 +12,6 @@ import { Venue } from "@/types";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
 import { Panel } from "@/modules/shared/ui/Panel";
-import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { ArrowLeft, Image as ImageIcon, Pencil, Star, X } from "lucide-react";
 import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
@@ -119,7 +119,7 @@ export default function AdminVenueDetailPage() {
       action={
         venue ? (
           <div className="flex items-center gap-3">
-            <StatusBadge status={venue.approvalStatus || "PENDING"} />
+            <LifecycleBadge kind="venue" source={venue} />
             <button type="button" onClick={openEdit} className={btn("outline")}>
               <Pencil size={14} aria-hidden /> Edit venue
             </button>

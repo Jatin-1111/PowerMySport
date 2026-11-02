@@ -1,12 +1,12 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
 import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
 import { Pagination } from "@/modules/shared/ui/Pagination";
-import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { Coach, CoachVerificationStatus } from "@/types";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -275,7 +275,7 @@ export default function AdminCoachVerificationPage() {
                             {userInfo?.name || "Coach"}
                           </h3>
                         )}
-                        <StatusBadge status={coach.verificationStatus || "UNVERIFIED"} size="sm" />
+                        <LifecycleBadge kind="coach" source={coach} size="sm" />
                       </div>
                       <p className="text-sm text-slate-600">{userInfo?.email || "No email"}</p>
                       <p className="text-sm text-slate-500">

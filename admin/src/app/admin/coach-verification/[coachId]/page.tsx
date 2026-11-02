@@ -1,11 +1,11 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { toast } from "@/lib/toast";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
 import { Panel } from "@/modules/shared/ui/Panel";
-import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { Coach } from "@/types";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -183,7 +183,7 @@ export default function AdminCoachVerificationDetailPage() {
         <div className="space-y-6">
           <Panel
             title={userInfo?.name || "Coach"}
-            action={<StatusBadge status={coach.verificationStatus || "UNVERIFIED"} />}
+            action={<LifecycleBadge kind="coach" source={coach} />}
           >
             <dl className="divide-y divide-slate-100">
               {facts.map((fact) => (

@@ -409,12 +409,12 @@ function ExpertOnboardingContent() {
             <Clock className="h-10 w-10 text-amber-500" />
           </div>
           <h1 className="mt-6 text-2xl font-bold text-slate-900 dark:text-white">
-            Profile Under Review
+            Submitted for review
           </h1>
           <p className="mt-2 leading-relaxed text-slate-600 dark:text-slate-400">
             Our team is reviewing your profile. We&apos;ll email you at{" "}
-            <strong>{user?.email}</strong> once it&apos;s approved. This usually takes 1–2 business
-            days.
+            <strong>{user?.email}</strong> once it&apos;s approved. This is usually done within 3 to
+            5 days.
           </p>
           <div className="mt-5 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
@@ -942,8 +942,8 @@ function ExpertOnboardingContent() {
               </div>
               <p className="pt-1">
                 <strong>Submitting for review</strong>. Our team will verify your profile before it
-                goes live. You&apos;ll receive an email notification once approved (typically 1–2
-                business days).
+                goes live. You&apos;ll receive an email notification once approved (usually within 3
+                to 5 days).
               </p>
             </div>
           </SlideUp>

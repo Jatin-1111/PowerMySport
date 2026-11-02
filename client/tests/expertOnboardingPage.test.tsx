@@ -227,7 +227,7 @@ describe("ExpertOnboardingPage — loading and status gating", () => {
     getMyProfile.mockResolvedValue({ success: true, data: { verificationStatus: "PENDING" } });
     render(<ExpertOnboardingPage />);
 
-    expect(await screen.findByText("Profile Under Review")).toBeInTheDocument();
+    expect(await screen.findByText("Submitted for review")).toBeInTheDocument();
     expect(screen.getByText("jane@example.com")).toBeInTheDocument();
   });
 
@@ -498,7 +498,7 @@ describe("ExpertOnboardingPage — step 5: submission", () => {
       });
     });
     expect(submitForReview).toHaveBeenCalled();
-    expect(await screen.findByText("Profile Under Review")).toBeInTheDocument();
+    expect(await screen.findByText("Submitted for review")).toBeInTheDocument();
     expect(toastSuccess).toHaveBeenCalledWith("Profile submitted for review.");
   });
 

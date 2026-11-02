@@ -1,10 +1,10 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
-import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
@@ -197,7 +197,7 @@ export default function AdminCoachesPage() {
     {
       key: "verification",
       header: "Verification",
-      render: (c) => <StatusBadge status={c.verificationStatus || "UNVERIFIED"} />,
+      render: (c) => <LifecycleBadge kind="coach" source={c} />,
     },
     {
       key: "sports",
@@ -335,11 +335,7 @@ export default function AdminCoachesPage() {
         onClose={closeCoach}
         title={selectedCoach ? getCoachName(selectedCoach) : "Coach"}
         subtitle={selectedCoach ? getCoachEmail(selectedCoach) : undefined}
-        headerExtra={
-          selectedCoach ? (
-            <StatusBadge status={selectedCoach.verificationStatus || "UNVERIFIED"} />
-          ) : null
-        }
+        headerExtra={selectedCoach ? <LifecycleBadge kind="coach" source={selectedCoach} /> : null}
         footer={
           selectedCoach ? (
             editing ? (
@@ -428,7 +424,7 @@ export default function AdminCoachesPage() {
             <DetailSection title="Verification">
               <DetailRow
                 label="Status"
-                value={<StatusBadge status={selectedCoach.verificationStatus || "UNVERIFIED"} />}
+                value={<LifecycleBadge kind="coach" source={selectedCoach} />}
               />
               <DetailRow
                 label="Documents"

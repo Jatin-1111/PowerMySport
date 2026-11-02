@@ -82,7 +82,7 @@ export const validateAvailabilityBySport = (bySport: Record<string, IAvailabilit
 export const getCoachProfileBadge = (coachData: Coach | null) => {
   if (!coachData) {
     return {
-      label: "Not Started",
+      label: "Draft",
       className: "bg-slate-100 text-slate-700 border border-slate-200",
       icon: AlertCircle,
     };
@@ -93,19 +93,19 @@ export const getCoachProfileBadge = (coachData: Coach | null) => {
   switch (status) {
     case "VERIFIED":
       return {
-        label: "Verified",
+        label: "Approved",
         className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
         icon: CheckCircle,
       };
     case "PENDING":
       return {
-        label: "Pending Review",
+        label: "Submitted",
         className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
         icon: AlertCircle,
       };
     case "REVIEW":
       return {
-        label: "In Review",
+        label: "Needs information",
         className: "bg-indigo-100 text-indigo-700 border border-indigo-200",
         icon: AlertCircle,
       };
@@ -117,7 +117,7 @@ export const getCoachProfileBadge = (coachData: Coach | null) => {
       };
     default:
       return {
-        label: "Not Started",
+        label: "Draft",
         className: "bg-slate-100 text-slate-700 border border-slate-200",
         icon: AlertCircle,
       };
@@ -127,11 +127,11 @@ export const getCoachProfileBadge = (coachData: Coach | null) => {
 export const getCoachProfileStatusGuidance = (status: string) => {
   switch (status) {
     case "PENDING":
-      return "Your verification is submitted and pending review. You'll be notified once reviewed.";
+      return "Your profile is submitted for review. You'll be notified once it is reviewed, usually within 3 to 5 days.";
     case "REVIEW":
-      return "Your verification is currently under review. Edits are temporarily disabled.";
+      return "Our team needs more information or is partway through the review. Edits are temporarily disabled.";
     case "VERIFIED":
-      return "You are verified and your profile is visible to players.";
+      return "You are approved and your profile is visible to players.";
     case "REJECTED":
       return "Your verification was rejected. Update your profile details here and submit required verification updates when prompted.";
     default:

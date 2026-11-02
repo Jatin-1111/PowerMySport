@@ -182,6 +182,9 @@ export interface IAcademyPendingReview {
   ownerPhone: string;
   isApproved: boolean;
   kycVerified: boolean;
+  isActive?: boolean;
+  rejectionReason?: string | undefined;
+  lifecycle?: string | undefined;
   submittedAt?: Date;
   lastReviewedAt?: Date;
 }

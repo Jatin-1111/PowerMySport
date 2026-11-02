@@ -1,10 +1,10 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { statsApi } from "@/modules/analytics/services/stats";
 import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
 import { btn } from "@/modules/shared/ui/buttonStyles";
-import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
 import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { Venue } from "@/types";
@@ -163,7 +163,7 @@ export default function AdminVenuesPage() {
     {
       key: "approval",
       header: "Approval",
-      render: (v) => <StatusBadge status={v.approvalStatus || "PENDING"} />,
+      render: (v) => <LifecycleBadge kind="venue" source={v} />,
     },
     {
       key: "price",
@@ -304,9 +304,7 @@ export default function AdminVenuesPage() {
         onClose={() => setSelectedVenue(null)}
         title={selectedVenue?.name || "Venue"}
         subtitle={selectedVenue ? getVenueLocation(selectedVenue) : undefined}
-        headerExtra={
-          selectedVenue ? <StatusBadge status={selectedVenue.approvalStatus || "PENDING"} /> : null
-        }
+        headerExtra={selectedVenue ? <LifecycleBadge kind="venue" source={selectedVenue} /> : null}
         footer={
           selectedVenue ? (
             <div className="flex justify-end">
@@ -340,7 +338,7 @@ export default function AdminVenuesPage() {
             <DetailSection title="Overview">
               <DetailRow
                 label="Approval"
-                value={<StatusBadge status={selectedVenue.approvalStatus || "PENDING"} />}
+                value={<LifecycleBadge kind="venue" source={selectedVenue} />}
               />
               <DetailRow label="Price / hr" value={formatCurrency(selectedVenue.pricePerHour)} />
               <DetailRow

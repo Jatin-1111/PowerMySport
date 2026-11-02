@@ -149,7 +149,7 @@ export const clearCoachVerificationDraft = (storageKey: string | null) => {
 export const getVerificationBadge = (coachData: Coach | null) => {
   if (!coachData) {
     return {
-      label: "Not Started",
+      label: "Draft",
       className: "bg-slate-100 text-slate-700 border border-slate-200",
     };
   }
@@ -159,17 +159,17 @@ export const getVerificationBadge = (coachData: Coach | null) => {
   switch (status) {
     case "VERIFIED":
       return {
-        label: "Verified",
+        label: "Approved",
         className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
       };
     case "PENDING":
       return {
-        label: "Pending Review",
+        label: "Submitted",
         className: "bg-yellow-100 text-yellow-700 border border-yellow-200",
       };
     case "REVIEW":
       return {
-        label: "In Review",
+        label: "Needs information",
         className: "bg-indigo-100 text-indigo-700 border border-indigo-200",
       };
     case "REJECTED":
@@ -179,7 +179,7 @@ export const getVerificationBadge = (coachData: Coach | null) => {
       };
     default:
       return {
-        label: "Not Started",
+        label: "Draft",
         className: "bg-slate-100 text-slate-700 border border-slate-200",
       };
   }
@@ -190,16 +190,16 @@ export const getStatusGuidance = (status: string, isDataComplete: boolean) => {
   // missing (historic data loss). They keep their verified badge — they just
   // need the required details back before the dashboard unlocks.
   if (status === "VERIFIED" && !isDataComplete) {
-    return "Your account is verified, but required profile details are missing. Complete Steps 1 and 2 to restore your listing, no re-review needed.";
+    return "Your account is approved, but required profile details are missing. Complete Steps 1 and 2 to restore your listing, no re-review needed.";
   }
 
   switch (status) {
     case "PENDING":
-      return "Your verification is submitted and pending review. You'll be notified once reviewed.";
+      return "Your profile is submitted for review. You'll be notified once it is reviewed, usually within 3 to 5 days.";
     case "REVIEW":
-      return "Your verification is currently under review. Edits are temporarily disabled.";
+      return "Our team needs more information or is partway through the review. Edits are temporarily disabled.";
     case "VERIFIED":
-      return "You are verified! Redirecting to your profile...";
+      return "You are approved! Redirecting to your profile...";
     case "REJECTED":
       return "Your verification was rejected. Update required details and resubmit.";
     default:

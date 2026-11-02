@@ -172,6 +172,7 @@ export const serializeExpert = (expert: any) => {
  */
 export const serializeExpertFull = (expert: any) => ({
   ...serializeExpert(expert),
+  lifecycle: expert.lifecycle,
   photoKey: expert.photoKey,
   weeklyAvailability: expert.weeklyAvailability || [],
   blackoutDates: expert.blackoutDates || [],
