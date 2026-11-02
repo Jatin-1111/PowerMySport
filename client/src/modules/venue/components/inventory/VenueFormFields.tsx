@@ -1,10 +1,17 @@
 import { GeoSuggestion } from "@/modules/geo/services/geo";
-import OnboardingSectionCard from "@/modules/onboarding/components/onboarding/OnboardingSectionCard";
 import OpeningHoursInput, {
   OpeningHours,
 } from "@/modules/onboarding/components/onboarding/OpeningHoursInput";
+import {
+  FIELD_HINT,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  ProfileSection,
+} from "@/modules/shared/components/settings/ProfileSection";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
-import { AMENITIES_OPTIONS, getInputClassName } from "@/modules/venue/utils/inventoryFlow";
+import { cn } from "@/utils/cn";
+import { AMENITIES_OPTIONS } from "@/modules/venue/utils/inventoryFlow";
+import type { ReactNode } from "react";
 
 interface VenueFormData {
   ownerName: string;
@@ -47,6 +54,42 @@ interface VenueFormFieldsProps {
   onToggleAmenity: (amenity: string) => void;
 }
 
+const ERROR_INPUT = "border-red-700 focus:border-red-700";
+
+/** A labelled field: label above, the control, then the error or the hint. */
+function Field({
+  id,
+  label,
+  optional,
+  error,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  optional?: boolean;
+  error?: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className={FIELD_LABEL}>
+        {label}
+        {optional && <span className="text-ink-body font-normal"> (optional)</span>}
+      </label>
+      {children}
+      {error ? (
+        <p role="alert" className="mt-1.5 text-sm text-red-800">
+          {error}
+        </p>
+      ) : (
+        hint && <p className={FIELD_HINT}>{hint}</p>
+      )}
+    </div>
+  );
+}
+
 export function VenueFormFields({
   formData,
   setFormData,
@@ -78,102 +121,151 @@ export function VenueFormFields({
     });
   };
 
+  const input = (field: string) => cn(FIELD_INPUT, fieldErrors[field] && ERROR_INPUT);
+
   return (
-    <>
-      {/* Owner Contact Information */}
-      <OnboardingSectionCard
-        title="Owner Contact Information"
-        subtitle="Your contact details for venue management"
+    <div>
+      <ProfileSection
+        id="owner"
+        title="Your contact details"
+        description="Where we reach you about bookings and reviews of this venue."
       >
-        <div className="grid gap-4 md:grid-cols-3">
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-900">
-              Full Name <span className="text-red-500">*</span>
-            </label>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field id="venue-owner-name" label="Full name" error={fieldErrors.ownerName}>
             <input
+              id="venue-owner-name"
               type="text"
               value={formData.ownerName}
               onChange={(e) => {
                 setFormData((prev) => ({ ...prev, ownerName: e.target.value }));
                 clearFieldError("ownerName");
               }}
-              placeholder="Your full name"
-              className={getInputClassName(Boolean(fieldErrors.ownerName))}
+              autoComplete="name"
+              className={input("ownerName")}
               required
             />
-            {fieldErrors.ownerName && (
-              <p className="mt-1 text-sm text-red-500">{fieldErrors.ownerName}</p>
-            )}
-            <p className="mt-1 text-xs text-slate-600">This will be your primary contact name</p>
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-900">
-              Email Address <span className="text-red-500">*</span>
-            </label>
+          </Field>
+          <Field id="venue-owner-phone" label="Phone number" error={fieldErrors.ownerPhone}>
             <input
-              type="email"
-              value={formData.ownerEmail}
-              onChange={(e) => {
-                setFormData((prev) => ({ ...prev, ownerEmail: e.target.value }));
-                clearFieldError("ownerEmail");
-              }}
-              placeholder="your.email@example.com"
-              className={getInputClassName(Boolean(fieldErrors.ownerEmail))}
-              required
-            />
-            {fieldErrors.ownerEmail && (
-              <p className="mt-1 text-sm text-red-500">{fieldErrors.ownerEmail}</p>
-            )}
-            <p className="mt-1 text-xs text-slate-600">Used for important updates and bookings</p>
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-900">
-              Phone Number <span className="text-red-500">*</span>
-            </label>
-            <input
+              id="venue-owner-phone"
               type="tel"
               value={formData.ownerPhone}
               onChange={(e) => {
                 setFormData((prev) => ({ ...prev, ownerPhone: e.target.value }));
                 clearFieldError("ownerPhone");
               }}
-              placeholder="Your phone number"
-              className={getInputClassName(Boolean(fieldErrors.ownerPhone))}
+              autoComplete="tel"
+              className={input("ownerPhone")}
               required
             />
-            {fieldErrors.ownerPhone && (
-              <p className="mt-1 text-sm text-red-500">{fieldErrors.ownerPhone}</p>
-            )}
-            <p className="mt-1 text-xs text-slate-600">Customers may contact you about bookings</p>
+          </Field>
+          <div className="md:col-span-2">
+            <Field id="venue-owner-email" label="Email address" error={fieldErrors.ownerEmail}>
+              <input
+                id="venue-owner-email"
+                type="email"
+                value={formData.ownerEmail}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, ownerEmail: e.target.value }));
+                  clearFieldError("ownerEmail");
+                }}
+                autoComplete="email"
+                className={input("ownerEmail")}
+                required
+              />
+            </Field>
           </div>
         </div>
-      </OnboardingSectionCard>
+      </ProfileSection>
 
-      {/* Venue Details */}
-      <OnboardingSectionCard title="Venue Details" subtitle="Basic information about your venue">
-        <div className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-900">
-              Venue Name <span className="text-red-500">*</span>
-            </label>
+      <ProfileSection
+        id="details"
+        title="About the venue"
+        description="How players will find and recognise it."
+      >
+        <div className="space-y-5">
+          <Field
+            id="venue-name"
+            label="Venue name"
+            error={fieldErrors.name}
+            hint="This is how players see your venue."
+          >
             <input
+              id="venue-name"
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="e.g., Elite Sports Arena"
-              className={getInputClassName(Boolean(fieldErrors.name))}
+              className={input("name")}
               required
             />
-            {fieldErrors.name && <p className="mt-1 text-sm text-red-500">{fieldErrors.name}</p>}
-            <p className="mt-1 text-xs text-slate-600">This is how customers will see your venue</p>
+          </Field>
+
+          <div className="relative">
+            <Field
+              id="venue-address"
+              label="Address"
+              error={fieldErrors.address || searchError}
+              hint="Pick one of the suggestions so the location on the map is exact."
+            >
+              <input
+                id="venue-address"
+                type="text"
+                value={addressQuery}
+                onChange={onAddressChange}
+                placeholder="Search for your venue"
+                autoComplete="off"
+                className={input("address")}
+                required
+              />
+            </Field>
+            {isSearching && (
+              <span className="text-ink-body absolute right-3 top-9 text-sm" role="status">
+                Searching
+              </span>
+            )}
+            {suggestions.length > 0 && (
+              <ul className="border-hairline bg-paper absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-md border">
+                {suggestions.map((suggestion) => (
+                  <li key={suggestion.label} className="border-hairline border-b last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => onSelectSuggestion(suggestion)}
+                      className="text-ink hover:bg-paper-deep min-h-11 w-full px-4 py-2 text-left text-sm"
+                    >
+                      {suggestion.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-900">
-              GST Number (optional)
-            </label>
+          <Field
+            id="venue-description"
+            label="Description"
+            optional
+            error={fieldErrors.description}
+            hint="Surface, lighting, parking and anything else a player would ask."
+          >
+            <textarea
+              id="venue-description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={4}
+              className={input("description")}
+            />
+          </Field>
+
+          <Field
+            id="venue-gst"
+            label="GST number"
+            optional
+            hint="Only if you are GST-registered. It is shown on invoices for this venue."
+          >
             <input
+              id="venue-gst"
               type="text"
               autoCapitalize="characters"
               autoComplete="off"
@@ -182,133 +274,86 @@ export function VenueFormFields({
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, gstNumber: e.target.value.toUpperCase() }))
               }
-              placeholder="e.g. 22AAAAA0000A1Z5"
-              className={getInputClassName(false)}
+              className={FIELD_INPUT}
             />
-            <p className="mt-1 text-xs text-slate-600">
-              Only if you&apos;re GST-registered, shown on booking invoices for this venue.
-            </p>
-          </div>
-
-          <div className="relative">
-            <label className="mb-2 block text-sm font-semibold text-slate-900">
-              Address <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={addressQuery}
-              onChange={onAddressChange}
-              placeholder="Search your venue location"
-              className={getInputClassName(Boolean(fieldErrors.address))}
-              required
-            />
-            {isSearching && (
-              <span className="absolute right-3 top-9 text-xs text-slate-500">Searching…</span>
-            )}
-            {searchError && <p className="mt-1 text-xs text-red-500">{searchError}</p>}
-            {fieldErrors.address && (
-              <p className="mt-1 text-sm text-red-500">{fieldErrors.address}</p>
-            )}
-            {suggestions.length > 0 && (
-              <div className="absolute z-10 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                {suggestions.map((suggestion) => (
-                  <button
-                    type="button"
-                    key={suggestion.label}
-                    onClick={() => onSelectSuggestion(suggestion)}
-                    className="w-full border-b border-slate-100 px-4 py-2 text-left text-sm text-slate-700 last:border-b-0 hover:bg-slate-50"
-                  >
-                    {suggestion.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            <p className="mt-1 text-xs text-slate-600">
-              Select from suggestions for accurate location
-            </p>
-          </div>
+          </Field>
         </div>
-      </OnboardingSectionCard>
+      </ProfileSection>
 
-      {/* Sports & Pricing */}
-      <OnboardingSectionCard
-        title="Sports & Pricing"
-        subtitle="Specify which sports you offer and set prices"
+      <ProfileSection
+        id="pricing"
+        title="Sports and pricing"
+        description="Which sports you offer, and what an hour costs."
       >
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
-            <label className="mb-3 block text-sm font-semibold text-slate-900">
-              Sports Available <span className="text-red-500">*</span>
-            </label>
+            <p className={FIELD_LABEL}>Sports available</p>
             <SportsMultiSelect value={formData.sports} onChange={handleSportsChange} required />
             {fieldErrors.sports && (
-              <p className="mt-2 text-sm text-red-500">{fieldErrors.sports}</p>
+              <p role="alert" className="mt-1.5 text-sm text-red-800">
+                {fieldErrors.sports}
+              </p>
             )}
           </div>
 
-          <div className="border-t pt-4">
-            <div className="mb-3 flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={samePriceForAll}
-                onChange={(e) => onToggleSamePriceForAll(e.target.checked)}
-                className="accent-power-orange h-4 w-4 rounded"
-              />
-              <label className="text-sm font-medium text-slate-900">
-                Same price for all sports
-              </label>
-            </div>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={samePriceForAll}
+              onChange={(e) => onToggleSamePriceForAll(e.target.checked)}
+              className="accent-ink h-4 w-4"
+            />
+            <span className="text-ink text-sm font-medium">One price for every sport</span>
+          </label>
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-900">
-                {samePriceForAll ? "Price per hour" : "Base price per hour"}{" "}
-                <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                value={basePricePerHour}
-                onChange={(e) => onBasePriceChange(parseFloat(e.target.value) || 0)}
-                placeholder="e.g., 1500"
-                className={getInputClassName(Boolean(fieldErrors.pricePerHour))}
-                required
-                min="0"
-                step="0.01"
-              />
-              {fieldErrors.pricePerHour && (
-                <p className="mt-1 text-sm text-red-500">{fieldErrors.pricePerHour}</p>
-              )}
-              <p className="mt-1 text-xs text-slate-600">Amount customers pay per hour</p>
-            </div>
+          <Field
+            id="venue-price"
+            label={samePriceForAll ? "Price per hour (₹)" : "Base price per hour (₹)"}
+            error={fieldErrors.pricePerHour}
+          >
+            <input
+              id="venue-price"
+              type="number"
+              inputMode="decimal"
+              value={basePricePerHour}
+              onChange={(e) => onBasePriceChange(parseFloat(e.target.value) || 0)}
+              className={cn(input("pricePerHour"), "tabular-nums md:max-w-xs")}
+              required
+              min="0"
+              step="0.01"
+            />
+          </Field>
 
-            {!samePriceForAll && formData.sports.length > 0 && (
-              <div className="mt-4 space-y-3 border-t pt-4">
-                {formData.sports.map((sport) => (
-                  <div key={sport}>
-                    <label className="mb-2 block text-sm font-medium text-slate-900">
-                      {sport} price per hour
-                    </label>
-                    <input
-                      type="number"
-                      value={sportPricing[sport] ?? ""}
-                      onChange={(e) => onSportPriceChange(sport, parseFloat(e.target.value) || 0)}
-                      placeholder="Enter price"
-                      className={getInputClassName(false)}
-                      required
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {!samePriceForAll && formData.sports.length > 0 && (
+            <div className="border-hairline grid gap-5 border-t pt-6 md:grid-cols-2">
+              {formData.sports.map((sport) => (
+                <Field
+                  key={sport}
+                  id={`venue-price-${sport}`}
+                  label={`${sport}, price per hour (₹)`}
+                >
+                  <input
+                    id={`venue-price-${sport}`}
+                    type="number"
+                    inputMode="decimal"
+                    value={sportPricing[sport] ?? ""}
+                    onChange={(e) => onSportPriceChange(sport, parseFloat(e.target.value) || 0)}
+                    className={cn(FIELD_INPUT, "tabular-nums")}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </Field>
+              ))}
+            </div>
+          )}
         </div>
-      </OnboardingSectionCard>
+      </ProfileSection>
 
-      {/* Opening Hours */}
-      <OnboardingSectionCard
-        title="Operating Hours"
-        subtitle="Set your venue's daily operating schedule"
+      <ProfileSection
+        id="hours"
+        title="Opening hours"
+        description="When players can book. Close any day you are not open."
       >
         <OpeningHoursInput
           value={formData.openingHours}
@@ -330,53 +375,35 @@ export function VenueFormFields({
             }));
           }}
         />
-      </OnboardingSectionCard>
+      </ProfileSection>
 
-      {/* Amenities & Description */}
-      <OnboardingSectionCard
-        title="Amenities & Description"
-        subtitle="Tell customers what your venue offers"
+      <ProfileSection
+        id="amenities"
+        title="Amenities"
+        description="What a player can use at the venue."
       >
-        <div className="space-y-4">
-          <div>
-            <label className="mb-3 block text-sm font-semibold text-slate-900">Amenities</label>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-              {AMENITIES_OPTIONS.map((amenity) => (
-                <label key={amenity} className="flex cursor-pointer items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedAmenities.includes(amenity)}
-                    onChange={() => onToggleAmenity(amenity)}
-                    className="text-power-orange h-4 w-4 rounded"
-                  />
-                  <span className="text-sm text-slate-700">{amenity}</span>
-                </label>
-              ))}
-            </div>
-            {fieldErrors.amenities && (
-              <p className="mt-2 text-sm text-red-500">{fieldErrors.amenities}</p>
-            )}
+        <fieldset>
+          <legend className="sr-only">Amenities</legend>
+          <div className="grid grid-cols-2 gap-x-6 md:grid-cols-3">
+            {AMENITIES_OPTIONS.map((amenity) => (
+              <label key={amenity} className="flex min-h-11 cursor-pointer items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={selectedAmenities.includes(amenity)}
+                  onChange={() => onToggleAmenity(amenity)}
+                  className="accent-ink h-4 w-4"
+                />
+                <span className="text-ink text-sm">{amenity}</span>
+              </label>
+            ))}
           </div>
-
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-900">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={4}
-              placeholder="Describe your venue, its features, and atmosphere…"
-              className={getInputClassName(Boolean(fieldErrors.description))}
-            />
-            {fieldErrors.description && (
-              <p className="mt-1 text-sm text-red-500">{fieldErrors.description}</p>
-            )}
-            <p className="mt-1 text-xs text-slate-600">
-              A detailed description helps attract more customers
+          {fieldErrors.amenities && (
+            <p role="alert" className="mt-2 text-sm text-red-800">
+              {fieldErrors.amenities}
             </p>
-          </div>
-        </div>
-      </OnboardingSectionCard>
-    </>
+          )}
+        </fieldset>
+      </ProfileSection>
+    </div>
   );
 }

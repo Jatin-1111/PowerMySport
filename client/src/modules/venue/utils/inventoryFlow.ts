@@ -151,8 +151,3 @@ export const getCoverPhoto = (venue: Venue): string | null => {
   const groups = getVenueImageGroups(venue);
   return groups.all[0] ?? null;
 };
-
-export const getInputClassName = (hasError: boolean) =>
-  `w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition text-slate-900 placeholder-slate-500 ${
-    hasError ? "border-red-500 bg-red-50" : "border-slate-300 bg-white"
-  }`;

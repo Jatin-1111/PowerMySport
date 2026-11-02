@@ -156,7 +156,7 @@ export const resolveAccess = (pathname: string, session: SessionState): AccessDe
 const CONSOLE_HOME: Record<UserRole, string> = {
   Player: "/dashboard",
   Parent: "/dashboard",
-  VenueLister: "/venue-lister/inventory",
+  VenueLister: "/venue-lister",
   Coach: "/coach",
   Academy: "/academy",
   EXPERT: "/expert/dashboard",

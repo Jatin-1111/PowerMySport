@@ -1,3 +1,4 @@
+import { queryKeys } from "@/lib/query/keys";
 import { toast } from "@/lib/toast";
 import { useConfirm } from "@/modules/shared/ui/useConfirm";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -15,6 +16,7 @@ import {
   toS3Url,
 } from "@/modules/venue/utils/inventoryFlow";
 import { Venue } from "@/types";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 const buildInitialFormData = () => ({
@@ -39,6 +41,7 @@ const buildInitialFormData = () => ({
  */
 export function useVenueInventoryFlow() {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [confirm, confirmDialog] = useConfirm();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +76,8 @@ export function useVenueInventoryFlow() {
       const response = await venueApi.getMyVenues();
       if (response.success && response.data) {
         setVenues(response.data);
+        // The overview and bookings pages read the same venues from the query cache.
+        void queryClient.invalidateQueries({ queryKey: queryKeys.venueConsole.venues });
       }
     } catch (error) {
       console.error("Failed to load venues:", error);
@@ -559,6 +564,9 @@ export function useVenueInventoryFlow() {
     const imageGroups = getVenueImageGroups(venue);
 
     setSelectedAmenities(venue.amenities || []);
+    // The saved address is already chosen; searching for it would open the
+    // suggestion list over the form the moment it appears.
+    if (resolvedAddress !== addressQuery) skipAutocompleteRef.current = true;
     setAddressQuery(resolvedAddress);
     setHasSelectedLocation(Boolean(loc));
     setExistingImages(imageGroups.all);

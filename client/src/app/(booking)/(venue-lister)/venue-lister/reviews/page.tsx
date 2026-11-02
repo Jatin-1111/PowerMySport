@@ -4,9 +4,11 @@ import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { reviewApi } from "@/modules/review/services/review";
 import { ReviewCard, ReviewSummaryCard } from "@/modules/shared/components/dashboard/reviews";
+import { Button } from "@/modules/shared/ui/Button";
+import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
 import type { ReviewItem, ReviewSummary, Venue } from "@/types";
 import { AnimatePresence, motion } from "framer-motion";
-import { Building2, ChevronDown, Filter, Loader2, Star } from "lucide-react";
+import { Building2, ChevronDown, Loader2, Star } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
@@ -15,13 +17,13 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 const PAGE_LIMIT = 10;
 
-const FILTER_TABS: { label: string; value: number | null }[] = [
-  { label: "All", value: null },
-  { label: "5★", value: 5 },
-  { label: "4★", value: 4 },
-  { label: "3★", value: 3 },
-  { label: "2★", value: 2 },
-  { label: "1★", value: 1 },
+const FILTER_TABS: { label: string; value: string }[] = [
+  { label: "All", value: "all" },
+  { label: "5 stars", value: "5" },
+  { label: "4 stars", value: "4" },
+  { label: "3 stars", value: "3" },
+  { label: "2 stars", value: "2" },
+  { label: "1 star", value: "1" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -146,13 +148,11 @@ export default function VenueListerReviewsPage() {
   // ────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl space-y-8 px-4 py-8 sm:px-6">
+    <div>
+      <div className="max-w-4xl space-y-8">
         {/* ── Page Header ── */}
         <div>
-          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
-            Reviews &amp; Ratings
-          </h1>
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">Reviews</h1>
           <p className="mt-1 text-sm text-slate-500">
             See what players are saying about your venues.
           </p>
@@ -172,8 +172,8 @@ export default function VenueListerReviewsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col items-center justify-center gap-4 py-20 text-center"
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-50">
-              <Building2 className="h-8 w-8 text-orange-400" />
+            <div className="bg-paper-deep flex h-16 w-16 items-center justify-center rounded-full">
+              <Building2 className="text-ink-body h-8 w-8" strokeWidth={1.5} />
             </div>
             <div>
               <p className="text-lg font-semibold text-slate-700">No venues yet</p>
@@ -194,7 +194,7 @@ export default function VenueListerReviewsPage() {
                 <select
                   value={selectedVenueId}
                   onChange={handleVenueChange}
-                  className="w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-sm font-medium text-slate-700 shadow-sm transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400 sm:w-72"
+                  className="focus:border-ink focus:ring-ink w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-sm font-medium text-slate-700 transition focus:outline-none focus:ring-2 sm:w-72"
                 >
                   {venues.map((v) => {
                     const id = v._id ?? v.id;
@@ -211,10 +211,10 @@ export default function VenueListerReviewsPage() {
 
             {/* ── Single venue label ── */}
             {venues.length === 1 && selectedVenueName && (
-              <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1.5">
-                <Building2 className="text-power-orange h-3.5 w-3.5" />
-                <span className="text-xs font-medium text-orange-700">{selectedVenueName}</span>
-              </div>
+              <p className="text-ink-body flex items-center gap-2 text-sm">
+                <Building2 className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                {selectedVenueName}
+              </p>
             )}
 
             {/* ── Reviews Loading ── */}
@@ -234,34 +234,12 @@ export default function VenueListerReviewsPage() {
 
                 {/* Filter Tabs */}
                 {allReviews.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="mr-1 flex items-center gap-1 text-xs font-medium text-slate-400">
-                      <Filter className="h-3.5 w-3.5" />
-                      Filter
-                    </div>
-                    {FILTER_TABS.map((tab) => {
-                      const isActive = activeFilter === tab.value;
-                      return (
-                        <button
-                          key={tab.label}
-                          onClick={() => setActiveFilter(tab.value)}
-                          className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
-                            isActive
-                              ? "bg-power-orange-solid border-power-orange-solid text-white shadow-sm"
-                              : "border-slate-200 bg-white text-slate-600 hover:border-orange-300 hover:text-orange-600"
-                          }`}
-                        >
-                          {tab.value !== null && (
-                            <Star
-                              className={`h-3 w-3 ${isActive ? "text-white" : "text-orange-400"}`}
-                              style={{ fill: "currentColor" }}
-                            />
-                          )}
-                          {tab.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <UnderlineFilter
+                    label="Filter reviews by rating"
+                    value={activeFilter === null ? "all" : String(activeFilter)}
+                    onChange={(next) => setActiveFilter(next === "all" ? null : Number(next))}
+                    items={FILTER_TABS}
+                  />
                 )}
 
                 {/* Review Cards */}
@@ -316,20 +294,14 @@ export default function VenueListerReviewsPage() {
                 {/* Load More Button */}
                 {hasMore && activeFilter === null && (
                   <div className="flex justify-center pt-2">
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={handleLoadMore}
                       disabled={loadingMore}
-                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="min-h-11"
                     >
-                      {loadingMore ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        "Load more reviews"
-                      )}
-                    </button>
+                      {loadingMore ? "Loading" : "Load more reviews"}
+                    </Button>
                   </div>
                 )}
               </>

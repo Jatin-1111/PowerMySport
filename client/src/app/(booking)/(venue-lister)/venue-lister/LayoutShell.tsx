@@ -13,17 +13,16 @@ import { PayoutBanner } from "@/modules/shared/components/payout/PayoutBanner";
 import { payoutApi } from "@/modules/shared/services/payout";
 import { IPayoutMethod } from "@/types";
 import {
-  BadgeIndianRupee,
+  Bell,
   BarChart2,
-  BookOpen,
-  Calendar,
-  Grid3x3,
+  Building2,
+  ClipboardCheck,
+  IndianRupee,
+  Landmark,
   LayoutDashboard,
   Settings,
   Star,
-  TrendingUp,
   User,
-  Bell,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useState } from "react";
@@ -68,62 +67,37 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
   };
 
   const navItems: DashboardNavItem[] = [
-    {
-      href: "/venue-lister",
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    {
-      href: "/onboarding",
-      label: "Onboarding",
-      icon: BookOpen,
-    },
-    {
-      href: "/venue-lister/inventory",
-      label: "Inventory",
-      icon: Grid3x3,
-    },
+    { href: "/venue-lister", label: "Overview", icon: LayoutDashboard },
+    { href: "/venue-lister/inventory", label: "Venues", icon: Building2, section: "Your venues" },
     {
       href: "/venue-lister/vendor-bookings",
       label: "Bookings",
-      icon: Calendar,
+      icon: ClipboardCheck,
+      section: "Your venues",
     },
+    { href: "/venue-lister/reviews", label: "Reviews", icon: Star, section: "Your venues" },
     {
       href: "/venue-lister/earnings",
       label: "Earnings",
-      icon: TrendingUp,
-    },
-    {
-      href: "/venue-lister/reviews",
-      label: "Reviews",
-      icon: Star,
+      icon: IndianRupee,
+      section: "Performance",
     },
     {
       href: "/venue-lister/analytics",
       label: "Analytics",
       icon: BarChart2,
+      section: "Performance",
     },
-    {
-      href: "/venue-lister/payouts",
-      label: "Payouts",
-      icon: BadgeIndianRupee,
-    },
-    {
-      href: "/venue-lister/profile",
-      label: "Profile",
-      icon: User,
-    },
+    { href: "/venue-lister/profile", label: "Profile", icon: User, section: "Account" },
+    { href: "/venue-lister/payouts", label: "Payouts", icon: Landmark, section: "Account" },
     {
       href: "/venue-lister/notifications",
       label: "Notifications",
       icon: Bell,
       badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+      section: "Account",
     },
-    {
-      href: "/venue-lister/settings",
-      label: "Settings",
-      icon: Settings,
-    },
+    { href: "/venue-lister/settings", label: "Settings", icon: Settings, section: "Account" },
   ];
 
   if (guard !== "allowed") {
@@ -132,7 +106,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
 
   return (
     <DashboardShell
-      dashboardLabel="Venue Lister Dashboard"
+      dashboardLabel="Venue console"
       userName={user?.name}
       navItems={navItems}
       onLogout={handleLogout}

@@ -308,6 +308,11 @@ export interface Venue {
   reviewCount?: number;
   /** GST number — optional; not every venue lister is GST-registered. */
   gstNumber?: string;
+  /** Where our review of the venue stands. Missing on venues saved before reviews existed. */
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+  lifecycle?: "DRAFT" | "SUBMITTED" | "NEEDS_INFO" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  rejectionReason?: string;
+  reviewNotes?: string;
   createdAt: string;
   updatedAt: string;
 }
