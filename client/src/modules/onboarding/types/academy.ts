@@ -15,13 +15,14 @@ export type AcademyBatchTiming = "morning" | "evening" | "both";
 
 export type AcademyPayoutFrequency = "weekly" | "biweekly" | "monthly";
 
-export type AcademyStepPayload =
-  | AcademyStep1Payload
+/** What `PUT /onboarding/:id/step/:n` takes, for the steps 2 to 7. */
+export type AcademySaveStepPayload =
   | AcademyStep2Payload
   | AcademyStep3Payload
-  | AcademyStep4Payload
-  | AcademyStep5Payload
-  | AcademyStep6Payload;
+  | AcademyVenuesPayload
+  | AcademyCoachesPayload
+  | AcademyPricingPayload
+  | AcademyPayoutsPayload;
 
 export interface AcademyOwner {
   name: string;
@@ -177,37 +178,8 @@ export interface AcademyStep3Payload {
   aadhaarLast4: string; // Last 4 digits only
 }
 
-export interface AcademyStep4Payload {
-  academyId: string;
-  allowsExternalCoaches: boolean;
-  venueIds?: string[];
-  coachIds?: string[];
-}
-
-export interface AcademyStep5Payload {
-  academyId: string;
-  sessionRatePerHour: number; // In paise
-  batchTimings: ("morning" | "evening" | "both")[];
-  maxBatchSize: number;
-  trialsessionOffered: boolean;
-  trialSessionPrice?: number; // In paise
-}
-
-export interface AcademyStep6Payload {
-  academyId: string;
-  bankAccountNumber: string;
-  bankIfsc: string;
-  bankAccountName: string;
-  upiId: string;
-  payoutFrequency: "weekly" | "biweekly" | "monthly";
-  cancellationPolicy: string;
-  refundPolicy: string;
-}
-
 // ── Server-numbered step payloads ────────────────────────────────────────────
-// What the server's step 4 to 7 validators expect. These replace the
-// AcademyStep4Payload to AcademyStep6Payload shapes above, which belong to the
-// old six-step form and are removed as each step is rebuilt.
+// What the server's step 4 to 7 validators expect.
 
 export interface AcademyOpeningDay {
   isOpen: boolean;

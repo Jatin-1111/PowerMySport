@@ -6,10 +6,7 @@ import {
   AcademyStep1Payload,
   AcademyStep2Payload,
   AcademyStep3Payload,
-  AcademyStep4Payload,
-  AcademyStep5Payload,
-  AcademyStep6Payload,
-  AcademyStepPayload,
+  AcademySaveStepPayload,
   ApiResponse,
   ConfirmDocumentsPayload,
   ConfirmImagesPayload,
@@ -57,7 +54,7 @@ export const needsEmailVerification = (error: unknown): boolean => {
 
 /**
  * Academy Onboarding API Service
- * Handles 6-step onboarding process
+ * Handles 7-step onboarding process
  */
 export const academyOnboardingApi = {
   /**
@@ -89,12 +86,12 @@ export const academyOnboardingApi = {
   },
 
   /**
-   * Save any step (2-6)
+   * Save any step (2-7)
    */
   saveStep: async (
     academyId: string,
     stepNumber: number,
-    data: AcademyStepPayload
+    data: AcademySaveStepPayload
   ): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.put(
       `${API_BASE}/${academyId}/step/${stepNumber}`,
@@ -215,42 +212,6 @@ export const academyOnboardingApi = {
   submitStep3: async (data: AcademyStep3Payload): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.put(
       `${API_BASE}/${data.academyId}/step/3`,
-      data,
-      withToken(data.academyId)
-    );
-    return response.data;
-  },
-
-  /**
-   * STEP 4: Link venues and coaches
-   */
-  submitStep4: async (data: AcademyStep4Payload): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.put(
-      `${API_BASE}/${data.academyId}/step/4`,
-      data,
-      withToken(data.academyId)
-    );
-    return response.data;
-  },
-
-  /**
-   * STEP 5: Set pricing and subscription plans
-   */
-  submitStep5: async (data: AcademyStep5Payload): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.put(
-      `${API_BASE}/${data.academyId}/step/5`,
-      data,
-      withToken(data.academyId)
-    );
-    return response.data;
-  },
-
-  /**
-   * STEP 6: Set payout details and submit for approval
-   */
-  submitStep6: async (data: AcademyStep6Payload): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.put(
-      `${API_BASE}/${data.academyId}/step/6`,
       data,
       withToken(data.academyId)
     );
