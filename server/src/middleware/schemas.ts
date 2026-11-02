@@ -1295,13 +1295,23 @@ export const academyOnboardingStep5Schema = z
  */
 export const academyOnboardingStep6Schema = z
   .object({
-    sessionRatePerHour: z.number().min(0, "Rate must be non-negative"),
+    // Paise. At least one rupee and at most ten lakh rupees an hour: an academy
+    // with no rate, or a rate with a slipped decimal, should not reach review.
+    sessionRatePerHour: z
+      .number()
+      .int("Rate must be a whole number of paise")
+      .min(100, "Rate must be at least 1 rupee per hour")
+      .max(100_000_000, "Rate cannot be more than 10,00,000 rupees per hour"),
     batchTimings: z
       .array(z.enum(["morning", "evening", "both"]))
       .min(1, "Select at least one batch timing"),
-    maxBatchSize: z.number().min(1, "Batch size must be at least 1"),
+    maxBatchSize: z
+      .number()
+      .int("Batch size must be a whole number")
+      .min(1, "Batch size must be at least 1")
+      .max(100, "Batch size cannot be more than 100"),
     trialsessionOffered: z.boolean(),
-    trialSessionPrice: z.number().min(0).optional(),
+    trialSessionPrice: z.number().int().min(0).max(100_000_000).optional(),
     // Optional and not saved by this step: subscription plans and session
     // packages are created from the academy's dashboard after approval
     // (POST /academies/:academyId/subscriptions and /packages), so sign-up does

@@ -15,11 +15,10 @@ import {
   MIN_GENERAL_PHOTOS,
   MIN_SPORT_PHOTOS,
   createEmptyVenue,
-  paiseToRupees,
-  rupeesToPaise,
   withSports,
   type VenueErrors,
 } from "@/modules/onboarding/utils/academyVenueRules";
+import { paiseToInputText, parseRupeesInput } from "@/modules/onboarding/utils/money";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
 import { useEffect, useRef, useState } from "react";
@@ -71,7 +70,7 @@ export function AcademyVenueForm({
   const err = <K extends keyof VenueErrors>(key: K) =>
     showErrors ? (errors[key] as string | undefined) : undefined;
 
-  const [priceText, setPriceText] = useState(String(paiseToRupees(venue.pricePerHour)));
+  const [priceText, setPriceText] = useState(paiseToInputText(venue.pricePerHour));
   const [addressText, setAddressText] = useState(venue.address);
   const [suggestions, setSuggestions] = useState<GeoSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
@@ -347,7 +346,7 @@ export function AcademyVenueForm({
             disabled={disabled}
             onChange={(e) => {
               setPriceText(e.target.value);
-              const paise = rupeesToPaise(e.target.value);
+              const paise = parseRupeesInput(e.target.value);
               onChange((v) => ({ ...v, pricePerHour: paise }));
             }}
           />

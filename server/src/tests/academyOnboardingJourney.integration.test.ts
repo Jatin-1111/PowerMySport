@@ -250,6 +250,26 @@ describe("academy sign-up journey", () => {
     assert.deepEqual(stored?.subscriptionPlans ?? [], []);
   });
 
+  it("holds pricing to sensible limits on step 6", async () => {
+    const { id, token } = await start();
+    const bad = async (change: Record<string, unknown>) =>
+      (await saveStep(id, token, 6, { ...payloads[6], ...change })).status;
+
+    assert.equal(await bad({ sessionRatePerHour: 0 }), 400);
+    assert.equal(await bad({ sessionRatePerHour: 99 }), 400);
+    assert.equal(await bad({ sessionRatePerHour: 100_000_001 }), 400);
+    assert.equal(await bad({ sessionRatePerHour: 600.5 }), 400);
+    assert.equal(await bad({ maxBatchSize: 0 }), 400);
+    assert.equal(await bad({ maxBatchSize: 101 }), 400);
+    assert.equal(await bad({ maxBatchSize: 2.5 }), 400);
+    assert.equal(await bad({ trialSessionPrice: -1 }), 400);
+    assert.equal(await bad({ batchTimings: [] }), 400);
+
+    assert.equal(await bad({ sessionRatePerHour: 100, maxBatchSize: 1 }), 200);
+    assert.equal(await bad({ sessionRatePerHour: 100_000_000, maxBatchSize: 100 }), 200);
+    assert.equal(await bad({ trialsessionOffered: true, trialSessionPrice: 0 }), 200);
+  });
+
   it("needs the payout confirmation and the terms to match", async () => {
     const { id, token } = await start();
     const mismatch = await saveStep(id, token, 7, {

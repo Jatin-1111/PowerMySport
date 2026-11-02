@@ -22,28 +22,8 @@ export const VENUE_PHOTO_TYPES = ["image/jpeg", "image/png"] as const;
 export const VENUE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 
 // ── Money ────────────────────────────────────────────────────────────────────
-
-/**
- * What the owner types is rupees; the server stores paise. A slip here is a 100x
- * error, so this works on the digits of the text and never multiplies a float
- * (1.005 * 100 is 100.49999999999999, which would round the wrong way).
- * Rounds half up to the nearest paisa. Anything that is not a plain positive
- * number gives 0.
- */
-export const rupeesToPaise = (rupees: number | string): number => {
-  const text = String(rupees).trim();
-  if (!/^\d+(\.\d+)?$/.test(text)) return 0;
-  const [whole = "0", fraction = ""] = text.split(".");
-  const digits = fraction.padEnd(3, "0");
-  let paise = Number(whole) * 100 + Number(digits.slice(0, 2));
-  if (Number(digits[2]) >= 5) paise += 1;
-  return paise;
-};
-
-export const paiseToRupees = (paise: number | null | undefined): number | "" => {
-  if (!paise || !Number.isFinite(paise)) return "";
-  return paise / 100;
-};
+// Kept in ./money; re-exported so the venue form and its tests keep one import.
+export { paiseToRupees, rupeesToPaise } from "@/modules/onboarding/utils/money";
 
 // ── A new venue ──────────────────────────────────────────────────────────────
 
