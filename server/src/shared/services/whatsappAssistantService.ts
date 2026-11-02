@@ -1,8 +1,14 @@
 import crypto from "crypto";
 import { WhatsAppConversation } from "../../client/models/WhatsAppConversation";
 import { buildAssistantChatSystemPrompt } from "./assistantChatService";
+import { AiBusyError } from "./aiErrors";
 import { streamAgenticChatResponse, type ChatHistoryMessage } from "./agenticChatService";
-import { WHATSAPP_CHAT_TOOLS, type ChatToolContext } from "./chatToolsService";
+import { streamClaudeChatResponse } from "./claudeChatService";
+import {
+  WHATSAPP_CHAT_TOOLS,
+  type ChatToolContext,
+  type ChatToolDefinition,
+} from "./chatToolsService";
 import { formatParentContext, getParentContext, type ParentContext } from "./parentContext";
 import type { NoteChild } from "../../client/models/WhatsAppNote";
 import { findUserIdByPhone } from "./whatsappIdentity";
@@ -173,8 +179,54 @@ export type ReplyGenerator = (
   toolContext?: ChatToolContext
 ) => AsyncIterable<string>;
 
-const defaultGenerator: ReplyGenerator = (systemPrompt, history, userMessage, toolContext) =>
-  streamAgenticChatResponse(systemPrompt, history, userMessage, WHATSAPP_CHAT_TOOLS, toolContext);
+export interface GeneratorBackends {
+  claude: typeof streamClaudeChatResponse;
+  gemini: typeof streamAgenticChatResponse;
+}
+
+/**
+ * Claude answers when `ANTHROPIC_API_KEY` is set, unless `WHATSAPP_AI_PROVIDER=gemini` says
+ * otherwise; with no key it is Gemini, so a deploy that gets ahead of the key keeps working.
+ * When Claude is rate limited or overloaded Gemini takes over, but only if no tool has run yet:
+ * a tool can have an effect (a pending action, a hand-off) and must not run twice.
+ */
+export function createReplyGenerator(
+  backends: GeneratorBackends = {
+    claude: streamClaudeChatResponse,
+    gemini: streamAgenticChatResponse,
+  },
+  chatTools: ChatToolDefinition[] = WHATSAPP_CHAT_TOOLS
+): ReplyGenerator {
+  return async function* (systemPrompt, history, userMessage, toolContext) {
+    const useClaude =
+      process.env.WHATSAPP_AI_PROVIDER !== "gemini" && Boolean(process.env.ANTHROPIC_API_KEY);
+    if (!useClaude) {
+      yield* backends.gemini(systemPrompt, history, userMessage, chatTools, toolContext);
+      return;
+    }
+
+    let toolRan = false;
+    const tools = chatTools.map((tool) => ({
+      ...tool,
+      execute: (args: Record<string, unknown>, context?: ChatToolContext) => {
+        toolRan = true;
+        return tool.execute(args, context);
+      },
+    }));
+    try {
+      // Claude's answer arrives whole, so nothing has been yielded if this throws.
+      yield* backends.claude(systemPrompt, history, userMessage, tools, toolContext, {
+        onUsage: (usage) => log.info("claude usage", usage),
+      });
+    } catch (error) {
+      if (toolRan || !(error instanceof AiBusyError)) throw error;
+      log.warn("Claude is busy, answering with Gemini");
+      yield* backends.gemini(systemPrompt, history, userMessage, chatTools, toolContext);
+    }
+  };
+}
+
+const defaultGenerator: ReplyGenerator = createReplyGenerator();
 
 /**
  * Whose number this is, as far as the account is known, and what the account shows about
