@@ -42,7 +42,7 @@ src/
 - `page/` (+ `page/home`) — home feed, Q&A feed/detail, ask-question modal, filters, hero search
 - `seo/` — JSON-LD structured data
 
-Rich text is authored with Tiptap and sanitized with DOMPurify (`modules/community/utils/sanitizeHtml.ts`) before rendering via `dangerouslySetInnerHTML` — never skip that step when touching blog/experience rendering.
+Rich text is authored with Tiptap and sanitized with `xss` (`modules/community/utils/sanitizeHtml.ts`, no DOM or jsdom, so it runs the same on the server and in the browser) before rendering via `dangerouslySetInnerHTML` — never skip that step when touching blog/experience rendering.
 
 ## Real-time (`src/lib/realtime/socket.ts`)
 

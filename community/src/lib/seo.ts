@@ -67,6 +67,24 @@ export function communityUrl(path = "/"): string {
   return `${COMMUNITY_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+/**
+ * An image URL that is safe to publish in metadata or structured data, or
+ * `undefined`.
+ *
+ * The API returns user uploads as pre-signed S3 URLs. They expire (a week, by
+ * default), so a crawler or social network that cached the page keeps a dead
+ * image, and the URL carries an AWS access key id and signature into public
+ * HTML. Drop them rather than publish them; the caller falls back to the shared
+ * Open Graph image. Same rule as `stableImageUrl` in the client app.
+ */
+export function stableImageUrl(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  if (/[?&]x-amz-(signature|expires|credential)=/i.test(url)) return undefined;
+  // CloudFront signed URLs.
+  if (/[?&](signature|key-pair-id)=/i.test(url)) return undefined;
+  return url;
+}
+
 /** Collapse whitespace and clamp a string to a search-friendly length. */
 export function clampText(input: string, max = 160): string {
   const text = (input || "").replace(/\s+/g, " ").trim();

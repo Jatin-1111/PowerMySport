@@ -7,6 +7,7 @@ import {
   communityUrl,
   fetchPublicData,
   OG_IMAGE,
+  stableImageUrl,
   stripHtml,
 } from "@/lib/seo";
 import type { BlogDetail } from "@/modules/community/types";
@@ -37,7 +38,7 @@ export async function generateMetadata({
     title: blog.title,
     description,
     path: `/experiences/${blogId}`,
-    image: blog.coverImageUrl || OG_IMAGE,
+    image: stableImageUrl(blog.coverImageUrl) || OG_IMAGE,
     keywords: blog.tags?.length ? blog.tags : undefined,
     type: "article",
     publishedTime: blog.createdAt,
@@ -60,7 +61,7 @@ export default async function CommunityExperienceDetailPage({
         "@type": "BlogPosting",
         headline: blog.title,
         description: clampText(blog.excerpt || stripHtml(blog.content), 200),
-        image: blog.coverImageUrl || OG_IMAGE,
+        image: stableImageUrl(blog.coverImageUrl) || OG_IMAGE,
         datePublished: blog.createdAt,
         dateModified: blog.updatedAt,
         url: communityUrl(`/experiences/${blogId}`),

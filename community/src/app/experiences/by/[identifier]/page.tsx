@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import WriterProfileClient from "@/modules/community/components/blog/WriterProfileClient";
 import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/JsonLd";
-import { buildMetadata, clampText, communityUrl, fetchPublicData } from "@/lib/seo";
+import { buildMetadata, clampText, communityUrl, fetchPublicData, stableImageUrl } from "@/lib/seo";
 import type { BlogAuthorProfile } from "@/modules/community/types";
 
 const getAuthor = (identifier: string) =>
@@ -33,7 +33,7 @@ export async function generateMetadata({
     title: `${author.name} (@${author.username})`,
     description,
     path: `/experiences/by/${identifier}`,
-    image: author.photoUrl || undefined,
+    image: stableImageUrl(author.photoUrl),
     type: "profile",
   });
 }
@@ -56,7 +56,7 @@ export default async function WriterProfilePage({
           name: author.name,
           alternateName: author.username,
           description: author.bio || undefined,
-          image: author.photoUrl || undefined,
+          image: stableImageUrl(author.photoUrl),
         },
       }
     : null;
