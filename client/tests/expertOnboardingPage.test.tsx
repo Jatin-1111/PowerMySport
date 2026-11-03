@@ -248,6 +248,24 @@ describe("ExpertOnboardingPage — loading and status gating", () => {
       "Previously saved bio text goes here for review."
     );
   });
+
+  it("tells a rejected expert why, since they are sent here instead of to the dashboard", async () => {
+    getMyProfile.mockResolvedValue({
+      success: true,
+      data: { verificationStatus: "REJECTED", rejectionReason: "Add proof of your achievements." },
+    });
+    render(<ExpertOnboardingPage />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Your profile needs changes");
+    expect(alert).toHaveTextContent("Add proof of your achievements.");
+  });
+
+  it("shows no rejection notice to an expert who has not been rejected", async () => {
+    render(<ExpertOnboardingPage />);
+    await screen.findByText(/Step 1 of 5/);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });
 
 describe("ExpertOnboardingPage — step 1: identity", () => {
@@ -380,8 +398,8 @@ describe("ExpertOnboardingPage — step 3: session setup", () => {
   it("requires an address when the session mode is in-person or both", async () => {
     await toStep3();
 
-    fireEvent.change(screen.getByLabelText(/Session Fee/), { target: { value: "1500" } });
-    fireEvent.click(screen.getByRole("radio", { name: /In-person/ }));
+    fireEvent.change(screen.getByLabelText(/Session fee/), { target: { value: "1500" } });
+    fireEvent.click(screen.getByRole("radio", { name: /In person/ }));
     clickContinue();
 
     expect(toastError).toHaveBeenCalledWith("In-person address is required");
@@ -390,7 +408,7 @@ describe("ExpertOnboardingPage — step 3: session setup", () => {
   it("advances to step 4 for a valid online session", async () => {
     await toStep3();
 
-    fireEvent.change(screen.getByLabelText(/Session Fee/), { target: { value: "1500" } });
+    fireEvent.change(screen.getByLabelText(/Session fee/), { target: { value: "1500" } });
     clickContinue();
 
     expect(await screen.findByText(/Step 4 of 5/)).toBeInTheDocument();
@@ -408,7 +426,7 @@ describe("ExpertOnboardingPage — step 4: availability", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add expertise" }));
     clickContinue();
     await screen.findByText(/Step 3 of 5/);
-    fireEvent.change(screen.getByLabelText(/Session Fee/), { target: { value: "1500" } });
+    fireEvent.change(screen.getByLabelText(/Session fee/), { target: { value: "1500" } });
     clickContinue();
     await screen.findByText(/Step 4 of 5/);
   };
@@ -456,7 +474,7 @@ describe("ExpertOnboardingPage — step 5: submission", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add expertise" }));
     clickContinue();
     await screen.findByText(/Step 3 of 5/);
-    fireEvent.change(screen.getByLabelText(/Session Fee/), { target: { value: "1500" } });
+    fireEvent.change(screen.getByLabelText(/Session fee/), { target: { value: "1500" } });
     clickContinue();
     await screen.findByText(/Step 4 of 5/);
     clickContinue();
@@ -548,7 +566,7 @@ describe("ExpertOnboardingPage — step navigation", () => {
     clickContinue();
     await screen.findByText(/Step 2 of 5/);
 
-    fireEvent.click(screen.getByRole("button", { name: /Step 1: Your Identity/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Step 1: Your identity/ }));
 
     expect(await screen.findByText(/Step 1 of 5/)).toBeInTheDocument();
   });

@@ -1,7 +1,12 @@
 "use client";
 
 import type { IPayoutMethod, PayoutMethodType } from "@/types";
-import { CreditCard, FileText, Landmark, Smartphone } from "lucide-react";
+import {
+  FIELD_HINT,
+  FIELD_INPUT,
+  FIELD_LABEL,
+} from "@/modules/shared/components/settings/ProfileSection";
+import { cn } from "@/utils/cn";
 import { useRef } from "react";
 
 export interface TaxPayoutInfoValue {
@@ -82,38 +87,15 @@ export function buildPayoutMethodPayload(
       };
 }
 
-const field =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100";
-const label =
-  "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400";
-const card = "rounded-2xl border-0 bg-white p-6 shadow-sm dark:bg-slate-900 sm:p-8";
-
-function SectionHeading({
-  icon: Icon,
-  tint,
-  title,
-  subtitle,
-}: {
-  icon: React.ElementType;
-  tint: string;
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="mb-5 flex items-center gap-3">
-      <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${tint}`}>
-        <Icon className="h-4.5 w-4.5" />
-      </span>
-      <div>
-        <h2 className="text-base font-bold text-slate-900 dark:text-white">{title}</h2>
-        {subtitle && <p className="text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
-
 const PAYOUT_TYPES = ["BANK_TRANSFER", "UPI"] as const;
+const TYPE_LABEL = { BANK_TRANSFER: "Bank transfer", UPI: "UPI" } as const;
 
+const ROW = "border-hairline border-t py-8";
+
+/**
+ * The tax details and payout method the expert gives before submitting. Two
+ * ruled sections in the same column as the other steps, not two cards.
+ */
 export function TaxPayoutInfoStep({
   value,
   onChange,
@@ -124,186 +106,181 @@ export function TaxPayoutInfoStep({
   const payoutTypeRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   return (
-    <div className="space-y-5">
-      <div className={card}>
-        <SectionHeading
-          icon={FileText}
-          tint="bg-indigo-50 text-indigo-600"
-          title="Tax Details"
-          subtitle="Required for session-fee payouts and tax reporting"
-        />
-        <div className="space-y-4">
+    <div>
+      <section aria-labelledby="tax-heading" className="py-8">
+        <h2 id="tax-heading" className="text-ink text-lg font-semibold">
+          Tax details
+        </h2>
+        <p className="text-ink-body mt-1 max-w-[56ch] text-pretty text-sm">
+          Required for session-fee payouts and tax reporting.
+        </p>
+        <div className="mt-6 max-w-2xl space-y-6">
           <div>
-            <label htmlFor="tax-pan" className={label}>
-              PAN Number <span className="text-red-500">*</span>
+            <label htmlFor="tax-pan" className={FIELD_LABEL}>
+              PAN number
             </label>
             <input
               id="tax-pan"
               autoCapitalize="characters"
               autoComplete="off"
-              className={field}
-              placeholder="e.g. ABCDE1234F"
+              className={cn(FIELD_INPUT, "font-mono uppercase tracking-wider md:max-w-xs")}
               value={value.panNumber}
               maxLength={10}
               onChange={(e) => onChange({ panNumber: e.target.value.toUpperCase() })}
             />
+            <p className={FIELD_HINT}>
+              Five letters, four digits, one letter. For example, ABCDE1234F.
+            </p>
           </div>
           <div>
-            <label htmlFor="tax-gst" className={label}>
-              GST Number (optional)
+            <label htmlFor="tax-gst" className={FIELD_LABEL}>
+              GST number <span className="text-ink-body font-normal">(optional)</span>
             </label>
             <input
               id="tax-gst"
               autoCapitalize="characters"
               autoComplete="off"
-              className={field}
-              placeholder="e.g. 22AAAAA0000A1Z5"
+              className={cn(FIELD_INPUT, "font-mono uppercase tracking-wider md:max-w-xs")}
               value={value.gstNumber}
               maxLength={15}
               onChange={(e) => onChange({ gstNumber: e.target.value.toUpperCase() })}
             />
-            <p className="mt-1 text-xs text-slate-500">
-              Only if you&apos;re GST-registered, most individual experts can leave this blank.
+            <p className={FIELD_HINT}>
+              Only if you are GST-registered. Most individual experts can leave this blank.
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div className={card}>
-        <SectionHeading
-          icon={Landmark}
-          tint="bg-emerald-50 text-emerald-600"
-          title="Payout Method"
-          subtitle="Where your session earnings will be sent"
-        />
+      <section aria-labelledby="payout-heading" className={ROW}>
+        <h2 id="payout-heading" className="text-ink text-lg font-semibold">
+          Payout method
+        </h2>
+        <p className="text-ink-body mt-1 max-w-[56ch] text-pretty text-sm">
+          Where your session earnings will be sent.
+        </p>
 
-        <div
-          role="radiogroup"
-          aria-label="Payout method type"
-          className="mb-4 grid grid-cols-2 gap-2"
-        >
-          {PAYOUT_TYPES.map((type, idx) => (
-            <button
-              key={type}
-              type="button"
-              role="radio"
-              aria-checked={value.payoutType === type}
-              tabIndex={value.payoutType === type ? 0 : -1}
-              ref={(el) => {
-                payoutTypeRefs.current[idx] = el;
-              }}
-              onClick={() => onChange({ payoutType: type })}
-              onKeyDown={(e) => {
-                if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
-                  e.preventDefault();
-                  const next = (idx + 1) % PAYOUT_TYPES.length;
-                  onChange({ payoutType: PAYOUT_TYPES[next] });
-                  payoutTypeRefs.current[next]?.focus();
-                }
-              }}
-              className={`focus-visible:ring-power-orange flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-                value.payoutType === type
-                  ? "border-power-orange bg-power-orange/10 text-power-orange"
-                  : "hover:border-power-orange/50 border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
-              }`}
-            >
-              {type === "BANK_TRANSFER" ? (
-                <CreditCard className="h-4 w-4" aria-hidden="true" />
-              ) : (
-                <Smartphone className="h-4 w-4" aria-hidden="true" />
-              )}
-              {type === "BANK_TRANSFER" ? "Bank Transfer" : "UPI"}
-            </button>
-          ))}
-        </div>
+        <div className="mt-6 max-w-2xl space-y-6">
+          <div role="radiogroup" aria-label="Payout method type" className="flex flex-wrap gap-2">
+            {PAYOUT_TYPES.map((type, idx) => (
+              <button
+                key={type}
+                type="button"
+                role="radio"
+                aria-checked={value.payoutType === type}
+                tabIndex={value.payoutType === type ? 0 : -1}
+                ref={(el) => {
+                  payoutTypeRefs.current[idx] = el;
+                }}
+                onClick={() => onChange({ payoutType: type })}
+                onKeyDown={(e) => {
+                  if (["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"].includes(e.key)) {
+                    e.preventDefault();
+                    const next = (idx + 1) % PAYOUT_TYPES.length;
+                    onChange({ payoutType: PAYOUT_TYPES[next] });
+                    payoutTypeRefs.current[next]?.focus();
+                  }
+                }}
+                className={cn(
+                  "focus-visible:ring-ink min-h-11 min-w-32 rounded-md border px-4 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                  value.payoutType === type
+                    ? "border-ink text-ink bg-white font-semibold"
+                    : "border-ink/25 text-ink-body hover:border-ink"
+                )}
+              >
+                {TYPE_LABEL[type]}
+              </button>
+            ))}
+          </div>
 
-        {value.payoutType === "BANK_TRANSFER" ? (
-          <div className="space-y-4">
+          {value.payoutType === "BANK_TRANSFER" ? (
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="payout-holder-name" className={FIELD_LABEL}>
+                  Account holder name
+                </label>
+                <input
+                  id="payout-holder-name"
+                  autoComplete="name"
+                  className={FIELD_INPUT}
+                  value={value.accountHolderName}
+                  onChange={(e) => onChange({ accountHolderName: e.target.value })}
+                />
+                <p className={FIELD_HINT}>As it appears in your bank records.</p>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="payout-account-number" className={FIELD_LABEL}>
+                    Account number
+                  </label>
+                  <input
+                    id="payout-account-number"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    className={cn(FIELD_INPUT, "tabular-nums")}
+                    value={value.accountNumber}
+                    onChange={(e) => onChange({ accountNumber: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="payout-confirm-account" className={FIELD_LABEL}>
+                    Confirm account number
+                  </label>
+                  <input
+                    id="payout-confirm-account"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    className={cn(FIELD_INPUT, "tabular-nums")}
+                    value={value.confirmAccountNumber}
+                    onChange={(e) => onChange({ confirmAccountNumber: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="payout-ifsc" className={FIELD_LABEL}>
+                    IFSC code
+                  </label>
+                  <input
+                    id="payout-ifsc"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    className={cn(FIELD_INPUT, "font-mono uppercase tracking-wider")}
+                    value={value.ifscCode}
+                    onChange={(e) => onChange({ ifscCode: e.target.value.toUpperCase() })}
+                  />
+                  <p className={FIELD_HINT}>For example, SBIN0001234.</p>
+                </div>
+                <div>
+                  <label htmlFor="payout-bank-name" className={FIELD_LABEL}>
+                    Bank name
+                  </label>
+                  <input
+                    id="payout-bank-name"
+                    className={FIELD_INPUT}
+                    value={value.bankName}
+                    onChange={(e) => onChange({ bankName: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
             <div>
-              <label htmlFor="payout-holder-name" className={label}>
-                Account Holder Name <span className="text-red-500">*</span>
+              <label htmlFor="payout-upi" className={FIELD_LABEL}>
+                UPI ID
               </label>
               <input
-                id="payout-holder-name"
-                autoComplete="name"
-                className={field}
-                placeholder="As per bank records"
-                value={value.accountHolderName}
-                onChange={(e) => onChange({ accountHolderName: e.target.value })}
+                id="payout-upi"
+                autoComplete="off"
+                className={FIELD_INPUT}
+                value={value.upiId}
+                onChange={(e) => onChange({ upiId: e.target.value })}
               />
+              <p className={FIELD_HINT}>For example, yourname@okaxis.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="payout-account-number" className={label}>
-                  Account Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="payout-account-number"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  className={field}
-                  value={value.accountNumber}
-                  onChange={(e) => onChange({ accountNumber: e.target.value })}
-                />
-              </div>
-              <div>
-                <label htmlFor="payout-confirm-account" className={label}>
-                  Confirm Account Number <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="payout-confirm-account"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  className={field}
-                  value={value.confirmAccountNumber}
-                  onChange={(e) => onChange({ confirmAccountNumber: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="payout-ifsc" className={label}>
-                  IFSC Code <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="payout-ifsc"
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  className={field}
-                  placeholder="e.g. SBIN0001234"
-                  value={value.ifscCode}
-                  onChange={(e) => onChange({ ifscCode: e.target.value.toUpperCase() })}
-                />
-              </div>
-              <div>
-                <label htmlFor="payout-bank-name" className={label}>
-                  Bank Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="payout-bank-name"
-                  className={field}
-                  value={value.bankName}
-                  onChange={(e) => onChange({ bankName: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <label htmlFor="payout-upi" className={label}>
-              UPI ID <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="payout-upi"
-              autoComplete="off"
-              className={field}
-              placeholder="e.g. yourname@okaxis"
-              value={value.upiId}
-              onChange={(e) => onChange({ upiId: e.target.value })}
-            />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

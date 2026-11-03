@@ -6,16 +6,16 @@ import {
   type ExpertProofFile,
   type ExpertProofType,
 } from "@/modules/expert/services/expert";
+import { FIELD_INPUT } from "@/modules/shared/components/settings/ProfileSection";
 import { Button } from "@/modules/shared/ui/Button";
-import { CheckCircle2, Loader2, Upload } from "lucide-react";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { cn } from "@/utils/cn";
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png"];
 const MAX_BYTES = 8 * 1024 * 1024;
-
-const field =
-  "w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20";
 
 /**
  * Proof an admin reviews before an expert goes live: an ID document, and one
@@ -106,16 +106,13 @@ export function ExpertProofSection() {
   const row = (type: ExpertProofType, title: string, hint: string) => {
     const current = fileFor(type);
     return (
-      <div className="rounded-lg border border-slate-200 p-4">
-        <p className="text-sm font-semibold text-slate-900">{title}</p>
-        <p className="mt-0.5 text-xs text-slate-500">{hint}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-            {busy === type ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <Upload className="h-4 w-4" aria-hidden />
-            )}
+      <div className="border-hairline border-t py-5">
+        <p className="text-ink font-medium">{title}</p>
+        <p className="text-ink-body mt-0.5 text-sm">{hint}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <label
+            className={`${TEXT_LINK} focus-within:ring-ink ring-offset-paper min-h-11 cursor-pointer text-sm focus-within:ring-2 focus-within:ring-offset-2`}
+          >
             {busy === type ? "Uploading" : current ? "Replace file" : "Upload file"}
             <input
               type="file"
@@ -130,8 +127,8 @@ export function ExpertProofSection() {
             />
           </label>
           {current && (
-            <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700">
-              <CheckCircle2 className="h-4 w-4" aria-hidden />
+            <span className="text-ink-body inline-flex items-center gap-1.5 text-sm">
+              <Check size={16} strokeWidth={1.5} className="text-green-800" aria-hidden="true" />
               {current.fileName}
             </span>
           )}
@@ -143,48 +140,50 @@ export function ExpertProofSection() {
   if (!loaded) return null;
 
   return (
-    <div className="space-y-3 border-t border-slate-100 pt-4">
+    <div className="pt-2">
       <div>
-        <h3 className="text-sm font-bold text-slate-900">Proof for review</h3>
-        <p className="mt-0.5 text-xs text-slate-500">
+        <h3 className="text-ink font-medium">Proof for review</h3>
+        <p className="text-ink-body mt-0.5 max-w-[56ch] text-pretty text-sm">
           Our team checks these before your profile goes live. They are never shown to parents.
         </p>
       </div>
 
-      {row("ID_PROOF", "ID document", "A government ID. PDF, JPG or PNG, up to 8 MB.")}
+      <div className="mt-4">
+        {row("ID_PROOF", "ID document", "A government ID. PDF, JPG or PNG, up to 8 MB.")}
 
-      {row(
-        "ACHIEVEMENT_PROOF",
-        "Proof of your achievements",
-        "A certificate, ranking sheet or federation record. Or give a link below instead."
-      )}
+        {row(
+          "ACHIEVEMENT_PROOF",
+          "Proof of your achievements",
+          "A certificate, ranking sheet or federation record. Or give a link below instead."
+        )}
 
-      <div className="rounded-lg border border-slate-200 p-4">
-        <label htmlFor="expert-proof-link" className="text-sm font-semibold text-slate-900">
-          Link to a public record
-        </label>
-        <p className="mt-0.5 text-xs text-slate-500">
-          A ranking page or federation profile that shows your achievements. Use this or a file.
-        </p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <input
-            id="expert-proof-link"
-            type="url"
-            inputMode="url"
-            className={field}
-            placeholder="https://"
-            value={link}
-            onChange={(event) => setLink(event.target.value)}
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={busy !== null}
-            onClick={() => void saveLink()}
-            className="sm:w-auto"
-          >
-            {busy === "LINK" ? "Saving" : "Save link"}
-          </Button>
+        <div className="border-hairline border-t py-5">
+          <label htmlFor="expert-proof-link" className="text-ink font-medium">
+            Link to a public record
+          </label>
+          <p className="text-ink-body mt-0.5 text-sm">
+            A ranking page or federation profile that shows your achievements. Use this or a file.
+          </p>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              id="expert-proof-link"
+              type="url"
+              inputMode="url"
+              className={cn(FIELD_INPUT, "sm:max-w-md")}
+              placeholder="https://"
+              value={link}
+              onChange={(event) => setLink(event.target.value)}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy !== null}
+              onClick={() => void saveLink()}
+              className="min-h-11 sm:w-auto"
+            >
+              {busy === "LINK" ? "Saving" : "Save link"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

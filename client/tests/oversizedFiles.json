@@ -12,7 +12,6 @@
   "app/(booking)/experts/[expertId]/ExpertDetailClient.tsx": 521,
   "app/(booking)/payment/page.tsx": 619,
   "app/(booking)/venues/[venueId]/VenueDetailClient.tsx": 976,
-  "app/(expert)/expert/onboarding/page.tsx": 990,
   "app/(expert)/expert/sessions/[sessionId]/page.tsx": 563,
   "app/(marketing)/faq/page.tsx": 481,
   "app/(marketing)/how-it-works/page.tsx": 606,
