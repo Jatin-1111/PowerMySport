@@ -4,13 +4,14 @@ import { connectDB } from "../config/database";
 import { User } from "../client/models/User";
 import { Venue } from "../client/models/Venue";
 import { Coach } from "../client/models/Coach";
+import { Expert } from "../client/models/ExpertProfile";
 import Academy from "../admin/models/Academy";
 import Admin from "../admin/models/Admin";
 import { ADMIN_ROLES, SYSTEM_ADMIN_PERMISSIONS } from "../constants/adminPermissions";
 
 /**
  * Seeds one approved, ready-to-log-in account per provider role (Parent,
- * Academy, VenueLister, Coach) plus a system admin into a LOCAL MongoDB.
+ * Academy, VenueLister, Coach, Expert) plus a system admin into a LOCAL MongoDB.
  *
  * The repo's .env points at the production Atlas database, so this script
  * refuses to run unless MONGO_URI is set in the shell to a localhost URI:
@@ -74,6 +75,13 @@ const ACCOUNTS = {
     phone: "9100000004",
     password: "PmsCoach#2026!",
     role: "Coach" as const,
+  },
+  expert: {
+    name: "Dummy Expert",
+    email: "dummy.expert@example.com",
+    phone: "9100000005",
+    password: "PmsExpert#2026!",
+    role: "EXPERT" as const,
   },
 };
 
@@ -171,6 +179,36 @@ async function main() {
       console.log("- Coach profile created");
     }
     ids.coach = { userId: user._id.toString(), coachId: coach._id.toString() };
+  }
+
+  // Expert + approved, active expert profile
+  {
+    const { user } = await ensureUser(ACCOUNTS.expert);
+    let expert = await Expert.findOne({ userId: user._id });
+    if (!expert) {
+      expert = await Expert.create({
+        userId: user._id,
+        bio: "Local test expert created by seedLocalDummyAccounts.",
+        sports: ["Tennis"],
+        expertise: ["Match strategy", "Serve technique"],
+        achievements: "Local test achievements.",
+        sessionFee: 1500,
+        sessionMode: "ONLINE",
+        sessionDurationMinutes: 60,
+        timezone: "Asia/Kolkata",
+        weeklyAvailability: [1, 2, 3, 4, 5].map((dayOfWeek) => ({
+          dayOfWeek,
+          start: "17:00",
+          end: "21:00",
+        })),
+        city: CITY.city,
+        languages: ["English", "Hindi"],
+        isActive: true,
+        verificationStatus: "APPROVED",
+      });
+      console.log("- Expert profile created");
+    }
+    ids.expert = { userId: user._id.toString(), expertId: expert._id.toString() };
   }
 
   // Academy owner + approved academy
