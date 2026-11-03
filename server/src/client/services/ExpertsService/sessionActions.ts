@@ -4,6 +4,7 @@ import { ExpertSession, ExpertSessionCanceller } from "../../models/ExpertBookin
 import { initiatePhonePeRefund } from "../../../shared/services/PhonePeService";
 import { recordExpertSessionEvent } from "../BookingEventService";
 import { log, toPaise, notify, expertUserIdOf } from "./shared";
+import { notifyExpertSessionWhatsApp } from "./whatsapp";
 import {
   assertSessionOwner,
   assertExpertOperational,
@@ -78,6 +79,7 @@ export const respondToExpertSession = async (params: {
       { sessionId: session._id.toString() },
       true
     );
+    void notifyExpertSessionWhatsApp(session, { type: "CONFIRMED" });
     return session;
   }
 
@@ -132,6 +134,10 @@ export const respondToExpertSession = async (params: {
       { sessionId: session._id.toString() },
       true
     );
+    void notifyExpertSessionWhatsApp(session, {
+      type: "CANCELLED",
+      refundOwed: session.paymentStatus === "COMPLETED",
+    });
     return session;
   }
 
@@ -172,6 +178,10 @@ export const respondToExpertSession = async (params: {
     { sessionId: session._id.toString() },
     true
   );
+  void notifyExpertSessionWhatsApp(session, {
+    type: "RESCHEDULED",
+    previousScheduledAt,
+  });
   return session;
 };
 
@@ -269,6 +279,14 @@ export const cancelExpertSession = async (params: {
       { sessionId: session._id.toString() },
       true
     );
+  }
+  // The parent is told on WhatsApp when someone else cancelled. Only the expert's
+  // own cancellation promises a refund: an admin may judge a late one differently.
+  if (!isClient) {
+    void notifyExpertSessionWhatsApp(session, {
+      type: "CANCELLED",
+      refundOwed: by === "EXPERT" && session.paymentStatus === "COMPLETED",
+    });
   }
   return session;
 };

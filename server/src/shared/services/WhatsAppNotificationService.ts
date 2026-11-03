@@ -34,6 +34,11 @@ export interface BookingWhatsAppPayload {
   newDateTime?: string | undefined;
   /** Refund amount in INR, only for BOOKING_CANCELLED */
   refundAmount?: number | undefined;
+  /**
+   * The "where" line of BOOKING_CONFIRMED when there is no venue or coach to name,
+   * e.g. an expert session. Used as written, so it must already read as a sentence.
+   */
+  where?: string | undefined;
 }
 
 export interface OtpWhatsAppPayload {

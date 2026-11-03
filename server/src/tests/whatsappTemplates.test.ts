@@ -83,6 +83,23 @@ describe("which template each event uses", () => {
     );
   });
 
+  it("uses the where line as written for an expert session, which has no venue or coach to name", () => {
+    const t = buildBookingTemplate("BOOKING_CONFIRMED", {
+      ...base,
+      coachName: "Arjun Rao",
+      where: "Expert: Arjun Rao. Online.",
+    });
+    assert.equal(t.params[3], "Expert: Arjun Rao. Online.");
+  });
+
+  it("cleans a where line like every other variable Meta would refuse", () => {
+    const t = buildBookingTemplate("BOOKING_CONFIRMED", {
+      ...base,
+      where: "Expert:" + String.fromCharCode(10) + "  Arjun",
+    });
+    assert.equal(t.params[3], "Expert: Arjun");
+  });
+
   it("still fills the last variable when there is neither", () => {
     const t = buildBookingTemplate("BOOKING_CONFIRMED", base);
     assert.equal(t.params[3], "Open your dashboard for the details.");

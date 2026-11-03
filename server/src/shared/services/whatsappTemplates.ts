@@ -73,15 +73,17 @@ export function buildBookingTemplate(
 
   switch (event) {
     case "BOOKING_CONFIRMED": {
-      const where = [
-        payload.venue ? `Venue: ${cleanParam(payload.venue)}.` : "",
-        payload.coachName ? `Coach: ${cleanParam(payload.coachName)}.` : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
+      const where =
+        payload.where?.trim() ||
+        [
+          payload.venue ? `Venue: ${cleanParam(payload.venue)}.` : "",
+          payload.coachName ? `Coach: ${cleanParam(payload.coachName)}.` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
       return {
         name: "booking_confirmed",
-        params: [...head, when, where || "Open your dashboard for the details."],
+        params: [...head, when, where ? cleanParam(where) : "Open your dashboard for the details."],
       };
     }
     case "BOOKING_CANCELLED": {
