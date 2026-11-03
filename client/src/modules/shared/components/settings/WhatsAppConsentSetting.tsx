@@ -2,7 +2,7 @@
 
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
-import { Card } from "@/modules/shared/ui/Card";
+import { ProfileSection } from "./ProfileSection";
 import { useEffect, useState } from "react";
 
 /**
@@ -45,40 +45,44 @@ export function WhatsAppConsentSetting() {
   };
 
   return (
-    <div>
-      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-        WhatsApp
-      </h2>
-      <Card className="border-0 bg-white p-0 shadow-[0_2px_16px_rgb(0,0,0,0.06)]">
-        <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="max-w-xl">
-            <h3 id="whatsapp-consent-label" className="text-base font-semibold text-slate-900">
-              Booking updates on WhatsApp
-            </h3>
-            <p className="mt-1 text-sm text-slate-600">
-              Get a message when a booking is confirmed, cancelled or moved. We use the phone number
-              on your account. You can turn this off here, or by replying STOP to any message.
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={granted === true}
-            aria-labelledby="whatsapp-consent-label"
-            disabled={granted === null || saving}
-            onClick={toggle}
-            className={`focus-visible:ring-ink relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-60 ${
-              granted ? "bg-ink" : "bg-slate-300"
+    <ProfileSection
+      id="whatsapp"
+      title="WhatsApp"
+      description="Booking updates on the app you already use."
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <div className="max-w-xl">
+          <h3 id="whatsapp-consent-label" className="text-ink font-medium">
+            Booking updates on WhatsApp
+          </h3>
+          <p className="text-ink-body mt-1 text-pretty text-sm">
+            Get a message when a booking is confirmed, cancelled or moved. We use the phone number
+            on your account. You can turn this off here, or by replying STOP to any message.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={granted === true}
+          aria-labelledby="whatsapp-consent-label"
+          disabled={granted === null || saving}
+          onClick={toggle}
+          className="focus-visible:ring-ink inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60"
+        >
+          <span
+            aria-hidden="true"
+            className={`relative h-7 w-12 rounded-full transition-colors ${
+              granted ? "bg-ink" : "bg-ink-ash"
             }`}
           >
             <span
-              className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+              className={`absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
                 granted ? "translate-x-5" : "translate-x-0"
               }`}
             />
-          </button>
-        </div>
-      </Card>
-    </div>
+          </span>
+        </button>
+      </div>
+    </ProfileSection>
   );
 }

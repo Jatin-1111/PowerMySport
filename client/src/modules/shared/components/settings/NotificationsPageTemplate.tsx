@@ -10,11 +10,13 @@ import {
 import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import { Lightbulb, Mail, MonitorSmartphone, Save, Smartphone, X } from "lucide-react";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import { ProfileSection } from "./ProfileSection";
 
 interface NotificationType {
   key: keyof NotificationChannelPreferences;
@@ -27,7 +29,7 @@ const notificationTypes: NotificationType[] = [
   // Social Notifications
   {
     key: "friendRequests",
-    label: "Friend Requests",
+    label: "Friend requests",
     description: "Get notified when someone sends you a friend request",
     category: "Social",
   },
@@ -35,25 +37,25 @@ const notificationTypes: NotificationType[] = [
   // Booking Notifications
   {
     key: "bookingInvitations",
-    label: "Booking Invitations",
+    label: "Booking invitations",
     description: "Get notified when you're invited to join a booking",
     category: "Bookings",
   },
   {
     key: "bookingConfirmations",
-    label: "Booking Confirmations",
+    label: "Booking confirmations",
     description: "Get notified when your booking is confirmed",
     category: "Bookings",
   },
   {
     key: "bookingReminders",
-    label: "Booking Reminders",
+    label: "Booking reminders",
     description: "Get reminders about upcoming bookings",
     category: "Bookings",
   },
   {
     key: "bookingCancellations",
-    label: "Booking Cancellations",
+    label: "Booking cancellations",
     description: "Get notified when a booking is cancelled",
     category: "Bookings",
   },
@@ -63,7 +65,7 @@ const notificationTypes: NotificationType[] = [
     key: "reviews",
     label: "Reviews",
     description: "Get notified about reviews and ratings",
-    category: "Reviews & Feedback",
+    category: "Reviews and feedback",
   },
 
   // Payments
@@ -77,7 +79,7 @@ const notificationTypes: NotificationType[] = [
   // Rankings
   {
     key: "rankingUpdates",
-    label: "Ranking Updates",
+    label: "Ranking updates",
     description:
       "Get the weekly update when a new list is published for a player whose ranking you have linked",
     category: "Rankings",
@@ -86,7 +88,7 @@ const notificationTypes: NotificationType[] = [
   // Admin
   {
     key: "admin",
-    label: "Administrative",
+    label: "Account and admin updates",
     description: "Get notified about account updates and administrative actions",
     category: "Administrative",
   },
@@ -94,7 +96,7 @@ const notificationTypes: NotificationType[] = [
   // Marketing
   {
     key: "marketing",
-    label: "Marketing & Promotions",
+    label: "Marketing and promotions",
     description: "Get notified about new features, tips, and special offers",
     category: "Marketing",
   },
@@ -168,7 +170,7 @@ export function NotificationsPageTemplate({ backUrl = "/settings" }: { backUrl?:
     try {
       await notificationApi.updatePreferences(preferences);
       setOriginalPreferences(preferences);
-      toast.success("Notification preferences saved");
+      toast.success("Preferences saved");
     } catch (error) {
       console.error("Failed to save preferences:", error);
       toast.error("Failed to save notification preferences");
@@ -189,193 +191,132 @@ export function NotificationsPageTemplate({ backUrl = "/settings" }: { backUrl?:
     return null;
   }
 
+  const channels = [
+    { key: "email", label: "Email" },
+    { key: "push", label: "Push" },
+    { key: "inApp", label: "In-app" },
+  ] as const;
+
+  const header = (
+    <header>
+      <p>
+        <Link href={backUrl} className={`${TEXT_LINK} ring-offset-paper text-sm`}>
+          <ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+          Back to settings
+        </Link>
+      </p>
+      <h1 className="font-editorial text-ink mt-6 text-balance text-4xl font-light leading-[1.05] tracking-tight sm:text-5xl">
+        Notification preferences
+      </h1>
+      <p className="text-ink-body mt-3 max-w-[56ch] text-pretty">
+        Choose how each kind of update reaches you.
+      </p>
+    </header>
+  );
+
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="font-editorial text-3xl font-light text-slate-900">
-            Notification Preferences
-          </h1>
-          <p className="mt-2 text-slate-600">Loading preferences...</p>
+      <div className="space-y-10" role="status" aria-busy="true">
+        {header}
+        <span className="sr-only">Loading your preferences</span>
+        <div aria-hidden="true" className="space-y-3">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="font-editorial text-ink text-4xl font-light tracking-tight sm:text-5xl">
-          Notification Preferences
-        </h1>
-        <p className="mt-2 text-slate-600">
-          Choose how you want to receive notifications for different types of activity.
-        </p>
-        <div className="mt-4">
-          <Link href={backUrl} className="text-power-orange text-sm hover:underline">
-            ← Back to Settings
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-6">
+      {header}
 
-      {/* Channel Legend */}
-      <Card className="mb-6 bg-white">
-        <div className="p-6">
-          <h3 className="mb-4 text-sm font-semibold text-slate-900">Notification Channels</h3>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex items-start gap-3">
-              <Mail className="text-power-orange mt-0.5" size={18} />
-              <div>
-                <h4 className="text-sm font-medium text-slate-900">Email</h4>
-                <p className="text-xs text-slate-600">Sent to {user.email}</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <Smartphone className="text-power-orange mt-0.5" size={18} />
-              <div>
-                <h4 className="text-sm font-medium text-slate-900">Push</h4>
-                <p className="text-xs text-slate-600">Mobile & browser notifications</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <MonitorSmartphone className="text-power-orange mt-0.5" size={18} />
-              <div>
-                <h4 className="text-sm font-medium text-slate-900">In-App</h4>
-                <p className="text-xs text-slate-600">Notification center bell</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* Push Notification Permission Request */}
-      <div className="mb-6">
+      <div>
         <PushNotificationPermission />
+
+        <ProfileSection
+          id="preferences"
+          title="Preferences"
+          description={`Email goes to ${user.email}. In-app updates appear under the bell.`}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[440px] text-sm">
+              <thead>
+                <tr className="border-hairline border-b">
+                  <th scope="col" className="text-ink-body py-3 pr-4 text-left font-medium">
+                    Notify me about
+                  </th>
+                  {channels.map((channel) => (
+                    <th
+                      key={channel.key}
+                      scope="col"
+                      className="text-ink-body w-20 px-2 py-3 text-center font-medium"
+                    >
+                      {channel.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(groupedNotifications).map(([category, types]) => (
+                  <React.Fragment key={category}>
+                    <tr>
+                      <th
+                        scope="rowgroup"
+                        colSpan={4}
+                        className="text-ink pb-1 pt-6 text-left text-sm font-semibold"
+                      >
+                        {category}
+                      </th>
+                    </tr>
+                    {types.map((type) => (
+                      <tr key={type.key} className="border-hairline border-b">
+                        <th scope="row" className="py-3 pr-4 text-left font-normal">
+                          <span className="text-ink block font-medium">{type.label}</span>
+                          <span className="text-ink-body block text-sm">{type.description}</span>
+                        </th>
+                        {channels.map((channel) => (
+                          <td key={channel.key} className="px-2 py-1 text-center">
+                            <label className="mx-auto flex h-11 w-11 cursor-pointer items-center justify-center">
+                              <Checkbox
+                                aria-label={`${type.label} by ${channel.label.toLowerCase()}`}
+                                checked={preferences[channel.key]?.[type.key] ?? true}
+                                onCheckedChange={(checked) =>
+                                  handleToggle(channel.key, type.key, checked)
+                                }
+                              />
+                            </label>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-ink-body mt-6 max-w-[60ch] text-pretty text-sm">
+            Some updates, such as security alerts, cannot be turned off and are always sent.
+          </p>
+        </ProfileSection>
       </div>
 
-      {/* Notification Preferences Table */}
-      <Card className="bg-white">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-slate-900">
-                  Notification Type
-                </th>
-                <th className="px-4 py-4 text-center text-sm font-semibold text-slate-900">
-                  <Mail size={16} className="mx-auto text-slate-600" />
-                  <span className="mt-1 block text-xs">Email</span>
-                </th>
-                <th className="px-4 py-4 text-center text-sm font-semibold text-slate-900">
-                  <Smartphone size={16} className="mx-auto text-slate-600" />
-                  <span className="mt-1 block text-xs">Push</span>
-                </th>
-                <th className="px-4 py-4 text-center text-sm font-semibold text-slate-900">
-                  <MonitorSmartphone size={16} className="mx-auto text-slate-600" />
-                  <span className="mt-1 block text-xs">In-App</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(groupedNotifications).map(([category, types], categoryIndex) => (
-                <React.Fragment key={category}>
-                  {/* Category Header */}
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <td colSpan={4} className="px-6 py-3 text-sm font-semibold text-slate-900">
-                      {category}
-                    </td>
-                  </tr>
-                  {/* Notification Types in Category */}
-                  {types.map((type, typeIndex) => (
-                    <tr
-                      key={type.key}
-                      className={
-                        typeIndex === types.length - 1 &&
-                        categoryIndex === Object.keys(groupedNotifications).length - 1
-                          ? ""
-                          : "border-b border-slate-100"
-                      }
-                    >
-                      <td className="px-6 py-4">
-                        <div>
-                          <h4 className="text-sm font-medium text-slate-900">{type.label}</h4>
-                          <p className="mt-0.5 text-xs text-slate-600">{type.description}</p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <div className="flex justify-center">
-                          <Checkbox
-                            checked={preferences.email?.[type.key] ?? true}
-                            onCheckedChange={(checked) => handleToggle("email", type.key, checked)}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <div className="flex justify-center">
-                          <Checkbox
-                            checked={preferences.push?.[type.key] ?? true}
-                            onCheckedChange={(checked) => handleToggle("push", type.key, checked)}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 text-center">
-                        <div className="flex justify-center">
-                          <Checkbox
-                            checked={preferences.inApp?.[type.key] ?? true}
-                            onCheckedChange={(checked) => handleToggle("inApp", type.key, checked)}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Save Actions */}
       {hasChanges && (
-        <div className="mt-6 flex items-center justify-end gap-3">
-          <Button variant="outline" onClick={handleReset} disabled={saving}>
-            <X size={16} className="mr-2" />
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            <Save size={16} className="mr-2" />
-            {saving ? "Saving..." : "Save Changes"}
+        <div className="bg-paper border-hairline sticky bottom-0 z-10 flex flex-wrap items-center justify-end gap-x-6 gap-y-2 border-t py-4">
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={saving}
+            className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm disabled:opacity-50`}
+          >
+            Discard changes
+          </button>
+          <Button onClick={handleSave} disabled={saving} className="min-h-11">
+            {saving ? "Saving" : "Save changes"}
           </Button>
         </div>
       )}
-
-      {/* Info Banner */}
-      <Card className="border-l-power-orange mt-6 border-l-4 bg-white">
-        <div className="p-6">
-          <h3 className="text-sm font-semibold text-slate-900">
-            <span className="inline-flex items-center gap-2">
-              <Lightbulb size={15} /> About Notification Preferences
-            </span>
-          </h3>
-          <ul className="mt-2 space-y-1 text-sm text-slate-600">
-            <li>
-              • <strong>Email:</strong> Notifications sent to your registered email address
-            </li>
-            <li>
-              • <strong>Push:</strong> Real-time notifications on your mobile device or browser
-              (requires permission)
-            </li>
-            <li>
-              • <strong>In-App:</strong> Notifications visible in the bell icon notification center
-            </li>
-            <li className="mt-3 text-xs text-slate-500">
-              Note: Some critical notifications (e.g., security alerts) cannot be disabled and will
-              always be sent.
-            </li>
-          </ul>
-        </div>
-      </Card>
     </div>
   );
 }

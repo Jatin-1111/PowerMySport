@@ -46,7 +46,7 @@ function Toggle({
       )}
     >
       <span
-        className="inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200"
+        className="inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform duration-200"
         style={{ transform: checked ? "translateX(18px)" : "translateX(2px)" }}
       />
     </button>
@@ -68,11 +68,8 @@ export function NotificationPreferencesPanel({
   ) => void;
 }) {
   return (
-    <section
-      aria-labelledby="notification-preferences"
-      className="border-hairline mb-8 rounded-2xl border bg-white"
-    >
-      <div className="border-hairline flex items-center justify-between border-b px-4 py-4 sm:px-6">
+    <section aria-labelledby="notification-preferences" className="border-hairline mb-8 border-y">
+      <div className="border-hairline flex items-center justify-between border-b py-2">
         <div className="flex items-center gap-3">
           <h2
             id="notification-preferences"
@@ -91,7 +88,7 @@ export function NotificationPreferencesPanel({
           type="button"
           onClick={onClose}
           aria-label="Close preferences"
-          className="text-ink-muted hover:bg-paper-deep hover:text-ink focus-visible:ring-ink rounded-md p-2 transition-colors focus-visible:outline-none focus-visible:ring-2"
+          className="text-ink-muted hover:bg-paper-deep hover:text-ink focus-visible:ring-ink inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2"
         >
           <X className="h-4 w-4" />
         </button>
@@ -101,7 +98,7 @@ export function NotificationPreferencesPanel({
         <table className="w-full min-w-[460px] text-sm">
           <thead>
             <tr className="border-hairline border-b">
-              <th scope="col" className="text-ink-muted px-4 py-3 text-left font-medium sm:px-6">
+              <th scope="col" className="text-ink-muted py-3 pr-4 text-left font-medium">
                 Notify me about
               </th>
               {channels.map((ch) => (
@@ -118,7 +115,7 @@ export function NotificationPreferencesPanel({
           <tbody className="divide-hairline divide-y">
             {preferenceKeys.map((pref) => (
               <tr key={pref.key}>
-                <th scope="row" className="text-ink px-4 py-3.5 text-left font-normal sm:px-6">
+                <th scope="row" className="text-ink py-3.5 pr-4 text-left font-normal">
                   {pref.label}
                 </th>
                 {channels.map((ch) => (

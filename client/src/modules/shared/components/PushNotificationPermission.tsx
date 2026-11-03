@@ -3,10 +3,18 @@
 import { pushNotificationService } from "@/lib/api/push";
 import { toast } from "@/lib/toast";
 import { Button } from "../ui/Button";
-import { Card } from "../ui/Card";
-import { AlertCircle, Bell, BellOff, CheckCircle, Lightbulb, Smartphone } from "lucide-react";
+import { StatusTag } from "../ui/StatusTag";
+import { TEXT_LINK } from "../ui/textLink";
+import { ProfileSection } from "./settings/ProfileSection";
 import { useEffect, useState } from "react";
 
+const SUBSCRIPTION_CHECK_MS = 1500;
+
+/**
+ * Whether this browser gets push notifications, as a ruled section: where it
+ * stands in a tag, one sentence on what that means, then only the actions that
+ * apply. A blocked browser gets the three steps to unblock it as plain text.
+ */
 export function PushNotificationPermission() {
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -31,7 +39,13 @@ export function PushNotificationPermission() {
       const currentPermission = await pushNotificationService.getPermissionStatus();
       setPermission(currentPermission);
 
-      const subscription = await pushNotificationService.getSubscription();
+      // `serviceWorker.ready` never settles when no service worker has been
+      // registered, which is the state of anyone who has not turned push on. Treat
+      // "no answer yet" as "not subscribed" so the Turn on button can appear.
+      const subscription = await Promise.race([
+        pushNotificationService.getSubscription(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), SUBSCRIPTION_CHECK_MS)),
+      ]);
       setIsSubscribed(!!subscription);
     } catch (error) {
       console.error("Error checking push status:", error);
@@ -94,148 +108,78 @@ export function PushNotificationPermission() {
     }
   };
 
-  if (loading) {
-    return (
-      <Card className="bg-white">
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <Smartphone className="text-slate-400" size={20} />
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Push Notifications</h3>
-              <p className="text-sm text-slate-600">Loading...</p>
-            </div>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (!isSupported) {
-    return (
-      <Card className="border-l-4 border-l-slate-400 bg-white">
-        <div className="p-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 text-slate-500" size={20} />
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Push Notifications Not Supported
-              </h3>
-              <p className="mt-1 text-sm text-slate-600">
-                Your browser does not support push notifications. Please use a modern browser like
-                Chrome, Firefox, Edge, or Safari.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  const status = loading
+    ? null
+    : !isSupported
+      ? { tone: "neutral" as const, tag: "Not supported" }
+      : isSubscribed
+        ? { tone: "live" as const, tag: "On" }
+        : permission === "denied"
+          ? { tone: "alert" as const, tag: "Blocked" }
+          : { tone: "neutral" as const, tag: "Off" };
 
   return (
-    <Card
-      className={`border-l-4 bg-white ${
-        isSubscribed
-          ? "border-l-green-500"
-          : permission === "denied"
-            ? "border-l-red-500"
-            : "border-l-power-orange"
-      }`}
+    <ProfileSection
+      id="push"
+      title="Push on this browser"
+      description="Instant updates, even when PowerMySport is closed."
     >
-      <div className="p-6">
-        <div className="flex items-start gap-4">
-          <div
-            className={`rounded-full p-2 ${
-              isSubscribed
-                ? "bg-emerald-100"
+      {loading ? (
+        <p className="text-ink-body" role="status">
+          Checking this browser.
+        </p>
+      ) : (
+        <div className="max-w-xl">
+          {status && <StatusTag tone={status.tone}>{status.tag}</StatusTag>}
+
+          <p className="text-ink-body mt-3 text-pretty">
+            {!isSupported
+              ? "This browser does not support push notifications. Chrome, Firefox, Edge and Safari do."
+              : isSubscribed
+                ? "You are receiving push notifications on this device. Choose which ones in the table below."
                 : permission === "denied"
-                  ? "bg-red-100"
-                  : "bg-power-orange/10"
-            }`}
-          >
-            {isSubscribed ? (
-              <Bell className="text-emerald-600" size={20} />
-            ) : (
-              <BellOff
-                className={permission === "denied" ? "text-red-600" : "text-power-orange"}
-                size={20}
-              />
-            )}
-          </div>
+                  ? "Push notifications are blocked for this site, so we cannot turn them on from here."
+                  : "Turn them on to get an alert as soon as something needs you."}
+          </p>
 
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-slate-900">Browser Push Notifications</h3>
-              {isSubscribed && (
-                <div className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-                  <CheckCircle size={12} />
-                  Active
-                </div>
-              )}
-            </div>
+          {isSupported && permission === "denied" && !isSubscribed && (
+            <ol className="text-ink-body mt-3 list-decimal space-y-1 pl-5 text-sm">
+              <li>Click the lock icon in your browser&apos;s address bar.</li>
+              <li>Find Notifications and set it to Allow.</li>
+              <li>Refresh this page and try again.</li>
+            </ol>
+          )}
 
-            <p className="mt-1 text-sm text-slate-600">
-              {isSubscribed
-                ? "You're receiving real-time push notifications on this device."
-                : permission === "denied"
-                  ? "Push notifications are blocked. Please enable them in your browser settings."
-                  : "Get instant notifications even when PowerMySport is closed."}
-            </p>
-
-            {permission === "denied" && (
-              <div className="mt-3 rounded-lg bg-red-50 p-3">
-                <p className="text-xs text-red-800">
-                  <strong>To enable push notifications:</strong>
-                  <br />
-                  1. Click the lock icon in your browser&apos;s address bar
-                  <br />
-                  2. Find &quot;Notifications&quot; and set to &quot;Allow&quot;
-                  <br />
-                  3. Refresh this page and try again
-                </p>
-              </div>
-            )}
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
+          {isSupported && (
+            <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
               {!isSubscribed && permission !== "denied" && (
-                <Button onClick={handleEnablePush} disabled={actionLoading} size="sm">
-                  <Bell size={16} className="mr-2" />
-                  {actionLoading ? "Enabling..." : "Enable Push Notifications"}
+                <Button onClick={handleEnablePush} disabled={actionLoading} className="min-h-11">
+                  {actionLoading ? "Turning on" : "Turn on push"}
                 </Button>
               )}
-
               {isSubscribed && (
                 <>
                   <Button
+                    variant="secondary"
                     onClick={handleDisablePush}
                     disabled={actionLoading}
-                    variant="outline"
-                    size="sm"
+                    className="min-h-11"
                   >
-                    <BellOff size={16} className="mr-2" />
-                    {actionLoading ? "Disabling..." : "Disable"}
+                    {actionLoading ? "Turning off" : "Turn off push"}
                   </Button>
-                  <Button onClick={handleTestNotification} variant="outline" size="sm">
-                    <Smartphone size={16} className="mr-2" />
-                    Send Test
-                  </Button>
+                  <button
+                    type="button"
+                    onClick={handleTestNotification}
+                    className={`${TEXT_LINK} ring-offset-paper min-h-11 text-sm`}
+                  >
+                    Send a test
+                  </button>
                 </>
               )}
             </div>
-          </div>
+          )}
         </div>
-
-        {isSubscribed && (
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <p className="text-xs text-slate-500">
-              <span className="inline-flex items-center gap-1">
-                <Lightbulb className="h-3.5 w-3.5" /> <strong>Tip:</strong>
-              </span>{" "}
-              You can manage which notifications you receive via push in the notification
-              preferences table below.
-            </p>
-          </div>
-        )}
-      </div>
-    </Card>
+      )}
+    </ProfileSection>
   );
 }

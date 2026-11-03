@@ -12,10 +12,10 @@ import { Check, ExternalLink, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 const ACTION_LINK =
-  "text-ink hover:text-ink-hover focus-visible:ring-ink inline-flex items-center gap-1 rounded-sm text-sm font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2";
+  "text-ink hover:text-ink-hover focus-visible:ring-ink inline-flex min-h-8 items-center gap-1 rounded-sm text-sm font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2";
 
 const ICON_BUTTON =
-  "text-ink-muted hover:bg-paper-deep hover:text-ink focus-visible:ring-ink rounded-md p-2 transition-colors focus-visible:outline-none focus-visible:ring-2";
+  "text-ink-muted hover:bg-paper-deep hover:text-ink focus-visible:ring-ink inline-flex h-11 w-11 items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2";
 
 export function NotificationRowSkeleton() {
   return (
@@ -87,8 +87,8 @@ export function NotificationRow({
         </div>
       </div>
 
-      {/* Always visible on touch screens; on desktop they appear on hover or keyboard focus. */}
-      <div className="flex shrink-0 items-center gap-0.5 transition-opacity sm:opacity-0 sm:focus-within:opacity-100 sm:group-hover:opacity-100">
+      {/* Always visible: an action that only exists on hover cannot be found by touch or keyboard. */}
+      <div className="flex shrink-0 items-center gap-0.5">
         {isUnread && (
           <button
             type="button"

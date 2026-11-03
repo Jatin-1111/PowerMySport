@@ -5,25 +5,24 @@ import { useProfile } from "@/modules/auth/hooks/useProfile";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import { WhatsAppConsentSetting } from "./WhatsAppConsentSetting";
 import { Modal } from "@/modules/shared/ui/Modal";
-import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
 import { UserRole } from "@/types";
-import {
-  AlertTriangle,
-  Bell,
-  ChevronRight,
-  Eye,
-  EyeOff,
-  KeyRound,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { cn } from "@/utils/cn";
+import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
+import {
+  EditLink,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  FormActions,
+  ProfileFacts,
+  ProfileSection,
+} from "./ProfileSection";
+import { WhatsAppConsentSetting } from "./WhatsAppConsentSetting";
 
 const DELETE_CONFIRM_WORD = "DELETE";
 
@@ -62,20 +61,15 @@ const roleSettingsLinks: Record<
       description: "Update personal details and profile photo.",
     },
     {
-      href: "/onboarding",
-      label: "Onboarding",
-      description: "Complete venue onboarding and verification steps.",
-    },
-    {
       href: "/venue-lister/inventory",
-      label: "Inventory",
-      description: "Manage venues, slots, and availability.",
+      label: "Venues",
+      description: "Add and edit your venues, prices and hours.",
     },
   ],
   Coach: [
     {
       href: "/coach/profile",
-      label: "Coach Profile",
+      label: "Coach profile",
       description: "Update your coaching profile and service details.",
     },
     {
@@ -87,27 +81,32 @@ const roleSettingsLinks: Record<
   Academy: [
     {
       href: "/academy",
-      label: "Academy Dashboard",
+      label: "Academy overview",
       description: "Manage your academy profile and settings.",
     },
   ],
   Admin: [
     {
       href: "/admin/users",
-      label: "User Management",
+      label: "User management",
       description: "Manage user access, roles, and account status.",
     },
     {
       href: "/admin/bookings",
-      label: "Bookings Oversight",
+      label: "Bookings oversight",
       description: "Review booking activity and handle escalations.",
     },
   ],
   EXPERT: [
     {
-      href: "/expert/dashboard",
-      label: "Expert Sessions",
-      description: "Manage client sessions booked with you.",
+      href: "/expert/profile",
+      label: "Profile",
+      description: "Update your public profile, fee and weekly availability.",
+    },
+    {
+      href: "/expert/sessions",
+      label: "Sessions",
+      description: "Answer requests and manage the sessions booked with you.",
     },
   ],
   // Policy redirects this role to /onboarding before it can reach settings —
@@ -121,14 +120,72 @@ const roleSettingsLinks: Record<
   ],
 };
 
-const initials = (name: string) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "?";
+/** "VENUE_ONBOARDING" → "Venue onboarding": role names are read aloud, so they are sentence case. */
+const roleLabel = (role: string) => {
+  const words = role.replace(/_/g, " ").toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
 
+/** A password box with a 44px show/hide button. */
+function PasswordField({
+  id,
+  label,
+  value,
+  onChange,
+  shown,
+  onToggle,
+  autoComplete,
+  hint,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  shown: boolean;
+  onToggle?: () => void;
+  autoComplete: string;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className={FIELD_LABEL}>
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          id={id}
+          type={shown ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          autoComplete={autoComplete}
+          className={cn(FIELD_INPUT, onToggle && "pr-12")}
+        />
+        {onToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={shown ? "Hide password" : "Show password"}
+            aria-pressed={shown}
+            className="text-ink-body hover:text-ink focus-visible:ring-ink absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2"
+          >
+            {shown ? (
+              <EyeOff size={18} strokeWidth={1.5} aria-hidden="true" />
+            ) : (
+              <Eye size={18} strokeWidth={1.5} aria-hidden="true" />
+            )}
+          </button>
+        )}
+      </div>
+      {hint && <p className="text-ink-body mt-1.5 text-sm">{hint}</p>}
+    </div>
+  );
+}
+
+/**
+ * The account settings page every role shares: who you are, how you sign in,
+ * how we reach you, and the way out. Each is a ruled section, like the profile
+ * pages, because the shell around it already supplies the page frame.
+ */
 export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: string }) {
   const router = useRouter();
   const { user, setUser, logout } = useAuthStore();
@@ -142,7 +199,6 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
   const [changingPassword, setChangingPassword] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
 
@@ -150,15 +206,14 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
   // which doesn't include hasPassword (only /auth/profile does) — a Google
   // user landing here right after signing in would otherwise see this as
   // `undefined` and the password-change UI would incorrectly assume they
-  // have one to change. Re-fetch the authoritative profile on mount so
-  // hasPassword is never stale here, on a page where getting it wrong
-  // matters (it also gates the delete-account confirmation below).
-  const [hasPasswordKnown, setHasPasswordKnown] = useState(user?.hasPassword !== undefined);
+  // have one to change. `useProfile` below re-fetches the authoritative
+  // profile and writes it to the store, so this is derived from the store, not
+  // remembered: it is false until the profile arrives and true from then on. It
+  // also gates the delete-account button, where getting it wrong matters.
+  const hasPasswordKnown = user?.hasPassword !== undefined;
 
   // `useProfile` owns the fetch, the caching and writing the result back to the
-  // auth store. It replaces a bespoke effect here that duplicated all three, and
-  // it deduplicates against every other consumer of the profile: this page and
-  // the notifications page used to fetch it separately on each visit.
+  // auth store; it deduplicates against every other consumer of the profile.
   useProfile();
 
   const handleGoogleLink = async (credentialResponse: { credential?: string }) => {
@@ -227,7 +282,7 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
         newPassword,
       });
       if (response.success) {
-        toast.success("Password changed successfully");
+        toast.success("Password changed");
         resetPasswordForm();
       } else {
         toast.error(response.message || "Failed to change password");
@@ -237,6 +292,13 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
       toast.error(err.response?.data?.message || "Failed to change password");
     } finally {
       setChangingPassword(false);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    if (!deletingAccount) {
+      setDeleteModalOpen(false);
+      setDeleteConfirmText("");
     }
   };
 
@@ -265,377 +327,228 @@ export function SettingsPageTemplate({ basePath = "/settings" }: { basePath?: st
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-      <StaggerContainer staggerChildren={0.08} className="space-y-6">
-        {/* Header */}
-        <StaggerItem>
-          <header>
-            <h1 className="font-editorial text-ink text-4xl font-light tracking-tight sm:text-5xl">
-              Settings
-            </h1>
-            <p className="text-ink-body mt-3 max-w-2xl text-base">
-              Manage your account, security, and preferences.
+    <div className="space-y-6">
+      <header>
+        <h1 className="font-editorial text-ink text-balance text-4xl font-light leading-[1.05] tracking-tight sm:text-5xl">
+          Settings
+        </h1>
+        <p className="text-ink-body mt-3 max-w-[56ch] text-pretty">
+          Your account, how you sign in and how we reach you.
+        </p>
+      </header>
+
+      <div>
+        <ProfileSection id="account" title="Account" description="Who this account belongs to.">
+          <ProfileFacts
+            rows={[
+              { label: "Name", value: user.name },
+              { label: "Email", value: user.email },
+              { label: "Account type", value: roleLabel(user.role) },
+            ]}
+          />
+        </ProfileSection>
+
+        <ProfileSection
+          id="password"
+          title="Password"
+          description="Used to sign in with your email."
+          action={
+            hasPasswordKnown && canSetPassword && !showPasswordForm ? (
+              <EditLink onClick={() => setShowPasswordForm(true)} label="Change password" />
+            ) : undefined
+          }
+        >
+          {!hasPasswordKnown ? (
+            <p className="text-ink-body">Checking your sign-in method.</p>
+          ) : !canSetPassword ? (
+            <p className="text-ink-body">
+              You sign in with Google, so there is no password to manage.
             </p>
-          </header>
-        </StaggerItem>
-
-        {/* Account overview */}
-        <StaggerItem>
-          <Card className="p-0">
-            <div className="flex items-center gap-4 p-6">
-              <div className="bg-ink flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-lg font-semibold text-white">
-                {initials(user.name)}
+          ) : showPasswordForm ? (
+            <form
+              className="max-w-xl space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleChangePassword();
+              }}
+            >
+              <PasswordField
+                id="current-password"
+                label="Current password"
+                value={currentPassword}
+                onChange={setCurrentPassword}
+                shown={showCurrent}
+                onToggle={() => setShowCurrent((v) => !v)}
+                autoComplete="current-password"
+              />
+              <div className="grid gap-5 sm:grid-cols-2">
+                <PasswordField
+                  id="new-password"
+                  label="New password"
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  shown={showNew}
+                  onToggle={() => setShowNew((v) => !v)}
+                  autoComplete="new-password"
+                  hint="At least 6 characters."
+                />
+                <PasswordField
+                  id="confirm-password"
+                  label="Confirm new password"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  shown={showNew}
+                  autoComplete="new-password"
+                />
               </div>
-              <div className="min-w-0 flex-1">
-                <h2 className="truncate text-lg font-semibold text-slate-900">{user.name}</h2>
-                <p className="truncate text-sm text-slate-500">{user.email}</p>
-                <p className="text-ink-muted mt-1 text-sm">
-                  {user.role.replace(/_/g, " ").charAt(0).toUpperCase() +
-                    user.role.replace(/_/g, " ").slice(1).toLowerCase()}
-                </p>
-              </div>
-            </div>
-          </Card>
-        </StaggerItem>
+              <FormActions
+                onSave={() => void handleChangePassword()}
+                onCancel={resetPasswordForm}
+                saving={changingPassword}
+                saveLabel="Save password"
+              />
+            </form>
+          ) : (
+            <p className="text-ink-body">Change the password you use to sign in.</p>
+          )}
+        </ProfileSection>
 
-        {/* Security */}
-        <StaggerItem>
-          <div>
-            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
-              Security
-            </h2>
-            <Card className="border-0 bg-white p-0 shadow-sm">
-              <div className="p-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="bg-power-orange/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
-                      <KeyRound className="text-power-orange" size={18} />
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-slate-900">Password</h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {!hasPasswordKnown
-                          ? "Checking your sign-in method..."
-                          : canSetPassword
-                            ? "Change the password used to sign in."
-                            : "You sign in with Google, no password to manage."}
-                      </p>
-                    </div>
-                  </div>
-                  {hasPasswordKnown && canSetPassword && !showPasswordForm && (
-                    <Button size="sm" variant="outline" onClick={() => setShowPasswordForm(true)}>
-                      Change
-                    </Button>
-                  )}
-                </div>
-
-                {hasPasswordKnown && canSetPassword && showPasswordForm && (
-                  <div className="mt-5 space-y-4 border-t border-slate-100 pt-5">
-                    <div>
-                      <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                        Current password
-                      </label>
-                      <div className="relative">
-                        <input
-                          type={showCurrent ? "text" : "password"}
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 outline-none transition-all focus:ring-2"
-                          placeholder="••••••••"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowCurrent((v) => !v)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                          aria-label="Toggle password visibility"
-                        >
-                          {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                          New password
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showNew ? "text" : "password"}
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 pr-10 text-sm text-slate-900 outline-none transition-all focus:ring-2"
-                            placeholder="At least 6 characters"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowNew((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                            aria-label="Toggle password visibility"
-                          >
-                            {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                          Confirm new password
-                        </label>
-                        <input
-                          type={showNew ? "text" : "password"}
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          className="focus:border-power-orange focus:ring-power-orange/20 w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-900 outline-none transition-all focus:ring-2"
-                          placeholder="Re-enter new password"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={resetPasswordForm}
-                        disabled={changingPassword}
-                      >
-                        Cancel
-                      </Button>
-                      <Button size="sm" onClick={handleChangePassword} loading={changingPassword}>
-                        Save Password
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-          </div>
-        </StaggerItem>
-
-        {/* WhatsApp updates */}
-        <StaggerItem>
-          <WhatsAppConsentSetting />
-        </StaggerItem>
-
-        {/* Linked Accounts */}
-        <StaggerItem>
-          <div>
-            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
-              Linked Accounts
-            </h2>
-            <Card className="border-0 bg-white p-0 shadow-sm">
-              <div className="p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100">
-                      <svg className="h-5 w-5" viewBox="0 0 24 24">
-                        <path
-                          d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                          fill="#4285F4"
-                        />
-                        <path
-                          d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                          fill="#34A853"
-                        />
-                        <path
-                          d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                          fill="#FBBC05"
-                        />
-                        <path
-                          d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                          fill="#EA4335"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <h3 className="text-base font-semibold text-slate-900">Google</h3>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {user.googleId
-                          ? "Your Google account is linked."
-                          : "Link your Google account to sign in easily."}
-                      </p>
-                    </div>
-                  </div>
-                  {!user.googleId && (
-                    <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
-                      <div className="flex-shrink-0">
-                        <GoogleLogin
-                          onSuccess={handleGoogleLink}
-                          onError={() => toast.error("Google linking failed")}
-                          useOneTap={false}
-                          shape="rectangular"
-                          theme="outline"
-                          size="medium"
-                          text="continue_with"
-                        />
-                      </div>
-                    </GoogleOAuthProvider>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </StaggerItem>
-
-        {/* Notifications */}
-        <StaggerItem>
-          <div>
-            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
-              General
-            </h2>
-            <Link href={`${basePath}/notifications`}>
-              <Card variant="interactive" className="group border-0 bg-white p-0 shadow-sm">
-                <div className="flex items-center gap-4 p-6">
-                  <div className="bg-power-orange/10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
-                    <Bell className="text-power-orange" size={18} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base font-semibold text-slate-900">
-                      Notification Preferences
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-600">
-                      Control how you receive notifications via email, push, and in-app.
-                    </p>
-                  </div>
-                  <ChevronRight
-                    className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5"
-                    size={18}
+        <ProfileSection
+          id="google"
+          title="Google"
+          description="Sign in with your Google account instead of a password."
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-ink-body">
+              {user.googleId ? "Your Google account is linked." : "No Google account is linked."}
+            </p>
+            {!user.googleId && (
+              <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ""}>
+                <div className="shrink-0">
+                  <GoogleLogin
+                    onSuccess={handleGoogleLink}
+                    onError={() => toast.error("Google linking failed")}
+                    useOneTap={false}
+                    shape="rectangular"
+                    theme="outline"
+                    size="large"
+                    text="continue_with"
                   />
                 </div>
-              </Card>
-            </Link>
+              </GoogleOAuthProvider>
+            )}
           </div>
-        </StaggerItem>
+        </ProfileSection>
 
-        {/* Role-specific links */}
-        <StaggerItem>
-          <div>
-            <h2 className="font-editorial text-ink mb-3 text-2xl font-light tracking-tight">
-              {user.role.replace(/_/g, " ")} Settings
-            </h2>
-            <div className="grid gap-3">
-              {roleSettingsLinks[user.role].map((item) => (
-                <Link key={item.href} href={item.href}>
-                  <Card variant="interactive" className="group border-0 bg-white p-0 shadow-sm">
-                    <div className="flex items-center gap-4 p-5">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-base font-semibold text-slate-900">{item.label}</h3>
-                        <p className="mt-1 text-sm text-slate-600">{item.description}</p>
-                      </div>
-                      <ChevronRight
-                        className="shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5"
-                        size={18}
-                      />
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </StaggerItem>
+        <WhatsAppConsentSetting />
 
-        {/* Danger zone */}
-        <StaggerItem>
-          <div>
-            <h2 className="font-editorial mb-3 text-2xl font-light tracking-tight text-red-700">
-              Danger Zone
-            </h2>
-            <Card className="border-0 bg-rose-50/40 p-0 shadow-sm ring-1 ring-inset ring-rose-100">
-              <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100">
-                    <Trash2 className="text-rose-600" size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-slate-900">Delete Account</h3>
-                    <p className="mt-1 max-w-md text-sm text-slate-600">
-                      Deactivate your account immediately, then permanently delete it in 30 days.
-                      Log back in before then to cancel.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setDeleteModalOpen(true)}
-                  icon={<Trash2 size={15} />}
-                  disabled={!hasPasswordKnown}
+        <ProfileSection
+          id="notifications"
+          title="Notifications"
+          description="Which updates reach you by email, push and in the app."
+        >
+          <Link href={`${basePath}/notifications`} className={`${TEXT_LINK} ring-offset-paper`}>
+            Notification preferences
+            <ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
+          </Link>
+        </ProfileSection>
+
+        <ProfileSection
+          id="shortcuts"
+          title={`${roleLabel(user.role)} shortcuts`}
+          description="Places in your account you may be looking for."
+        >
+          <ul className="border-hairline border-t">
+            {roleSettingsLinks[user.role].map((item) => (
+              <li key={item.href} className="border-hairline border-b">
+                <Link
+                  href={item.href}
+                  className="hover:bg-paper-deep focus-visible:ring-ink group flex min-h-11 items-center justify-between gap-6 py-3.5 focus-visible:outline-none focus-visible:ring-2"
                 >
-                  Delete Account
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </StaggerItem>
-      </StaggerContainer>
+                  <span className="min-w-0">
+                    <span className="text-ink block font-medium">{item.label}</span>
+                    <span className="text-ink-body block text-sm">{item.description}</span>
+                  </span>
+                  <ArrowRight
+                    size={16}
+                    strokeWidth={1.5}
+                    className="text-ink-body shrink-0"
+                    aria-hidden="true"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </ProfileSection>
 
-      {/* Delete account confirmation */}
+        <ProfileSection
+          id="delete-account"
+          title="Delete account"
+          description="This deactivates your account at once."
+        >
+          <p className="text-ink-body max-w-[60ch] text-pretty">
+            Your account is deleted for good after 30 days. Sign back in before then to cancel.
+          </p>
+          <div className="mt-5">
+            <Button
+              variant="danger"
+              className="min-h-11"
+              onClick={() => setDeleteModalOpen(true)}
+              disabled={!hasPasswordKnown}
+            >
+              Delete my account
+            </Button>
+          </div>
+        </ProfileSection>
+      </div>
+
       <Modal
         isOpen={deleteModalOpen}
-        onClose={() => {
-          if (!deletingAccount) {
-            setDeleteModalOpen(false);
-            setDeleteConfirmText("");
-          }
-        }}
+        onClose={closeDeleteModal}
         title="Delete your account?"
         size="sm"
       >
-        <div className="flex flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
-            <AlertTriangle size={26} />
-          </div>
-          <p className="text-sm leading-relaxed text-slate-700">
-            Your account will be deactivated immediately. It will be{" "}
-            <span className="font-semibold text-rose-600">permanently deleted in 30 days</span>.
-            Your name, email, and phone number will be removed, along with personal content like
-            calendar events and AI guidance history. Bookings and payment records are kept for legal
-            and accounting purposes.{" "}
-            <span className="font-semibold text-rose-600">
-              Log back in before the 30 days are up to cancel.
-            </span>
-          </p>
-        </div>
+        <p className="text-ink-body text-pretty text-sm leading-relaxed">
+          Your account is deactivated immediately and permanently deleted in 30 days. Your name,
+          email and phone number are removed, along with personal content like calendar events and
+          AI guidance history. Bookings and payment records are kept for legal and accounting
+          purposes. Sign back in before the 30 days are up to cancel.
+        </p>
 
         <div className="mt-5">
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Type <span className="font-bold text-rose-600">{DELETE_CONFIRM_WORD}</span> to confirm
+          <label htmlFor="delete-confirm" className={FIELD_LABEL}>
+            Type {DELETE_CONFIRM_WORD} to confirm
           </label>
           <input
+            id="delete-confirm"
             type="text"
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm uppercase text-slate-900 outline-none transition-all focus:border-rose-400 focus:ring-2 focus:ring-rose-100"
+            className={cn(FIELD_INPUT, "uppercase")}
             placeholder={DELETE_CONFIRM_WORD}
+            autoComplete="off"
             autoFocus
           />
         </div>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setDeleteModalOpen(false);
-              setDeleteConfirmText("");
-            }}
+        <div className="mt-6 flex flex-wrap items-center justify-end gap-x-6 gap-y-2">
+          <button
+            type="button"
+            onClick={closeDeleteModal}
             disabled={deletingAccount}
+            className={`${TEXT_LINK} min-h-11 text-sm disabled:opacity-50`}
           >
             Cancel
-          </Button>
+          </button>
           <Button
             variant="danger"
+            className="min-h-11"
             onClick={handleDeleteAccount}
             disabled={
               deletingAccount || deleteConfirmText.trim().toUpperCase() !== DELETE_CONFIRM_WORD
             }
           >
-            {deletingAccount ? (
-              <>
-                <Loader2 className="animate-spin" size={16} />
-                Deleting...
-              </>
-            ) : (
-              "Delete My Account"
-            )}
+            {deletingAccount ? "Deleting" : "Delete my account"}
           </Button>
         </div>
       </Modal>

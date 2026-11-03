@@ -20,10 +20,10 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 const TEXT_BUTTON =
-  "text-ink hover:bg-paper-deep focus-visible:ring-ink inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50";
+  "text-ink hover:bg-paper-deep focus-visible:ring-ink inline-flex min-h-11 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 const PAGE_BUTTON =
-  "focus-visible:ring-ink flex h-10 min-w-10 items-center justify-center rounded-md border px-2 text-sm font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40";
+  "focus-visible:ring-ink flex h-11 min-w-11 items-center justify-center rounded-md border px-2 text-sm font-medium tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40";
 
 // --- Main view ---
 
@@ -333,7 +333,7 @@ function NotificationsPageContent({ embedded }: { embedded: boolean }) {
             pageNum === "..." ? (
               <span
                 key={`ellipsis-${idx}`}
-                className="text-ink-muted flex h-10 w-8 items-center justify-center text-sm"
+                className="text-ink-muted flex h-11 w-8 items-center justify-center text-sm"
               >
                 …
               </span>
