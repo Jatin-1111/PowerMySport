@@ -1,6 +1,5 @@
 "use client";
 
-import { getCommunityAppUrl } from "@/lib/community/url";
 import { toast } from "@/lib/toast";
 import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
 import { authApi } from "@/modules/auth/services/auth";
@@ -26,7 +25,6 @@ import {
   IndianRupee,
   Landmark,
   LayoutDashboard,
-  MessagesSquare,
   Settings,
   ShieldCheck,
   Star,
@@ -57,7 +55,6 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
   const [isGateStuck, setIsGateStuck] = useState(false);
   const lastGateToastKeyRef = useRef<string | null>(null);
   const gateRedirectCountRef = useRef(0);
-  const communityUrl = getCommunityAppUrl();
   // undefined = still loading, null = no method, object = has method
   const [coachPayoutMethod, setCoachPayoutMethod] = useState<IPayoutMethod | null | undefined>(
     undefined
@@ -195,22 +192,13 @@ export default function CoachLayout({ children }: { children: React.ReactNode })
       section: "Account",
     },
     { href: "/coach/settings", label: "Settings", icon: Settings, section: "Account" },
-    {
-      href: communityUrl,
-      label: "Community",
-      icon: MessagesSquare,
-      external: true,
-      section: "Account",
-    },
     // The way out to the public site. It stays available even while the
     // verification gate hides everything else.
     { href: "/", label: "Back to the site", icon: ArrowLeft },
   ];
 
   const visibleNavItems = isVerificationLocked
-    ? navItems.filter(
-        (item) => item.href === "/" || item.href === "/coach/verification" || item.external
-      )
+    ? navItems.filter((item) => item.href === "/" || item.href === "/coach/verification")
     : navItems.filter((item) => item.href !== "/coach/verification");
 
   if (guard !== "allowed") {
