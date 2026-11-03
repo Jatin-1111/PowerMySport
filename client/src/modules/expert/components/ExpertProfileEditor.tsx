@@ -8,70 +8,40 @@ import {
 } from "@/modules/expert/services/expert";
 import ExpertiseMultiSelect from "@/modules/shared/components/ExpertiseMultiSelect";
 import LanguagesMultiSelect from "@/modules/shared/components/LanguagesMultiSelect";
+import {
+  FIELD_HINT,
+  FIELD_INPUT,
+  FIELD_LABEL,
+  ProfileSection,
+} from "@/modules/shared/components/settings/ProfileSection";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
+import { StatusTag } from "@/modules/shared/ui/StatusTag";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
 import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import { SUPPORTED_SPORT_NAMES } from "@/modules/sports/config/supportedSports";
-import {
-  Award,
-  BadgeIndianRupee,
-  CalendarClock,
-  FileText,
-  MapPin,
-  Plus,
-  Star,
-  Trash2,
-  User,
-} from "lucide-react";
+import { cn } from "@/utils/cn";
+import { ArrowUpRight, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ExpertPhotoUpload } from "./ExpertPhotoUpload";
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 // Kept identical to the regexes enforced during onboarding
 // (TaxPayoutInfoStep.tsx) and server-side (ExpertsService.ts).
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-const field =
-  "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition-all focus:border-power-orange focus:bg-white focus:outline-none focus:ring-2 focus:ring-power-orange/20";
-const fieldLabel = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500";
+const TIME_INPUT = cn(FIELD_INPUT, "w-36 tabular-nums");
+const ACTION = `${TEXT_LINK} ring-offset-paper min-h-11 text-sm`;
 
-function SectionHeader({
-  icon: Icon,
-  iconClassName,
-  title,
-  subtitle,
-}: {
-  icon: React.ElementType;
-  iconClassName: string;
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
-      <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${iconClassName}`}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-      <div>
-        <h3 className="text-base font-bold text-slate-900">{title}</h3>
-        {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
-
-function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-xl font-bold text-slate-900">{value}</p>
-    </div>
-  );
-}
-
+/**
+ * The expert's own profile as ruled sections, each a heading and its fields. It
+ * is one form with one Save: nothing is stored until the expert saves, and the
+ * same rules apply here as in onboarding, so a profile cannot be saved into a
+ * state onboarding would have refused.
+ */
 export function ExpertProfileEditor({
   profile,
   onSaved,
@@ -192,394 +162,363 @@ export function ExpertProfileEditor({
     }
   };
 
-  const totalSlots = windows.length;
-  const modeLabel =
-    sessionMode === "BOTH"
-      ? "Online + In-person"
-      : sessionMode === "ONLINE"
-        ? "Online"
-        : "In-person";
-
   return (
-    <div className="space-y-6 pb-24 sm:space-y-8">
-      {/* Hero */}
-      <Card className="overflow-hidden border-0 bg-white p-0 shadow-sm">
-        <div className="bg-slate-50 px-5 py-6 sm:px-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
-              <ExpertPhotoUpload
-                currentPhotoUrl={photoUrl || undefined}
-                onPhotoReady={(url, key) => {
-                  setPhotoUrl(url);
-                  setPhotoKey(key);
-                }}
-              />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Expert Profile
-                </p>
-                <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-                  {name || "Expert"}
-                </h2>
-                {profile.email && <p className="mt-0.5 text-sm text-slate-500">{profile.email}</p>}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                {(profile.rating || 0).toFixed(1)} ({profile.reviewCount || 0})
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${
-                  profile.isActive
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                    : "border-slate-200 bg-slate-100 text-slate-500"
-                }`}
-              >
-                {profile.isActive ? "Live on PowerMySport" : "Inactive"}
-              </span>
-              {profile.id && (
-                <Link
-                  href={`/experts/${profile.id}`}
-                  target="_blank"
-                  className="hover:border-power-orange hover:text-power-orange inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600"
-                >
-                  View public profile
-                </Link>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <StatChip label="Sports" value={String(sports.length)} />
-            <StatChip
-              label="Session fee"
-              value={`₹${Number(sessionFee || 0).toLocaleString("en-IN")}`}
-            />
-            <StatChip label="Mode" value={modeLabel} />
-            <StatChip label="Weekly slots" value={String(totalSlots)} />
-          </div>
-        </div>
-      </Card>
-
-      <div className="grid gap-6 xl:grid-cols-12 xl:items-start">
-        {/* Left column */}
-        <div className="space-y-6 xl:col-span-7">
-          <Card className="border-0 bg-white shadow-sm">
-            <SectionHeader
-              icon={User}
-              iconClassName="bg-indigo-50 text-indigo-600"
-              title="About you"
-              subtitle="Shown on your public profile"
-            />
-            <div className="space-y-4">
-              <div>
-                <label className={fieldLabel}>Name</label>
-                <input
-                  className={field}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your full name"
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>Bio</label>
-                <textarea
-                  rows={4}
-                  className={field}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  maxLength={4000}
-                />
-                <p className="mt-1 text-right text-xs text-slate-400">{bio.length}/4000</p>
-              </div>
-              <div>
-                <label className={fieldLabel}>Achievements</label>
-                <textarea
-                  rows={2}
-                  className={field}
-                  value={achievements}
-                  onChange={(e) => setAchievements(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>City</label>
-                <input
-                  className={field}
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="e.g. Mumbai"
-                />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-0 bg-white shadow-sm">
-            <SectionHeader
-              icon={Award}
-              iconClassName="bg-purple-50 text-purple-600"
-              title="Expertise"
-              subtitle="Helps parents find and trust you"
-            />
-            <div className="space-y-4">
-              <div>
-                <label className={fieldLabel}>Sports</label>
-                <SportsMultiSelect
-                  value={sports}
-                  onChange={setSports}
-                  allowedSports={SUPPORTED_SPORT_NAMES}
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>Expertise</label>
-                <ExpertiseMultiSelect value={expertise} onChange={setExpertise} />
-              </div>
-              <div>
-                <label className={fieldLabel}>Languages</label>
-                <LanguagesMultiSelect value={languages} onChange={setLanguages} />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="border-0 bg-white shadow-sm">
-            <SectionHeader
-              icon={BadgeIndianRupee}
-              iconClassName="bg-emerald-50 text-emerald-600"
-              title="Session settings"
-              subtitle="Fee, format, and length of your sessions"
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={fieldLabel}>Session fee (₹)</label>
-                <input
-                  type="number"
-                  min="0"
-                  className={field}
-                  value={sessionFee}
-                  onChange={(e) => setSessionFee(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>Session length</label>
-                <select
-                  className={field}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                >
-                  {[30, 45, 60, 75, 90, 120].map((m) => (
-                    <option key={m} value={m}>
-                      {m} minutes
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="sm:col-span-2">
-                <label className={fieldLabel}>Session mode</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["ONLINE", "IN_PERSON", "BOTH"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setSessionMode(mode)}
-                      className={`rounded-xl border py-3 text-sm font-semibold transition-all ${
-                        sessionMode === mode
-                          ? "border-power-orange bg-power-orange/10 text-power-orange"
-                          : "hover:border-power-orange/50 border-slate-200 bg-slate-50 text-slate-600"
-                      }`}
-                    >
-                      {mode === "ONLINE" ? "Online" : mode === "IN_PERSON" ? "In-person" : "Both"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {(sessionMode === "IN_PERSON" || sessionMode === "BOTH") && (
-                <div className="sm:col-span-2">
-                  <label className={fieldLabel}>
-                    <MapPin className="mr-1 inline h-3.5 w-3.5" /> In-person location
-                  </label>
-                  <input
-                    className={field}
-                    placeholder="e.g. 2nd Floor, ABC Sports Complex, Sector 15, Chandigarh"
-                    value={inPersonAddress}
-                    onChange={(e) => setInPersonAddress(e.target.value)}
-                  />
-                  <p className="mt-1.5 text-xs text-slate-500">
-                    Shown to a client only after they&apos;ve booked a session with you.
-                  </p>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          <Card className="border-0 bg-white shadow-sm">
-            <SectionHeader
-              icon={FileText}
-              iconClassName="bg-indigo-50 text-indigo-600"
-              title="Tax details"
-              subtitle="Used for session-fee payouts and tax reporting"
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={fieldLabel}>PAN number</label>
-                <input
-                  className={field}
-                  placeholder="e.g. ABCDE1234F"
-                  value={panNumber}
-                  maxLength={10}
-                  onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
-                />
-              </div>
-              <div>
-                <label className={fieldLabel}>GST number (optional)</label>
-                <input
-                  className={field}
-                  placeholder="e.g. 22AAAAA0000A1Z5"
-                  value={gstNumber}
-                  maxLength={15}
-                  onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
-                />
-              </div>
-            </div>
-            <p className="mt-3 text-xs text-slate-500">
-              Manage your bank account or UPI payout method from{" "}
-              <Link
-                href="/expert/payouts"
-                className="text-power-orange font-semibold hover:underline"
-              >
-                Payouts
+    <div>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-4 pb-10">
+        <ExpertPhotoUpload
+          currentPhotoUrl={photoUrl || undefined}
+          onPhotoReady={(url, key) => {
+            setPhotoUrl(url);
+            setPhotoKey(key);
+          }}
+        />
+        <div className="min-w-0">
+          <p className="text-ink text-lg font-medium">{name || "Expert"}</p>
+          {profile.email && <p className="text-ink-body text-sm">{profile.email}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <StatusTag tone={profile.isActive ? "live" : "neutral"}>
+              {profile.isActive ? "Live" : "Inactive"}
+            </StatusTag>
+            <span className="text-ink-body text-sm tabular-nums">
+              {profile.reviewCount
+                ? `${(profile.rating || 0).toFixed(1)} from ${profile.reviewCount} reviews`
+                : "No reviews yet"}
+            </span>
+            {profile.id && (
+              <Link href={`/experts/${profile.id}`} target="_blank" className={ACTION}>
+                View public profile
+                <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
               </Link>
-              .
-            </p>
-          </Card>
-        </div>
-
-        {/* Right column */}
-        <div className="space-y-6 xl:col-span-5">
-          <Card className="border-0 bg-white shadow-sm">
-            <SectionHeader
-              icon={CalendarClock}
-              iconClassName="bg-orange-50 text-power-orange"
-              title="Weekly availability"
-              subtitle="Clients can only book slots inside these windows"
-            />
-            <div className="space-y-3">
-              {DAYS.map((day, dayIdx) => {
-                const dayWindows = windows
-                  .map((w, i) => ({ w, i }))
-                  .filter(({ w }) => w.dayOfWeek === dayIdx);
-                const hasSlots = dayWindows.length > 0;
-                return (
-                  <div
-                    key={day}
-                    className={`rounded-xl border p-3 transition-colors ${
-                      hasSlots
-                        ? "border-emerald-100 bg-emerald-50/40"
-                        : "border-slate-100 bg-slate-50/60"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${hasSlots ? "bg-emerald-500" : "bg-slate-300"}`}
-                        />
-                        {day}
-                      </span>
-                      <button
-                        onClick={() => addWindow(dayIdx)}
-                        className="text-power-orange inline-flex items-center gap-1 text-xs font-semibold hover:underline"
-                      >
-                        <Plus size={13} /> Add
-                      </button>
-                    </div>
-                    {dayWindows.length === 0 ? (
-                      <p className="mt-1.5 text-xs text-slate-400">Unavailable</p>
-                    ) : (
-                      <div className="mt-2 space-y-2">
-                        {dayWindows.map(({ w, i }) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <input
-                              type="time"
-                              value={w.start}
-                              onChange={(e) => updateWindow(i, { start: e.target.value })}
-                              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                            />
-                            <span className="text-slate-400">–</span>
-                            <input
-                              type="time"
-                              value={w.end}
-                              onChange={(e) => updateWindow(i, { end: e.target.value })}
-                              className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                            />
-                            <button
-                              onClick={() => removeWindow(i)}
-                              className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                              aria-label="Remove window"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Blackout dates */}
-            <div className="mt-5 border-t border-slate-100 pt-4">
-              <h4 className="text-sm font-bold text-slate-900">Blackout dates</h4>
-              <p className="mt-1 text-xs text-slate-500">
-                Days you&apos;re unavailable even if within your weekly hours.
-              </p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                {blackout.map((d) => (
-                  <span
-                    key={d}
-                    className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
-                  >
-                    {d}
-                    <button
-                      onClick={() => setBlackout((b) => b.filter((x) => x !== d))}
-                      aria-label="Remove date"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <input
-                  type="date"
-                  value={newBlackout}
-                  onChange={(e) => setNewBlackout(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm"
-                />
-                <button
-                  onClick={() => {
-                    if (newBlackout && !blackout.includes(newBlackout)) {
-                      setBlackout((b) => [...b, newBlackout].sort());
-                      setNewBlackout("");
-                    }
-                  }}
-                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  <Plus size={13} /> Add
-                </button>
-              </div>
-            </div>
-          </Card>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-10 border-t border-slate-200 bg-white/95 px-6 py-3 backdrop-blur-sm lg:left-72">
-        <div className="mx-auto flex max-w-5xl justify-end">
-          <Button onClick={save} loading={saving} variant="primary" size="md">
-            Save changes
-          </Button>
+      <ProfileSection id="about" title="About you" description="Shown on your public profile.">
+        <div className="max-w-2xl space-y-5">
+          <div>
+            <label htmlFor="expert-name" className={FIELD_LABEL}>
+              Name
+            </label>
+            <input
+              id="expert-name"
+              className={FIELD_INPUT}
+              value={name}
+              autoComplete="name"
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="expert-bio" className={FIELD_LABEL}>
+              Bio
+            </label>
+            <textarea
+              id="expert-bio"
+              rows={5}
+              className={FIELD_INPUT}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              maxLength={4000}
+            />
+            <p className={cn(FIELD_HINT, "tabular-nums")}>
+              At least 20 characters. {bio.length} of 4000.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="expert-achievements" className={FIELD_LABEL}>
+              Achievements
+            </label>
+            <textarea
+              id="expert-achievements"
+              rows={3}
+              className={FIELD_INPUT}
+              value={achievements}
+              onChange={(e) => setAchievements(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="expert-city" className={FIELD_LABEL}>
+              City
+            </label>
+            <input
+              id="expert-city"
+              className={cn(FIELD_INPUT, "md:max-w-xs")}
+              value={city}
+              autoComplete="address-level2"
+              onChange={(e) => setCity(e.target.value)}
+            />
+          </div>
         </div>
+      </ProfileSection>
+
+      <ProfileSection
+        id="expertise"
+        title="Expertise"
+        description="Helps parents find and trust you."
+      >
+        <div className="max-w-2xl space-y-6">
+          <div>
+            <p className={FIELD_LABEL}>Sports</p>
+            <SportsMultiSelect
+              value={sports}
+              onChange={setSports}
+              allowedSports={SUPPORTED_SPORT_NAMES}
+            />
+          </div>
+          <div>
+            <p className={FIELD_LABEL}>Expertise</p>
+            <ExpertiseMultiSelect value={expertise} onChange={setExpertise} />
+          </div>
+          <div>
+            <p className={FIELD_LABEL}>Languages</p>
+            <LanguagesMultiSelect value={languages} onChange={setLanguages} />
+          </div>
+        </div>
+      </ProfileSection>
+
+      <ProfileSection
+        id="session-settings"
+        title="Session settings"
+        description="Your fee, the format and the length of a session."
+      >
+        <div className="max-w-2xl space-y-6">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="expert-fee" className={FIELD_LABEL}>
+                Session fee (₹)
+              </label>
+              <input
+                id="expert-fee"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                className={cn(FIELD_INPUT, "tabular-nums")}
+                value={sessionFee}
+                onChange={(e) => setSessionFee(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="expert-length" className={FIELD_LABEL}>
+                Session length
+              </label>
+              <select
+                id="expert-length"
+                className={FIELD_INPUT}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+              >
+                {[30, 45, 60, 75, 90, 120].map((m) => (
+                  <option key={m} value={m}>
+                    {m} minutes
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <p className={FIELD_LABEL}>How you hold sessions</p>
+            <UnderlineFilter
+              label="Session mode"
+              value={sessionMode}
+              onChange={setSessionMode}
+              items={[
+                { label: "Online", value: "ONLINE" },
+                { label: "In person", value: "IN_PERSON" },
+                { label: "Both", value: "BOTH" },
+              ]}
+            />
+          </div>
+
+          {(sessionMode === "IN_PERSON" || sessionMode === "BOTH") && (
+            <div>
+              <label htmlFor="expert-address" className={FIELD_LABEL}>
+                In-person location
+              </label>
+              <input
+                id="expert-address"
+                className={FIELD_INPUT}
+                placeholder="For example, 2nd Floor, ABC Sports Complex, Sector 15, Chandigarh"
+                value={inPersonAddress}
+                onChange={(e) => setInPersonAddress(e.target.value)}
+              />
+              <p className={FIELD_HINT}>Shown to a parent only after they have booked you.</p>
+            </div>
+          )}
+        </div>
+      </ProfileSection>
+
+      <ProfileSection
+        id="availability"
+        title="Weekly availability"
+        description="Parents can only book times inside these windows."
+      >
+        <ul className="border-hairline border-t">
+          {DAY_NAMES.map((day, dayIdx) => {
+            const dayWindows = windows
+              .map((w, i) => ({ w, i }))
+              .filter(({ w }) => w.dayOfWeek === dayIdx);
+            return (
+              <li
+                key={day}
+                className="border-hairline grid gap-x-6 gap-y-2 border-b py-3 sm:grid-cols-[8rem_minmax(0,1fr)]"
+              >
+                <p className="text-ink flex min-h-11 items-center self-start text-sm font-medium">
+                  {day}
+                </p>
+                <div className="space-y-2">
+                  {dayWindows.length === 0 && (
+                    <p className="text-ink-body flex min-h-11 items-center text-sm">Unavailable</p>
+                  )}
+                  {dayWindows.map(({ w, i }) => (
+                    <div key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <input
+                        type="time"
+                        aria-label={`${day}, window ${i + 1} starts`}
+                        value={w.start}
+                        onChange={(e) => updateWindow(i, { start: e.target.value })}
+                        className={TIME_INPUT}
+                      />
+                      <span className="text-ink-body text-sm">to</span>
+                      <input
+                        type="time"
+                        aria-label={`${day}, window ${i + 1} ends`}
+                        value={w.end}
+                        onChange={(e) => updateWindow(i, { end: e.target.value })}
+                        className={TIME_INPUT}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeWindow(i)}
+                        aria-label={`Remove ${day} window`}
+                        className={ACTION}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => addWindow(dayIdx)}
+                    aria-label={`Add a ${day} window`}
+                    className={ACTION}
+                  >
+                    Add a window
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </ProfileSection>
+
+      <ProfileSection
+        id="blackout"
+        title="Days off"
+        description="Days you are unavailable even if they fall inside your weekly hours."
+      >
+        <div className="max-w-2xl">
+          {blackout.length > 0 && (
+            <ul className="mb-4 flex flex-wrap gap-2" aria-label="Days off">
+              {blackout.map((d) => (
+                <li
+                  key={d}
+                  className="border-hairline bg-paper-deep text-ink flex min-h-11 items-center gap-1 rounded-md border pl-3 text-sm font-medium tabular-nums"
+                >
+                  {d}
+                  <button
+                    type="button"
+                    onClick={() => setBlackout((b) => b.filter((x) => x !== d))}
+                    aria-label={`Remove ${d}`}
+                    className="text-ink-body hover:text-ink focus-visible:ring-ink inline-flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2"
+                  >
+                    <X size={16} strokeWidth={1.5} aria-hidden="true" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label htmlFor="expert-day-off" className="sr-only">
+              Add a day off
+            </label>
+            <input
+              id="expert-day-off"
+              type="date"
+              value={newBlackout}
+              onChange={(e) => setNewBlackout(e.target.value)}
+              className={cn(FIELD_INPUT, "w-auto")}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              className="min-h-11"
+              disabled={!newBlackout}
+              onClick={() => {
+                if (newBlackout && !blackout.includes(newBlackout)) {
+                  setBlackout((b) => [...b, newBlackout].sort());
+                  setNewBlackout("");
+                }
+              }}
+            >
+              Add day off
+            </Button>
+          </div>
+        </div>
+      </ProfileSection>
+
+      <ProfileSection
+        id="tax"
+        title="Tax details"
+        description="Used for session-fee payouts and tax reporting."
+      >
+        <div className="max-w-2xl">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <label htmlFor="expert-pan" className={FIELD_LABEL}>
+                PAN number
+              </label>
+              <input
+                id="expert-pan"
+                className={cn(FIELD_INPUT, "font-mono uppercase tracking-wider")}
+                value={panNumber}
+                maxLength={10}
+                autoCapitalize="characters"
+                autoComplete="off"
+                onChange={(e) => setPanNumber(e.target.value.toUpperCase())}
+              />
+              <p className={FIELD_HINT}>Five letters, four digits, one letter.</p>
+            </div>
+            <div>
+              <label htmlFor="expert-gst" className={FIELD_LABEL}>
+                GST number <span className="text-ink-body font-normal">(optional)</span>
+              </label>
+              <input
+                id="expert-gst"
+                className={cn(FIELD_INPUT, "font-mono uppercase tracking-wider")}
+                value={gstNumber}
+                maxLength={15}
+                autoCapitalize="characters"
+                autoComplete="off"
+                onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+              />
+              <p className={FIELD_HINT}>Only if you are GST-registered.</p>
+            </div>
+          </div>
+          <p className="text-ink-body mt-5 text-sm">
+            Your bank account or UPI ID is managed on the{" "}
+            <Link href="/expert/payouts" className={`${TEXT_LINK} ring-offset-paper`}>
+              Payouts
+            </Link>{" "}
+            page.
+          </p>
+        </div>
+      </ProfileSection>
+
+      <div className="bg-paper border-hairline sticky bottom-0 z-10 flex justify-end border-t py-4">
+        <Button onClick={save} loading={saving} className="min-h-11">
+          Save changes
+        </Button>
       </div>
     </div>
   );

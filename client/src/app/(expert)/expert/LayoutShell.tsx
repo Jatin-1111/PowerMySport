@@ -11,12 +11,13 @@ import {
 } from "@/modules/shared/components/dashboard/DashboardShell";
 import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
 import {
-  BadgeIndianRupee,
-  CalendarCheck,
+  ArrowLeft,
+  Bell,
+  CalendarDays,
+  Landmark,
   LayoutDashboard,
   Settings,
-  UserCog,
-  Bell,
+  User,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import React, { useEffect } from "react";
@@ -71,23 +72,24 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
   const navItems: DashboardNavItem[] = isOnboarding
     ? []
     : [
-        { href: "/expert/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/expert/sessions", label: "My Sessions", icon: CalendarCheck },
-        { href: "/expert/profile", label: "Profile & Availability", icon: UserCog },
-        // "Verify Pathways" pointed at /expert/pathways, which does not exist.
-        { href: "/expert/payouts", label: "Payouts", icon: BadgeIndianRupee },
+        { href: "/expert/dashboard", label: "Overview", icon: LayoutDashboard },
+        { href: "/expert/sessions", label: "Sessions", icon: CalendarDays, section: "Your work" },
+        { href: "/expert/profile", label: "Profile", icon: User, section: "Your work" },
+        { href: "/expert/payouts", label: "Payouts", icon: Landmark, section: "Account" },
         {
           href: "/expert/notifications",
           label: "Notifications",
           icon: Bell,
           badge: unreadNotifications > 0 ? unreadNotifications : undefined,
+          section: "Account",
         },
-        { href: "/expert/settings", label: "Settings", icon: Settings },
+        { href: "/expert/settings", label: "Settings", icon: Settings, section: "Account" },
+        { href: "/", label: "Back to the site", icon: ArrowLeft },
       ];
 
   return (
     <DashboardShell
-      dashboardLabel="Expert Dashboard"
+      dashboardLabel="Expert console"
       userName={user?.name}
       navItems={navItems}
       onLogout={handleLogout}

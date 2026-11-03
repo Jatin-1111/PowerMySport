@@ -1,7 +1,8 @@
 "use client";
 
 import { authApi } from "@/modules/auth/services/auth";
-import { Camera, Loader2 } from "lucide-react";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { Camera } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -13,8 +14,8 @@ interface ExpertPhotoUploadProps {
 }
 
 const SIZE_CLASSES: Record<"lg" | "xl", string> = {
-  lg: "h-24 w-24",
-  xl: "h-32 w-32",
+  lg: "h-28 w-24",
+  xl: "h-36 w-28",
 };
 
 /**
@@ -66,28 +67,25 @@ export function ExpertPhotoUpload({
   };
 
   return (
-    <div className="relative shrink-0">
-      <label
-        className={`group relative flex ${SIZE_CLASSES[size]} focus-within:ring-power-orange/60 cursor-pointer items-center justify-center overflow-hidden rounded-full border-4 border-white bg-slate-100 shadow-md ring-1 ring-slate-200 focus-within:ring-4`}
+    <div className="shrink-0">
+      <div
+        className={`bg-paper-deep flex ${SIZE_CLASSES[size]} items-center justify-center overflow-hidden rounded-md`}
       >
         {previewUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={previewUrl} alt="Profile" className="h-full w-full object-cover" />
+          <img src={previewUrl} alt="Your profile photo" className="h-full w-full object-cover" />
         ) : (
-          <span className="text-3xl font-bold text-slate-300">
-            <Camera className="h-8 w-8" />
-          </span>
+          <Camera size={28} strokeWidth={1.5} className="text-ink-ash" aria-hidden="true" />
         )}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/40 group-hover:opacity-100">
-          {uploading ? (
-            <Loader2 className="h-6 w-6 animate-spin text-white" />
-          ) : (
-            <Camera className="h-6 w-6 text-white" />
-          )}
-        </div>
-        {/* sr-only (not `hidden`): keeps the input focusable so keyboard
-            users can Tab to it and press Enter/Space to open the picker;
-            the label shows the focus ring via focus-within. */}
+      </div>
+      {/* sr-only (not `hidden`): keeps the input focusable so keyboard users can
+          Tab to it and press Enter or Space to open the picker; the label shows
+          the focus ring via focus-within. The action is always visible text, not
+          a hover overlay. */}
+      <label
+        className={`${TEXT_LINK} focus-within:ring-ink ring-offset-paper mt-1 min-h-11 cursor-pointer text-sm focus-within:ring-2 focus-within:ring-offset-2`}
+      >
+        {uploading ? "Uploading" : previewUrl ? "Change photo" : "Add a photo"}
         <input
           type="file"
           accept="image/*"

@@ -6,10 +6,12 @@ import {
   type ExpertSessionPlayerDetail,
 } from "@/modules/expert/services/expert";
 import { formatSessionTimeWithZone } from "@/modules/expert/utils/time";
+import { ProfileSection } from "@/modules/shared/components/settings/ProfileSection";
+import { FIGURE_GRID, FigureGridSkeleton } from "@/modules/shared/ui/FigureGrid";
 import { Skeleton } from "@/modules/shared/ui/Skeleton";
-import { FadeIn } from "@/modules/shared/ui/motion/FadeIn";
-import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
-import { ArrowLeft, CalendarClock, Compass, Target, Users } from "lucide-react";
+import { StatTile } from "@/modules/shared/ui/StatTile";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { ArrowLeft } from "lucide-react";
 import { useParams } from "next/navigation";
 import { deriveBodyCategories } from "@/modules/find-sport/utils/dependentMapping";
 import Link from "next/link";
@@ -123,94 +125,51 @@ const formatDob = (iso?: string | null) => {
   }
 };
 
+/** One answer as a ruled row: the question on the left, the answer on the right. */
 function Field({ label, value }: { label: string; value?: React.ReactNode }) {
   if (value === undefined || value === null || value === "") return null;
   return (
-    <div className="-mx-2.5 rounded-lg px-2.5 py-1.5 transition-colors hover:bg-slate-50">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-medium leading-snug text-slate-800">{value}</p>
+    <div className="border-hairline grid gap-x-8 gap-y-1 border-b py-3.5 sm:grid-cols-[minmax(0,17rem)_minmax(0,1fr)]">
+      <dt className="text-ink-body text-sm">{label}</dt>
+      <dd className="text-ink min-w-0 break-words font-medium">{value}</dd>
     </div>
   );
 }
 
 function TagList({ label, values }: { label: string; values?: string[] }) {
   if (!values || values.length === 0) return null;
-  return (
-    <div className="-mx-2.5 rounded-lg px-2.5 py-1.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
-        {values.map((v) => (
-          <span
-            key={v}
-            className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200"
-          >
-            {v}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+  return <Field label={label} value={values.join(", ")} />;
 }
 
 function Section({
-  icon,
-  tint,
+  id,
   title,
   children,
 }: {
-  icon: React.ReactNode;
-  tint: string;
+  id: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-        <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm ${tint}`}
-        >
-          {icon}
-        </span>
-        <h2 className="text-base font-bold tracking-tight text-slate-900">{title}</h2>
-      </div>
-      <div className="grid gap-1 p-6 sm:grid-cols-2">{children}</div>
-    </div>
-  );
-}
-
-function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 truncate text-sm font-bold text-slate-900">{value}</p>
-    </div>
+    <ProfileSection id={id} title={title}>
+      <dl className="border-hairline border-t">{children}</dl>
+    </ProfileSection>
   );
 }
 
 function ProfileSkeleton() {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Skeleton className="mb-6 h-5 w-32" />
-      <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
-        <Skeleton className="h-36 w-full rounded-none" />
-        <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full" />
-          ))}
-        </div>
+    <div className="space-y-10" role="status" aria-busy="true">
+      <span className="sr-only">Loading the child profile</span>
+      <div aria-hidden="true">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="mt-3 h-11 w-64" />
+        <Skeleton className="mt-3 h-4 w-48" />
       </div>
-      <div className="mt-5 space-y-5">
-        {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border-0 bg-white p-6 shadow-sm">
-            <Skeleton className="mb-5 h-9 w-44 rounded-xl" />
-            <div className="grid gap-4 sm:grid-cols-2">
-              {Array.from({ length: 4 }).map((_, j) => (
-                <Skeleton key={j} className="h-10 w-full" />
-              ))}
-            </div>
-          </div>
-        ))}
+      <div aria-hidden="true">
+        <FigureGridSkeleton />
       </div>
+      <Skeleton aria-hidden="true" className="h-56 w-full" />
     </div>
   );
 }
@@ -255,27 +214,29 @@ export default function ExpertSessionPlayerDetailPage() {
 
   if (error || !player) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-20 text-center">
-        <p className="font-semibold text-red-600">{error || "Child profile not available."}</p>
-        <Link
-          href="/expert/dashboard"
-          className="bg-power-orange-solid mt-4 inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to dashboard
-        </Link>
+      <div role="alert" className="bg-paper-deep max-w-xl rounded-2xl p-6 sm:p-8">
+        <h1 className="font-editorial text-ink text-3xl font-light tracking-tight">
+          We could not load this child profile
+        </h1>
+        <p className="text-ink-body mt-3 text-pretty">{error || "Child profile not available."}</p>
+        <p className="mt-6">
+          <Link href="/expert/sessions" className={`${TEXT_LINK} ring-offset-paper-deep`}>
+            <ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+            Back to sessions
+          </Link>
+        </p>
       </div>
     );
   }
 
-  const initial = (player.name || "?").charAt(0).toUpperCase();
   const metaLine = [
-    player.age ? `${player.age} yrs` : null,
+    player.age ? `${player.age} years` : null,
     player.gender ? GENDER_LABEL[player.gender] || player.gender : null,
     player.relation,
     formatDob(player.dob) ? `born ${formatDob(player.dob)}` : null,
   ]
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
 
   const body = deriveBodyCategories(player.heightCm, player.weightKg, player.age ?? null);
   const hasPhysical = Boolean(
@@ -301,192 +262,165 @@ export default function ExpertSessionPlayerDetailPage() {
     player.waterComfort ||
     player.personalityTags?.length
   );
+
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
-      <Link
-        href="/expert/dashboard"
-        className="hover:text-power-orange mb-6 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition-colors"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to dashboard
-      </Link>
+    <div className="space-y-10 sm:space-y-12">
+      <header>
+        <p>
+          <Link href="/expert/sessions" className={`${TEXT_LINK} ring-offset-paper text-sm`}>
+            <ArrowLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+            Back to sessions
+          </Link>
+        </p>
+        <p className="text-ink-body mt-6 text-sm">Booking briefing</p>
+        <h1 className="font-editorial text-ink mt-1 text-balance text-4xl font-light leading-[1.05] tracking-tight sm:text-5xl">
+          {player.name}
+        </h1>
+        {metaLine && <p className="text-ink-body mt-3">{metaLine}</p>}
+        {session && (
+          <p className="text-ink-body mt-1 text-pretty">
+            Session with {session.clientName || "the client"}
+            {session.scheduledAt &&
+              `, ${formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)}`}
+          </p>
+        )}
+      </header>
 
-      {/* Hero — identity + quick facts */}
-      <FadeIn>
-        <div className="overflow-hidden rounded-2xl border-0 bg-white shadow-sm">
-          <div className="bg-ink relative overflow-hidden px-6 py-8 text-white sm:px-8">
-            <div className="bg-power-orange/20 pointer-events-none absolute -right-14 -top-14 h-44 w-44 rounded-full blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
-            <span className="relative inline-flex items-center rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white/70 ring-1 ring-inset ring-white/10">
-              Booking briefing
+      <div className={FIGURE_GRID}>
+        <StatTile
+          emphasis
+          label="Experience"
+          value={
+            <span className="text-2xl">
+              {labelFor("experienceLevel", player.experienceLevel) || "Not answered"}
             </span>
-            <div className="relative mt-4 flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-4 border-white/10 bg-white/10 text-2xl font-bold text-white/80">
-                {initial}
-              </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="font-editorial truncate text-2xl font-light sm:text-3xl">
-                  {player.name}
-                </h1>
-                {metaLine && <p className="mt-1 truncate text-sm text-white/60">{metaLine}</p>}
-              </div>
-            </div>
-          </div>
+          }
+        />
+        <StatTile
+          label="Goal"
+          value={
+            <span className="text-2xl">
+              {labelFor("ambition", player.ambition) || "Not answered"}
+            </span>
+          }
+        />
+        <StatTile
+          label="Budget"
+          value={
+            <span className="text-2xl">
+              {labelFor("budgetRange", player.budgetRange) || "Not answered"}
+            </span>
+          }
+        />
+        <StatTile
+          label="Commitment"
+          value={
+            <span className="text-2xl">
+              {labelFor("weeklyHoursCategory", player.weeklyHoursCategory) || "Not answered"}
+            </span>
+          }
+        />
+      </div>
 
-          {/* Quick facts strip */}
-          <div className="grid grid-cols-2 gap-5 border-b border-slate-100 px-6 py-5 sm:grid-cols-4 sm:px-8">
-            <StatTile
-              label="Experience"
-              value={labelFor("experienceLevel", player.experienceLevel) || "N/A"}
-            />
-            <StatTile label="Goal" value={labelFor("ambition", player.ambition) || "N/A"} />
-            <StatTile label="Budget" value={labelFor("budgetRange", player.budgetRange) || "N/A"} />
-            <StatTile
-              label="Commitment"
-              value={labelFor("weeklyHoursCategory", player.weeklyHoursCategory) || "N/A"}
-            />
-          </div>
+      <div>
+        <Section id="sport" title="Sport and skill">
+          <TagList label="Sports" values={player.sportsFocus} />
+          <Field label="Years playing" value={player.yearsPlaying} />
+          <Field
+            label="Current competitive level"
+            value={labelFor("experienceLevel", player.experienceLevel)}
+          />
+          <Field
+            label="Current standing (this sport's ladder)"
+            value={tierLabel(player.currentStandingTier)}
+          />
+          <Field label="The honest goal right now" value={labelFor("ambition", player.ambition)} />
+          <Field
+            label="Hours per week they can commit"
+            value={labelFor("weeklyHoursCategory", player.weeklyHoursCategory)}
+          />
+          <Field
+            label="Monthly training budget"
+            value={labelFor("budgetRange", player.budgetRange)}
+          />
+          <Field
+            label="How they are training now"
+            value={labelFor("trainingType", player.trainingType)}
+          />
+          <Field label="State" value={player.location} />
+        </Section>
 
-          {session && (
-            <div className="flex flex-wrap items-center gap-2 px-6 py-4 text-sm text-slate-600 sm:px-8">
-              <CalendarClock className="text-power-orange h-4 w-4 shrink-0" />
-              Session with{" "}
-              <span className="font-semibold text-slate-900">
-                {session.clientName || "the client"}
-              </span>
-              {session.scheduledAt && (
-                <span className="text-slate-400">
-                  · {formatSessionTimeWithZone(session.scheduledAt, session.expertTimezone)}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </FadeIn>
-
-      <StaggerContainer className="mt-5 space-y-5">
-        {/* Sport, skill & training */}
-        <StaggerItem>
-          <Section
-            icon={<Target className="h-4.5 w-4.5" />}
-            tint="bg-power-orange/10 text-power-orange"
-            title="Sport & Skill"
-          >
-            <TagList label="Sport(s)" values={player.sportsFocus} />
-            <Field label="Years playing" value={player.yearsPlaying} />
-            <Field
-              label="Current competitive level"
-              value={labelFor("experienceLevel", player.experienceLevel)}
-            />
-            <Field
-              label="Current standing (this sport's ladder)"
-              value={tierLabel(player.currentStandingTier)}
-            />
-            <Field
-              label="What's the honest goal right now?"
-              value={labelFor("ambition", player.ambition)}
-            />
-            <Field
-              label="Hours per week they can commit"
-              value={labelFor("weeklyHoursCategory", player.weeklyHoursCategory)}
-            />
-            <Field
-              label="Monthly training budget"
-              value={labelFor("budgetRange", player.budgetRange)}
-            />
-            <Field
-              label="How are they currently training?"
-              value={labelFor("trainingType", player.trainingType)}
-            />
-            <Field label="State" value={player.location} />
-          </Section>
-        </StaggerItem>
-
-        {/* Physical profile — only shown if at least one of these was ever answered */}
+        {/* Only shown if at least one of these was ever answered */}
         {hasPhysical && (
-          <StaggerItem>
-            <Section
-              icon={<Compass className="h-4.5 w-4.5" />}
-              tint="bg-indigo-50 text-indigo-600"
-              title="Physical Profile"
-            >
-              <Field label="Height" value={player.heightCm ? `${player.heightCm} cm` : undefined} />
-              <Field label="Weight" value={player.weightKg ? `${player.weightKg} kg` : undefined} />
-              <Field label="Build" value={labelFor("build", body.build)} />
-              <Field
-                label="Height category"
-                value={labelFor("heightCategory", body.heightCategory)}
-              />
-              <Field
-                label="In a running/tag game, they usually…"
-                value={labelFor("energyType", player.energyType)}
-              />
-              <Field
-                label="Better at running/jumping/throwing, or careful/steady-handed tasks?"
-                value={labelFor("motorType", player.motorType)}
-              />
-              <Field
-                label="Reaction to a fast-moving ball/shuttle"
-                value={labelFor("visualTracking", player.visualTracking)}
-              />
-              <Field label="Agility & flexibility" value={labelFor("agility", player.agility)} />
-              <Field label="Eyesight" value={labelFor("eyesight", player.eyesight)} />
-            </Section>
-          </StaggerItem>
+          <Section id="physical" title="Physical profile">
+            <Field label="Height" value={player.heightCm ? `${player.heightCm} cm` : undefined} />
+            <Field label="Weight" value={player.weightKg ? `${player.weightKg} kg` : undefined} />
+            <Field label="Build" value={labelFor("build", body.build)} />
+            <Field
+              label="Height category"
+              value={labelFor("heightCategory", body.heightCategory)}
+            />
+            <Field
+              label="In a running or tag game, they usually"
+              value={labelFor("energyType", player.energyType)}
+            />
+            <Field
+              label="Better at running, jumping and throwing, or careful, steady-handed tasks"
+              value={labelFor("motorType", player.motorType)}
+            />
+            <Field
+              label="Reaction to a fast-moving ball or shuttle"
+              value={labelFor("visualTracking", player.visualTracking)}
+            />
+            <Field label="Agility and flexibility" value={labelFor("agility", player.agility)} />
+            <Field label="Eyesight" value={labelFor("eyesight", player.eyesight)} />
+          </Section>
         )}
 
-        {/* Personality & play style — only shown if at least one of these was ever answered */}
+        {/* Only shown if at least one of these was ever answered */}
         {hasPersonality && (
-          <StaggerItem>
-            <Section
-              icon={<Users className="h-4.5 w-4.5" />}
-              tint="bg-purple-50 text-purple-600"
-              title="Personality & Play Style"
-            >
-              <Field
-                label="Wants a partner/team, or goes it alone?"
-                value={
-                  player.teamIndividual
-                    ? `${player.teamIndividual}/5 (1 = solo, 5 = always team)`
-                    : undefined
-                }
-              />
-              <Field
-                label="After losing a game, they…"
-                value={labelFor("competitiveResponse", player.competitiveResponse)}
-              />
-              <Field
-                label="Doing homework/a puzzle, they tend to…"
-                value={labelFor("focusStyle", player.focusStyle)}
-              />
-              <Field
-                label="Trying a new game for the first time, they…"
-                value={labelFor("decisionStyle", player.decisionStyle)}
-              />
-              <Field
-                label="When all attention is on them…"
-                value={labelFor("pressureResponse", player.pressureResponse)}
-              />
-              <Field
-                label="Willing to repeat the same drill for months?"
-                value={labelFor("repetitionTolerance", player.repetitionTolerance)}
-              />
-              <Field
-                label="Comfort with physical contact"
-                value={labelFor("contactComfort", player.contactComfort)}
-              />
-              <Field
-                label="Given a free afternoon, gravitates to…"
-                value={labelFor("environment", player.environment)}
-              />
-              <Field
-                label="Comfort in water"
-                value={labelFor("waterComfort", player.waterComfort)}
-              />
-              <TagList label="Personality tags" values={player.personalityTags} />
-            </Section>
-          </StaggerItem>
+          <Section id="personality" title="Personality and play style">
+            <Field
+              label="Wants a partner or team, or goes it alone"
+              value={
+                player.teamIndividual
+                  ? `${player.teamIndividual} out of 5 (1 is solo, 5 is always team)`
+                  : undefined
+              }
+            />
+            <Field
+              label="After losing a game, they"
+              value={labelFor("competitiveResponse", player.competitiveResponse)}
+            />
+            <Field
+              label="Doing homework or a puzzle, they tend to"
+              value={labelFor("focusStyle", player.focusStyle)}
+            />
+            <Field
+              label="Trying a new game for the first time, they"
+              value={labelFor("decisionStyle", player.decisionStyle)}
+            />
+            <Field
+              label="When all attention is on them"
+              value={labelFor("pressureResponse", player.pressureResponse)}
+            />
+            <Field
+              label="Willing to repeat the same drill for months"
+              value={labelFor("repetitionTolerance", player.repetitionTolerance)}
+            />
+            <Field
+              label="Comfort with physical contact"
+              value={labelFor("contactComfort", player.contactComfort)}
+            />
+            <Field
+              label="Given a free afternoon, gravitates to"
+              value={labelFor("environment", player.environment)}
+            />
+            <Field label="Comfort in water" value={labelFor("waterComfort", player.waterComfort)} />
+            <TagList label="Personality tags" values={player.personalityTags} />
+          </Section>
         )}
-      </StaggerContainer>
+      </div>
     </div>
   );
 }

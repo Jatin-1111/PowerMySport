@@ -30,6 +30,12 @@ export const queryKeys = {
     bookings: ["coach-console", "bookings"] as const,
   },
 
+  /** The expert's console: their profile and their sessions. */
+  expertConsole: {
+    profile: ["expert-console", "profile"] as const,
+    sessions: ["expert-console", "sessions"] as const,
+  },
+
   /** The venue lister's console overview. */
   venueConsole: {
     venues: ["venue-console", "venues"] as const,

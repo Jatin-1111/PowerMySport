@@ -75,21 +75,19 @@ export default function ExpertPayoutsPage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <PayoutsPage
-        consoleLabel="Expert console"
-        intro="Where we send what you earn from your expert sessions."
-        facts={FACTS}
-      >
-        <PayoutMethodManager
-          ownerType="Expert"
-          onLoad={handleLoad}
-          onAdd={handleAdd}
-          onUpdate={handleUpdate}
-          onDelete={handleDelete}
-          onSetDefault={handleSetDefault}
-        />
-      </PayoutsPage>
-    </div>
+    <PayoutsPage
+      consoleLabel="Expert console"
+      intro="Where we send what you earn from your expert sessions."
+      facts={FACTS}
+    >
+      <PayoutMethodManager
+        ownerType="Expert"
+        onLoad={handleLoad}
+        onAdd={handleAdd}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+        onSetDefault={handleSetDefault}
+      />
+    </PayoutsPage>
   );
 }

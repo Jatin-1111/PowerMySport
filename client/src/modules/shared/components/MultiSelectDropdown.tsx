@@ -1,7 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
-import { ChevronDown, X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
@@ -150,13 +150,13 @@ export default function MultiSelectDropdown({
   return (
     <div className="relative w-full" ref={containerRef} onBlur={handleBlur}>
       {value.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2 pb-2">
+        <ul className="mb-3 flex flex-wrap gap-2" aria-label={`Selected ${label.toLowerCase()}`}>
           {value.map((opt) => (
-            <div
+            <li
               key={opt}
-              className="bg-power-orange/10 text-power-orange inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium"
+              className="border-hairline bg-paper-deep text-ink flex min-h-11 items-center gap-1 rounded-md border pl-3 text-sm font-medium"
             >
-              <span>{opt}</span>
+              {opt}
               <button
                 type="button"
                 aria-label={`Remove ${opt}`}
@@ -165,13 +165,13 @@ export default function MultiSelectDropdown({
                   onChange(value.filter((v) => v !== opt));
                 }}
                 disabled={disabled}
-                className="hover:bg-power-orange/20 focus-visible:ring-power-orange rounded-full p-0.5 transition-colors focus:outline-none focus-visible:ring-2"
+                className="text-ink-body hover:text-ink focus-visible:ring-ink inline-flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <X className="h-3 w-3" aria-hidden="true" />
+                <X size={16} strokeWidth={1.5} aria-hidden="true" />
               </button>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       <div className="relative">
@@ -186,19 +186,20 @@ export default function MultiSelectDropdown({
           aria-expanded={isOpen}
           aria-label={`${label}, ${value.length} selected`}
           className={cn(
-            "focus-visible:border-power-orange focus-visible:ring-power-orange/40 flex w-full items-center justify-between rounded-xl border bg-slate-50 px-4 py-2.5 text-sm transition-all focus:outline-none focus-visible:ring-2 dark:bg-slate-800/50",
-            isOpen
-              ? "border-power-orange ring-power-orange/20 bg-white ring-2 dark:bg-slate-800"
-              : "border-slate-200 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800",
+            "border-ink/25 focus-visible:ring-ink flex min-h-11 w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-left text-sm focus:outline-none focus-visible:ring-2",
+            isOpen && "border-ink",
             disabled && "cursor-not-allowed opacity-50"
           )}
         >
-          <span className="text-slate-500 dark:text-slate-400">
-            {value.length === 0 ? placeholder : addMoreText}
-          </span>
+          <span className="text-ink-ash">{value.length === 0 ? placeholder : addMoreText}</span>
           <ChevronDown
             aria-hidden="true"
-            className={cn("h-4 w-4 text-slate-400 transition-transform", isOpen && "rotate-180")}
+            size={18}
+            strokeWidth={1.5}
+            className={cn(
+              "text-ink-body transition-transform duration-200",
+              isOpen && "rotate-180"
+            )}
           />
         </button>
 
@@ -209,7 +210,7 @@ export default function MultiSelectDropdown({
             aria-multiselectable="true"
             onKeyDown={handleListKeyDown}
             className={cn(
-              "absolute z-20 max-h-60 w-full overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-lg shadow-black/5 dark:border-slate-700 dark:bg-slate-900",
+              "border-ink/25 bg-paper absolute z-20 max-h-60 w-full overflow-y-auto rounded-md border",
               openUp ? "bottom-full mb-1" : "top-full mt-1"
             )}
           >
@@ -226,16 +227,12 @@ export default function MultiSelectDropdown({
                   }}
                   onClick={() => toggleOption(opt)}
                   className={cn(
-                    "focus-visible:ring-power-orange/60 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2",
-                    isSelected
-                      ? "bg-power-orange/10 text-power-orange font-semibold"
-                      : "text-slate-700 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                    "text-ink hover:bg-paper-deep focus-visible:bg-paper-deep focus-visible:ring-ink flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset",
+                    isSelected && "font-medium"
                   )}
                 >
                   {opt}
-                  {isSelected && (
-                    <div className="bg-power-orange h-2 w-2 rounded-full" aria-hidden="true" />
-                  )}
+                  {isSelected && <Check size={16} strokeWidth={1.5} aria-hidden="true" />}
                 </button>
               );
             })}
