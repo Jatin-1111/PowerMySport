@@ -48,16 +48,17 @@ export function WhatsAppConsentSetting() {
     <ProfileSection
       id="whatsapp"
       title="WhatsApp"
-      description="Booking updates on the app you already use."
+      description="Updates about your bookings and expert sessions, on the app you already use."
     >
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <div className="max-w-xl">
           <h3 id="whatsapp-consent-label" className="text-ink font-medium">
-            Booking updates on WhatsApp
+            Booking and session updates on WhatsApp
           </h3>
           <p className="text-ink-body mt-1 text-pretty text-sm">
-            Get a message when a booking is confirmed, cancelled or moved. We use the phone number
-            on your account. You can turn this off here, or by replying STOP to any message.
+            Get a message when a booking or an expert session is confirmed, cancelled or moved. We
+            use the phone number on your account. You can turn this off here, or by replying STOP to
+            any message.
           </p>
         </div>
         <button
