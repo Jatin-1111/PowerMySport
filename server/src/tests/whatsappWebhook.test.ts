@@ -5,6 +5,7 @@ import express from "express";
 import request from "supertest";
 import whatsappWebhook from "../shared/routes/whatsappWebhook";
 import {
+  extractDeliveryStatuses,
   extractInboundMessages,
   isValidMetaSignature,
   maskPhone,
@@ -157,6 +158,55 @@ test("extractInboundMessages reads text and list replies, and ignores status upd
   );
   assert.deepEqual(extractInboundMessages(null), []);
   assert.deepEqual(extractInboundMessages({ entry: "nope" }), []);
+});
+
+test("extractDeliveryStatuses reads delivered and failed results with Meta's reason", () => {
+  const payload = {
+    entry: [
+      {
+        changes: [
+          {
+            value: {
+              statuses: [
+                { id: "wamid.1", status: "delivered", recipient_id: "919876543210" },
+                {
+                  id: "wamid.2",
+                  status: "failed",
+                  recipient_id: "919876543211",
+                  errors: [
+                    {
+                      code: 131042,
+                      title: "Business eligibility payment issue",
+                      message: "Message failed to send",
+                      error_data: { details: "Add a payment method" },
+                    },
+                  ],
+                },
+                { status: "sent" },
+              ],
+              messages: [{ id: "m", from: "91111", type: "text", text: { body: "hi" } }],
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  assert.deepEqual(extractDeliveryStatuses(payload), [
+    { id: "wamid.1", status: "delivered", recipient: "919876543210" },
+    {
+      id: "wamid.2",
+      status: "failed",
+      recipient: "919876543211",
+      error: {
+        code: 131042,
+        title: "Business eligibility payment issue",
+        detail: "Add a payment method",
+      },
+    },
+  ]);
+  assert.deepEqual(extractDeliveryStatuses(null), []);
+  assert.deepEqual(extractDeliveryStatuses({ entry: "nope" }), []);
 });
 
 test("maskPhone keeps only the country prefix and last two digits", () => {

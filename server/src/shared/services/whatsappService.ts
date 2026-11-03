@@ -39,6 +39,73 @@ export function isValidMetaSignature(
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+/** What Meta reports about a message we sent: sent, delivered, read, or failed with a reason. */
+export interface DeliveryStatus {
+  /** Meta's id for the message, the same one the send logged when Meta accepted it. */
+  id: string;
+  status: string;
+  /** The recipient's number, as Meta gives it. Mask it before logging. */
+  recipient: string;
+  /** Present only when status is "failed". */
+  error?: {
+    code?: number | undefined;
+    title?: string | undefined;
+    detail?: string | undefined;
+  };
+}
+
+/**
+ * Pulls the delivery results out of a webhook payload. Meta accepts a message
+ * and only later says whether it arrived, so a send that Meta took without
+ * complaint can still fail here (the recipient is not on WhatsApp, the account
+ * has no payment method, a frequency cap was hit), and this is the only place
+ * that is reported.
+ */
+export function extractDeliveryStatuses(payload: unknown): DeliveryStatus[] {
+  const out: DeliveryStatus[] = [];
+  const entries = (payload as { entry?: unknown[] } | null)?.entry;
+  if (!Array.isArray(entries)) return out;
+
+  for (const entry of entries) {
+    const changes = (entry as { changes?: unknown[] })?.changes;
+    if (!Array.isArray(changes)) continue;
+    for (const change of changes) {
+      const statuses = (change as { value?: { statuses?: unknown[] } })?.value?.statuses;
+      if (!Array.isArray(statuses)) continue;
+      for (const raw of statuses) {
+        const s = raw as {
+          id?: string;
+          status?: string;
+          recipient_id?: string;
+          errors?: Array<{
+            code?: number;
+            title?: string;
+            message?: string;
+            error_data?: { details?: string };
+          }>;
+        };
+        if (!s.id || !s.status) continue;
+        const first = s.errors?.[0];
+        out.push({
+          id: s.id,
+          status: s.status,
+          recipient: s.recipient_id ?? "",
+          ...(first
+            ? {
+                error: {
+                  code: first.code,
+                  title: first.title,
+                  detail: first.error_data?.details ?? first.message,
+                },
+              }
+            : {}),
+        });
+      }
+    }
+  }
+  return out;
+}
+
 /**
  * Pulls the user messages out of a webhook payload. Status updates (sent,
  * delivered, read) share the same envelope but carry no `messages`, so they
@@ -128,6 +195,23 @@ async function graphPost(body: Record<string, unknown>): Promise<boolean> {
     // test recipient list, outside the 24h window) and carries no user data.
     log.error(`Graph API ${res.status}: ${(await res.text()).slice(0, 300)}`);
     return false;
+  }
+  // Meta's id for the message: the delivery result in the webhook carries the same
+  // one, so this is what ties "accepted" to "delivered" or "failed" in the logs.
+  let id: string | undefined;
+  try {
+    id = ((await res.json()) as { messages?: Array<{ id?: string }> } | null)?.messages?.[0]?.id;
+  } catch {
+    // The message is sent either way; the id is only for the log.
+  }
+  if (id) {
+    const template = (body.template as { name?: string } | undefined)?.name;
+    log.info("Graph API accepted a message", {
+      id,
+      type: body.type,
+      ...(template ? { template } : {}),
+      ...(typeof body.to === "string" ? { to: maskPhone(body.to) } : {}),
+    });
   }
   return true;
 }

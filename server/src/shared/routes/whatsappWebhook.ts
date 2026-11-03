@@ -46,6 +46,7 @@ import {
 } from "../services/whatsappPilot";
 import { mayUseAssistant } from "../services/whatsappPilotNumbers";
 import {
+  extractDeliveryStatuses,
   extractInboundMessages,
   isValidMetaSignature,
   markWhatsAppRead,
@@ -165,6 +166,23 @@ router.post("/webhook", (req, res) => {
   }
 
   res.sendStatus(200);
+
+  // Meta reports whether each message we sent arrived. A failure here is the only
+  // sign that a message Meta accepted never reached the person.
+  for (const status of extractDeliveryStatuses(req.body)) {
+    const to = maskPhone(status.recipient);
+    if (status.status === "failed") {
+      log.warn("WhatsApp message FAILED to deliver", {
+        id: status.id,
+        to,
+        code: status.error?.code,
+        title: status.error?.title,
+        detail: status.error?.detail,
+      });
+    } else {
+      log.info(`WhatsApp message ${status.status}`, { id: status.id, to });
+    }
+  }
 
   for (const message of extractInboundMessages(req.body)) {
     // Claimed before handling, so a redelivery that arrives while the first copy is
