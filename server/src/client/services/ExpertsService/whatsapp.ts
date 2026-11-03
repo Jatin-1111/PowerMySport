@@ -39,10 +39,21 @@ export const notifyExpertSessionWhatsApp = async (
   event: ExpertSessionWhatsAppEvent
 ): Promise<void> => {
   try {
-    if (!session.scheduledAt) return;
+    const where = { sessionId: String(session._id), event: event.type };
+    if (!session.scheduledAt) {
+      log.info("expert session message skipped", { ...where, reason: "the session has no time" });
+      return;
+    }
 
     const client = await User.findById(session.userId).select("phone name whatsappConsent").lean();
-    if (!client?.phone || !hasWhatsAppConsent(client)) return;
+    if (!client?.phone || !hasWhatsAppConsent(client)) {
+      log.info("expert session message skipped", {
+        ...where,
+        reason: !client?.phone ? "the parent has no phone number" : "the parent has not agreed",
+      });
+      return;
+    }
+    log.info("expert session message: preparing", where);
 
     const expert = await Expert.findById(session.expertId)
       .populate("userId", "name")
@@ -83,7 +94,13 @@ export const notifyExpertSessionWhatsApp = async (
       return;
     }
 
-    if (!event.previousScheduledAt) return;
+    if (!event.previousScheduledAt) {
+      log.info("expert session message skipped", {
+        ...where,
+        reason: "no previous time to move from",
+      });
+      return;
+    }
     notifyBookingWhatsApp({
       ...common,
       event: "BOOKING_RESCHEDULED",

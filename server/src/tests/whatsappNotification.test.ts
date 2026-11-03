@@ -4,6 +4,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 import {
+  bookingMessageRoute,
   normalizeIndianPhone,
   notifyBookingWhatsApp,
 } from "../shared/services/WhatsAppNotificationService";
@@ -97,4 +98,42 @@ test("env set after import is still honoured, and unset env sends nothing", asyn
     sport: "Tennis",
     dateTime: "2026-10-20T12:30:00.000Z",
   });
+});
+
+// What the startup log reports must be what notifyBookingWhatsApp then does, so
+// a deploy whose settings did not arrive says so on its first line.
+test("bookingMessageRoute names the route booking messages will take", () => {
+  const keys = [
+    "WHATSAPP_TEMPLATES",
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "N8N_BOOKING_WEBHOOK_URL",
+    "PMS_SERVER_WEBHOOK_SECRET",
+  ];
+  const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+  const reset = () => keys.forEach((k) => delete process.env[k]);
+  try {
+    reset();
+    assert.equal(bookingMessageRoute(), "off");
+
+    process.env.N8N_BOOKING_WEBHOOK_URL = "http://n8n.test/hook";
+    assert.equal(bookingMessageRoute(), "off", "a URL without the secret cannot sign");
+    process.env.PMS_SERVER_WEBHOOK_SECRET = "s";
+    assert.equal(bookingMessageRoute(), "n8n");
+
+    process.env.WHATSAPP_TEMPLATES = "on";
+    assert.equal(
+      bookingMessageRoute(),
+      "off",
+      "templates on without Meta credentials sends nothing"
+    );
+    process.env.WHATSAPP_ACCESS_TOKEN = "t";
+    process.env.WHATSAPP_PHONE_NUMBER_ID = "1";
+    assert.equal(bookingMessageRoute(), "templates");
+  } finally {
+    keys.forEach((k) => {
+      if (saved[k] === undefined) delete process.env[k];
+      else process.env[k] = saved[k];
+    });
+  }
 });

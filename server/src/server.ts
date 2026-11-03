@@ -30,6 +30,7 @@ import { initializeScheduledJobs } from "./utils/scheduledJobs";
 import { startLogDigest, stopLogDigest } from "./utils/logDigest";
 import { bootFact, bootReady, bootWarn } from "./utils/boot";
 import { log as __rootLog } from "./utils/logger";
+import { bookingMessageRoute } from "./shared/services/WhatsAppNotificationService";
 const log = __rootLog.child("server");
 const PORT = process.env.PORT || 5000;
 
@@ -136,6 +137,18 @@ const startServer = async () => {
     setBookingSocketInstance(io);
 
     bootFact("sockets", "/community /friends /presence /notifications /bookings");
+    {
+      // What the booking messages will do, so the first log line answers "are the
+      // WhatsApp settings on this server?" without a booking being made.
+      const route = bookingMessageRoute();
+      if (route === "off") {
+        bootWarn(
+          "WhatsApp booking messages are OFF: set WHATSAPP_TEMPLATES=on with WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID, or N8N_BOOKING_WEBHOOK_URL and PMS_SERVER_WEBHOOK_SECRET"
+        );
+      } else {
+        bootFact("whatsapp", `booking messages via ${route}`);
+      }
+    }
 
     let server: http.Server | null = null;
     let attempts = 5;

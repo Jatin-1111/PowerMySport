@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { log as __rootLog } from "../../utils/logger";
 import { sendBookingTemplate, templatesEnabled } from "./whatsappTemplates";
+import { maskPhone } from "./whatsappService";
 
 const log = __rootLog.child("whatsappNotification");
 
@@ -14,6 +15,20 @@ const n8nSecret = () => process.env.PMS_SERVER_WEBHOOK_SECRET;
 
 /** n8n answers 200 straight away; anything slower than this means it is down. */
 const N8N_TIMEOUT_MS = 5000;
+
+/**
+ * Which way booking messages will leave this process right now, for the startup
+ * log: "templates" (straight to Meta), "n8n", or "off" (nothing is sent). It reads
+ * the same settings notifyBookingWhatsApp does, so what the log says is what happens.
+ */
+export function bookingMessageRoute(): "templates" | "n8n" | "off" {
+  if (templatesEnabled()) {
+    return process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID
+      ? "templates"
+      : "off";
+  }
+  return n8nBookingWebhook() && n8nSecret() ? "n8n" : "off";
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,26 +128,34 @@ async function postToN8n(url: string, payload: unknown): Promise<void> {
 export function notifyBookingWhatsApp(payload: BookingWhatsAppPayload): void {
   // With templates switched on the message goes straight from this server, using
   // the approved booking templates. Otherwise it is handed to n8n as before.
+  const to = maskPhone(payload.playerPhone);
   if (templatesEnabled()) {
     const { event, ...details } = payload;
+    log.info("booking message: sending as a Meta template", { event, to });
     void sendBookingTemplate(event, details);
     return;
   }
 
   const url = n8nBookingWebhook();
   if (!url || !n8nSecret()) {
-    log.debug(
-      "notifyBookingWhatsApp: N8N_BOOKING_WEBHOOK_URL or PMS_SERVER_WEBHOOK_SECRET not set, skipping"
+    // A message the player agreed to is being dropped, so this is a warning, not debug.
+    log.warn(
+      "booking message NOT sent: WHATSAPP_TEMPLATES is not on and N8N_BOOKING_WEBHOOK_URL or PMS_SERVER_WEBHOOK_SECRET is not set",
+      { event: payload.event, to }
     );
     return;
   }
 
-  postToN8n(url, payload).catch((err) => {
-    log.warn("notifyBookingWhatsApp: failed to POST to n8n", {
-      event: payload.event,
-      error: (err as Error).message,
+  log.info("booking message: handing to n8n", { event: payload.event, to });
+  postToN8n(url, payload)
+    .then(() => log.info("booking message: n8n accepted it", { event: payload.event, to }))
+    .catch((err) => {
+      log.warn("booking message NOT sent: failed to POST to n8n", {
+        event: payload.event,
+        to,
+        error: (err as Error).message,
+      });
     });
-  });
 }
 
 /**

@@ -18,7 +18,7 @@ import { baseFields, colours, isJsonFormat, logRaw } from "./logger";
 const startedAt = process.hrtime.bigint();
 
 /** Fixed display order; anything unrecognised is appended in arrival order. */
-const SECTION_ORDER = ["http", "mongo", "redis", "s3", "ai", "sockets", "jobs"];
+const SECTION_ORDER = ["http", "mongo", "redis", "s3", "ai", "sockets", "whatsapp", "jobs"];
 
 const facts = new Map<string, string[]>();
 const warnings: string[] = [];

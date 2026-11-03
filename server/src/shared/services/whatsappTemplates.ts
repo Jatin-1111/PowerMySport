@@ -1,6 +1,6 @@
 import { log as __rootLog } from "../../utils/logger";
 import type { BookingWhatsAppPayload } from "./WhatsAppNotificationService";
-import { sendWhatsAppTemplate, whatsappSendingConfigured } from "./whatsappService";
+import { maskPhone, sendWhatsAppTemplate, whatsappSendingConfigured } from "./whatsappService";
 
 const log = __rootLog.child("whatsappTemplates");
 
@@ -111,13 +111,32 @@ export async function sendBookingTemplate(
   payload: Omit<BookingWhatsAppPayload, "event">
 ): Promise<boolean> {
   try {
-    if (!whatsappSendingConfigured()) return false;
-    const template = buildBookingTemplate(event, payload);
-    if (!template) {
-      log.warn(`No template sent for ${event}: the booking details are incomplete`);
+    const to = maskPhone(payload.playerPhone);
+    if (!whatsappSendingConfigured()) {
+      log.warn(
+        "booking template NOT sent: WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID is not set",
+        {
+          event,
+          to,
+        }
+      );
       return false;
     }
-    return await sendWhatsAppTemplate(payload.playerPhone, template.name, template.params);
+    const template = buildBookingTemplate(event, payload);
+    if (!template) {
+      log.warn(`No template sent for ${event}: the booking details are incomplete`, { to });
+      return false;
+    }
+    const sent = await sendWhatsAppTemplate(payload.playerPhone, template.name, template.params);
+    // Meta's reason for a refusal is logged by the Graph call itself, just above this line.
+    if (sent) log.info("booking template sent to Meta", { event, template: template.name, to });
+    else
+      log.warn("booking template NOT sent: Meta refused it", {
+        event,
+        template: template.name,
+        to,
+      });
+    return sent;
   } catch (err) {
     log.error(`Template send failed for ${event}`, err);
     return false;

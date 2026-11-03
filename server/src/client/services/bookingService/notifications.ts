@@ -123,6 +123,15 @@ export const sendBookingLifecycleEmails = async (
         .select("phone name whatsappConsent")
         .lean();
       // Only people who agreed to WhatsApp messages get one.
+      if (!playerUser?.phone || !hasWhatsAppConsent(playerUser)) {
+        log.info("booking message skipped", {
+          bookingId: String(booking._id),
+          event: state,
+          reason: !playerUser?.phone
+            ? "the player has no phone number"
+            : "the player has not agreed",
+        });
+      }
       if (playerUser?.phone && hasWhatsAppConsent(playerUser)) {
         // Only a booking with a coach has one; otherwise the provider is the venue owner.
         const coachName = booking.coachId
@@ -489,7 +498,14 @@ export const notifyBookingRescheduledWhatsApp = async (
 ): Promise<void> => {
   try {
     const player = await User.findById(booking.userId).select("phone name whatsappConsent").lean();
-    if (!player?.phone || !hasWhatsAppConsent(player)) return;
+    if (!player?.phone || !hasWhatsAppConsent(player)) {
+      log.info("booking message skipped", {
+        bookingId: String(booking._id),
+        event: "BOOKING_RESCHEDULED",
+        reason: !player?.phone ? "the player has no phone number" : "the player has not agreed",
+      });
+      return;
+    }
 
     let coachName: string | undefined;
     if (booking.coachId) {
