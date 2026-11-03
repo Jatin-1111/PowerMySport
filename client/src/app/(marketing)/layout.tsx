@@ -15,7 +15,7 @@ import React from "react";
  *    marketing page that did not redefine them.
  *  - A plain string `title` in a child segment is run through the parent's
  *    `%s | PowerMySport` template, so pages without their own title rendered
- *    "PowerMySport | Guiding Every Sporting Journey | PowerMySport".
+ *    "PowerMySport | Sports Guide for Parents in India | PowerMySport".
  *
  * Each page now owns its title/description/canonical, and anything that does
  * not falls back cleanly to the root layout's defaults.

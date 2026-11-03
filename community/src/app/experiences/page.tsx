@@ -1,5 +1,8 @@
 import { Suspense } from "react";
 import BlogLandingClient from "@/modules/community/components/blog/BlogLandingClient";
+import ExperienceIndexFallback, {
+  type ExperienceIndexRow,
+} from "@/modules/community/components/blog/ExperienceIndexFallback";
 import {
   breadcrumbSchema,
   itemListSchema,
@@ -8,9 +11,9 @@ import {
 import { buildMetadata, communityUrl, fetchPublicData, SITE_NAME } from "@/lib/seo";
 
 export const metadata = buildMetadata({
-  title: "Parent Experiences — Tournaments, Academies, Gear & Costs",
+  title: "Parent Experiences: Tournaments, Academies, Gear & Costs",
   description:
-    "Real experiences from parents — tournaments, academies, coaches, gear, travel and costs. Help another parent make a better decision.",
+    "Real experiences from parents: tournaments, academies, coaches, gear, travel and costs. Help another parent make a better decision.",
   path: "/experiences",
 });
 
@@ -22,16 +25,11 @@ const experienceCollectionSchema = {
   url: communityUrl("/experiences"),
 };
 
-interface ExperienceListRow {
-  id: string;
-  title: string;
-}
-
 export default async function CommunityExperiencesPage() {
   // The landing UI fetches client-side, so without this the index page ships no
   // evidence of what it lists. One cached page of posts is enough to tell a
   // crawler this is a real, populated collection rather than an empty shell.
-  const recent = await fetchPublicData<{ items?: ExperienceListRow[] }>(
+  const recent = await fetchPublicData<{ items?: ExperienceIndexRow[] }>(
     "/community/experiences/posts?page=1&limit=20"
   );
 
@@ -58,17 +56,7 @@ export default async function CommunityExperiencesPage() {
             : []),
         ]}
       />
-      <Suspense
-        fallback={
-          <div className="community-page-shell">
-            <div className="community-content-wrap border-border rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
-              <div className="h-5 w-40 animate-pulse rounded-full bg-slate-200" />
-              <div className="mt-4 h-24 animate-pulse rounded-2xl bg-slate-100" />
-              <p className="mt-4 text-sm text-slate-500">Loading experiences...</p>
-            </div>
-          </div>
-        }
-      >
+      <Suspense fallback={<ExperienceIndexFallback items={recent?.items ?? []} />}>
         <BlogLandingClient />
       </Suspense>
     </>

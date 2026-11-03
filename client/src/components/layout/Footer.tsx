@@ -25,6 +25,7 @@ const navColumns = [
     links: [
       { label: "Get Started", href: "/assessment" },
       { label: "Sports Pathways", href: "/roadmap" },
+      { label: "Parent Experiences", href: "/community/experiences" },
       // Powermysport AI hidden for now.
       { label: "Find an Expert", href: "/booking?tab=experts" },
       // ...(isBookingLive ? [{ label: "Book a Session", href: "/booking" }] : []),
@@ -158,6 +159,9 @@ export const Footer: React.FC = () => {
                   <li key={link.href}>
                     <Link
                       href={link.href}
+                      // The community app is served through a rewrite and answers no
+                      // RSC payload, so a prefetch there is a 404 on every page.
+                      prefetch={link.href.startsWith("/community") ? false : undefined}
                       className="text-ink-body hover:text-ink text-sm transition-colors"
                     >
                       {link.label}

@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: "PowerMySport | Guiding Every Sporting Journey",
+    default: "PowerMySport | Sports Guide for Parents in India",
     template: "%s | PowerMySport",
   },
   description: siteDescription,
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: "PowerMySport",
-    title: "PowerMySport | Guiding Every Sporting Journey",
+    title: "PowerMySport | Sports Guide for Parents in India",
     description: siteDescription,
     // `images` intentionally absent: `app/opengraph-image.tsx` and
     // `app/twitter-image.tsx` generate both, and a file convention in the same
@@ -97,7 +97,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "PowerMySport | Guiding Every Sporting Journey",
+    title: "PowerMySport | Sports Guide for Parents in India",
     description: siteDescription,
   },
   robots: {

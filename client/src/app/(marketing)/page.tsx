@@ -23,8 +23,8 @@ export const metadata: Metadata = {
   // `absolute`, not a plain string: the root layout's `%s | PowerMySport`
   // template is applied to any child title, and this one already leads with the
   // brand — the homepage was rendering
-  // "PowerMySport | Guiding Every Sporting Journey | PowerMySport".
-  title: { absolute: "PowerMySport | Guiding Every Sporting Journey" },
+  // "PowerMySport | Sports Guide for Parents in India | PowerMySport".
+  title: { absolute: "PowerMySport | Sports Guide for Parents in India" },
   description: SITE_DESCRIPTION,
   alternates: { canonical: "/" },
   openGraph: {
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: "/",
     siteName: "PowerMySport",
-    title: "PowerMySport | Guiding Every Sporting Journey",
+    title: "PowerMySport | Sports Guide for Parents in India",
     description:
       "Plan your child's sports journey with AI-powered pathways, federation rankings, personalised guidance and verified experts across India. Free to explore.",
     // No `images` here on purpose. `app/opengraph-image.tsx` generates the
