@@ -8,6 +8,7 @@ import { User } from "../models/User";
 import { Server } from "socket.io";
 import { sendEmail } from "../../utils/email";
 import * as pushNotificationService from "./pushNotificationService";
+import { ExpoPushService } from "./ExpoPushService";
 import { log as __rootLog } from "../../utils/logger";
 const log = __rootLog.child("notification");
 
@@ -234,7 +235,13 @@ export class NotificationService {
     if (shouldSendPush) {
       const pushEnabled = preferences?.push?.[preferenceKey] !== false;
       if (pushEnabled) {
-        deliveries.push(this.sendPush(data.userId, data.title, data.message, data.data));
+        // The type goes with the message so the mobile app can open the right screen on a tap.
+        deliveries.push(
+          this.sendPush(data.userId, data.title, data.message, {
+            ...(data.data || {}),
+            type: data.type,
+          })
+        );
       }
     }
 
@@ -310,9 +317,24 @@ export class NotificationService {
   }
 
   /**
-   * Send push notification (placeholder for future implementation)
+   * Send a push notification to the account's browsers (web push) and phones (Expo).
+   *
+   * Each transport is independent: a phone-only parent has no browser subscription, and the web
+   * side is skipped when VAPID is not configured, so neither may stop the other.
    */
   private static async sendPush(
+    userId: string,
+    title: string,
+    message: string,
+    data?: Record<string, unknown>
+  ): Promise<void> {
+    await Promise.allSettled([
+      this.sendWebPush(userId, title, message, data),
+      ExpoPushService.sendToUser(userId, { title, body: message, data: data || {} }),
+    ]);
+  }
+
+  private static async sendWebPush(
     userId: string,
     title: string,
     message: string,

@@ -4,6 +4,7 @@ import {
   ScheduledNotificationStatus,
 } from "../models/ScheduledNotification";
 import { NotificationService } from "./NotificationService";
+import { ExpoPushService } from "./ExpoPushService";
 import { NotificationCategory } from "../models/Notification";
 import pushNotificationService from "./pushNotificationService";
 import {
@@ -40,6 +41,28 @@ interface ReminderChannels {
   email: boolean;
   push: boolean;
   inApp: boolean;
+}
+
+/**
+ * What a phone is told besides the words. Expo caps a message near 4 KB, and a ranking digest or an
+ * opportunity alert carries a list per child or per entry, so only what the app needs to open the
+ * right screen goes along: the type, and the first thing it is about.
+ */
+export function phonePushData(type: string, data: unknown): Record<string, unknown> {
+  const d = (data || {}) as Record<string, any>;
+  if (type === "RANKING_DIGEST") {
+    const first = Array.isArray(d.players) ? d.players[0] : undefined;
+    return { type, ...(first?.regNo ? { regNo: String(first.regNo) } : {}) };
+  }
+  if (type === "OPPORTUNITY_ALERT") {
+    const items = Array.isArray(d.items) ? d.items : [];
+    return {
+      type,
+      ...(items.length === 1 && items[0]?.slug ? { slug: String(items[0].slug) } : {}),
+      count: items.length,
+    };
+  }
+  return { type };
 }
 
 export class ScheduledNotificationService {
@@ -290,6 +313,18 @@ export class ScheduledNotificationService {
                 icon: "/icon-192x192.png",
                 badge: "/badge-72x72.png",
                 data: reminder.data || {},
+              })
+            );
+          }
+
+          // Phones (the mobile app). Separate from web push: a parent who only uses the app has no
+          // browser subscription, so this must not depend on one.
+          if (reminder.channels.push) {
+            sendPromises.push(
+              ExpoPushService.sendToUser(reminder.userId._id.toString(), {
+                title: reminder.title,
+                body: reminder.body,
+                data: phonePushData(reminder.type, reminder.data),
               })
             );
           }

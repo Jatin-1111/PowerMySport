@@ -46,6 +46,15 @@ export const requestAccountDeletion = async (
   // request cached isActive:true moments earlier could keep succeeding for
   // up to ACCOUNT_STATUS_CACHE_TTL_SECONDS after the lockout should apply.
   invalidateAccountStatusCache(user._id.toString());
+
+  // A deactivated account must stop buzzing the phone. Signing back in within the grace period
+  // cancels the deletion, and the app registers its device again on launch.
+  try {
+    const { ExpoPushService } = await import("../../../client/services/ExpoPushService");
+    await ExpoPushService.removeAllForUser(user._id.toString());
+  } catch (error) {
+    log.error(`requestAccountDeletion: could not remove push devices for ${user._id}:`, error);
+  }
 };
 
 /**
@@ -242,6 +251,13 @@ export const cascadeDeleteUserData = async (userId: string): Promise<void> => {
         (
           await import("../../../client/models/ScheduledNotification")
         ).ScheduledNotification.deleteMany({ userId, status: "PENDING" }),
+    ],
+    [
+      "DevicePushToken",
+      async () =>
+        (await import("../../../client/models/DevicePushToken")).DevicePushToken.deleteMany({
+          userId,
+        }),
     ],
   ];
 

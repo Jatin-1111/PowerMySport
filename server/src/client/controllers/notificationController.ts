@@ -4,6 +4,7 @@ import { NotificationCategory } from "../models/Notification";
 import { z } from "zod";
 import * as pushNotificationService from "../services/pushNotificationService";
 import { User } from "../models/User";
+import { ExpoPushService, isExpoPushToken } from "../services/ExpoPushService";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
 
@@ -456,3 +457,44 @@ export const getVapidStatus = asyncHandler(async (req: Request, res: Response): 
     },
   });
 });
+
+const deviceRegistrationSchema = z.object({
+  token: z.string().trim().refine(isExpoPushToken, "That is not an Expo push token."),
+  platform: z.enum(["android", "ios"]),
+  deviceName: z.string().trim().max(80).optional(),
+  appVersion: z.string().trim().max(20).optional(),
+});
+
+/**
+ * Register a phone for push notifications
+ * POST /api/notifications/push/device
+ *
+ * Called by the mobile app on each launch once the parent has allowed notifications. Registering a
+ * token that already exists moves it to this account and refreshes its last-seen time.
+ */
+export const registerPushDevice = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const parsed = deviceRegistrationSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new AppError(parsed.error.issues[0]?.message ?? "Invalid device registration", 400);
+    }
+    await ExpoPushService.register(req.user!.id, parsed.data);
+    res.status(201).json({ success: true, message: "Device registered" });
+  }
+);
+
+/**
+ * Stop push notifications to a phone
+ * DELETE /api/notifications/push/device
+ *
+ * Called when the parent signs out of the app or turns notifications off. Removing a token that is
+ * not there (or belongs to someone else) is not an error: the phone ends up not registered either way.
+ */
+export const unregisterPushDevice = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const token = typeof req.body?.token === "string" ? req.body.token.trim() : "";
+    if (!isExpoPushToken(token)) throw new AppError("That is not an Expo push token.", 400);
+    await ExpoPushService.unregister(req.user!.id, token);
+    res.json({ success: true, message: "Device unregistered" });
+  }
+);

@@ -13,6 +13,8 @@ import {
   getPushSubscriptions,
   sendTestPushNotification,
   getVapidStatus,
+  registerPushDevice,
+  unregisterPushDevice,
 } from "../controllers/notificationController";
 
 const router = express.Router();
@@ -37,5 +39,9 @@ router.delete("/push/unsubscribe", unsubscribeFromPush);
 router.get("/push/subscriptions", getPushSubscriptions);
 router.post("/push/test", sendTestPushNotification);
 router.get("/push/vapid-status", getVapidStatus);
+
+// Phones (the mobile app), through Expo
+router.post("/push/device", registerPushDevice);
+router.delete("/push/device", unregisterPushDevice);
 
 export default router;
