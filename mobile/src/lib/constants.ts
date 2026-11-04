@@ -5,6 +5,10 @@ import { Platform } from "react-native";
 // For iOS simulator, localhost works directly
 // For physical devices, replace with your machine's local IP
 const getApiUrl = () => {
+  // EXPO_PUBLIC_API_URL (e.g. in mobile/.env) wins over everything, for pointing a build at another API.
+  const override = process.env.EXPO_PUBLIC_API_URL;
+  if (override) return override;
+
   const envUrl = Constants.expoConfig?.extra?.apiUrl;
   if (envUrl) return envUrl;
 
@@ -20,16 +24,30 @@ const getApiUrl = () => {
 
 export const API_URL = getApiUrl();
 
+// Mirrors client/DESIGN.md (warm paper). Keep in step with the colors in tailwind.config.js.
 export const COLORS = {
+  canvas: "#F8F3EA",
+  canvasDeep: "#EFE7DA",
+  wash: "#FBE9D9",
+  surface: "#FFFFFF",
+  ink: "#1C1B1A",
+  body: "#4A4741",
+  muted: "#7A766E",
+  ash: "#A8A5A0",
+  hairline: "#E1DCD3",
+  action: "#C2410C",
+  actionHover: "#9A3412",
+  brandOrange: "#E97316",
+  success: "#15803D",
+  error: "#B91C1C",
+  // Older names still used by screens written before the redesign.
   powerOrange: "#E97316",
-  deepSlate: "#0F172A",
-  ghostWhite: "#F8FAFC",
-  turfGreen: "#22C55E",
-  errorRed: "#EF4444",
-  background: "#f4f7ff",
-  foreground: "#111827",
-  border: "#E5E7EB",
-  muted: "#6B7280",
+  deepSlate: "#1C1B1A",
+  turfGreen: "#15803D",
+  errorRed: "#B91C1C",
+  background: "#F8F3EA",
+  foreground: "#1C1B1A",
+  border: "#E1DCD3",
   card: "#FFFFFF",
 } as const;
 

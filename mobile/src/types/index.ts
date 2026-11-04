@@ -1,16 +1,8 @@
 // ─── Shared types mirrored from client/src/types/index.ts ────────────────────
 
-export type UserRole = 'PLAYER' | 'COACH' | 'VENUE_LISTER' | 'ACADEMY_OWNER';
+import type { User, UserRole } from "@powermysport/shared-types";
 
-export interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  profileImage?: string;
-  phone?: string;
-  createdAt?: string;
-}
+export type { User, UserRole };
 
 export interface IPlayerProfile {
   _id: string;
@@ -22,7 +14,7 @@ export interface IPlayerProfile {
 }
 
 export interface IGeoLocation {
-  type: 'Point';
+  type: "Point";
   coordinates: [number, number];
   address?: string;
   city?: string;
@@ -84,14 +76,9 @@ export interface Academy {
   totalReviews?: number;
 }
 
-export type BookingStatus =
-  | 'PENDING'
-  | 'CONFIRMED'
-  | 'CANCELLED'
-  | 'COMPLETED'
-  | 'NO_SHOW';
+export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW";
 
-export type BookingType = 'COACH' | 'VENUE' | 'GROUP';
+export type BookingType = "COACH" | "VENUE" | "GROUP";
 
 export interface Booking {
   _id: string;

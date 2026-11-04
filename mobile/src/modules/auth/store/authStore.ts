@@ -1,6 +1,7 @@
-import { create } from 'zustand';
-import { storage, STORAGE_KEYS } from '@/utils/storage';
-import type { User } from '@/types';
+import { create } from "zustand";
+import { storage, secureStorage, STORAGE_KEYS } from "@/utils/storage";
+import { setSessionExpiredHandler } from "@lib/api/axios";
+import type { User } from "@/types";
 
 interface AuthState {
   user: User | null;
@@ -33,23 +34,27 @@ export const useAuthStore = create<AuthState>((set) => ({
   setToken: (token) => {
     set({ token });
     if (token) {
-      storage.set(STORAGE_KEYS.AUTH_TOKEN, token);
+      void secureStorage.set(STORAGE_KEYS.AUTH_TOKEN, token);
     } else {
-      storage.remove(STORAGE_KEYS.AUTH_TOKEN);
+      void secureStorage.remove(STORAGE_KEYS.AUTH_TOKEN);
     }
   },
 
   setLoading: (isLoading) => set({ isLoading }),
 
   logout: async () => {
-    await storage.remove(STORAGE_KEYS.AUTH_TOKEN);
+    await secureStorage.remove(STORAGE_KEYS.AUTH_TOKEN);
     await storage.remove(STORAGE_KEYS.USER);
     set({ user: null, token: null });
   },
 
   hydrate: async () => {
-    const token = await storage.get<string>(STORAGE_KEYS.AUTH_TOKEN);
+    const token = await secureStorage.get(STORAGE_KEYS.AUTH_TOKEN);
     const user = await storage.get<User>(STORAGE_KEYS.USER);
     set({ token, user, isHydrated: true });
   },
 }));
+
+setSessionExpiredHandler(() => {
+  void useAuthStore.getState().logout();
+});
