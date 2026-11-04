@@ -14,6 +14,7 @@ import {
   CreditCard,
   Star,
   Trophy,
+  Trash2,
 } from "lucide-react-native";
 import { Avatar } from "@components/ui/Avatar";
 import { Badge } from "@components/ui/Badge";
@@ -142,6 +143,13 @@ export default function ProfileScreen() {
         {/* Logout */}
         <View className="mx-4 mb-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
           <MenuItem icon={LogOut} label="Sign Out" onPress={handleLogout} destructive />
+          <MenuItem
+            icon={Trash2}
+            label="Delete account"
+            sublabel="Permanently deleted after 30 days"
+            onPress={() => router.push("/delete-account")}
+            destructive
+          />
         </View>
 
         <Text className="text-muted mb-4 text-center text-xs">PowerMySport v1.0.0</Text>

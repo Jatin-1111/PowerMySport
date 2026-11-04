@@ -24,6 +24,9 @@ const getApiUrl = () => {
 
 export const API_URL = getApiUrl();
 
+// The public website, for the legal pages the app links to.
+export const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "https://powermysport.com";
+
 // Mirrors client/DESIGN.md (warm paper). Keep in step with the colors in tailwind.config.js.
 export const COLORS = {
   canvas: "#F8F3EA",

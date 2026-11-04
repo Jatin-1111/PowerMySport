@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
-import {
-  TextInput,
-  View,
-  Text,
-  TouchableOpacity,
-  type TextInputProps,
-} from 'react-native';
-import { Eye, EyeOff } from 'lucide-react-native';
-import { COLORS } from '@lib/constants';
+import React, { useState } from "react";
+import { TextInput, View, Text, TouchableOpacity, type TextInputProps } from "react-native";
+import { Eye, EyeOff } from "lucide-react-native";
+import { COLORS } from "@lib/constants";
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -32,19 +26,13 @@ export function Input({
 
   return (
     <View className="mb-4">
-      {label && (
-        <Text className="text-sm font-medium text-foreground mb-1.5">{label}</Text>
-      )}
+      {label && <Text className="text-ink mb-1.5 text-sm font-medium">{label}</Text>}
       <View
-        className={`
-          flex-row items-center
-          bg-white border rounded-xl px-4 h-13
-          ${error ? 'border-error-red' : 'border-border'}
-        `}
+        className={`bg-surface rounded-button h-12 flex-row items-center border px-4 ${error ? "border-danger" : "border-hairline"} `}
       >
         {leftIcon && <View className="mr-3">{leftIcon}</View>}
         <TextInput
-          className="flex-1 text-base text-foreground"
+          className="text-ink flex-1 text-base"
           placeholderTextColor={COLORS.muted}
           secureTextEntry={isPassword && !showPassword}
           autoCapitalize="none"
@@ -66,12 +54,8 @@ export function Input({
           rightIcon && <View className="ml-3">{rightIcon}</View>
         )}
       </View>
-      {error && (
-        <Text className="text-xs text-error-red mt-1">{error}</Text>
-      )}
-      {hint && !error && (
-        <Text className="text-xs text-muted mt-1">{hint}</Text>
-      )}
+      {error && <Text className="text-danger mt-1 text-xs">{error}</Text>}
+      {hint && !error && <Text className="text-muted mt-1 text-xs">{hint}</Text>}
     </View>
   );
 }

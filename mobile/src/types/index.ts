@@ -24,6 +24,8 @@ export interface AuthResponse {
   data?: {
     user: User;
     token: string;
+    /** Set when this sign-in cancelled an account deletion that was pending. */
+    deletionCancelled?: boolean;
   };
 }
 
@@ -35,7 +37,10 @@ export interface LoginPayload {
 export interface RegisterPayload {
   name: string;
   email: string;
+  phone: string;
   password: string;
   role: UserRole;
-  phone?: string;
+  acceptedTerms: boolean;
+  acceptedPrivacy: boolean;
+  whatsappConsent: boolean;
 }
