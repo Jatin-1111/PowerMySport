@@ -190,7 +190,7 @@ export const applyPromoCode = async (
   bookingId: string | null,
   orderId: string | null,
   discountApplied: number
-): Promise<void> => {
+): Promise<boolean> => {
   const usagePayload: {
     userId: string;
     discountApplied: number;
@@ -210,13 +210,62 @@ export const applyPromoCode = async (
     usagePayload.orderId = orderId;
   }
 
-  await PromoCode.findOneAndUpdate(
-    { code: code.toUpperCase() },
+  // The usage limits are part of the update's filter, so checking and recording are
+  // one atomic step: two concurrent requests can no longer both pass a limit that
+  // only has room for one. `maxUsageTotal` / `maxUsagePerUser` of 0 or unset mean
+  // unlimited, as in validatePromoCode.
+  const updated = await PromoCode.findOneAndUpdate(
+    {
+      code: code.toUpperCase(),
+      $expr: {
+        $and: [
+          {
+            $or: [
+              { $not: [{ $gt: [{ $ifNull: ["$maxUsageTotal", 0] }, 0] }] },
+              { $lt: ["$currentUsageCount", "$maxUsageTotal"] },
+            ],
+          },
+          {
+            $or: [
+              { $not: [{ $gt: [{ $ifNull: ["$maxUsagePerUser", 0] }, 0] }] },
+              {
+                $lt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ["$usedBy", []] },
+                        cond: { $eq: [{ $toString: "$$this.userId" }, String(userId)] },
+                      },
+                    },
+                  },
+                  "$maxUsagePerUser",
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
     {
       $inc: { currentUsageCount: 1 },
       $push: {
         usedBy: usagePayload,
       },
+    }
+  );
+  return Boolean(updated);
+};
+
+/**
+ * Give back the usage an order consumed, when that order is cancelled or could not
+ * be created. Matches on the order id so it can only undo its own usage, once.
+ */
+export const releasePromoUsage = async (code: string, orderId: string): Promise<void> => {
+  await PromoCode.findOneAndUpdate(
+    { code: code.toUpperCase(), "usedBy.orderId": orderId },
+    {
+      $inc: { currentUsageCount: -1 },
+      $pull: { usedBy: { orderId } },
     }
   );
 };

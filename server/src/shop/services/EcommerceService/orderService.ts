@@ -15,6 +15,11 @@ import {
   PaymentTransaction as PaymentTransactionModel,
   Product as ProductModel,
 } from "../../models/Ecommerce";
+import {
+  applyPromoCode,
+  releasePromoUsage,
+  validatePromoCode,
+} from "../../../client/services/PromoCodeService";
 import { CartService } from "./cartService";
 import { InventoryService } from "./inventoryService";
 import { log as __rootLog } from "../../../utils/logger";
@@ -85,6 +90,31 @@ export class OrderService {
       });
     }
 
+    // Buying your own listing would let a seller mark their own unpaid order
+    // delivered and post a "verified purchase" review.
+    if (orderItems.some((item) => item.sellerId && String(item.sellerId) === String(userId))) {
+      throw new Error("You cannot buy your own listing.");
+    }
+
+    // The discount stored on the cart is only a preview. Re-validate the promo and
+    // recompute the discount against the cart as it is NOW (a code can expire, hit
+    // its limit, or have been applied to a larger cart than what is being bought).
+    let discountAmount = 0;
+    let appliedPromoCode = "";
+    if (cart.appliedPromoCode) {
+      const validation = await validatePromoCode(cart.appliedPromoCode, userId, cart.subtotal, {
+        context: "MERCHANDISE",
+      });
+      if (!validation.isValid) {
+        throw new Error(
+          validation.message || "Promo code is no longer valid. Remove it and retry."
+        );
+      }
+      discountAmount = Math.min(validation.discountAmount, cart.subtotal);
+      appliedPromoCode = cart.appliedPromoCode;
+    }
+    const totalAmount = cart.subtotal + cart.taxAmount - discountAmount;
+
     // Create order
     const order = new OrderModel({
       orderNumber: this.generateOrderNumber(),
@@ -93,19 +123,41 @@ export class OrderService {
       subtotal: cart.subtotal,
       taxAmount: cart.taxAmount,
       shippingAmount: 0, // Reserved for future
-      discountAmount: cart.discountAmount,
-      totalAmount: cart.totalAmount,
+      discountAmount,
+      totalAmount,
       status: OrderStatus.PENDING_PAYMENT,
       paymentMethod,
       paymentGateway,
       paymentStatus: PaymentStatus.PENDING,
       shippingAddress,
       fulfillmentStatus: FulfillmentStatus.PENDING,
-      appliedPromoCode: cart.appliedPromoCode,
-      promoDiscountAmount: cart.discountAmount,
+      appliedPromoCode,
+      promoDiscountAmount: discountAmount,
     });
 
-    await order.save();
+    // Consume the promo's usage atomically BEFORE the order exists, so a code
+    // limited to N uses cannot be spent more than N times. Give it back if the order
+    // cannot be saved.
+    if (appliedPromoCode) {
+      const consumed = await applyPromoCode(
+        appliedPromoCode,
+        userId,
+        null,
+        String(order._id),
+        discountAmount
+      );
+      if (!consumed) {
+        throw new Error("Promo code usage limit reached");
+      }
+    }
+    try {
+      await order.save();
+    } catch (error) {
+      if (appliedPromoCode) {
+        await releasePromoUsage(appliedPromoCode, String(order._id)).catch(() => undefined);
+      }
+      throw error;
+    }
 
     // Inventory already reserved in cart, just need to track order-payment link
     return order;
@@ -342,6 +394,16 @@ export class OrderService {
     order.cancelReason = reason;
 
     await order.save();
+
+    // The order never completed, so the promo usage it consumed goes back.
+    if (order.appliedPromoCode) {
+      await releasePromoUsage(order.appliedPromoCode, String(order._id)).catch((err) =>
+        log.error("[order] promo usage release failed (non-fatal)", {
+          orderId,
+          error: (err as Error)?.message || String(err),
+        })
+      );
+    }
     return order;
   }
 

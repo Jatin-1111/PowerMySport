@@ -4,7 +4,28 @@ import { Product as ProductModel, Order as OrderModel } from "../models/Ecommerc
 import { User } from "../../client/models/User";
 import { ProductService } from "../services/EcommerceService";
 import { v4 as uuidv4 } from "uuid";
-import { FulfillmentStatus, OrderStatus } from "../../types/ecommerce";
+import { FulfillmentStatus, OrderStatus, PaymentStatus } from "../../types/ecommerce";
+
+// The only product fields a seller may change on their own listing. Everything else
+// (variants and their ids, ratings, tax, totals, seller identity) is server-owned.
+const SELLER_EDITABLE_PRODUCT_FIELDS = [
+  "name",
+  "description",
+  "category",
+  "brand",
+  "basePrice",
+  "salePrice",
+  "stock",
+  "images",
+  "condition",
+  "tags",
+  "ageGroup",
+  "skillLevel",
+  "gender",
+  "weight",
+  "dimensions",
+  "isActive",
+] as const;
 
 export class SellerController {
   private productService: ProductService;
@@ -196,12 +217,16 @@ export class SellerController {
         return;
       }
 
-      const updateFields = req.body;
-      // Prevent updating seller or SKU
-      delete updateFields.seller;
-      delete updateFields.sku;
-      delete updateFields.sellerName;
-      delete updateFields.sellerType;
+      // Allow-list, not deny-list: the body used to be applied to the product as a
+      // whole, which let a seller replace `variants` with ids of another seller's
+      // variants (overwriting that seller's inventory) and forge ratings, tax and
+      // totals. Only listing details are editable; variant ids stay server-assigned.
+      const updateFields: Record<string, unknown> = {};
+      for (const field of SELLER_EDITABLE_PRODUCT_FIELDS) {
+        if (req.body && req.body[field] !== undefined) {
+          updateFields[field] = req.body[field];
+        }
+      }
 
       // Handle stock and price updates on the default variant if variants aren't directly provided
       if (updateFields.basePrice !== undefined || updateFields.stock !== undefined) {
@@ -360,6 +385,23 @@ export class SellerController {
           error: {
             message: "Item not found or access denied for this seller",
           },
+        });
+        return;
+      }
+
+      // Fulfilment only moves on an order that has actually been paid. Without this
+      // a seller could mark an unpaid order delivered, which both fakes a
+      // "verified purchase" for reviews and stops the real payment ever being
+      // recorded (confirmPayment ignores orders that left PENDING_PAYMENT).
+      if (
+        order.paymentStatus !== PaymentStatus.CAPTURED ||
+        [OrderStatus.CART, OrderStatus.PENDING_PAYMENT, OrderStatus.CANCELLED].includes(
+          order.status as OrderStatus
+        )
+      ) {
+        res.status(409).json({
+          ok: false,
+          error: { message: "This order has not been paid, so it cannot be fulfilled yet." },
         });
         return;
       }

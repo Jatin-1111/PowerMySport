@@ -307,9 +307,18 @@ export class CartService {
       }
     }
 
+    // A promo discount is computed for one specific cart. Once the contents change
+    // it no longer applies: drop it, and the customer re-applies the code against
+    // the new cart (which re-validates it). Otherwise the discount earned on a
+    // large cart survives removing items.
+    if (cart.appliedPromoCode || cart.discountAmount) {
+      cart.appliedPromoCode = "";
+      cart.discountAmount = 0;
+    }
+
     cart.subtotal = subtotal;
     cart.taxAmount = Math.round(taxAmount); // Round to nearest paise
-    cart.totalAmount = cart.subtotal + cart.taxAmount - (cart.discountAmount || 0);
+    cart.totalAmount = cart.subtotal + cart.taxAmount;
   }
 
   /**
