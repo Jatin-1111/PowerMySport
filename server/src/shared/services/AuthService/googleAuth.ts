@@ -2,6 +2,7 @@ import { OAuth2Client } from "google-auth-library";
 import { User, UserDocument } from "../../../client/models/User";
 import { Expert } from "../../../client/models/ExpertProfile";
 import { sendWelcomeEmail } from "../../../utils/email";
+import { isSelfRegisterRole, SelfRegisterRole } from "../../constants/selfRegisterRoles";
 import { log, LEGAL_POLICY_VERSION, restoreIfPendingDeletion } from "./shared";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -67,7 +68,7 @@ export interface GoogleLoginPayload {
   email: string;
   name: string;
   photoUrl?: string;
-  role?: "Parent" | "Player" | "VenueLister" | "Coach";
+  role?: SelfRegisterRole;
   action?: "login" | "register";
   acceptedTerms?: boolean;
   acceptedPrivacy?: boolean;
@@ -96,6 +97,12 @@ export const googleLogin = async (
 
       if (!payload.acceptedTerms || !payload.acceptedPrivacy) {
         throw new Error("You must accept Terms of Service and Privacy Policy to register.");
+      }
+
+      // Defence in depth behind googleAuthSchema: the TypeScript union is erased at
+      // runtime, so re-check against the self-registration allow-list here.
+      if (payload.role !== undefined && !isSelfRegisterRole(payload.role)) {
+        throw new Error("Invalid role for sign-up.");
       }
 
       const now = new Date();

@@ -6,6 +6,7 @@ import {
   CHILD_WEEKLY_HOURS,
 } from "@powermysport/shared-types";
 import { z } from "zod";
+import { SELF_REGISTER_ROLES } from "../shared/constants/selfRegisterRoles";
 
 export const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,6 +26,17 @@ export const registerSchema = z.object({
   // becoming active; Coach/VenueLister self-registration similarly sits
   // pending until an admin approves.
   role: z.enum(["Parent", "Player", "VenueLister", "Coach", "EXPERT"]).optional().default("Parent"),
+});
+
+// Google sign-in/sign-up body. Identity comes only from the verified credential;
+// the role must come from the same self-registration allow-list as registerSchema
+// (never Admin or Academy). Unknown keys are stripped.
+export const googleAuthSchema = z.object({
+  credential: z.string().min(1, "Google credential is required"),
+  role: z.enum(SELF_REGISTER_ROLES).optional(),
+  action: z.enum(["login", "register"]).optional(),
+  acceptedTerms: z.boolean().optional(),
+  acceptedPrivacy: z.boolean().optional(),
 });
 
 export const loginSchema = z.object({

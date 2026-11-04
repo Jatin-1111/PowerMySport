@@ -10,6 +10,39 @@ import { S3Service } from "../shared/services/S3Service";
 process.env.JWT_SECRET = "test-secret-test-secret-test-secret-1234567890";
 process.env.GOOGLE_CLIENT_ID = "test-client-id.apps.googleusercontent.com";
 
+// ───────────────── Google sign-up cannot self-select a privileged role ─────────
+describe("Google auth — role comes only from the self-registration allow-list", () => {
+  const { googleAuthSchema } = require("../middleware/schemas");
+  const { isSelfRegisterRole } = require("../shared/constants/selfRegisterRoles");
+
+  it("rejects Admin, Academy and unknown roles in the request body", () => {
+    for (const role of ["Admin", "Academy", "SUPER_ADMIN", "SYSTEM_ADMIN", "admin", ""]) {
+      const result = googleAuthSchema.safeParse({ credential: "x", role });
+      assert.equal(result.success, false, `role ${JSON.stringify(role)} must be rejected`);
+    }
+  });
+
+  it("accepts the five self-selectable roles and an omitted role", () => {
+    for (const role of ["Parent", "Player", "VenueLister", "Coach", "EXPERT"]) {
+      assert.equal(googleAuthSchema.safeParse({ credential: "x", role }).success, true);
+    }
+    assert.equal(googleAuthSchema.safeParse({ credential: "x", action: "login" }).success, true);
+  });
+
+  it("requires a credential and strips unknown keys", () => {
+    assert.equal(googleAuthSchema.safeParse({ role: "Parent" }).success, false);
+    const parsed = googleAuthSchema.parse({ credential: "x", googleId: "forged", email: "a@b.c" });
+    assert.deepEqual(Object.keys(parsed), ["credential"]);
+  });
+
+  it("service-level guard rejects privileged roles even if the schema were bypassed", () => {
+    assert.equal(isSelfRegisterRole("Admin"), false);
+    assert.equal(isSelfRegisterRole("Academy"), false);
+    assert.equal(isSelfRegisterRole(undefined), false);
+    assert.equal(isSelfRegisterRole("Coach"), true);
+  });
+});
+
 // ───────────────────────────── H5: regex injection / ReDoS ─────────────────
 describe("H5 — search input is escaped before regex use", () => {
   it("escapes all regex metacharacters", () => {

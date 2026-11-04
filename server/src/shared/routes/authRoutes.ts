@@ -6,6 +6,7 @@ import { authMiddleware } from "../../middleware/auth";
 import { dependentsWriteRateLimiter } from "../../middleware/rateLimit";
 import {
   addDependentSchema,
+  googleAuthSchema,
   loginSchema,
   registerSchema,
   updateDependentSchema,
@@ -184,7 +185,7 @@ router.get("/whatsapp-consent", authMiddleware, getWhatsAppConsentHandler);
 router.put("/whatsapp-consent", authMiddleware, setWhatsAppConsentHandler);
 router.post("/forgot-password", forgotPasswordRateLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordRateLimiter, resetPasswordHandler);
-router.post("/google", googleAuth);
+router.post("/google", validateRequest(googleAuthSchema), googleAuth);
 router.post("/google/link", authMiddleware, linkGoogleHandler);
 router.post("/graduate", authMiddleware, graduateDependentHandler);
 router.put("/change-password", authMiddleware, changePasswordRateLimiter, changePasswordHandler);
