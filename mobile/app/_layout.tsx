@@ -69,18 +69,6 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen
-            name="coaches/[id]"
-            options={{ headerShown: false, animation: "slide_from_right" }}
-          />
-          <Stack.Screen
-            name="venues/[id]"
-            options={{ headerShown: false, animation: "slide_from_right" }}
-          />
-          <Stack.Screen
-            name="academies/[id]"
-            options={{ headerShown: false, animation: "slide_from_right" }}
-          />
-          <Stack.Screen
             name="notifications"
             options={{ headerShown: false, animation: "slide_from_bottom" }}
           />

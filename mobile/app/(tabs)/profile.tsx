@@ -126,48 +126,6 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Stats Row */}
-        <View className="border-border flex-row border-b bg-white">
-          {[
-            { label: "Bookings", value: "—" },
-            { label: "Reviews", value: "—" },
-            { label: "Sports", value: "—" },
-          ].map((stat, idx) => (
-            <View
-              key={stat.label}
-              className={`flex-1 items-center py-4 ${idx < 2 ? "border-border border-r" : ""}`}
-            >
-              <Text className="text-foreground text-xl font-bold">{stat.value}</Text>
-              <Text className="text-muted mt-0.5 text-xs">{stat.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Account Section */}
-        <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <Text className="text-muted px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wider">
-            Account
-          </Text>
-          <MenuItem
-            icon={User}
-            label="Edit Profile"
-            sublabel="Update your personal info"
-            onPress={() => {}}
-          />
-          <MenuItem
-            icon={CreditCard}
-            label="Wallet & Payments"
-            sublabel="Manage payment methods"
-            onPress={() => {}}
-          />
-          <MenuItem
-            icon={Heart}
-            label="Saved"
-            sublabel="Your bookmarked coaches & venues"
-            onPress={() => {}}
-          />
-        </View>
-
         {/* Preferences Section */}
         <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
           <Text className="text-muted px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wider">
@@ -176,25 +134,9 @@ export default function ProfileScreen() {
           <MenuItem
             icon={Bell}
             label="Notifications"
-            sublabel="Manage alert settings"
+            sublabel="Your inbox"
             onPress={() => router.push("/notifications")}
           />
-          <MenuItem
-            icon={Settings}
-            label="Settings"
-            sublabel="App settings and preferences"
-            onPress={() => {}}
-          />
-        </View>
-
-        {/* Support Section */}
-        <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <Text className="text-muted px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wider">
-            Support
-          </Text>
-          <MenuItem icon={HelpCircle} label="Help & FAQ" onPress={() => {}} />
-          <MenuItem icon={Shield} label="Privacy & Terms" onPress={() => {}} />
-          <MenuItem icon={Star} label="Rate the App" onPress={() => {}} />
         </View>
 
         {/* Logout */}

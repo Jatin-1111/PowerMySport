@@ -1,8 +1,8 @@
-import { Tabs } from 'expo-router';
-import { View, Text } from 'react-native';
-import { Home, Search, CalendarDays, User } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS } from '@/lib/constants';
+import { Tabs } from "expo-router";
+import { View, Text } from "react-native";
+import { Home, User } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { COLORS } from "@/lib/constants";
 
 interface TabIconProps {
   icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
@@ -13,19 +13,15 @@ interface TabIconProps {
 function TabIcon({ icon: Icon, label, focused }: TabIconProps) {
   return (
     <View className="items-center justify-center pt-1">
-      {focused && (
-        <View
-          className="absolute -top-3 w-10 h-0.5 bg-power-orange rounded-b-full"
-        />
-      )}
+      {focused && <View className="bg-action absolute -top-3 h-0.5 w-10 rounded-b-full" />}
       <Icon
         size={22}
-        color={focused ? COLORS.powerOrange : COLORS.muted}
+        color={focused ? COLORS.action : COLORS.muted}
         strokeWidth={focused ? 2.5 : 2}
       />
       <Text
-        className={`text-[10px] mt-0.5 ${
-          focused ? 'text-power-orange font-semibold' : 'text-muted font-medium'
+        className={`mt-0.5 text-[10px] ${
+          focused ? "text-action font-semibold" : "text-muted font-medium"
         }`}
       >
         {label}
@@ -42,13 +38,13 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
-          borderTopColor: '#E5E7EB',
+          backgroundColor: "#FFFFFF",
+          borderTopColor: "#E5E7EB",
           borderTopWidth: 1,
           height: 56 + insets.bottom,
           paddingBottom: insets.bottom,
           elevation: 8,
-          shadowColor: '#000',
+          shadowColor: "#000",
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.06,
           shadowRadius: 8,
@@ -59,33 +55,13 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Home} label="Home" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="discover"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={Search} label="Discover" focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="bookings"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={CalendarDays} label="Bookings" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon icon={Home} label="Home" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon={User} label="Profile" focused={focused} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon icon={User} label="Profile" focused={focused} />,
         }}
       />
     </Tabs>
