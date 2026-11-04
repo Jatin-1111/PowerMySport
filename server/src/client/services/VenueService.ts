@@ -3,6 +3,7 @@ import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../../types/index";
 import { buildSafeSearchRegexSource } from "../../utils/regex";
 import { log as __rootLog } from "../../utils/logger";
+import { AppError } from "../../utils/AppError";
 import { pendingChangesUpdate, reconcileClaimChanges } from "../../shared/services/pendingChanges";
 const log = __rootLog.child("venue");
 
@@ -385,6 +386,56 @@ const VENUE_PROTECTED_FIELDS = [
   "reviewCount",
 ] as const;
 
+const collectVenueStorageKeys = (source: unknown): string[] => {
+  if (!source || typeof source !== "object") return [];
+  const record = source as Record<string, unknown>;
+  const keys: unknown[] = [];
+  if (Array.isArray(record.documents)) {
+    for (const doc of record.documents) keys.push((doc as { s3Key?: unknown } | null)?.s3Key);
+  }
+  for (const field of ["imageKeys", "generalImageKeys"] as const) {
+    if (Array.isArray(record[field])) keys.push(...(record[field] as unknown[]));
+  }
+  const sportKeys = record.sportImageKeys;
+  const sportLists =
+    sportKeys instanceof Map
+      ? Array.from(sportKeys.values())
+      : sportKeys && typeof sportKeys === "object"
+        ? Object.values(sportKeys as Record<string, unknown>)
+        : [];
+  for (const list of sportLists) {
+    if (Array.isArray(list)) keys.push(...list);
+  }
+  keys.push(record.coverPhotoKey);
+  return keys.filter((key): key is string => typeof key === "string" && key !== "");
+};
+
+/**
+ * A lister may only reference storage keys that belong to their own venue
+ * (`venues/<venueId>/...`) or that are already stored on it. Otherwise a stored
+ * foreign key would later be signed into a download URL for another provider's
+ * object (the server signs every stored document and image key).
+ */
+const assertSubmittedStorageKeysAreOwned = async (
+  id: string,
+  ownerId: string,
+  submittedPayload: Record<string, unknown>
+): Promise<void> => {
+  const submitted = collectVenueStorageKeys(submittedPayload);
+  if (submitted.length === 0) return;
+  const stored = await Venue.findOne({ _id: id, ownerId })
+    .select("documents.s3Key imageKeys generalImageKeys sportImageKeys coverPhotoKey")
+    .lean();
+  const known = new Set(collectVenueStorageKeys(stored));
+  const prefix = `venues/${id}/`;
+  for (const key of submitted) {
+    if (known.has(key)) continue;
+    if (!key.startsWith(prefix) || key.split("/").some((part) => part === ".." || part === ".")) {
+      throw new AppError("Invalid image or document reference.", 400);
+    }
+  }
+};
+
 export const updateVenue = async (
   id: string,
   ownerId: string,
@@ -412,6 +463,7 @@ export const updateVenue = async (
     "approvalStatus name address location pendingChanges"
   );
   if (!venue) return null;
+  await assertSubmittedStorageKeysAreOwned(id, ownerId, sanitized);
   if (venue.approvalStatus !== "APPROVED") {
     return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
   }

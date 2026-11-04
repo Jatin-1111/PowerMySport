@@ -6,6 +6,7 @@ import { sendEmail } from "../../utils/email";
 import { User } from "../../client/models/User";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
+import { isOwnConciergeKey } from "../utils/conciergeKeys";
 
 const escHtml = (str: unknown): string =>
   String(str ?? "")
@@ -86,6 +87,15 @@ export const submitConciergeRequest = asyncHandler(
 
     if (documents.length > 10) {
       throw new AppError("Maximum 10 documents allowed per request.", 400);
+    }
+
+    // Only keys issued to this user by getPresignedUploadUrl may be stored: the
+    // account-deletion cascade later deletes every stored key from the documents bucket.
+    const ownerId = userId.toString();
+    for (const doc of documents) {
+      if (!isOwnConciergeKey(ownerId, doc?.s3Key)) {
+        throw new AppError("Invalid document reference.", 400);
+      }
     }
 
     const request = new ConciergeRequest({

@@ -43,6 +43,30 @@ describe("Google auth — role comes only from the self-registration allow-list"
   });
 });
 
+// ───────────────── Concierge document keys are bound to their owner ────────────
+describe("Concierge document keys — only the owner's own prefix is trusted", () => {
+  const { isOwnConciergeKey } = require("../shared/utils/conciergeKeys");
+
+  it("accepts a key under the owner's concierge prefix", () => {
+    assert.equal(isOwnConciergeKey("u1", "concierge/u1/1700000000-id.pdf"), true);
+  });
+
+  it("rejects another user's key, other buckets' prefixes and non-strings", () => {
+    assert.equal(isOwnConciergeKey("u1", "concierge/u2/id.pdf"), false);
+    assert.equal(isOwnConciergeKey("u1", "coaches/abc/documents/id_proof_1.pdf"), false);
+    assert.equal(isOwnConciergeKey("u1", "venues/abc/documents/x.pdf"), false);
+    assert.equal(isOwnConciergeKey("u1", undefined), false);
+    assert.equal(isOwnConciergeKey("u1", { s3Key: "concierge/u1/x" }), false);
+  });
+
+  it("rejects prefix look-alikes, empty names and traversal segments", () => {
+    assert.equal(isOwnConciergeKey("u1", "concierge/u10/x.pdf"), false);
+    assert.equal(isOwnConciergeKey("u1", "concierge/u1/"), false);
+    assert.equal(isOwnConciergeKey("u1", "concierge/u1/../u2/x.pdf"), false);
+    assert.equal(isOwnConciergeKey("", "concierge//x.pdf"), false);
+  });
+});
+
 // ───────────────────────────── H5: regex injection / ReDoS ─────────────────
 describe("H5 — search input is escaped before regex use", () => {
   it("escapes all regex metacharacters", () => {

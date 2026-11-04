@@ -2,6 +2,7 @@ import { Player } from "../../../client/models/Player";
 import { User } from "../../../client/models/User";
 import { invalidateAccountStatusCache } from "../../../middleware/auth";
 import { S3Service } from "../S3Service";
+import { isOwnConciergeKey } from "../../utils/conciergeKeys";
 import { log, ACCOUNT_DELETION_GRACE_PERIOD_MS } from "./shared";
 
 /**
@@ -261,6 +262,14 @@ export const cascadeDeleteUserData = async (userId: string): Promise<void> => {
     for (const request of requests) {
       for (const doc of request.documents || []) {
         if (!doc.s3Key) continue;
+        // Never delete an object outside this user's own concierge prefix, even if a
+        // record written before the submit-time check stored a foreign key.
+        if (!isOwnConciergeKey(String(userId), doc.s3Key)) {
+          log.error(
+            `cascadeDeleteUserData: skipping concierge document outside the owner's prefix for user ${userId}`
+          );
+          continue;
+        }
         try {
           await s3Service.deleteFile(doc.s3Key, "documents");
         } catch (error) {
