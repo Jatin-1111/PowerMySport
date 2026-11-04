@@ -1,0 +1,140 @@
+import type { TournamentEdition } from "@/modules/pathway/services/pathway";
+import { CAL_TZ } from "@/modules/pathway/config/tournamentDisplay";
+
+// Shared by the calendar's browse-all view and the player-event finder, so a
+// tournament row looks and reads the same in both.
+//
+// CAL_TZ now lives in modules/pathway/config (src/modules code that also
+// needs it can't import an src/app file across the module boundary) and is
+// re-exported here under its original name so every existing importer of
+// this file keeps working unchanged.
+export { CAL_TZ };
+
+export const LEVEL_COLORS: Record<string, { pill: string; dot: string }> = {
+  international: { pill: "bg-rose-50 text-rose-700 border-rose-200", dot: "bg-rose-500" },
+  national: { pill: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+  state: { pill: "bg-violet-50 text-violet-700 border-violet-200", dot: "bg-violet-500" },
+  district: { pill: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" },
+  zonal: { pill: "bg-slate-50 text-slate-600 border-slate-200", dot: "bg-slate-400" },
+};
+
+export function levelColor(level: string) {
+  return (
+    LEVEL_COLORS[level.toLowerCase()] ?? {
+      pill: "bg-slate-50 text-slate-600 border-slate-200",
+      dot: "bg-slate-400",
+    }
+  );
+}
+
+/** The approval flow writes the literal string "admin-submitted" when a calendar edition has no cited source. */
+export function isLinkableSourceUrl(url: string | undefined): url is string {
+  return !!url && /^https?:\/\//i.test(url);
+}
+
+export function dateKey(date: string): string {
+  return new Date(date).toISOString().slice(0, 10);
+}
+
+export function monthKeyOf(date: string): string {
+  return dateKey(date).slice(0, 7);
+}
+
+export function isMultiDayEdition(e: TournamentEdition): boolean {
+  return !!e.endDate && dateKey(e.endDate) !== dateKey(e.startDate);
+}
+
+/**
+ * Whether the event is over, judged by its last day.
+ *
+ * Deliberately computed from the dates and not from `status`: 294 of the 659
+ * editions that have already happened are still stored as "announced", because
+ * nothing sweeps the collection after an event passes. Trusting that field
+ * would leave most finished events presenting themselves as upcoming.
+ */
+export function hasEditionFinished(
+  e: { startDate: string; endDate?: string },
+  now: Date = new Date()
+): boolean {
+  const last = new Date(e.endDate || e.startDate);
+  // Dates are stored as UTC midnight, so the event runs to the end of that day.
+  last.setUTCHours(23, 59, 59, 999);
+  return last.getTime() < now.getTime();
+}
+
+export function formatShortEndDate(endDate: string, startDate: string): string {
+  const end = new Date(endDate);
+  const label = end.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    timeZone: CAL_TZ,
+  });
+  return end.getUTCFullYear() === new Date(startDate).getUTCFullYear()
+    ? label
+    : `${label} ${end.getUTCFullYear()}`;
+}
+
+// Moved to the tournaments module so module code can share it.
+export { formatLocation } from "@/modules/tournaments/utils/editionFormat";
+
+/** "Under-14" -> 14, so age-group chips sort numerically rather than alphabetically. */
+export function ageGroupRank(label: string): number {
+  const match = label.match(/\d+/);
+  return match ? parseInt(match[0], 10) : 999;
+}
+
+/** Age groups offered by the data, ordered youngest-first with adult categories last. */
+export function sortedAgeGroups(editions: TournamentEdition[]): string[] {
+  return Array.from(new Set(editions.flatMap((e) => e.ageGroups ?? []))).sort(
+    (a, b) => ageGroupRank(a) - ageGroupRank(b) || a.localeCompare(b)
+  );
+}
+
+export interface EditionDateGroup {
+  key: string;
+  date: Date;
+  editions: TournamentEdition[];
+}
+
+export interface EditionMonthBucket {
+  key: string;
+  shortLabel: string;
+  fullLabel: string;
+  editions: TournamentEdition[];
+}
+
+/** Many editions share one start date (a series running in several cities) — group them under a single date header. */
+export function groupEditionsByDate(editions: TournamentEdition[]): EditionDateGroup[] {
+  const groups = new Map<string, EditionDateGroup>();
+  for (const e of editions) {
+    const key = dateKey(e.startDate);
+    let group = groups.get(key);
+    if (!group) {
+      group = { key, date: new Date(e.startDate), editions: [] };
+      groups.set(key, group);
+    }
+    group.editions.push(e);
+  }
+  return Array.from(groups.values());
+}
+
+/** Month buckets drive the calendar's primary navigation — one pill per month with a live count. */
+export function bucketEditionsByMonth(editions: TournamentEdition[]): EditionMonthBucket[] {
+  const buckets = new Map<string, EditionMonthBucket>();
+  for (const e of editions) {
+    const key = monthKeyOf(e.startDate);
+    let bucket = buckets.get(key);
+    if (!bucket) {
+      const d = new Date(e.startDate);
+      bucket = {
+        key,
+        shortLabel: d.toLocaleDateString("en-IN", { month: "short", timeZone: CAL_TZ }),
+        fullLabel: `${d.toLocaleDateString("en-IN", { month: "long", timeZone: CAL_TZ })} ${d.getUTCFullYear()}`,
+        editions: [],
+      };
+      buckets.set(key, bucket);
+    }
+    bucket.editions.push(e);
+  }
+  return Array.from(buckets.values());
+}

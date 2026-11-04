@@ -1,61 +1,102 @@
 import axiosInstance from "@/lib/api/axios";
+import { uploadFileToPresignedUrl } from "@/modules/onboarding/services/onboarding";
+import { photoFileProblem } from "@/modules/onboarding/utils/academyVenueRules";
 import {
   AcademyListResponse,
   AcademyStep1Payload,
   AcademyStep2Payload,
   AcademyStep3Payload,
-  AcademyStep4Payload,
-  AcademyStep5Payload,
-  AcademyStep6Payload,
+  AcademySaveStepPayload,
   ApiResponse,
   ConfirmDocumentsPayload,
   ConfirmImagesPayload,
   OnboardingAcademy,
   OnboardingProgress,
   PresignedUrl,
-  AcademyStepPayload,
 } from "@/modules/onboarding/types/academy";
 
 const API_BASE = "/academies/onboarding";
 
+// The academy onboarding API has no session to lean on (academies sign up
+// before they have an account), so `start` returns a one-time token and every
+// later call for that academy must send it back. It lives next to the
+// in-progress academyId, in localStorage, and is never put in a URL.
+const TOKEN_KEY_PREFIX = "academy_onboarding_token:";
+const TOKEN_HEADER = "X-Academy-Onboarding-Token";
+
+const rememberOnboardingToken = (academyId: string, token: string) => {
+  try {
+    localStorage.setItem(`${TOKEN_KEY_PREFIX}${academyId}`, token);
+  } catch {
+    // localStorage not available; the owner/admin session can still resume
+  }
+};
+
+/** Request config carrying the stored token for this academy, if there is one. */
+const withToken = (academyId: string) => {
+  try {
+    const token = localStorage.getItem(`${TOKEN_KEY_PREFIX}${academyId}`);
+    return token ? { headers: { [TOKEN_HEADER]: token } } : {};
+  } catch {
+    return {};
+  }
+};
+
+const serverMessage = (error: unknown, fallback: string): string =>
+  (error as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
+
+/** True when the server refused a submit because the contact email is unconfirmed. */
+export const needsEmailVerification = (error: unknown): boolean => {
+  const response = (error as { response?: { status?: number; data?: { message?: string } } })
+    ?.response;
+  return response?.status === 403 && /verify your email/i.test(response.data?.message || "");
+};
+
 /**
  * Academy Onboarding API Service
- * Handles 6-step onboarding process
+ * Handles 7-step onboarding process
  */
 export const academyOnboardingApi = {
   /**
    * STEP 1: Start academy onboarding with basic info
    */
-  startOnboarding: async (
-    data: AcademyStep1Payload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
+  startOnboarding: async (data: AcademyStep1Payload): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.post(`${API_BASE}/start`, data);
-    return response.data;
+    const body = response.data;
+    const started = body?.data as
+      { academyId?: string; id?: string; _id?: string; onboardingToken?: string } | undefined;
+    const startedId = started?.academyId || started?.id || started?._id;
+    if (startedId && started?.onboardingToken) {
+      rememberOnboardingToken(String(startedId), started.onboardingToken);
+      // Not needed in component state.
+      delete started.onboardingToken;
+    }
+    return body;
   },
 
   /**
    * Get academy onboarding progress
    */
-  getProgress: async (
-    academyId: string,
-  ): Promise<ApiResponse<OnboardingProgress>> => {
+  getProgress: async (academyId: string): Promise<ApiResponse<OnboardingProgress>> => {
     const response = await axiosInstance.get(
       `${API_BASE}/${academyId}/progress`,
+      withToken(academyId)
     );
     return response.data;
   },
 
   /**
-   * Save any step (2-6)
+   * Save any step (2-7)
    */
   saveStep: async (
     academyId: string,
     stepNumber: number,
-    data: AcademyStepPayload,
+    data: AcademySaveStepPayload
   ): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.put(
       `${API_BASE}/${academyId}/step/${stepNumber}`,
       data,
+      withToken(academyId)
     );
     return response.data;
   },
@@ -63,12 +104,11 @@ export const academyOnboardingApi = {
   /**
    * STEP 2: Update location and contact details
    */
-  submitStep2: async (
-    data: AcademyStep2Payload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
+  submitStep2: async (data: AcademyStep2Payload): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.put(
       `${API_BASE}/${data.academyId}/step/2`,
       data,
+      withToken(data.academyId)
     );
     return response.data;
   },
@@ -78,24 +118,61 @@ export const academyOnboardingApi = {
    */
   getImageUploadUrls: async (
     academyId: string,
-    imageTypes: ("logo" | "coverPhoto" | "galleryPhotos")[],
+    imageTypes: (
+      "logo" | "coverPhoto" | "galleryPhotos" | "academyVenue_general" | "academyVenue_sport"
+    )[]
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${academyId}/image-upload-urls`,
       { imageTypes },
+      withToken(academyId)
     );
     return response.data;
   },
 
   /**
+   * Upload one venue photo: a general photo of the venue, or a photo for one
+   * sport. Checks the file first, gets a fresh upload link (links last an hour,
+   * so one is fetched per photo, never reused), uploads straight to storage, and
+   * returns the address and storage key to save with the venue. Throws an Error
+   * whose message is fit to show the owner.
+   */
+  uploadVenuePhoto: async (
+    academyId: string,
+    kind: "general" | "sport",
+    file: File
+  ): Promise<{ url: string; key: string }> => {
+    const problem = photoFileProblem(file);
+    if (problem) throw new Error(problem);
+
+    const type = kind === "general" ? "academyVenue_general" : "academyVenue_sport";
+    let link: PresignedUrl | undefined;
+    try {
+      const response = await academyOnboardingApi.getImageUploadUrls(academyId, [type]);
+      link = response.data?.uploadUrls?.find((u) => u.field.startsWith(type));
+    } catch (error) {
+      const message = (error as { response?: { data?: { message?: string } } })?.response?.data
+        ?.message;
+      throw new Error(message || "Could not start the upload. Try again.");
+    }
+    if (!link) throw new Error("Could not start the upload. Try again.");
+
+    try {
+      await uploadFileToPresignedUrl(file, link.uploadUrl, link.contentType);
+    } catch {
+      throw new Error("The upload failed. Check your connection and try again.");
+    }
+    return { url: link.downloadUrl, key: link.s3Key };
+  },
+
+  /**
    * STEP 3: Confirm images uploaded
    */
-  confirmImages: async (
-    payload: ConfirmImagesPayload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
+  confirmImages: async (payload: ConfirmImagesPayload): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${payload.academyId}/confirm-images`,
       payload,
+      withToken(payload.academyId)
     );
     return response.data;
   },
@@ -105,11 +182,12 @@ export const academyOnboardingApi = {
    */
   getDocumentUploadUrls: async (
     academyId: string,
-    docTypes: ("panDocument" | "gstDocument")[],
+    docTypes: ("panDocument" | "gstDocument")[]
   ): Promise<ApiResponse<{ uploadUrls: PresignedUrl[] }>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${academyId}/document-upload-urls`,
       { docTypes },
+      withToken(academyId)
     );
     return response.data;
   },
@@ -118,11 +196,12 @@ export const academyOnboardingApi = {
    * STEP 3: Confirm documents uploaded
    */
   confirmDocuments: async (
-    payload: ConfirmDocumentsPayload,
+    payload: ConfirmDocumentsPayload
   ): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${payload.academyId}/confirm-documents`,
       payload,
+      withToken(payload.academyId)
     );
     return response.data;
   },
@@ -130,63 +209,49 @@ export const academyOnboardingApi = {
   /**
    * STEP 3: Update legal details and save documents
    */
-  submitStep3: async (
-    data: AcademyStep3Payload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
+  submitStep3: async (data: AcademyStep3Payload): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.put(
       `${API_BASE}/${data.academyId}/step/3`,
       data,
+      withToken(data.academyId)
     );
     return response.data;
   },
 
-  /**
-   * STEP 4: Link venues and coaches
-   */
-  submitStep4: async (
-    data: AcademyStep4Payload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.put(
-      `${API_BASE}/${data.academyId}/step/4`,
-      data,
-    );
-    return response.data;
+  /** Email the owner a confirmation code for the contact address. */
+  sendEmailCode: async (academyId: string): Promise<void> => {
+    try {
+      await axiosInstance.post(
+        `${API_BASE}/${academyId}/send-verification`,
+        undefined,
+        withToken(academyId)
+      );
+    } catch (error) {
+      throw new Error(serverMessage(error, "Failed to send the code"));
+    }
   },
 
-  /**
-   * STEP 5: Set pricing and subscription plans
-   */
-  submitStep5: async (
-    data: AcademyStep5Payload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.put(
-      `${API_BASE}/${data.academyId}/step/5`,
-      data,
-    );
-    return response.data;
-  },
-
-  /**
-   * STEP 6: Set payout details and submit for approval
-   */
-  submitStep6: async (
-    data: AcademyStep6Payload,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.put(
-      `${API_BASE}/${data.academyId}/step/6`,
-      data,
-    );
-    return response.data;
+  /** Confirm the contact email with the emailed 6-digit code. */
+  verifyEmailCode: async (academyId: string, code: string): Promise<void> => {
+    try {
+      await axiosInstance.post(
+        `${API_BASE}/${academyId}/verify-email`,
+        { code },
+        withToken(academyId)
+      );
+    } catch (error) {
+      throw new Error(serverMessage(error, "Verification failed"));
+    }
   },
 
   /**
    * Submit academy for admin approval
    */
-  submitForApproval: async (
-    academyId: string,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
+  submitForApproval: async (academyId: string): Promise<ApiResponse<OnboardingAcademy>> => {
     const response = await axiosInstance.post(
       `${API_BASE}/${academyId}/submit`,
+      undefined,
+      withToken(academyId)
     );
     return response.data;
   },
@@ -200,34 +265,29 @@ export const academyOnboardingApi = {
     filters?: {
       city?: string;
       sport?: string;
+      /** Free text over name, city and sport. */
+      search?: string;
       ageGroup?: string;
       minPrice?: number;
       maxPrice?: number;
       verifiedOnly?: boolean;
-    },
+    }
   ): Promise<ApiResponse<AcademyListResponse>> => {
-    const response = await axiosInstance.get(
-      `${API_BASE.replace("/onboarding", "")}`,
-      {
-        params: {
-          page,
-          limit,
-          ...filters,
-        },
+    const response = await axiosInstance.get(`${API_BASE.replace("/onboarding", "")}`, {
+      params: {
+        page,
+        limit,
+        ...filters,
       },
-    );
+    });
     return response.data;
   },
 
   /**
    * Get single academy profile by slug
    */
-  getAcademyProfile: async (
-    slug: string,
-  ): Promise<ApiResponse<OnboardingAcademy>> => {
-    const response = await axiosInstance.get(
-      `${API_BASE.replace("/onboarding", "")}/${slug}`,
-    );
+  getAcademyProfile: async (slug: string): Promise<ApiResponse<OnboardingAcademy>> => {
+    const response = await axiosInstance.get(`${API_BASE.replace("/onboarding", "")}/${slug}`);
     return response.data;
   },
 };

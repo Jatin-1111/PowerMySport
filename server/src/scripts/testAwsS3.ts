@@ -10,11 +10,7 @@
  * Run: npx ts-node src/scripts/testAwsS3.ts
  */
 
-import {
-  HeadBucketCommand,
-  ListObjectsV2Command,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { HeadBucketCommand, ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
 import dotenv from "dotenv";
 import { s3Service } from "../shared/services/S3Service";
 
@@ -40,11 +36,9 @@ const testS3Configuration = async () => {
 
   console.log(`✓ AWS Region: ${config.region || "NOT SET"}`);
   console.log(
-    `✓ Access Key ID: ${config.accessKeyId?.substring(0, 8)}...${config.accessKeyId ? "SET" : "NOT SET"}`,
+    `✓ Access Key ID: ${config.accessKeyId?.substring(0, 8)}...${config.accessKeyId ? "SET" : "NOT SET"}`
   );
-  console.log(
-    `✓ Secret Access Key: ${config.secretAccessKey ? "***SET***" : "NOT SET"}`,
-  );
+  console.log(`✓ Secret Access Key: ${config.secretAccessKey ? "***SET***" : "NOT SET"}`);
   console.log(`✓ Documents Bucket: ${config.documentsBucket || "NOT SET"}`);
   console.log(`✓ Images Bucket: ${config.imagesBucket || "NOT SET"}`);
   console.log();
@@ -86,12 +80,10 @@ const testS3Configuration = async () => {
     console.error(`❌ Documents bucket error: ${error.message}`);
     if (error.name === "NoSuchBucket") {
       console.error(
-        `   💡 Bucket "${config.documentsBucket}" does not exist. Please create it first.`,
+        `   💡 Bucket "${config.documentsBucket}" does not exist. Please create it first.`
       );
     } else if (error.name === "AccessDenied") {
-      console.error(
-        `   💡 Access denied. Check bucket permissions and IAM policy.`,
-      );
+      console.error(`   💡 Access denied. Check bucket permissions and IAM policy.`);
     }
   }
 
@@ -115,12 +107,10 @@ const testS3Configuration = async () => {
     console.error(`❌ Images bucket error: ${error.message}`);
     if (error.name === "NoSuchBucket") {
       console.error(
-        `   💡 Bucket "${config.imagesBucket}" does not exist. Please create it first.`,
+        `   💡 Bucket "${config.imagesBucket}" does not exist. Please create it first.`
       );
     } else if (error.name === "AccessDenied") {
-      console.error(
-        `   💡 Access denied. Check bucket permissions and IAM policy.`,
-      );
+      console.error(`   💡 Access denied. Check bucket permissions and IAM policy.`);
     }
   }
 
@@ -134,7 +124,7 @@ const testS3Configuration = async () => {
       "test-document.pdf",
       "application/pdf",
       "OWNERSHIP_PROOF",
-      "test-venue-123",
+      "test-venue-123"
     );
     console.log("✅ Document upload URL generated successfully");
     console.log(`   Upload URL: ${docUrl.uploadUrl.substring(0, 80)}...`);
@@ -149,7 +139,7 @@ const testS3Configuration = async () => {
       "test-image.jpg",
       "image/jpeg",
       "test-venue-123",
-      false,
+      false
     );
     console.log("\n✅ Image upload URL generated successfully");
     console.log(`   Upload URL: ${imageUrl.uploadUrl.substring(0, 80)}...`);
@@ -168,9 +158,7 @@ const testS3Configuration = async () => {
   console.log();
   console.log("💡 Next Steps:");
   console.log("   1. Make sure both S3 buckets exist in AWS");
-  console.log(
-    "   2. Set bucket policies to allow public read access (optional)",
-  );
+  console.log("   2. Set bucket policies to allow public read access (optional)");
   console.log("   3. Configure CORS settings for browser uploads");
   console.log("   4. Test actual file uploads through the API endpoints");
   console.log("=".repeat(60));

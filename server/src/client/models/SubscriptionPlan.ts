@@ -59,7 +59,7 @@ const subscriptionPlanSchema = new Schema<SubscriptionPlanDocument>(
       default: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Create indexes for common queries
@@ -68,9 +68,6 @@ subscriptionPlanSchema.index({ academyId: 1, isActive: 1 });
 
 const SubscriptionPlan =
   mongoose.models.SubscriptionPlan ||
-  mongoose.model<SubscriptionPlanDocument>(
-    "SubscriptionPlan",
-    subscriptionPlanSchema,
-  );
+  mongoose.model<SubscriptionPlanDocument>("SubscriptionPlan", subscriptionPlanSchema);
 
 export default SubscriptionPlan;

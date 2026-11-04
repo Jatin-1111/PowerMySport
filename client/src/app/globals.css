@@ -1,16 +1,18 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@powermysport/shared-tokens/tokens.css";
+
+/* The rich-text package carries Tailwind classes of its own. Tailwind v4 only
+   generates classes from files it scans, and a workspace package sits outside
+   this app, so without this its lists, tables and headings would be unstyled. */
+@source "../../../packages/rich-text/src";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* PowerMySport Brand Colors */
-  --power-orange: #E97316;
-  --deep-slate: #0F172A;
-  --ghost-white: #F8FAFC;
-  --turf-green: #22C55E;
-  --error-red: #EF4444;
+  /* PowerMySport Brand Colors — see packages/shared-tokens/tokens.css,
+     imported above, for --power-orange/--power-orange-solid/etc. */
 
   /* Semantic Colors */
   --primary: oklch(0.205 0 0);
@@ -18,27 +20,60 @@
   --error: var(--error-red);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --border: oklch(0.922 0 0);
-  --radius: 0.625rem;
-  --background: #f4f7ff;
-  --foreground: #111827;
+  --muted: #efe7da;
+  --muted-foreground: #6b675f;
+  --border: #e1dcd3;
+  /* 8px base gives the crisp scale the theme derives below: sm 4 (chips,
+     badges), md 6 (buttons, inputs), lg 8 (cards), xl 12 (modals, large
+     media). Marketing pages stop at xl; 2xl and up are legacy app surfaces. */
+  --radius: 0.5rem;
+  /* Ghost white (slate-50), not the old blue-tinted #f4f7ff: on that tint the
+     site's secondary text (slate-500, muted-foreground) measured 4.42-4.44:1,
+     just under AA, while on slate-50 the same text clears it. */
+  --background: #f8f3ea;
+  --foreground: #1c1b1a;
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --accent: oklch(0.97 0 0);
+  --secondary: #efe7da;
+  --secondary-foreground: #1c1b1a;
+  --accent: #efe7da;
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --input: oklch(0.922 0 0);
+  --input: #d9d3c8;
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+
+  /* ── Ranking analytics charts ─────────────────────────────────────────────
+     A separate, deliberately ordered categorical set rather than --chart-1..5:
+     those flip hue between light and dark (chart-1 goes orange -> violet), so a
+     stacked series would repaint itself when the theme changes.
+
+     The slot ORDER is the colourblind-safety mechanism and must not be
+     rearranged — adjacent slots are what a stacked bar puts side by side.
+     Validated against the card surfaces this actually renders on (#ffffff and
+     #171717): worst adjacent CVD ΔE 9.1 light / 8.4 dark, worst adjacent
+     normal-vision ΔE 19.6 / 19.3. Three light slots fall under 3:1 against
+     white, so these charts always ship visible values, never colour alone. */
+  --rank-series-1: #2a78d6;
+  --rank-series-2: #eb6834;
+  --rank-series-3: #1baf7a;
+  --rank-series-4: #eda100;
+  --rank-series-5: #e87ba4;
+  --rank-series-6: #008300;
+  /* Single-series magnitude (the tier ladder, state bars). Slot 2, so the one
+     accent in these panels is also a validated member of the same set. */
+  --rank-accent: #eb6834;
+  --rank-track: oklch(0.94 0 0);
+  /* Movement cues. Text-weight steps: a chip reading "up 12" has to pass text
+     contrast, which brand green at #22C55E does not on white. */
+  --rank-delta-up: #006300;
+  --rank-delta-down: #b3261e;
+
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -56,10 +91,61 @@
 
   /* Brand Colors */
   --color-power-orange: var(--power-orange);
+  --color-power-orange-solid: var(--power-orange-solid);
   --color-deep-slate: var(--deep-slate);
   --color-ghost-white: var(--ghost-white);
   --color-turf-green: var(--turf-green);
   --color-error-red: var(--error-red);
+
+  /* Warm paper: the design system in client/DESIGN.md. Surfaces, text, lines.
+     Orange stays on the brand tokens above; it is the only accent. */
+  --color-paper: #f8f3ea;
+  --color-paper-deep: #efe7da;
+  --color-wash: #fbe9d9;
+  --color-ink: #1c1b1a;
+  --color-ink-hover: #39332f;
+  --color-ink-body: #4a4741;
+  --color-ink-muted: #6b675f;
+  --color-ink-ash: #a8a5a0;
+  --color-hairline: #e1dcd3;
+  --color-board-tile: #2b2825;
+
+  /* The whole app's neutral scale, warmed. Every `slate-*` utility in the
+     client resolves to these, so pages inherit the paper palette without a
+     per-file edit: 200 is the hairline, 500 the muted text, 600 the body text,
+     900 the ink. */
+  --color-slate-50: #f3ede3;
+  --color-slate-100: #efe7da;
+  --color-slate-200: #e1dcd3;
+  --color-slate-300: #cfc8bc;
+  --color-slate-400: #a8a5a0;
+  --color-slate-500: #6b675f;
+  --color-slate-600: #4a4741;
+  --color-slate-700: #3a3733;
+  --color-slate-800: #2b2825;
+  --color-slate-900: #1c1b1a;
+  --color-slate-950: #12110f;
+
+  /* Indigo was a second accent; the brand has one. Same utilities, brand orange. */
+  --color-indigo-50: #fff7ed;
+  --color-indigo-100: #ffedd5;
+  --color-indigo-200: #fed7aa;
+  --color-indigo-300: #fdba74;
+  --color-indigo-400: #fb923c;
+  --color-indigo-500: #e97316;
+  --color-indigo-600: #c2410c;
+  --color-indigo-700: #9a3412;
+  --color-indigo-800: #7c2d12;
+  --color-indigo-900: #431407;
+  --color-indigo-950: #2a0d04;
+
+  /* Warm, low shadows. Black drop shadows are off the system. */
+  --shadow-xs: 0 1px 2px 0 rgb(57 34 30 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(57 34 30 / 0.05);
+  --shadow-md: 0 8px 16px -10px rgb(57 34 30 / 0.16);
+  --shadow-lg: 0 14px 28px -14px rgb(57 34 30 / 0.2);
+  --shadow-xl: 0 22px 40px -20px rgb(57 34 30 / 0.24);
+  --shadow-2xl: 0 30px 60px -24px rgb(57 34 30 / 0.28);
 
   /* Semantic Colors */
   --color-primary: var(--primary);
@@ -72,8 +158,8 @@
   --color-border: var(--border);
 
   /* Fonts */
-  --font-sans: var(--font-space-grotesk);
-  --font-title: var(--font-syne);
+  --font-sans: var(--font-geist-sans);
+  --font-title: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -105,6 +191,34 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  --animate-scroll: scroll var(--animation-duration, 40s) var(--animation-direction, forwards)
+    linear infinite;
+
+  /* ── Ranking analytics colours ────────────────────────────────────────────
+     These MUST be registered here, not only declared in `:root`. Tailwind v4
+     strips custom properties it cannot see referenced from generated CSS, and a
+     variable used only from an inline `style` attribute in JSX is invisible to
+     it — the bars rendered fully transparent until these lines existed.
+     Registering them also means the charts use ordinary utilities
+     (`bg-rank-accent`, `text-rank-delta-up`, and `/20` opacity modifiers)
+     instead of inline styles. */
+  --color-rank-series-1: var(--rank-series-1);
+  --color-rank-series-2: var(--rank-series-2);
+  --color-rank-series-3: var(--rank-series-3);
+  --color-rank-series-4: var(--rank-series-4);
+  --color-rank-series-5: var(--rank-series-5);
+  --color-rank-series-6: var(--rank-series-6);
+  --color-rank-accent: var(--rank-accent);
+  --color-rank-track: var(--rank-track);
+  --color-rank-delta-up: var(--rank-delta-up);
+  --color-rank-delta-down: var(--rank-delta-down);
+}
+
+@keyframes scroll {
+  to {
+    transform: translate(calc(-50% - 0.5rem));
+  }
 }
 
 .dark {
@@ -131,6 +245,20 @@
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
+
+  /* The same six hues, re-stepped for the dark card surface — not an automatic
+     flip. Every slot clears 3:1 against #171717. */
+  --rank-series-1: #3987e5;
+  --rank-series-2: #d95926;
+  --rank-series-3: #199e70;
+  --rank-series-4: #c98500;
+  --rank-series-5: #d55181;
+  --rank-series-6: #008300;
+  --rank-accent: #d95926;
+  --rank-track: oklch(0.32 0 0);
+  --rank-delta-up: #0ca30c;
+  --rank-delta-down: #f2938c;
+
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
@@ -146,30 +274,54 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    /* Always show the scrollbar so content never reflows (shifting
+       horizontally, and any wrapped text vertically) when a page transitions
+       between not-scrollable and scrollable. Deliberately NOT
+       `scrollbar-gutter: stable` — Chromium on Windows (fluent scrollbars)
+       paints the reserved gutter as a second scrollbar track next to the
+       real one, so the page appears to have two scrollbars. */
+    overflow-y: scroll;
+
+    /* Room for the sticky header when a link jumps to a heading. */
+    scroll-padding-top: 6rem;
+  }
+
+  /* In-page links glide instead of jumping, for people who have not asked for
+     less motion. Native smooth scrolling, no library: the browser keeps
+     owning the wheel, touch, keyboard and find-in-page. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
   body {
+    /* A flat page colour. It used to carry a blue glow top-left and an
+       orange one top-right on every page; flat reads calmer, and nothing
+       on the page has to compete with the background for attention. */
     @apply bg-background text-foreground;
-    background:
-      radial-gradient(1100px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
-      radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%),
-      var(--background);
   }
 }
 
 @layer utilities {
   .glass-panel {
-    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl dark:bg-slate-900/70 dark:border-white/10;
+    @apply border border-white/20 bg-white/70 shadow-xl backdrop-blur-md dark:border-white/10 dark:bg-slate-900/70;
   }
 
   .glass-panel-heavy {
-    @apply bg-white/90 backdrop-blur-xl border border-white/30 shadow-2xl dark:bg-slate-900/90 dark:border-white/20;
+    @apply border border-white/30 bg-white/90 shadow-2xl backdrop-blur-xl dark:border-white/20 dark:bg-slate-900/90;
   }
 
+  /* The hover only applies when the surface is itself a link or button. This
+     class sits on ~90 surfaces, most of them static panels, and a panel whose
+     shadow deepens under the cursor reads as clickable when it is not. */
   .premium-shadow {
     box-shadow: 0 8px 30px rgb(0 0 0 / 0.12);
-    transition: box-shadow 0.3s ease;
+    transition: box-shadow 150ms cubic-bezier(0.2, 0, 0, 1);
   }
 
-  .premium-shadow:hover {
+  :is(a, button).premium-shadow:hover {
     box-shadow: 0 8px 30px rgb(0 0 0 / 0.2);
   }
 
@@ -177,12 +329,48 @@
     box-shadow: 0 8px 30px rgb(255 255 255 / 0.05);
   }
 
-  .dark .premium-shadow:hover {
+  .dark :is(a, button).premium-shadow:hover {
     box-shadow: 0 8px 30px rgb(255 255 255 / 0.1);
   }
 
+  /* ── Button motion ──
+     The one motion every button and button-styled link uses: colours change
+     on hover, a 2% press on click, and nothing that moves the layout. No lift,
+     no spring, no glow. 150ms with a fast-out curve reads as instant
+     feedback rather than as an animation someone has to wait for.
+
+     `scale` (the individual transform property) rather than `transform`,
+     because Tailwind v4's translate/scale utilities write the individual
+     properties too, so an arrow nudge on the same element still composes.
+     Disabled buttons do not press, and reduced motion keeps the colour change
+     but drops the press. */
+  .btn-motion {
+    transition-property: color, background-color, border-color, box-shadow, scale;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .btn-motion:active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.98;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn-motion {
+      transition-property: color, background-color, border-color, box-shadow;
+    }
+
+    .btn-motion:active:not(:disabled, [aria-disabled="true"]) {
+      scale: none;
+    }
+  }
+
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-power-orange to-turf-green;
+    @apply from-power-orange to-turf-green bg-linear-to-r bg-clip-text text-transparent;
+  }
+
+  .font-editorial {
+    font-family: var(--font-newsreader), Georgia, serif;
+    letter-spacing: -0.02em;
   }
 
   .font-title {
@@ -190,11 +378,48 @@
   }
 
   .shop-surface {
-    @apply bg-white/80 backdrop-blur-md border border-white/60;
+    @apply border border-white/60 bg-white/80 backdrop-blur-md;
   }
 
   .shop-nav-link {
-    @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
+    @apply text-ink-body hover:bg-paper-deep hover:text-ink rounded-lg px-3 py-2 transition-colors duration-200;
+  }
+
+  /* ── Scroll-driven section reveal ──
+     Used by the roadmap page's sections.
+
+     Progressive enhancement in the strict sense: with no support and no opt-in
+     the element is simply visible, un-animated, at full opacity. Only a browser
+     that supports scroll-driven animations takes the animation, and a reader who
+     asked for reduced motion gives it back.
+
+     That ordering is the whole point. The usual way to do this — start at
+     `opacity: 0` and animate in from JavaScript — means content that exists only
+     once a frame loop has run, and a throttled or backgrounded tab renders a
+     blank page. A view() timeline is driven by scroll position rather than by
+     rAF, and the default state here is "visible", so there is no state in which
+     the words are missing. */
+  @keyframes reveal-rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal-on-scroll {
+        animation: reveal-rise linear both;
+        animation-timeline: view();
+        /* Finishes well before the element is centred, so it is settled by the
+           time it is being read rather than still arriving. */
+        animation-range: entry 4% cover 20%;
+      }
+    }
   }
 
   .hide-scrollbar::-webkit-scrollbar {
@@ -204,4 +429,55 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-}
+
+  /* Anchor targets inside legal documents sit under the sticky site nav
+     (h-16) — offset so a jumped-to heading isn't flush against it. */
+  .legal-content section[id] {
+    scroll-margin-top: 6rem;
+  }
+}
+
+/* Legal documents read as one column of prose. Headings are set once here, so
+   the sixty-odd sections do not each carry their own heading classes. Unlayered
+   on purpose: it has to beat the utility classes still on those headings. */
+.legal-content h2 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--color-ink);
+}
+.legal-content h3 {
+  font-weight: 500;
+  color: var(--color-ink);
+}
+.legal-content p,
+.legal-content li {
+  color: var(--color-ink-body);
+}
+.legal-prose p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+.legal-prose li {
+  line-height: 1.7;
+}
+.legal-content a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* While the homepage card's copy is growing into /ask, the real workspace waits
+   invisible beneath it (see utils/askTransition); it fades in when the copy
+   fades out. Only set when the visitor has not asked for reduced motion. */
+html[data-ask-transition] [data-ask-panel] {
+  opacity: 0;
+}
+
+/* The floating chat button fades out with the page instead of vanishing when the
+   route changes under the growing card. */
+html[data-ask-transition] [data-ai-bubble] {
+  opacity: 0;
+}

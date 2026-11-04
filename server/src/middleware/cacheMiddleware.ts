@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import redis from "../config/redis";
+import redis, { REDIS_ENABLED } from "../config/redis";
+import { log as __rootLog } from "../utils/logger";
+const log = __rootLog.child("cache");
 
 /**
  * Middleware to cache HTTP responses in Redis.
@@ -33,7 +35,11 @@ export const cacheResponse = (ttlSeconds: number = 300) => {
         // Only cache successful 2xx responses
         if (res.statusCode >= 200 && res.statusCode < 300) {
           redis.set(cacheKey, JSON.stringify(body), "EX", ttlSeconds).catch((err) => {
-            console.error("Redis Cache Set Error:", err);
+            // Expected on every request when Redis is deliberately off —
+            // don't spam the log for a state the operator chose.
+            if (REDIS_ENABLED) {
+              log.error("Redis Cache Set Error:", err);
+            }
           });
         }
         return originalJson(body);
@@ -41,7 +47,9 @@ export const cacheResponse = (ttlSeconds: number = 300) => {
 
       next();
     } catch (err) {
-      console.error("Redis Cache Middleware Error:", err);
+      if (REDIS_ENABLED) {
+        log.error("Redis Cache Middleware Error:", err);
+      }
       // Fail open: if Redis is down, just skip cache and continue
       next();
     }

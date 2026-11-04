@@ -16,82 +16,38 @@ import {
   getCoachSubscriptionRevenue,
 } from "../services/CoachSubscriptionService";
 import { Coach } from "../models/Coach";
-import {
-  getPhonePeOrderStatus,
-  initiatePhonePePayment,
-  isPhonePeGatewayError,
-} from "../../shared/services/PhonePeService";
+import { getPhonePeOrderStatus, isPhonePeGatewayError } from "../../shared/services/PhonePeService";
 import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
 import { User } from "../models/User";
 import { CoachSubscriptionPaymentTransaction } from "../models/CoachSubscriptionPayment";
 import { CoachSubscription } from "../models/CoachSubscription";
 import { reconcileCoachSubscriptionPaymentByIdentifiers } from "../services/CoachSubscriptionPaymentService";
+import { initiateSubscriptionCheckout } from "../services/CoachSubscriptionCheckoutService";
+import { computeSubscriptionFees } from "../services/PricingRates";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
-const SUBSCRIPTION_PLATFORM_FEE_RATE = Number(
-  process.env.SUBSCRIPTION_PLATFORM_FEE_RATE ??
-    process.env.SERVICE_FEE_RATE ??
-    0,
-);
-const SUBSCRIPTION_TAX_RATE = Number(
-  process.env.SUBSCRIPTION_TAX_RATE ?? process.env.TAX_RATE ?? 0.05,
-);
-
-const buildSubscriptionMerchantOrderId = (params: {
-  coachId: string;
-  packageId: string;
-  userId: string;
-}): string => {
-  const ts = Date.now().toString(36);
-  const coachPart = params.coachId.slice(-6);
-  const packagePart = params.packageId.slice(-6);
-  const userPart = params.userId.slice(-6);
-  const rand = Math.random().toString(36).slice(2, 8);
-
-  // Keep well below PhonePe's 63 char max while preserving traceability.
-  return `sub_${ts}_${coachPart}_${packagePart}_${userPart}_${rand}`;
-};
+// Fee rates and the merchant-order-id format now live in
+// CoachSubscriptionCheckoutService, which owns every subscription payment.
 
 /**
  * Create a new subscription package (Coach endpoint)
  */
-export const createCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id || req.user.role !== "COACH") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+export const createCoachPackageHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id || req.user.role !== "Coach") {
+      throw new AppError("Coach role required", 403);
     }
 
     const coach = await Coach.findOne({ userId: req.user.id });
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
-    const {
-      name,
-      description,
-      frequency,
-      price,
-      features,
-      maxStudents,
-      maxSessions,
-    } = req.body;
+    const { name, description, frequency, price, features, maxStudents, maxSessions } = req.body;
 
     if (!name || !frequency || price === undefined) {
-      res.status(400).json({
-        success: false,
-        message: "Missing required fields: name, frequency, price",
-      });
-      return;
+      throw new AppError("Missing required fields: name, frequency, price", 400);
     }
 
     const package_ = await createCoachSubscriptionPackage({
@@ -112,39 +68,21 @@ export const createCoachPackageHandler = async (
         package: package_,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create package";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Get coach's subscription packages
  */
-export const getCoachPackagesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id || req.user.role !== "COACH") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+export const getCoachPackagesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id || req.user.role !== "Coach") {
+      throw new AppError("Coach role required", 403);
     }
 
     const coach = await Coach.findOne({ userId: req.user.id });
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const packages = await getCoachSubscriptionPackages(coach._id.toString());
@@ -156,33 +94,19 @@ export const getCoachPackagesHandler = async (
         packages,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve packages";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Get coach's packages by another user (public view)
  */
-export const getCoachPublicPackagesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getCoachPublicPackagesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const rawCoachId = req.params.coachId;
     const coachId = Array.isArray(rawCoachId) ? rawCoachId[0] : rawCoachId;
 
     if (typeof coachId !== "string" || !coachId) {
-      res.status(400).json({
-        success: false,
-        message: "Coach ID is required",
-      });
-      return;
+      throw new AppError("Coach ID is required", 400);
     }
 
     const packages = await getCoachSubscriptionPackages(coachId, {
@@ -196,78 +120,40 @@ export const getCoachPublicPackagesHandler = async (
         packages,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve packages";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Update a subscription package (Coach endpoint)
  */
-export const updateCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id || req.user.role !== "COACH") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+export const updateCoachPackageHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id || req.user.role !== "Coach") {
+      throw new AppError("Coach role required", 403);
     }
 
     const coach = await Coach.findOne({ userId: req.user.id });
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const rawPackageId = req.params.packageId;
-    const packageId = Array.isArray(rawPackageId)
-      ? rawPackageId[0]
-      : rawPackageId;
+    const packageId = Array.isArray(rawPackageId) ? rawPackageId[0] : rawPackageId;
 
     if (typeof packageId !== "string" || !packageId) {
-      res.status(400).json({
-        success: false,
-        message: "packageId is required",
-      });
-      return;
+      throw new AppError("packageId is required", 400);
     }
 
     // Verify ownership
-    const isOwner = await validateCoachOwnsPackage(
-      coach._id.toString(),
-      packageId,
-    );
+    const isOwner = await validateCoachOwnsPackage(coach._id.toString(), packageId);
     if (!isOwner) {
-      res.status(403).json({
-        success: false,
-        message: "You do not own this package",
-      });
-      return;
+      throw new AppError("You do not own this package", 403);
     }
 
-    const updatedPackage = await updateCoachSubscriptionPackage(
-      packageId,
-      req.body,
-    );
+    const updatedPackage = await updateCoachSubscriptionPackage(packageId, req.body);
 
     if (!updatedPackage) {
-      res.status(404).json({
-        success: false,
-        message: "Package not found",
-      });
-      return;
+      throw new AppError("Package not found", 404);
     }
 
     res.status(200).json({
@@ -277,105 +163,85 @@ export const updateCoachPackageHandler = async (
         package: updatedPackage,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to update package";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Delete a subscription package (Coach endpoint)
  */
-export const deleteCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id || req.user.role !== "COACH") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+export const deleteCoachPackageHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id || req.user.role !== "Coach") {
+      throw new AppError("Coach role required", 403);
     }
 
     const coach = await Coach.findOne({ userId: req.user.id });
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const rawPackageId = req.params.packageId;
-    const packageId = Array.isArray(rawPackageId)
-      ? rawPackageId[0]
-      : rawPackageId;
+    const packageId = Array.isArray(rawPackageId) ? rawPackageId[0] : rawPackageId;
 
     if (typeof packageId !== "string" || !packageId) {
-      res.status(400).json({
-        success: false,
-        message: "packageId is required",
-      });
-      return;
+      throw new AppError("packageId is required", 400);
     }
 
     // Verify ownership
-    const isOwner = await validateCoachOwnsPackage(
-      coach._id.toString(),
-      packageId,
-    );
+    const isOwner = await validateCoachOwnsPackage(coach._id.toString(), packageId);
     if (!isOwner) {
-      res.status(403).json({
-        success: false,
-        message: "You do not own this package",
-      });
-      return;
+      throw new AppError("You do not own this package", 403);
     }
 
     const deleted = await deleteCoachSubscriptionPackage(packageId);
 
     if (!deleted) {
-      res.status(404).json({
-        success: false,
-        message: "Package not found",
-      });
-      return;
+      throw new AppError("Package not found", 404);
     }
 
     res.status(200).json({
       success: true,
       message: "Package deleted successfully",
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to delete package";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Subscribe user to a coach's package
  */
-export const subscribeToCoachPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+/**
+ * The authoritative subscription price breakdown, in paise.
+ *
+ * The client used to recompute this from `NEXT_PUBLIC_SUBSCRIPTION_*` rate
+ * copies. Same problem as the booking quote: two independently-configured
+ * sources for the number shown versus the number charged.
+ */
+export const getSubscriptionQuoteHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { basePaise } = req.body as { basePaise: number };
+
+    if (!Number.isFinite(basePaise) || basePaise < 0) {
+      throw new AppError("A non-negative basePaise amount is required", 400);
+    }
+
+    const fees = computeSubscriptionFees(Math.round(basePaise));
+
+    res.status(200).json({
+      success: true,
+      data: {
+        basePaise: fees.subtotal,
+        platformFeePaise: fees.serviceFee,
+        taxPaise: fees.tax,
+        totalPaise: fees.total,
+      },
+    });
+  }
+);
+
+export const subscribeToCoachPackageHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const { coachId, packageId, merchantOrderId } = req.body as {
@@ -389,11 +255,7 @@ export const subscribeToCoachPackageHandler = async (
       typeof packageId !== "string" ||
       typeof merchantOrderId !== "string"
     ) {
-      res.status(400).json({
-        success: false,
-        message: "Coach ID, Package ID and merchantOrderId are required",
-      });
-      return;
+      throw new AppError("Coach ID, Package ID and merchantOrderId are required", 400);
     }
 
     const transaction = await CoachSubscriptionPaymentTransaction.findOne({
@@ -401,45 +263,29 @@ export const subscribeToCoachPackageHandler = async (
     });
 
     if (!transaction) {
-      res.status(404).json({
-        success: false,
-        message: "Payment transaction not found",
-      });
-      return;
+      throw new AppError("Payment transaction not found", 404);
     }
 
     if (transaction.userId.toString() !== req.user.id) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to use this payment",
-      });
-      return;
+      throw new AppError("You are not authorized to use this payment", 403);
     }
 
     if (
       transaction.coachId.toString() !== coachId ||
       transaction.packageId.toString() !== packageId
     ) {
-      res.status(400).json({
-        success: false,
-        message: "Payment does not match the selected coach/package",
-      });
-      return;
+      throw new AppError("Payment does not match the selected coach/package", 400);
     }
 
     if (transaction.status !== "COMPLETED") {
-      res.status(409).json({
-        success: false,
-        message:
-          "Payment is not verified yet. Subscription will activate after webhook confirmation.",
-      });
-      return;
+      throw new AppError(
+        "Payment is not verified yet. Subscription will activate after webhook confirmation.",
+        409
+      );
     }
 
     if (transaction.linkedSubscriptionId) {
-      const existing = await CoachSubscription.findById(
-        transaction.linkedSubscriptionId,
-      )
+      const existing = await CoachSubscription.findById(transaction.linkedSubscriptionId)
         .populate("packageId")
         .populate("coachId", "bio sports rating reviewCount");
 
@@ -471,30 +317,16 @@ export const subscribeToCoachPackageHandler = async (
         subscription,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create subscription";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Get user's subscriptions to a coach
  */
-export const getUserCoachSubscriptionsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getUserCoachSubscriptionsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const rawCoachId = req.query.coachId;
@@ -519,32 +351,16 @@ export const getUserCoachSubscriptionsHandler = async (
         subscriptions: normalizedSubscriptions,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to retrieve subscriptions";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Cancel a subscription
  */
-export const cancelSubscriptionHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const cancelSubscriptionHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
-      });
-      return;
+      throw new AppError("Authentication required", 401);
     }
 
     const rawSubscriptionId = req.params.subscriptionId;
@@ -554,10 +370,7 @@ export const cancelSubscriptionHandler = async (
     const { reason } = req.body;
 
     if (typeof subscriptionId !== "string" || !subscriptionId) {
-      res
-        .status(400)
-        .json({ success: false, message: "subscriptionId is required" });
-      return;
+      throw new AppError("subscriptionId is required", 400);
     }
 
     const subscription = await cancelCoachSubscriptionByUser({
@@ -574,44 +387,24 @@ export const cancelSubscriptionHandler = async (
         subscription,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to cancel subscription";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Get coach's active subscriptions (Coach endpoint)
  */
-export const getCoachActiveSubscriptionsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id || req.user.role !== "COACH") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+export const getCoachActiveSubscriptionsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id || req.user.role !== "Coach") {
+      throw new AppError("Coach role required", 403);
     }
 
     const coach = await Coach.findOne({ userId: req.user.id });
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
-    const subscriptions = await getCoachActiveSubscriptions(
-      coach._id.toString(),
-    );
+    const subscriptions = await getCoachActiveSubscriptions(coach._id.toString());
 
     res.status(200).json({
       success: true,
@@ -620,41 +413,21 @@ export const getCoachActiveSubscriptionsHandler = async (
         subscriptions,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to retrieve subscriptions";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Get coach's subscription revenue (Coach endpoint)
  */
-export const getCoachSubscriptionRevenueHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id || req.user.role !== "COACH") {
-      res.status(403).json({
-        success: false,
-        message: "Coach role required",
-      });
-      return;
+export const getCoachSubscriptionRevenueHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id || req.user.role !== "Coach") {
+      throw new AppError("Coach role required", 403);
     }
 
     const coach = await Coach.findOne({ userId: req.user.id });
     if (!coach) {
-      res.status(404).json({
-        success: false,
-        message: "Coach profile not found",
-      });
-      return;
+      throw new AppError("Coach profile not found", 404);
     }
 
     const revenue = await getCoachSubscriptionRevenue({
@@ -668,299 +441,171 @@ export const getCoachSubscriptionRevenueHandler = async (
         revenue,
       },
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to retrieve revenue";
-    res.status(400).json({
-      success: false,
-      message,
-    });
   }
-};
+);
 
 /**
  * Initiate PhonePe payment for a coach subscription package
  * POST /api/coaches/subscriptions/phonepe/initiate
+ *
+ * NOTE: this handler keeps its own try/catch. The catch block does not simply
+ * log-and-respond a generic message — it classifies PhonePe gateway errors
+ * (via isPhonePeGatewayError) to surface their specific statusCode plus a
+ * machine-readable `code`/`retryable` payload that the client depends on.
+ * Collapsing this into a thrown AppError would silently drop that payload for
+ * every gateway failure, so the explicit handling is preserved as-is.
  */
-export const initiateCoachSubscriptionPaymentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  let transaction: any = null;
+export const initiateCoachSubscriptionPaymentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("Authentication required", 401);
+      }
 
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Authentication required",
+      if (req.user.role !== "Player" && req.user.role !== "Parent") {
+        throw new AppError("Only player and parent accounts can purchase subscriptions", 403);
+      }
+
+      const { coachId, packageId, dependentId } = req.body as {
+        coachId?: string;
+        packageId?: string;
+        dependentId?: string;
+      };
+
+      if (typeof coachId !== "string" || typeof packageId !== "string") {
+        throw new AppError("Coach ID and Package ID are required", 400);
+      }
+
+      const packageDoc = await CoachSubscriptionPackage.findById(packageId).lean();
+      if (!packageDoc) {
+        throw new AppError("Subscription package not found", 404);
+      }
+
+      if (packageDoc.coachId.toString() !== coachId) {
+        throw new AppError("Selected package does not belong to this coach", 400);
+      }
+
+      if (!packageDoc.isActive) {
+        throw new AppError("Selected package is not currently available", 400);
+      }
+
+      const result = await initiateSubscriptionCheckout({
+        userId: req.user.id,
+        coachId,
+        packageId,
+        ...(dependentId ? { dependentId } : {}),
       });
-      return;
-    }
 
-    if (req.user.role !== "PLAYER") {
-      res.status(403).json({
-        success: false,
-        message: "Only player accounts can purchase subscriptions",
-      });
-      return;
-    }
-
-    const { coachId, packageId } = req.body as {
-      coachId?: string;
-      packageId?: string;
-    };
-
-    if (typeof coachId !== "string" || typeof packageId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Coach ID and Package ID are required",
-      });
-      return;
-    }
-
-    const packageDoc =
-      await CoachSubscriptionPackage.findById(packageId).lean();
-    if (!packageDoc) {
-      res.status(404).json({
-        success: false,
-        message: "Subscription package not found",
-      });
-      return;
-    }
-
-    if (packageDoc.coachId.toString() !== coachId) {
-      res.status(400).json({
-        success: false,
-        message: "Selected package does not belong to this coach",
-      });
-      return;
-    }
-
-    if (!packageDoc.isActive) {
-      res.status(400).json({
-        success: false,
-        message: "Selected package is not currently available",
-      });
-      return;
-    }
-
-    const baseAmountInPaise = Math.round(Number(packageDoc.price) || 0);
-    const safePlatformFeeRate = Number.isFinite(SUBSCRIPTION_PLATFORM_FEE_RATE)
-      ? Math.max(0, SUBSCRIPTION_PLATFORM_FEE_RATE)
-      : 0;
-    const safeTaxRate = Number.isFinite(SUBSCRIPTION_TAX_RATE)
-      ? Math.max(0, SUBSCRIPTION_TAX_RATE)
-      : 0;
-
-    const platformFeeInPaise = Math.round(
-      baseAmountInPaise * safePlatformFeeRate,
-    );
-    const taxAmountInPaise =
-      platformFeeInPaise > 0 ? Math.round(platformFeeInPaise * safeTaxRate) : 0;
-    const amountInPaise =
-      baseAmountInPaise + platformFeeInPaise + taxAmountInPaise;
-
-    if (amountInPaise < 100) {
-      res.status(400).json({
-        success: false,
-        message: "Subscription amount must be at least 1 INR",
-      });
-      return;
-    }
-
-    const merchantOrderId = buildSubscriptionMerchantOrderId({
-      coachId,
-      packageId,
-      userId: req.user.id,
-    });
-    const redirectBase =
-      process.env.FRONTEND_URL ||
-      process.env.PHONEPE_REDIRECT_URL_BASE ||
-      "http://localhost:3000";
-    const redirectUrl = new URL("/payment", redirectBase);
-    redirectUrl.searchParams.set("status", "pending");
-    redirectUrl.searchParams.set("type", "subscription");
-    redirectUrl.searchParams.set("coachId", coachId);
-    redirectUrl.searchParams.set("packageId", packageId);
-    redirectUrl.searchParams.set("merchantOrderId", merchantOrderId);
-
-    const payer = await User.findById(req.user.id).select("phone");
-
-    const paymentPayload: {
-      merchantOrderId: string;
-      amount: number;
-      redirectUrl: string;
-      userPhone?: string;
-      metaInfo?: Record<string, string>;
-    } = {
-      merchantOrderId,
-      amount: amountInPaise,
-      redirectUrl: redirectUrl.toString(),
-      metaInfo: {
-        udf1: coachId,
-        udf2: packageId,
-        udf3: req.user.id,
-      },
-    };
-
-    if (payer?.phone) {
-      paymentPayload.userPhone = payer.phone;
-    }
-
-    transaction = await CoachSubscriptionPaymentTransaction.create({
-      coachId: packageDoc.coachId,
-      userId: req.user.id,
-      packageId: packageDoc._id,
-      merchantOrderId,
-      baseAmount: baseAmountInPaise,
-      platformFeeAmount: platformFeeInPaise,
-      taxAmount: taxAmountInPaise,
-      amount: amountInPaise,
-      status: "PENDING",
-      state: "PENDING",
-      redirectUrl: redirectUrl.toString(),
-    });
-
-    const initResult = await initiatePhonePePayment(paymentPayload);
-
-    if (initResult.orderId) {
-      transaction.phonepeOrderId = initResult.orderId;
-    }
-    transaction.redirectUrl = initResult.redirectUrl;
-    transaction.state = initResult.state || "PENDING";
-    await transaction.save();
-
-    res.status(200).json({
-      success: true,
-      message: "Subscription payment initiated",
-      data: {
-        redirectUrl: initResult.redirectUrl,
-        merchantOrderId,
-        state: initResult.state,
-        amountBreakdown: {
-          baseAmount: baseAmountInPaise,
-          platformFee: platformFeeInPaise,
-          taxAmount: taxAmountInPaise,
-          total: amountInPaise,
+      res.status(200).json({
+        success: true,
+        message: "Subscription payment initiated",
+        data: {
+          redirectUrl: result.redirectUrl,
+          merchantOrderId: result.merchantOrderId,
+          state: result.state,
+          amountBreakdown: {
+            baseAmount: result.amountBreakdown.baseAmount,
+            platformFee: result.amountBreakdown.platformFee,
+            taxAmount: result.amountBreakdown.taxAmount,
+            total: result.amountBreakdown.total,
+          },
         },
-      },
-    });
-  } catch (error) {
-    if (
-      typeof transaction !== "undefined" &&
-      transaction &&
-      transaction.status === "PENDING"
-    ) {
-      transaction.status = "FAILED";
-      transaction.state = "FAILED";
-      await transaction.save().catch(() => undefined);
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      // The checkout service marks its own transaction FAILED before rethrowing.
+      const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
+      res.status(statusCode).json({
+        success: false,
+        message: error instanceof Error ? error.message : "Failed to initiate subscription payment",
+        ...(isPhonePeGatewayError(error)
+          ? { data: { code: error.code, retryable: error.retryable } }
+          : {}),
+      });
     }
-
-    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
-    res.status(statusCode).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to initiate subscription payment",
-      ...(isPhonePeGatewayError(error)
-        ? { data: { code: error.code, retryable: error.retryable } }
-        : {}),
-    });
   }
-};
+);
 
 /**
  * Verify PhonePe subscription payment status
  * GET /api/coaches/subscriptions/phonepe/status/:merchantOrderId
+ *
+ * NOTE: same rationale as above — the catch block classifies PhonePe gateway
+ * errors to preserve their statusCode/code/retryable payload, so it is kept
+ * rather than collapsed into a thrown AppError.
  */
-export const verifyCoachSubscriptionPaymentStatusHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
+export const verifyCoachSubscriptionPaymentStatusHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user?.id) {
+        throw new AppError("Unauthorized", 401);
+      }
 
-    const merchantOrderIdParam = Array.isArray(req.params.merchantOrderId)
-      ? req.params.merchantOrderId[0]
-      : req.params.merchantOrderId;
-    if (!merchantOrderIdParam) {
-      res.status(400).json({
-        success: false,
-        message: "merchantOrderId is required",
-      });
-      return;
-    }
+      const merchantOrderIdParam = Array.isArray(req.params.merchantOrderId)
+        ? req.params.merchantOrderId[0]
+        : req.params.merchantOrderId;
+      if (!merchantOrderIdParam) {
+        throw new AppError("merchantOrderId is required", 400);
+      }
 
-    const transaction = await CoachSubscriptionPaymentTransaction.findOne({
-      merchantOrderId: merchantOrderIdParam,
-    });
-
-    if (!transaction) {
-      res.status(404).json({
-        success: false,
-        message: "Subscription payment transaction not found",
-      });
-      return;
-    }
-
-    if (transaction.userId.toString() !== req.user.id) {
-      res.status(403).json({
-        success: false,
-        message: "You are not authorized to access this payment",
-      });
-      return;
-    }
-
-    const status = await getPhonePeOrderStatus(merchantOrderIdParam);
-    transaction.lastStatusPayload = status.raw;
-    await transaction.save();
-
-    const reconciled = await reconcileCoachSubscriptionPaymentByIdentifiers({
-      merchantOrderId: merchantOrderIdParam,
-      state: status.state,
-      callbackPayload: status.raw as Record<string, unknown>,
-      allowActivation: false,
-    });
-
-    const effectiveTransaction = reconciled || transaction;
-    const activationPending =
-      effectiveTransaction.status === "COMPLETED" &&
-      !effectiveTransaction.linkedSubscriptionId;
-
-    res.status(200).json({
-      success: true,
-      message: "Subscription payment status retrieved",
-      data: {
-        state: status.state,
+      const transaction = await CoachSubscriptionPaymentTransaction.findOne({
         merchantOrderId: merchantOrderIdParam,
-        subscriptionId: effectiveTransaction.linkedSubscriptionId || null,
-        activationPending,
-        amountBreakdown: {
-          baseAmount: effectiveTransaction.baseAmount,
-          platformFee: effectiveTransaction.platformFeeAmount,
-          taxAmount: effectiveTransaction.taxAmount,
-          total: effectiveTransaction.amount,
+      });
+
+      if (!transaction) {
+        throw new AppError("Subscription payment transaction not found", 404);
+      }
+
+      if (transaction.userId.toString() !== req.user.id) {
+        throw new AppError("You are not authorized to access this payment", 403);
+      }
+
+      const status = await getPhonePeOrderStatus(merchantOrderIdParam);
+      transaction.lastStatusPayload = status.raw;
+      await transaction.save();
+
+      const reconciled = await reconcileCoachSubscriptionPaymentByIdentifiers({
+        merchantOrderId: merchantOrderIdParam,
+        state: status.state,
+        callbackPayload: status.raw as Record<string, unknown>,
+        allowActivation: false,
+      });
+
+      const effectiveTransaction = reconciled || transaction;
+      const activationPending =
+        effectiveTransaction.status === "COMPLETED" && !effectiveTransaction.linkedSubscriptionId;
+
+      res.status(200).json({
+        success: true,
+        message: "Subscription payment status retrieved",
+        data: {
+          state: status.state,
+          merchantOrderId: merchantOrderIdParam,
+          subscriptionId: effectiveTransaction.linkedSubscriptionId || null,
+          activationPending,
+          amountBreakdown: {
+            baseAmount: effectiveTransaction.baseAmount,
+            platformFee: effectiveTransaction.platformFeeAmount,
+            taxAmount: effectiveTransaction.taxAmount,
+            total: effectiveTransaction.amount,
+          },
         },
-      },
-    });
-  } catch (error) {
-    const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
-    res.status(statusCode).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to verify subscription payment status",
-      ...(isPhonePeGatewayError(error)
-        ? { data: { code: error.code, retryable: error.retryable } }
-        : {}),
-    });
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      const statusCode = isPhonePeGatewayError(error) ? error.statusCode : 400;
+      res.status(statusCode).json({
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Failed to verify subscription payment status",
+        ...(isPhonePeGatewayError(error)
+          ? { data: { code: error.code, retryable: error.retryable } }
+          : {}),
+      });
+    }
   }
-};
+);

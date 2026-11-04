@@ -1,0 +1,24 @@
+/**
+ * Brand palette — single source of truth for client/admin/community's
+ * Tailwind v4 `@theme` blocks, which each previously redeclared this same
+ * set of CSS custom properties independently (three copies; identical
+ * values today, but nothing stopped them from drifting).
+ *
+ * `--power-orange` is the brand accent color — borders, tints, accent
+ * text, icon fills, and anywhere it sits under dark text.
+ *
+ * `--power-orange-solid` is a separate, deliberately darker shade for
+ * anywhere WHITE text sits on a power-orange background — solid CTA
+ * buttons, filled badges/pills. The base `--power-orange` is 3.03:1
+ * against white, which fails WCAG AA's 4.5:1 minimum for normal text; this
+ * value is Tailwind's own `orange-700` step (same hue family, not an
+ * invented color) at 5.18:1, comfortably over the AA line.
+ */
+:root {
+  --power-orange: #e97316;
+  --power-orange-solid: #c2410c;
+  --deep-slate: #0f172a;
+  --ghost-white: #f8fafc;
+  --turf-green: #22c55e;
+  --error-red: #ef4444;
+}

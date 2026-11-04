@@ -1,18 +1,19 @@
 import mongoose from "mongoose";
 import { Coach } from "../models/Coach";
+import { User } from "../models/User";
 import {
-  CoachSubscription,
-  CoachSubscriptionDocument,
-} from "../models/CoachSubscription";
+  sendCoachSubscriptionPurchasedEmail,
+  sendCoachSubscriptionCancelledEmail,
+} from "../../utils/email";
+import { CoachSubscription, CoachSubscriptionDocument } from "../models/CoachSubscription";
 import { CoachSubscriptionPackage } from "../models/CoachSubscriptionPackage";
 import { SubscriptionFrequency } from "../models/CoachSubscriptionPackage";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("coachSubscription");
 
 const DEFAULT_GRACE_DAYS = 7;
 
-const addBillingPeriod = (
-  startDate: Date,
-  frequency: SubscriptionFrequency,
-): Date => {
+const addBillingPeriod = (startDate: Date, frequency: SubscriptionFrequency): Date => {
   const next = new Date(startDate);
   switch (frequency) {
     case "YEARLY":
@@ -56,56 +57,23 @@ const syncCoachSubscriptionSummary = async (params: {
   });
 };
 
-export const listCoachPlans = async (options?: {
-  isActive?: boolean;
-}): Promise<any[]> => {
-  // Legacy method - kept for backward compatibility
-  // New system uses CoachSubscriptionPackage instead
-  return [];
-};
-
-export const createCoachPlan = async (payload: any): Promise<any> => {
-  // Legacy method - kept for backward compatibility
-  // New system uses CoachSubscriptionPackage instead
-  throw new Error(
-    "Coach plans are deprecated. Use CoachSubscriptionPackage instead",
-  );
-};
-
-export const updateCoachPlan = async (
-  planId: string,
-  payload: any,
-): Promise<any> => {
-  // Legacy method - kept for backward compatibility
-  throw new Error(
-    "Coach plans are deprecated. Use CoachSubscriptionPackage instead",
-  );
-};
-
-export const getMyCoachSubscription = async (
-  userId: string,
-): Promise<(CoachSubscriptionDocument & { package?: any }) | null> => {
-  const coach = await Coach.findOne({ userId }).select("_id");
-  if (!coach) {
-    throw new Error("Coach profile not found");
-  }
-
-  return CoachSubscription.findOne({ coachId: coach._id })
-    .sort({ createdAt: -1 })
-    .populate("packageId");
-};
-
 /**
  * New method: Subscribe user to a coach's subscription package
  */
 export const subscribeToCoachPackage = async (params: {
   userId: string;
+  dependentId?: string;
   coachId: string;
   packageId: string;
+  /**
+   * The moment this is happening, for tests. Whether a renewal starts at the
+   * old period's end (renewed early) or at this moment (renewed late) depends
+   * on it, and a test that leaves it to the real clock stops testing the early
+   * case the day the real date passes the period it hard-codes.
+   */
+  now?: Date;
 }): Promise<CoachSubscriptionDocument> => {
-  const packageDoc = await CoachSubscriptionPackage.findById(
-    toObjectId(params.packageId),
-  );
+  const packageDoc = await CoachSubscriptionPackage.findById(toObjectId(params.packageId));
 
   if (!packageDoc || !packageDoc.isActive) {
     throw new Error("Selected package is not available");
@@ -115,15 +83,25 @@ export const subscribeToCoachPackage = async (params: {
     throw new Error("Package does not belong to this coach");
   }
 
-  const now = new Date();
+  const now = params.now ?? new Date();
   const periodEnd = addBillingPeriod(now, packageDoc.frequency);
 
-  // Check for existing active subscription from this user to this coach
-  const existingActive = await CoachSubscription.findOne({
+  const query: any = {
     coachId: toObjectId(params.coachId),
     userId: toObjectId(params.userId),
     status: { $in: ["ACTIVE", "PAST_DUE"] },
-  }).sort({ createdAt: -1 });
+  };
+
+  if (params.dependentId) {
+    query.dependentId = toObjectId(params.dependentId);
+  } else {
+    query.dependentId = { $exists: false };
+  }
+
+  // Check for existing active subscription from this user to this coach
+  const existingActive = await CoachSubscription.findOne(query).sort({
+    createdAt: -1,
+  });
 
   if (
     existingActive &&
@@ -131,19 +109,26 @@ export const subscribeToCoachPackage = async (params: {
     existingActive.status === "ACTIVE"
   ) {
     const renewalStart =
-      existingActive.currentPeriodEnd > now
-        ? existingActive.currentPeriodEnd
-        : now;
+      existingActive.currentPeriodEnd > now ? existingActive.currentPeriodEnd : now;
 
-    existingActive.currentPeriodStart =
-      existingActive.currentPeriodStart || now;
-    existingActive.currentPeriodEnd = addBillingPeriod(
-      renewalStart,
-      packageDoc.frequency,
-    );
+    // The new period STARTS where the old one ended. This used to leave
+    // `currentPeriodStart` pinned to the original signup while
+    // `currentPeriodEnd` advanced, so after one renewal the "current period"
+    // spanned every month since the beginning — which the field name already
+    // said it should not.
+    //
+    // It matters beyond tidiness: recurring-programme credits are granted for
+    // exactly this window, so a stale start would buy one month's fee a
+    // multi-month run of classes.
+    existingActive.currentPeriodStart = renewalStart;
+    existingActive.currentPeriodEnd = addBillingPeriod(renewalStart, packageDoc.frequency);
     existingActive.nextBillingDate = existingActive.currentPeriodEnd;
     existingActive.autoRenew = true;
     existingActive.status = "ACTIVE";
+    // A grace window that was open is now closed, and the next period gets its
+    // own nudge.
+    existingActive.gracePeriodEndsAt = null;
+    existingActive.renewalReminderSentAt = null;
 
     await existingActive.save();
 
@@ -164,9 +149,10 @@ export const subscribeToCoachPackage = async (params: {
     await existingActive.save();
   }
 
-  const subscription = await CoachSubscription.create({
+  const newSubscription = await CoachSubscription.create({
     coachId: toObjectId(params.coachId),
     userId: toObjectId(params.userId),
+    ...(params.dependentId ? { dependentId: toObjectId(params.dependentId) } : {}),
     packageId: packageDoc._id,
     status: "ACTIVE",
     currentPeriodStart: now,
@@ -175,9 +161,7 @@ export const subscribeToCoachPackage = async (params: {
     autoRenew: true,
   });
 
-  const populated = await CoachSubscription.findById(subscription._id).populate(
-    "packageId",
-  );
+  const populated = await CoachSubscription.findById(newSubscription._id).populate("packageId");
 
   if (!populated) {
     throw new Error("Failed to create subscription");
@@ -185,10 +169,45 @@ export const subscribeToCoachPackage = async (params: {
 
   await syncCoachSubscriptionSummary({
     coachId: toObjectId(params.coachId),
-    subscriptionId: populated._id,
+    subscriptionId: newSubscription._id,
     subscriptionStatus: "ACTIVE",
     subscriptionExpiresAt: populated.currentPeriodEnd,
   });
+
+  // Notify both parties of the new subscription (fire-and-forget).
+  void (async () => {
+    try {
+      const player = await User.findById(params.userId).select("name email").lean();
+      const coach = await Coach.findById(params.coachId).populate("userId", "name email").lean();
+      const coachUser = coach?.userId as unknown as {
+        name?: string;
+        email?: string;
+      } | null;
+      const priceRupees = (packageDoc.price || 0) / 100;
+      if (player?.email) {
+        await sendCoachSubscriptionPurchasedEmail({
+          name: player.name,
+          email: player.email,
+          packageName: packageDoc.name,
+          price: priceRupees,
+          counterpartName: coachUser?.name || "your coach",
+          recipientRole: "Player",
+        });
+      }
+      if (coachUser?.email) {
+        await sendCoachSubscriptionPurchasedEmail({
+          name: coachUser.name,
+          email: coachUser.email,
+          packageName: packageDoc.name,
+          price: priceRupees,
+          counterpartName: player?.name || "A player",
+          recipientRole: "Coach",
+        });
+      }
+    } catch (emailError) {
+      log.error("Failed to send subscription purchased email:", emailError);
+    }
+  })();
 
   return populated;
 };
@@ -216,7 +235,8 @@ export const getUserCoachSubscriptions = async (params: {
   return CoachSubscription.find(query)
     .populate("packageId")
     .populate("coachId", "bio sports rating reviewCount")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 export const cancelCoachSubscriptionByUser = async (params: {
@@ -225,9 +245,7 @@ export const cancelCoachSubscriptionByUser = async (params: {
   userId?: string;
   userRole?: string;
 }): Promise<CoachSubscriptionDocument> => {
-  const subscription = await CoachSubscription.findById(
-    toObjectId(params.subscriptionId),
-  );
+  const subscription = await CoachSubscription.findById(toObjectId(params.subscriptionId));
 
   if (!subscription) {
     throw new Error("Subscription not found");
@@ -240,25 +258,29 @@ export const cancelCoachSubscriptionByUser = async (params: {
   if (params.userId) {
     const userRole = typeof params.userRole === "string" ? params.userRole : "";
 
-    if (userRole === "PLAYER") {
+    if (userRole === "Player" || userRole === "Parent") {
       if (subscription.userId.toString() !== params.userId) {
         throw new Error("You are not authorized to cancel this subscription");
       }
-    } else if (userRole === "COACH") {
-      const coach = await Coach.findOne({ userId: params.userId }).select(
-        "_id",
-      );
+    } else if (userRole === "Coach") {
+      const coach = await Coach.findOne({ userId: params.userId }).select("_id");
       if (!coach || coach._id.toString() !== subscription.coachId.toString()) {
         throw new Error("You are not authorized to cancel this subscription");
       }
+    } else {
+      // Any role outside the two ownership shapes we know how to verify
+      // (e.g. VenueLister, Academy, Admin acting without going through the
+      // admin surface) has no legitimate claim to this subscription — the
+      // absence of a matching branch above must never mean "unauthorized
+      // checks skipped", it must mean "deny by default".
+      throw new Error("You are not authorized to cancel this subscription");
     }
   }
 
   subscription.status = "CANCELLED";
   subscription.autoRenew = false;
   subscription.cancelledAt = new Date();
-  subscription.cancellationReason =
-    params.reason?.trim() || "Cancelled by user";
+  subscription.cancellationReason = params.reason?.trim() || "Cancelled by user";
   await subscription.save();
 
   await syncCoachSubscriptionSummary({
@@ -267,6 +289,29 @@ export const cancelCoachSubscriptionByUser = async (params: {
     subscriptionStatus: "CANCELLED",
     subscriptionExpiresAt: subscription.currentPeriodEnd,
   });
+
+  // Notify the subscriber their plan was cancelled (fire-and-forget).
+  void (async () => {
+    try {
+      const player = await User.findById(subscription.userId).select("name email").lean();
+      const coach = await Coach.findById(subscription.coachId).populate("userId", "name").lean();
+      const pkg = await CoachSubscriptionPackage.findById(subscription.packageId)
+        .select("name")
+        .lean();
+      const coachUser = coach?.userId as unknown as { name?: string } | null;
+      if (player?.email) {
+        await sendCoachSubscriptionCancelledEmail({
+          name: player.name,
+          email: player.email,
+          packageName: pkg?.name || "coaching plan",
+          counterpartName: coachUser?.name || "your coach",
+          recipientRole: "Player",
+        });
+      }
+    } catch (emailError) {
+      log.error("Failed to send subscription cancelled email:", emailError);
+    }
+  })();
 
   return subscription;
 };
@@ -290,7 +335,7 @@ export const cancelAllUserCoachSubscriptions = async (params: {
       autoRenew: false,
       cancelledAt: new Date(),
       cancellationReason: params.reason?.trim() || "Cancelled by user",
-    },
+    }
   );
 
   return CoachSubscription.find({
@@ -303,9 +348,7 @@ export const cancelAllUserCoachSubscriptions = async (params: {
 };
 
 export const markPastDueSubscription = async (subscriptionId: string) => {
-  const subscription = await CoachSubscription.findById(
-    toObjectId(subscriptionId),
-  );
+  const subscription = await CoachSubscription.findById(toObjectId(subscriptionId));
   if (!subscription) {
     throw new Error("Subscription not found");
   }
@@ -313,11 +356,7 @@ export const markPastDueSubscription = async (subscriptionId: string) => {
   subscription.status = "PAST_DUE";
   subscription.gracePeriodEndsAt = addGracePeriod(
     new Date(),
-    parseInt(
-      process.env.COACH_SUBSCRIPTION_GRACE_PERIOD_DAYS ||
-        String(DEFAULT_GRACE_DAYS),
-      10,
-    ),
+    parseInt(process.env.COACH_SUBSCRIPTION_GRACE_PERIOD_DAYS || String(DEFAULT_GRACE_DAYS), 10)
   );
   await subscription.save();
 
@@ -331,12 +370,72 @@ export const markPastDueSubscription = async (subscriptionId: string) => {
   return subscription;
 };
 
-export const cleanupExpiredCoachSubscriptions = async (): Promise<number> => {
-  const now = new Date();
+/**
+ * Move auto-renewing subscriptions whose period has ended into PAST_DUE, with a
+ * grace window, instead of killing them outright.
+ *
+ * `autoRenew` was previously written as `true` and then ignored: the expiry
+ * sweep killed every subscription the moment its period ended, so a renewal was
+ * impossible by construction. There is no payment mandate in this integration
+ * (PhonePeService has no autopay/subscription API), so "auto-renew" can only
+ * mean "we hold your place and ask you to pay", not "we take the money" — and
+ * the grace window is what makes that honest rather than a hard cut-off at
+ * midnight.
+ *
+ * A subscription that is NOT auto-renewing still expires directly, which is
+ * what the user asked for when they turned it off.
+ */
+export const lapseRenewableSubscriptionsToPastDue = async (
+  params: {
+    now?: Date;
+    graceDays?: number;
+  } = {}
+): Promise<number> => {
+  const now = params.now ?? new Date();
+  const graceDays = params.graceDays ?? DEFAULT_GRACE_DAYS;
+
+  const due = await CoachSubscription.find({
+    status: "ACTIVE",
+    autoRenew: true,
+    currentPeriodEnd: { $lte: now },
+  });
+
+  for (const subscription of due) {
+    subscription.status = "PAST_DUE";
+    subscription.gracePeriodEndsAt = addGracePeriod(now, graceDays);
+    await subscription.save();
+
+    await syncCoachSubscriptionSummary({
+      coachId: subscription.coachId,
+      subscriptionId: subscription._id as mongoose.Types.ObjectId,
+      subscriptionStatus: "PAST_DUE",
+      subscriptionExpiresAt: subscription.currentPeriodEnd,
+    });
+  }
+
+  if (due.length > 0) {
+    log.info(
+      `lapseRenewableSubscriptionsToPastDue: ${due.length} subscription(s) now awaiting renewal`
+    );
+  }
+
+  return due.length;
+};
+
+export const cleanupExpiredCoachSubscriptions = async (
+  params: {
+    now?: Date;
+  } = {}
+): Promise<number> => {
+  // Injectable so the expiry/grace boundaries can actually be tested; the job
+  // calls it with no argument and gets the real clock.
+  const now = params.now ?? new Date();
   const expired = await CoachSubscription.find({
     status: { $in: ["ACTIVE", "PAST_DUE"] },
     $or: [
-      { status: "ACTIVE", currentPeriodEnd: { $lte: now } },
+      // Auto-renewing subscriptions are handed to the grace window above
+      // first; only ones the user actually turned off die at period end.
+      { status: "ACTIVE", autoRenew: { $ne: true }, currentPeriodEnd: { $lte: now } },
       { status: "PAST_DUE", gracePeriodEndsAt: { $lte: now } },
     ],
   });
@@ -353,8 +452,7 @@ export const cleanupExpiredCoachSubscriptions = async (): Promise<number> => {
     if (!subscription.cancelledAt) {
       subscription.cancelledAt = now;
     }
-    subscription.cancellationReason =
-      subscription.cancellationReason || "Subscription expired";
+    subscription.cancellationReason = subscription.cancellationReason || "Subscription expired";
     await subscription.save();
     coachIds.add(subscription.coachId.toString());
   }
@@ -378,49 +476,6 @@ export const cleanupExpiredCoachSubscriptions = async (): Promise<number> => {
   return expired.length;
 };
 
-export const listCoachSubscriptionsForAdmin = async (filters?: {
-  status?: string;
-  coachId?: string;
-  userId?: string;
-  page?: number;
-  limit?: number;
-}) => {
-  const page = Math.max(1, Number(filters?.page) || 1);
-  const limit = Math.min(100, Math.max(1, Number(filters?.limit) || 20));
-
-  const query: Record<string, unknown> = {};
-  if (filters?.status) {
-    query.status = filters.status;
-  }
-  if (filters?.coachId) {
-    query.coachId = toObjectId(filters.coachId);
-  }
-  if (filters?.userId) {
-    query.userId = toObjectId(filters.userId);
-  }
-
-  const [subscriptions, total] = await Promise.all([
-    CoachSubscription.find(query)
-      .populate("packageId")
-      .populate("coachId", "userId sports verificationStatus")
-      .populate("userId", "name email")
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit),
-    CoachSubscription.countDocuments(query),
-  ]);
-
-  return {
-    subscriptions,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  };
-};
-
 /**
  * Get active subscriptions for a coach
  */
@@ -431,7 +486,8 @@ export const getCoachActiveSubscriptions = async (coachId: string) => {
   })
     .populate("userId", "name email")
     .populate("packageId")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 /**
@@ -463,7 +519,7 @@ export const getCoachSubscriptionRevenue = async (params: {
 
   const subscriptions = await CoachSubscription.find(query).populate(
     "packageId",
-    "price frequency",
+    "price frequency"
   );
 
   let total = 0;
@@ -477,8 +533,7 @@ export const getCoachSubscriptionRevenue = async (params: {
     const pkg = sub.packageId as any;
     if (pkg && pkg.price) {
       total += pkg.price;
-      byFrequency[pkg.frequency] =
-        (byFrequency[pkg.frequency] || 0) + pkg.price;
+      byFrequency[pkg.frequency] = (byFrequency[pkg.frequency] || 0) + pkg.price;
     }
   }
 

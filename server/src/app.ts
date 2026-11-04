@@ -1,28 +1,49 @@
 import cookieParser from "cookie-parser";
 import cors, { CorsOptions } from "cors";
-import "dotenv/config";
+import "./config/env";
+import compression from "compression";
 import express, { Express } from "express";
 import { hostname as osHostname } from "os";
 import mongoose from "mongoose";
-import redis from "./config/redis";
+import redis, { REDIS_ENABLED } from "./config/redis";
 import { authMiddleware, adminMiddleware } from "./middleware/auth";
 import { errorHandler } from "./middleware/errorHandler";
 import { errorLogger, requestLogger } from "./middleware/logger";
 import { observabilityMiddleware } from "./middleware/observability";
+import { requestContextMiddleware } from "./utils/requestContext";
+import { installTimingInstrumentation } from "./utils/timings";
 import {
   apiRateLimitMiddleware,
+  permissionsPolicyMiddleware,
+  productionOnlyHstsMiddleware,
+  robotsTagMiddleware,
   securityHeadersMiddleware,
 } from "./middleware/security";
 
 import academyOnboardingRoutes from "./admin/routes/academyOnboardingRoutes";
 import adminRoutes from "./admin/routes/adminRoutes";
+import providerChangeRoutes from "./admin/routes/providerChangeRoutes";
+import reviewQueueRoutes from "./admin/routes/reviewQueueRoutes";
+import pathwayGuideAdminRoutes from "./admin/routes/pathwayGuideAdminRoutes";
+import opportunityAdminRoutes from "./admin/routes/opportunityAdminRoutes";
+import opportunitySourceAdminRoutes from "./admin/routes/opportunitySourceAdminRoutes";
+import opportunityWatchAdminRoutes from "./admin/routes/opportunityWatchAdminRoutes";
+import opportunityLeadAdminRoutes from "./admin/routes/opportunityLeadAdminRoutes";
+import dataSourceAdminRoutes from "./admin/routes/dataSourceAdminRoutes";
+import reminderAdminRoutes from "./admin/routes/reminderAdminRoutes";
+import whatsappPilotAdminRoutes from "./admin/routes/whatsappPilotAdminRoutes";
 import payoutMethodsRoutes from "./admin/routes/payoutMethodsRoutes";
 import statsRoutes from "./admin/routes/statsRoutes";
 import bookingRoutes from "./client/routes/bookingRoutes";
+import expertsRoutes from "./client/routes/expertsRoutes";
 import coachRoutes from "./client/routes/coachRoutes";
+import coachOfferingRoutes from "./client/routes/coachOfferingRoutes";
 import friendRoutes from "./client/routes/friendRoutes";
 import guidanceRoutes from "./client/routes/guidanceRoutes";
-import pathwayProfileRoutes from "./client/routes/pathwayProfileRoutes";
+import screeningRoutes from "./client/routes/screeningRoutes";
+import roadmapChatRoutes from "./client/routes/roadmapChatRoutes";
+import assistantChatRoutes from "./client/routes/assistantChatRoutes";
+import planCheckInRoutes from "./client/routes/planCheckInRoutes";
 import notificationRoutes from "./client/routes/notificationRoutes";
 import payoutRoutes from "./client/routes/payoutRoutes";
 import refundMethodRoutes from "./client/routes/refundMethodRoutes";
@@ -35,13 +56,29 @@ import venueRoutes from "./client/routes/venueRoutes";
 import calendarRoutes from "./client/routes/calendarRoutes";
 import walletRoutes from "./client/routes/walletRoutes";
 import communityRoutes from "./community/routes/communityRoutes";
+import blogRoutes from "./community/routes/blogRoutes";
+import experienceRoutes from "./community/routes/experienceRoutes";
 import authRoutes from "./shared/routes/authRoutes";
 import geoRoutes from "./shared/routes/geoRoutes";
 import phonepeWebhook from "./shared/routes/phonepeWebhook";
+import whatsappWebhook from "./shared/routes/whatsappWebhook";
 import sportsRoutes from "./shared/routes/sportsRoutes";
 import pathwayRoutes from "./shared/routes/pathwayRoutes";
+import opportunityRoutes from "./shared/routes/opportunityRoutes";
+import opportunityFollowRoutes from "./shared/routes/opportunityFollowRoutes";
+import federationRoutes from "./shared/routes/federationRoutes";
+import tournamentEditionRoutes from "./shared/routes/tournamentEditionRoutes";
+import rankingRoutes from "./shared/routes/rankingRoutes";
+import rankingClaimRoutes from "./client/routes/rankingClaimRoutes";
+import whatsAppNoteRoutes from "./client/routes/whatsappNoteRoutes";
+import seasonPlanRoutes from "./client/routes/seasonPlanRoutes";
+import childHistoryRoutes from "./client/routes/childHistoryRoutes";
+import childShareRoutes from "./client/routes/childShareRoutes";
+import plannerRoutes from "./client/routes/plannerRoutes";
 import conciergeRoutes from "./shared/routes/conciergeRoutes";
 import ecommerceRoutes from "./shop/routes/ecommerceRoutes";
+import { log as __rootLog } from "./utils/logger";
+const log = __rootLog.child("app");
 
 export const app: Express = express();
 
@@ -55,8 +92,7 @@ app.set("trust proxy", 1);
 
 // NOTE: initializeScheduledJobs() is called in server.ts after the server starts listening.
 
-const normalizeOrigin = (origin: string): string =>
-  origin.trim().replace(/\/$/, "").toLowerCase();
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, "").toLowerCase();
 
 const configuredOrigins = [
   process.env.FRONTEND_URLS,
@@ -65,6 +101,7 @@ const configuredOrigins = [
   "http://localhost:3001",
   "http://localhost:3002",
   "https://powermysport.com",
+  "https://client-uat.powermysport.com",
   "https://www.powermysport.com",
   "https://admin.powermysport.com",
   "https://community.powermysport.com",
@@ -75,8 +112,12 @@ const configuredOrigins = [
   .filter(Boolean);
 
 const allowedOrigins = new Set(configuredOrigins);
+// Only an explicit allowlist of known app subdomains is trusted — NOT a broad
+// `*.powermysport.com` wildcard. A wildcard would make any subdomain (including
+// a takeover-able or user-content subdomain) a trusted credentialed origin.
+// Add new legitimate subdomains here as they are introduced.
 const allowedOriginPatterns = [
-  /^https:\/\/([a-z0-9-]+\.)*powermysport\.com$/i,
+  /^https:\/\/(www|admin|community|api)\.powermysport\.com$/i,
   /^http:\/\/localhost:\d+$/i,
 ];
 
@@ -87,9 +128,7 @@ const isOriginAllowed = (origin: string): boolean => {
     return true;
   }
 
-  return allowedOriginPatterns.some((pattern) =>
-    pattern.test(normalizedOrigin),
-  );
+  return allowedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
 };
 
 const corsOptions: CorsOptions = {
@@ -100,7 +139,7 @@ const corsOptions: CorsOptions = {
     }
 
     if (process.env.NODE_ENV === "development") {
-      console.warn(`CORS blocked for origin: ${origin}`);
+      log.warn(`CORS blocked for origin: ${origin}`);
     }
 
     callback(null, false);
@@ -114,44 +153,85 @@ const corsOptions: CorsOptions = {
     "Accept",
     "Origin",
     "Idempotency-Key",
+    "X-Academy-Onboarding-Token",
   ],
   maxAge: 86400,
   optionsSuccessStatus: 204,
 };
 
+// Patch mongoose/fetch/axios prototypes so per-request time attribution works.
+installTimingInstrumentation();
+
+// First in the chain: even a rejected preflight or a rate-limited request
+// needs an id to log against.
+app.use(requestContextMiddleware);
 app.use(cors(corsOptions));
 app.use(observabilityMiddleware);
 app.use(securityHeadersMiddleware);
+app.use(productionOnlyHstsMiddleware);
+app.use(permissionsPolicyMiddleware);
+app.use(robotsTagMiddleware);
+// Gzip/Brotli-negotiated compression for every JSON response below. Placed
+// before the raw-body PhonePe route: compression only touches what the
+// response *sends*, so it has no effect on how incoming webhook bodies are
+// parsed/verified, but it shrinks every response this API returns (search
+// results, booking payloads, etc.) before it hits the wire.
+app.use(compression());
 app.use(apiRateLimitMiddleware);
-app.use("/api/payments/phonepe", express.raw({ type: "application/json" }));
+app.use(
+  "/api/payments/phonepe",
+  express.raw({
+    type: "application/json",
+    verify: (req, _res, buf) => {
+      (req as any).rawBody = buf.toString();
+    },
+  })
+);
 app.use(
   express.json({
     verify: (req, _res, buf) => {
       (req as any).rawBody = buf.toString();
     },
-  }),
+  })
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-if (process.env.NODE_ENV === "development") {
-  app.use(requestLogger);
-}
+// Mounted in every environment now. The middleware itself decides what to
+// emit: full detail in dev, sampled + PII-stripped in production, and nothing
+// at all under LOG_REQUESTS=off.
+app.use(requestLogger);
 
 // Shared Domain
 app.use("/api/auth", authRoutes);
 app.use("/api/geo", geoRoutes);
 app.use("/api/sports", sportsRoutes);
 app.use("/api/pathways", pathwayRoutes);
+app.use("/api/federations", federationRoutes);
+app.use("/api/tournament-editions", tournamentEditionRoutes);
+app.use("/api/opportunities", opportunityRoutes);
+app.use("/api/opportunity-follows", opportunityFollowRoutes);
+app.use("/api/rankings", rankingRoutes);
+app.use("/api/ranking-claims", rankingClaimRoutes);
+app.use("/api/whatsapp-notes", whatsAppNoteRoutes);
+app.use("/api/season-plans", seasonPlanRoutes);
+app.use("/api/child-history", childHistoryRoutes);
+app.use("/api/share", childShareRoutes);
+app.use("/api/planner", plannerRoutes);
 app.use("/api/concierge", conciergeRoutes);
 // PhonePe webhook route (use raw body captured above for HMAC verification)
 app.use("/api/payments/phonepe", phonepeWebhook);
+// WhatsApp Cloud API webhook (verified against the raw body captured above)
+app.use("/api/whatsapp", whatsappWebhook);
 
 // Client Domain
 app.use("/api/venues", venueRoutes);
 app.use("/api/venues/onboarding", venueOnboardingRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/coaches", coachRoutes);
+// Recurring coaching programmes. Separate mount because coachRoutes ends in a
+// `/:coachId` catch-all that would swallow any literal path added after it.
+app.use("/api/coach-programmes", coachOfferingRoutes);
 app.use("/api/friends", friendRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/reminders", reminderRoutes);
@@ -161,20 +241,62 @@ app.use("/api/support-tickets", supportTicketRoutes);
 app.use("/api/refund-methods", refundMethodRoutes);
 app.use("/api/payouts", payoutRoutes);
 app.use("/api/guidance", guidanceRoutes);
-app.use("/api/pathway-profile", pathwayProfileRoutes);
+app.use("/api/screenings", screeningRoutes);
+app.use("/api/roadmap-chat", roadmapChatRoutes);
+app.use("/api/assistant-chat", assistantChatRoutes);
+app.use("/api/plan-checkins", planCheckInRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/wallet", walletRoutes);
+app.use("/api/experts", expertsRoutes);
 // Community Domain
+// /experiences is the canonical mount; /blog stays as a deprecated alias on
+// the same handlers until the community app moves over (phase 5) and any
+// cached clients have had a release to catch up.
+app.use("/api/community/experiences", experienceRoutes);
+app.use("/api/community/blog", blogRoutes);
 app.use("/api/community", communityRoutes);
 
 // Admin Domain
+app.use("/api/admin/provider-changes", providerChangeRoutes);
+app.use("/api/admin/review-queue", reviewQueueRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin/pathway-guides", pathwayGuideAdminRoutes);
+app.use("/api/admin/opportunities", opportunityAdminRoutes);
+app.use("/api/admin/opportunity-sources", opportunitySourceAdminRoutes);
+app.use("/api/admin/opportunity-watch", opportunityWatchAdminRoutes);
+app.use("/api/admin/opportunity-leads", opportunityLeadAdminRoutes);
+app.use("/api/admin/data-sources", dataSourceAdminRoutes);
+app.use("/api/admin/reminders", reminderAdminRoutes);
+app.use("/api/admin/whatsapp-pilot", whatsappPilotAdminRoutes);
 app.use("/api/academies", academyOnboardingRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/payout-methods", payoutMethodsRoutes);
 
 // Shop Domain
 app.use("/api/v1", ecommerceRoutes);
+
+/**
+ * Crawler-facing routes for api.powermysport.com.
+ *
+ * The root used to fall through to the 404 handler, which Search Console
+ * reported as a "Not found (404)" page for the domain property. A 200 service
+ * descriptor plus a robots.txt keeps the host well-behaved. Crawling is
+ * *allowed* on purpose so Googlebot can read the `X-Robots-Tag: noindex`
+ * header set in securityHeadersMiddleware — that is what actually keeps the
+ * API out of the index.
+ */
+app.get("/", (_req, res) => {
+  res.status(200).json({
+    success: true,
+    service: "PowerMySport API",
+    docs: "https://powermysport.com",
+    health: "/api/health",
+  });
+});
+
+app.get("/robots.txt", (_req, res) => {
+  res.type("text/plain").send("User-agent: *\nDisallow:\n");
+});
 
 const getDetailedHealthPayload = async () => {
   const dbReadyState = mongoose.connection.readyState;
@@ -188,26 +310,27 @@ const getDetailedHealthPayload = async () => {
 
   // Live Redis ping with a 500ms timeout so a busy Redis under load
   // never blocks the ALB health check and causes a false-positive Severe state.
-  let redisStatus = "disconnected";
+  // REDIS_ENABLED=false is a deliberate "off" switch, so it is not a failure.
+  let redisStatus = REDIS_ENABLED ? "disconnected" : "disabled";
   let redisPingMs: number | null = null;
-  try {
-    const t0 = Date.now();
-    await Promise.race([
-      redis.ping(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("ping timeout")), 500),
-      ),
-    ]);
-    redisPingMs = Date.now() - t0;
-    redisStatus = "connected";
-  } catch (err: any) {
-    redisStatus = err?.message === "ping timeout" ? "timeout" : "error";
+  if (REDIS_ENABLED) {
+    try {
+      const t0 = Date.now();
+      await Promise.race([
+        redis.ping(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("ping timeout")), 500)),
+      ]);
+      redisPingMs = Date.now() - t0;
+      redisStatus = "connected";
+    } catch (err: any) {
+      redisStatus = err?.message === "ping timeout" ? "timeout" : "error";
+    }
   }
 
   const memoryUsage = process.memoryUsage();
   const uptimeSec = Math.round(process.uptime());
   const dbHealthy = dbStatus === "connected";
-  const redisHealthy = redisStatus === "connected";
+  const redisHealthy = redisStatus === "connected" || redisStatus === "disabled";
   const allHealthy = dbHealthy && redisHealthy;
 
   return {
@@ -268,19 +391,12 @@ app.get("/api/health", async (_req, res) => {
   });
 });
 
-app.get(
-  "/api/admin/health/detail",
-  authMiddleware,
-  adminMiddleware,
-  async (_req, res) => {
-    const detailed = await getDetailedHealthPayload();
-    res.status(200).json(detailed);
-  },
-);
+app.get("/api/admin/health/detail", authMiddleware, adminMiddleware, async (_req, res) => {
+  const detailed = await getDetailedHealthPayload();
+  res.status(200).json(detailed);
+});
 
-if (process.env.NODE_ENV === "development") {
-  app.use(errorLogger);
-}
+app.use(errorLogger);
 
 app.use(errorHandler);
 

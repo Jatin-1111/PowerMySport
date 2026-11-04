@@ -1,0 +1,234 @@
+import { Request, Response } from "express";
+import mongoose from "mongoose";
+import { AssistantChatSession } from "../models/AssistantChatSession";
+import { buildAssistantChatSystemPrompt } from "../../shared/services/assistantChatService";
+import { streamChatAndPersist } from "../../shared/services/chatStreamService";
+import { retrieveRelevantChunks } from "../../shared/services/knowledgeRetrievalService";
+import { WEB_CHAT_TOOLS } from "../../shared/services/chatToolsService";
+import {
+  DAILY_MESSAGE_CAP,
+  LIFETIME_MESSAGE_CAP,
+  getDailyMessageCount,
+  checkChatRateLimit,
+} from "../../shared/services/chatRateLimitService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+
+const OPENING_MESSAGE = `Hi! 👋 I'm the PowerMySport Assistant. Ask me anything about youth sports, how the platform works, or where to find something — whether that's finding the right sport for your child, or building a personalized plan once you've picked one. What's on your mind?`;
+
+function deriveTitle(firstUserMessage: string): string {
+  const trimmed = firstUserMessage.trim().slice(0, 60);
+  const lastSpace = trimmed.lastIndexOf(" ");
+  const cut = lastSpace > 30 ? trimmed.slice(0, lastSpace) : trimmed;
+  return cut + (firstUserMessage.trim().length > 60 ? "…" : "");
+}
+
+// ─── GET /api/assistant-chat/sessions ────────────────────────────────────────
+// List the authenticated user's assistant chats, newest first. A chat nobody
+// has written in is left out: every visit to the assistant opens a fresh
+// session (so it starts clean), and the unused ones would otherwise fill the
+// history with "New conversation" rows.
+
+export const listAssistantChatSessions = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Authentication required", 401);
+    }
+
+    const sessions = await AssistantChatSession.find({
+      userId: req.user.id,
+      totalMessageCount: { $gt: 0 },
+    })
+      .select("_id title totalMessageCount createdAt updatedAt")
+      .sort({ updatedAt: -1 })
+      .limit(50)
+      .lean();
+
+    res.status(200).json({ success: true, data: sessions });
+  }
+);
+
+// ─── POST /api/assistant-chat/sessions ───────────────────────────────────────
+// Create a brand-new session — called every time the assistant is opened, so
+// it always starts fresh (history is reachable separately, not auto-resumed).
+
+export const createAssistantChatSession = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Authentication required", 401);
+    }
+
+    const session = await AssistantChatSession.create({
+      userId: req.user.id,
+      title: null,
+      messages: [{ role: "assistant", content: OPENING_MESSAGE, createdAt: new Date() }],
+    });
+
+    const dailyMessageCount = await getDailyMessageCount(req.user.id);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        sessionId: session._id,
+        messages: session.messages,
+        dailyMessageCount,
+        totalMessageCount: session.totalMessageCount,
+        dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
+        lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - session.totalMessageCount),
+      },
+    });
+  }
+);
+
+// ─── GET /api/assistant-chat/sessions/:sessionId ─────────────────────────────
+
+export const getAssistantChatSession = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Authentication required", 401);
+    }
+
+    const { sessionId } = req.params;
+    if (!mongoose.isValidObjectId(sessionId)) {
+      throw new AppError("Invalid session ID", 400);
+    }
+
+    const session = await AssistantChatSession.findOne({
+      _id: sessionId as string,
+      userId: req.user.id,
+    }).lean();
+
+    if (!session) {
+      throw new AppError("Session not found", 404);
+    }
+
+    const dailyMessageCount = await getDailyMessageCount(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        sessionId: session._id,
+        title: session.title,
+        messages: session.messages,
+        dailyMessageCount,
+        totalMessageCount: session.totalMessageCount,
+        dailyRemaining: Math.max(0, DAILY_MESSAGE_CAP - dailyMessageCount),
+        lifetimeRemaining: Math.max(0, LIFETIME_MESSAGE_CAP - session.totalMessageCount),
+      },
+    });
+  }
+);
+
+// ─── DELETE /api/assistant-chat/sessions/:sessionId ──────────────────────────
+// Permanently removes one of the caller's chats. The owner is part of the
+// match, so someone else's session id is indistinguishable from a missing one
+// (404). Deleting does not hand back any allowance: the daily cap is a
+// per-user counter that does not depend on stored chats, and the per-chat cap
+// goes with the chat.
+
+export const deleteAssistantChatSession = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Authentication required", 401);
+    }
+
+    const { sessionId } = req.params;
+    if (!mongoose.isValidObjectId(sessionId)) {
+      throw new AppError("Invalid session ID", 400);
+    }
+
+    const result = await AssistantChatSession.deleteOne({
+      _id: sessionId as string,
+      userId: req.user.id,
+    });
+
+    if (result.deletedCount === 0) {
+      throw new AppError("Session not found", 404);
+    }
+
+    res.status(200).json({ success: true });
+  }
+);
+
+// ─── POST /api/assistant-chat/sessions/:sessionId ────────────────────────────
+
+// NOTE: this handler keeps its own try/catch. The response here is a
+// server-sent-events stream (see streamChatAndPersist), so once headers are
+// sent the catch must write an SSE-formatted error frame instead of a JSON
+// body — that isn't something the global JSON error handler can do, so this
+// isn't a case of "just log and respond" and is preserved as-is.
+export const sendAssistantChatSessionMessage = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      if (!req.user) {
+        throw new AppError("Authentication required", 401);
+      }
+
+      const { sessionId } = req.params;
+      if (!mongoose.isValidObjectId(sessionId)) {
+        throw new AppError("Invalid session ID", 400);
+      }
+
+      const userMessage: string = (req.body?.message ?? "").trim();
+      if (!userMessage) {
+        throw new AppError("Message is required", 400);
+      }
+      if (userMessage.length > 2000) {
+        throw new AppError("Message too long (max 2000 characters)", 400);
+      }
+
+      const session = await AssistantChatSession.findOne({
+        _id: sessionId as string,
+        userId: req.user.id,
+      });
+
+      if (!session) {
+        throw new AppError("Session not found", 404);
+      }
+
+      const rateLimit = await checkChatRateLimit(req.user.id, session.totalMessageCount, {
+        dailyReached: `You've reached today's limit of ${DAILY_MESSAGE_CAP} messages. Come back tomorrow to continue the conversation!`,
+        lifetimeReached: `You've had a long conversation in this chat! Start a new chat to keep going.`,
+      });
+      if (!rateLimit.ok) {
+        res.status(rateLimit.status).json({
+          success: false,
+          message: rateLimit.message,
+          code: rateLimit.code,
+        });
+        return;
+      }
+
+      // Auto-title on first user message, same as roadmap chat's history list.
+      const isFirstUserMessage = !session.messages.some((m) => m.role === "user");
+      if (isFirstUserMessage && !session.title) {
+        session.title = deriveTitle(userMessage);
+      }
+
+      const retrievedChunks = await retrieveRelevantChunks(userMessage);
+      const systemPrompt = buildAssistantChatSystemPrompt(WEB_CHAT_TOOLS, retrievedChunks);
+
+      await streamChatAndPersist(
+        res,
+        req.user.id,
+        session,
+        systemPrompt,
+        userMessage,
+        WEB_CHAT_TOOLS,
+        { userId: req.user.id }
+      );
+    } catch (error) {
+      if (!res.headersSent) {
+        res.status(error instanceof AppError ? error.statusCode : 500).json({
+          success: false,
+          message: error instanceof Error ? error.message : "Chat request failed",
+        });
+      } else {
+        res.write(
+          `data: ${JSON.stringify({ error: error instanceof Error ? error.message : "Server error" })}\n\n`
+        );
+        res.end();
+      }
+    }
+  }
+);

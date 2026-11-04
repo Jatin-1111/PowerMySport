@@ -1,28 +1,28 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import axiosInstance from "@/lib/api/axios";
+import { toast } from "@/lib/toast";
 import {
-  TrendingUp,
-  Users,
-  CheckCircle,
-  Clock,
-  BarChart2,
-  Loader2,
-  Activity,
-  GraduationCap,
-  Building2,
-} from "lucide-react";
-import {
-  KpiCard,
-  SparklineBarChart,
-  SportBreakdownPanel,
   BusyHoursHeatmap,
   DonutChart,
+  KpiCard,
   RetentionCard,
+  SparklineBarChart,
+  SportBreakdownPanel,
 } from "@/modules/shared/components/dashboard/analytics";
 import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import { toast } from "@/lib/toast";
-import axiosInstance from "@/lib/api/axios";
+import {
+  Activity,
+  BarChart2,
+  Building2,
+  CheckCircle,
+  Clock,
+  GraduationCap,
+  Loader2,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
@@ -103,9 +103,9 @@ export default function AcademyAnalyticsPage() {
   // ── loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-400">
-          <Loader2 size={36} className="animate-spin text-orange-500" />
+          <Loader2 size={36} className="text-power-orange animate-spin" />
           <p className="text-sm">Loading analytics…</p>
         </div>
       </div>
@@ -115,16 +115,14 @@ export default function AcademyAnalyticsPage() {
   // ── error ────────────────────────────────────────────────────────────────
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
-          <Activity size={40} className="text-red-400 mx-auto mb-3" />
-          <p className="text-slate-900 font-semibold mb-1">
-            Unable to load analytics
-          </p>
-          <p className="text-slate-500 text-sm">{error ?? "No data available."}</p>
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div className="max-w-sm text-center">
+          <Activity size={40} className="mx-auto mb-3 text-red-400" />
+          <p className="mb-1 font-semibold text-slate-900">Unable to load analytics</p>
+          <p className="text-sm text-slate-500">{error ?? "No data available."}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+            className="bg-power-orange-solid mt-4 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600"
           >
             Retry
           </button>
@@ -136,70 +134,65 @@ export default function AcademyAnalyticsPage() {
   const { overview, sessionsTrend, sportBreakdown, popularHours, studentRetention } = data;
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
-
+    <div className="pb-8">
+      <div className="space-y-8">
         {/* ── Header ───────────────────────────────────────────────────── */}
         <SlideUp>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
-                <TrendingUp size={28} className="text-orange-500" />
-                Academy Analytics
+              <h1 className="font-editorial flex items-center gap-2 text-2xl font-light text-slate-900 sm:text-3xl">
+                <TrendingUp size={28} className="text-power-orange" />
+                Academy analytics
               </h1>
-              <p className="text-slate-500 text-sm mt-1">
-                Track your academy's performance and student engagement.
+              <p className="mt-1 text-sm text-slate-500">
+                Track your academy&apos;s performance and student engagement.
               </p>
-            </div>
-            <div className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-full px-4 py-1.5 text-xs text-slate-600 font-medium self-start sm:self-auto shadow-sm">
-              <Clock size={12} className="text-orange-500" />
-              Last 30 days
             </div>
           </div>
         </SlideUp>
 
         {/* ── 4 KPI cards ──────────────────────────────────────────────── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
           <KpiCard
-            label="Total Sessions"
+            label="Total sessions"
             value={overview.totalSessions}
             icon={<BarChart2 size={20} />}
             delay={0}
           />
           <KpiCard
-            label="Completion Rate"
+            label="Completion rate"
             value={`${overview.completionRate.toFixed(1)}%`}
             icon={<CheckCircle size={20} />}
             valueClass={completionColor(overview.completionRate)}
             delay={0.08}
           />
           <KpiCard
-            label="Total Students"
+            label="Total students"
             value={overview.totalStudents}
             icon={<GraduationCap size={20} />}
             delay={0.16}
           />
           <KpiCard
-            label="Retention Rate"
+            label="Retention rate"
             value={`${overview.retentionRate.toFixed(1)}%`}
             icon={<Users size={20} />}
-            valueClass="text-orange-500"
+            valueClass="text-power-orange"
             delay={0.24}
           />
         </div>
 
         {/* ── Sessions Trend ────────────────────────────────────────────── */}
         <SlideUp delay={0.15}>
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider">
-                <BarChart2 size={16} className="text-orange-500" />
-                Sessions Trend
+          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
+                <BarChart2 size={16} className="text-power-orange" />
+                Sessions trend
               </h2>
-              <span className="text-slate-400 text-xs">Daily • last 30 days</span>
+              <span className="text-xs text-slate-400">Daily, last 30 days</span>
             </div>
             {sessionsTrend.length === 0 ? (
-              <div className="flex items-center justify-center h-28 text-slate-400 text-sm">
+              <div className="flex h-28 items-center justify-center text-sm text-slate-400">
                 No session data for this period.
               </div>
             ) : (
@@ -209,25 +202,25 @@ export default function AcademyAnalyticsPage() {
         </SlideUp>
 
         {/* ── Sport Breakdown + Busy Hours ──────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <SlideUp delay={0.2}>
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <Activity size={16} className="text-orange-500" />
-                Sport Breakdown
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <SlideUp delay={0.2} className="h-full">
+            <div className="h-full rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-slate-900">
+                <Activity size={16} className="text-power-orange" />
+                Sport breakdown
               </h2>
               <SportBreakdownPanel data={sportBreakdown} />
             </div>
           </SlideUp>
 
-          <SlideUp delay={0.25}>
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 h-full shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <Clock size={16} className="text-orange-500" />
-                Busy Hours
+          <SlideUp delay={0.25} className="h-full">
+            <div className="h-full rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-slate-900">
+                <Clock size={16} className="text-power-orange" />
+                Busy hours
               </h2>
               {popularHours.length === 0 ? (
-                <div className="flex items-center justify-center h-24 text-slate-400 text-sm">
+                <div className="flex h-24 items-center justify-center text-sm text-slate-400">
                   No hour data yet.
                 </div>
               ) : (
@@ -239,101 +232,79 @@ export default function AcademyAnalyticsPage() {
 
         {/* ── Student Retention ────────────────────────────────────────── */}
         <SlideUp delay={0.3}>
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-              <GraduationCap size={16} className="text-orange-500" />
-              Student Retention
+          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-slate-900">
+              <GraduationCap size={16} className="text-power-orange" />
+              Student retention
             </h2>
             <RetentionCard
               newCount={studentRetention.newStudents}
               returningCount={studentRetention.returningStudents}
               retentionRate={overview.retentionRate}
-              newLabel="New Students"
-              returningLabel="Returning Students"
+              newLabel="New students"
+              returningLabel="Returning students"
             />
           </div>
         </SlideUp>
 
         {/* ── Completion Rate donut + Academy Stats ─────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <SlideUp delay={0.35}>
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <CheckCircle size={16} className="text-orange-500" />
-                Completion Rate
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <SlideUp delay={0.35} className="h-full">
+            <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-slate-900">
+                <CheckCircle size={16} className="text-power-orange" />
+                Completion rate
               </h2>
-              <div className="flex items-center gap-6">
+              <div className="flex flex-1 items-center justify-center gap-8">
                 <DonutChart rate={overview.completionRate} />
                 <div className="space-y-3">
                   <div>
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">
-                      Completed
-                    </p>
-                    <p className="text-slate-900 font-bold text-xl">
-                      {overview.completedSessions}
-                    </p>
+                    <p className="text-sm text-slate-600">Completed</p>
+                    <p className="text-xl font-bold text-slate-900">{overview.completedSessions}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">
-                      Total
-                    </p>
-                    <p className="text-slate-900 font-bold text-xl">
-                      {overview.totalSessions}
-                    </p>
+                    <p className="text-sm text-slate-600">Total</p>
+                    <p className="text-xl font-bold text-slate-900">{overview.totalSessions}</p>
                   </div>
                 </div>
               </div>
             </div>
           </SlideUp>
 
-          <SlideUp delay={0.4}>
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2 uppercase tracking-wider mb-5">
-                <Building2 size={16} className="text-orange-500" />
-                Academy Stats
+          <SlideUp delay={0.4} className="h-full">
+            <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6">
+              <h2 className="mb-5 flex items-center gap-2 text-base font-semibold text-slate-900">
+                <Building2 size={16} className="text-power-orange" />
+                Academy stats
               </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-1">
+              <div className="grid flex-1 grid-cols-2 gap-4">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="mb-1 flex items-center gap-2">
                     <Building2 size={14} className="text-orange-400" />
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">
-                      Venues
-                    </p>
+                    <p className="text-sm text-slate-600">Venues linked</p>
                   </div>
-                  <p className="text-slate-900 font-bold text-2xl">
-                    {overview.totalVenues}
-                  </p>
+                  <p className="text-2xl font-bold text-slate-900">{overview.totalVenues}</p>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="mb-1 flex items-center gap-2">
                     <Users size={14} className="text-orange-400" />
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">
-                      Coaches
-                    </p>
+                    <p className="text-sm text-slate-600">Coaches linked</p>
                   </div>
-                  <p className="text-slate-900 font-bold text-2xl">
-                    {overview.totalCoaches}
-                  </p>
+                  <p className="text-2xl font-bold text-slate-900">{overview.totalCoaches}</p>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <div className="mb-1 flex items-center gap-2">
                     <BarChart2 size={14} className="text-orange-400" />
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">
-                      Sessions
-                    </p>
+                    <p className="text-sm text-slate-600">Sessions</p>
                   </div>
-                  <p className="text-slate-900 font-bold text-2xl">
-                    {overview.totalSessions}
-                  </p>
+                  <p className="text-2xl font-bold text-slate-900">{overview.totalSessions}</p>
                 </div>
-                <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="rounded-xl border border-orange-100 bg-orange-50 p-4">
+                  <div className="mb-1 flex items-center gap-2">
                     <CheckCircle size={14} className="text-orange-400" />
-                    <p className="text-slate-500 text-xs uppercase tracking-wide">
-                      Completed
-                    </p>
+                    <p className="text-sm text-slate-600">Completed</p>
                   </div>
-                  <p className="text-orange-500 font-bold text-2xl">
+                  <p className="text-power-orange text-2xl font-bold">
                     {overview.completedSessions}
                   </p>
                 </div>
@@ -341,7 +312,6 @@ export default function AcademyAnalyticsPage() {
             </div>
           </SlideUp>
         </div>
-
       </div>
     </div>
   );

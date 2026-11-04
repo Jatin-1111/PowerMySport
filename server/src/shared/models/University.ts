@@ -38,11 +38,10 @@ const universitySchema = new Schema<UniversityDocument>(
     isVerified: { type: Boolean, default: false },
     lastScrapedAt: { type: Date, default: Date.now },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 universitySchema.index({ sportSlug: 1, name: 1 }, { unique: true });
 
 export const University =
-  mongoose.models.University ||
-  mongoose.model<UniversityDocument>("University", universitySchema);
+  mongoose.models.University || mongoose.model<UniversityDocument>("University", universitySchema);

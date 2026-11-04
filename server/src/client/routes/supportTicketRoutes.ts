@@ -6,15 +6,12 @@ import {
   getSupportTicketsForAdmin,
   updateSupportTicketByAdmin,
 } from "../controllers/supportTicketController";
-import {
-  adminMiddleware,
-  authMiddleware,
-  requirePermission,
-} from "../../middleware/auth";
+import { publicSupportTicketRateLimiter } from "../../middleware/rateLimit";
+import { adminMiddleware, authMiddleware, requirePermission } from "../../middleware/auth";
 
 const router = Router();
 
-router.post("/public", createPublicSupportTicket);
+router.post("/public", publicSupportTicketRateLimiter, createPublicSupportTicket);
 router.post("/", authMiddleware, createSupportTicket);
 router.get("/my", authMiddleware, getMySupportTickets);
 
@@ -23,14 +20,14 @@ router.get(
   authMiddleware,
   adminMiddleware,
   requirePermission("inquiries:view"),
-  getSupportTicketsForAdmin,
+  getSupportTicketsForAdmin
 );
 router.patch(
   "/admin/:ticketId",
   authMiddleware,
   adminMiddleware,
   requirePermission("inquiries:manage"),
-  updateSupportTicketByAdmin,
+  updateSupportTicketByAdmin
 );
 
 export default router;

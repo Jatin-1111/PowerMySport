@@ -1,0 +1,721 @@
+"use client";
+
+import {
+  PriceRangeSection,
+  RatingSection,
+  SortSection,
+  priceRangeLabel,
+} from "@/modules/discovery/components/FilterSections";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { statsApi } from "@/modules/analytics/services/stats";
+import { buildCoachCommunityIntent } from "@/modules/community/utils/coachCommunityIntent";
+import { ActiveFilter, FilterBar } from "@/modules/discovery/components/FilterBar";
+import { SportChips } from "@/modules/discovery/components/SportChips";
+import { discoveryApi } from "@/modules/discovery/services/discovery";
+import { clientFollowStore } from "../../shared/store/followStore";
+import { Button } from "@/modules/shared/ui/Button";
+import { LISTING_IMAGE_CLASS, ListingCard } from "@/modules/discovery/components/ListingCard";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
+import { Coach } from "@/types";
+import { cn } from "@/utils/cn";
+import { Globe, ImageIcon, MessageCircle, Users } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+
+const normalizeImageUrl = (value?: string) => {
+  if (!value || typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (
+    trimmed.startsWith("http://") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("data:image")
+  )
+    return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  if (trimmed.includes("amazonaws.com")) return `https://${trimmed}`;
+  return trimmed;
+};
+
+const normalizeSearchTerm = (value: string) =>
+  value.toLocaleLowerCase().trim().replace(/\s+/g, " ");
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const toRadians = (value: number) => (value * Math.PI) / 180;
+
+const calculateDistanceKm = (
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number }
+) => {
+  const R = 6371;
+  const dLat = toRadians(to.latitude - from.latitude);
+  const dLng = toRadians(to.longitude - from.longitude);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(from.latitude)) * Math.cos(toRadians(to.latitude)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
+const formatDistanceKm = (km: number) => {
+  if (!Number.isFinite(km) || km < 0) return "";
+  return km < 1 ? `${Math.round(km * 1000)} m away` : `${km.toFixed(1)} km away`;
+};
+
+const parseCoordinates = (value: unknown) => {
+  if (!value || typeof value !== "object") return null;
+  const c = value as {
+    coordinates?: unknown;
+    lat?: unknown;
+    lng?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+  };
+  if (Array.isArray(c.coordinates) && c.coordinates.length === 2) {
+    const [lng, lat] = c.coordinates.map(Number);
+    if (Number.isFinite(lng) && Number.isFinite(lat)) return { latitude: lat, longitude: lng };
+  }
+  const lat = Number(c.latitude ?? c.lat);
+  const lng = Number(c.longitude ?? c.lng);
+  if (Number.isFinite(lat) && Number.isFinite(lng)) return { latitude: lat, longitude: lng };
+  return null;
+};
+
+const SERVICE_MODE_OPTIONS = ["ALL", "OWN_VENUE", "FREELANCE", "HYBRID"];
+const MIN_RATING_OPTIONS = ["0", "3", "4", "4.5"];
+const SORT_OPTIONS = ["relevance", "nearest", "priceAsc", "priceDesc", "ratingDesc"];
+
+function CoachImageWithFallback({
+  sources,
+  alt,
+  className,
+  fallbackLabel,
+}: {
+  sources: string[];
+  alt: string;
+  className: string;
+  fallbackLabel: string;
+}) {
+  const cleaned = Array.from(new Set(sources.map(normalizeImageUrl).filter(Boolean)));
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    setIdx(0);
+  }, [cleaned.join("|")]);
+  const src = cleaned[idx];
+  if (!src) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-200 text-slate-500">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/80 text-lg font-bold text-slate-700">
+          {fallbackLabel}
+        </div>
+        <ImageIcon size={24} />
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} className={className} onError={() => setIdx((p) => p + 1)} />;
+}
+
+function CoachesTabContent() {
+  const [loading, setLoading] = useState(true);
+  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [filteredCoaches, setFilteredCoaches] = useState<Coach[]>([]);
+  const [sportInput, setSportInput] = useState("");
+  const [appliedSportFilter, setAppliedSportFilter] = useState("");
+  const [serviceModeFilter, setServiceModeFilter] = useState("ALL");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [certifiedOnly, setCertifiedOnly] = useState(false);
+  const [minRate, setMinRate] = useState("");
+  const [maxRate, setMaxRate] = useState("");
+  const [minRating, setMinRating] = useState("0");
+  const [sortBy, setSortBy] = useState("relevance");
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const [hasLocationDenied, setHasLocationDenied] = useState(false);
+  const [followedCoachIds, setFollowedCoachIds] = useState<string[]>([]);
+  const hasHydratedRef = useRef(false);
+  const searchParams = useSearchParams();
+
+  const communityIntent = buildCoachCommunityIntent({
+    source: "coaches_list",
+    selectedSport: appliedSportFilter || sportInput,
+  });
+  const communityUrl = getCommunityAppUrl({
+    path: "q",
+    searchParams: {
+      ask: "1",
+      q: communityIntent.q,
+      sport: communityIntent.sport,
+      utm_source: "powermysport",
+      utm_medium: "community_cta",
+      utm_campaign: "coaches_list",
+    },
+  });
+
+  const getVerificationBadge = (coach: Coach) => {
+    const status = coach.verificationStatus || (coach.isVerified ? "VERIFIED" : "UNVERIFIED");
+    if (status === "VERIFIED")
+      return {
+        label: "Verified",
+        className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
+      };
+    return {
+      label: "Unverified",
+      className: "bg-slate-100 text-slate-700 border border-slate-200",
+    };
+  };
+
+  const getStartingRate = (coach: Coach) => {
+    const values = Object.values(coach.sportPricing || {}).filter(
+      (v) => typeof v === "number" && v > 0
+    );
+    return values.length > 0 ? Math.min(...values) : coach.hourlyRate;
+  };
+
+  const getCoachImages = (coach: Coach) => {
+    const u = typeof coach.userId === "object" && coach.userId !== null ? coach.userId : undefined;
+    return [
+      coach.photoUrl,
+      coach.profileImage,
+      u?.photoUrl,
+      coach.ownVenueDetails?.images?.[0],
+    ].filter((v): v is string => typeof v === "string");
+  };
+
+  const getDisplayName = (coach: Coach) => {
+    const u = typeof coach.userId === "object" && coach.userId !== null ? coach.userId : undefined;
+    const name = u?.name;
+    return typeof name === "string" && name.trim()
+      ? name.trim()
+      : `${coach.sports[0] || "Professional"} Coach`;
+  };
+
+  const getInitials = (coach: Coach) => {
+    const parts = getDisplayName(coach).split(" ").filter(Boolean).slice(0, 2);
+    return parts.length ? parts.map((p) => p[0]!.toUpperCase()).join("") : "CO";
+  };
+
+  const getServingCity = (coach: Coach) => {
+    const parts = (coach.ownVenueDetails?.address || "")
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean);
+    if (parts.length >= 3) return parts[parts.length - 3] || "";
+    return parts[0] || "";
+  };
+
+  const getCoachCoords = (coach: Coach) => {
+    const candidates = [
+      coach.ownVenueDetails?.location,
+      coach.baseLocation,
+      (coach as any).location,
+    ];
+    for (const c of candidates) {
+      const p = parseCoordinates(c);
+      if (p) return p;
+    }
+    return null;
+  };
+
+  const getDistanceFromUser = (coach: Coach) => {
+    if (!userLocation) return null;
+    const coords = getCoachCoords(coach);
+    return coords ? calculateDistanceKm(userLocation, coords) : null;
+  };
+
+  const getComparableRate = (coach: Coach) => {
+    const r = Number(getStartingRate(coach));
+    return Number.isFinite(r) && r > 0 ? r : null;
+  };
+
+  const getRelevanceScore = (coach: Coach, term: string) => {
+    const rating = clamp01((coach.rating || 0) / 5);
+    const reviews = clamp01((coach.reviewCount || 0) / 50);
+    const rate = Number(getStartingRate(coach));
+    const price = clamp01(
+      1 - Math.min(Number.isFinite(rate) && rate > 0 ? rate : 5000, 5000) / 5000
+    );
+    let sportMatch = 0,
+      nameMatch = 0;
+    if (term) {
+      if (coach.sports.some((s) => normalizeSearchTerm(s) === term)) sportMatch = 1;
+      else if (coach.sports.some((s) => normalizeSearchTerm(s).includes(term))) sportMatch = 0.6;
+      if (normalizeSearchTerm(getDisplayName(coach)).includes(term)) nameMatch = 0.6;
+      else if (normalizeSearchTerm(coach.bio || "").includes(term)) nameMatch = 0.4;
+    }
+    return rating * 0.4 + reviews * 0.15 + price * 0.15 + sportMatch * 0.15 + nameMatch * 0.05;
+  };
+
+  const applyFilters = (base: Coach[]) => {
+    const parsedMin = minRate ? Number(minRate) : undefined;
+    const parsedMax = maxRate ? Number(maxRate) : undefined;
+    const parsedRating = Number(minRating || 0);
+    const term = normalizeSearchTerm(appliedSportFilter);
+    let next = base.filter((coach) => {
+      const name = normalizeSearchTerm(getDisplayName(coach));
+      const bio = normalizeSearchTerm(coach.bio || "");
+      const matchSearch =
+        !term ||
+        coach.sports.some((s) => normalizeSearchTerm(s).includes(term)) ||
+        name.includes(term) ||
+        normalizeSearchTerm(coach.ownVenueDetails?.address || "").includes(term) ||
+        bio.includes(term);
+      const matchMode = serviceModeFilter === "ALL" || coach.serviceMode === serviceModeFilter;
+      const rate = getComparableRate(coach);
+      const matchRate =
+        (parsedMin === undefined || isNaN(parsedMin) || (rate !== null && rate >= parsedMin)) &&
+        (parsedMax === undefined || isNaN(parsedMax) || (rate !== null && rate <= parsedMax));
+      const matchCertified =
+        !certifiedOnly || (coach.certifications && coach.certifications.length > 0);
+      return (
+        matchSearch &&
+        matchMode &&
+        matchRate &&
+        (coach.rating || 0) >= parsedRating &&
+        matchCertified
+      );
+    });
+    if (sortBy === "priceAsc") {
+      next = [...next].sort((a, b) => {
+        const ra = getComparableRate(a);
+        const rb = getComparableRate(b);
+        if (ra === null) return 1;
+        if (rb === null) return -1;
+        return ra - rb;
+      });
+    } else if (sortBy === "priceDesc") {
+      next = [...next].sort((a, b) => {
+        const ra = getComparableRate(a);
+        const rb = getComparableRate(b);
+        if (ra === null) return 1;
+        if (rb === null) return -1;
+        return rb - ra;
+      });
+    } else if (sortBy === "ratingDesc") {
+      next = [...next].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === "nearest") {
+      next = [...next].sort((a, b) => {
+        const da = getDistanceFromUser(a);
+        const db = getDistanceFromUser(b);
+        if (da === null && db === null)
+          return getRelevanceScore(b, term) - getRelevanceScore(a, term);
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return da - db;
+      });
+    } else {
+      next = [...next].sort((a, b) => getRelevanceScore(b, term) - getRelevanceScore(a, term));
+    }
+    setFilteredCoaches(next);
+  };
+
+  useEffect(() => {
+    if (hasHydratedRef.current) return;
+    hasHydratedRef.current = true;
+    const sport = searchParams.get("sport") || "";
+    setSportInput(sport);
+    setAppliedSportFilter(normalizeSearchTerm(sport));
+    const mode = searchParams.get("mode") || "ALL";
+    if (SERVICE_MODE_OPTIONS.includes(mode)) setServiceModeFilter(mode);
+    const mr = searchParams.get("maxRate") || "";
+    if (mr && Number.isFinite(Number(mr))) setMaxRate(mr);
+    const minR = searchParams.get("minRating") || "0";
+    if (MIN_RATING_OPTIONS.includes(minR)) setMinRating(minR);
+    const sort = searchParams.get("sort") || "relevance";
+    if (SORT_OPTIONS.includes(sort)) setSortBy(sort);
+  }, [searchParams]);
+
+  useEffect(() => {
+    applyFilters(coaches);
+  }, [
+    coaches,
+    appliedSportFilter,
+    serviceModeFilter,
+    minRate,
+    maxRate,
+    minRating,
+    sortBy,
+    userLocation,
+    certifiedOnly,
+  ]);
+
+  useEffect(() => {
+    if (sortBy !== "nearest" || userLocation || !navigator.geolocation) {
+      if (sortBy === "nearest" && !navigator.geolocation) setHasLocationDenied(true);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setUserLocation({
+          latitude: p.coords.latitude,
+          longitude: p.coords.longitude,
+        });
+        setHasLocationDenied(false);
+      },
+      () => setHasLocationDenied(true),
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+  }, [sortBy, userLocation]);
+
+  useEffect(() => {
+    setFollowedCoachIds(clientFollowStore.getByKind("coach").map((i) => i.id));
+  }, []);
+
+  const loadCoaches = async (sportFilter = "") => {
+    setLoading(true);
+    try {
+      const params: any = { limit: 100 };
+      if (sportFilter) params.sport = sportFilter;
+      const response = await discoveryApi.searchNearbyCoaches(params);
+      if (response.success && response.data) setCoaches(response.data.coaches || []);
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCoaches(appliedSportFilter);
+  }, [appliedSportFilter]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAppliedSportFilter(normalizeSearchTerm(sportInput));
+  };
+  const handleClear = () => {
+    setSportInput("");
+    setAppliedSportFilter("");
+    setServiceModeFilter("ALL");
+    setMaxRate("");
+    setMinRating("0");
+    setSortBy("relevance");
+    setCertifiedOnly(false);
+  };
+
+  const activeFilters: ActiveFilter[] = [];
+  if (serviceModeFilter !== "ALL") {
+    activeFilters.push({
+      id: "mode",
+      label:
+        serviceModeFilter === "OWN_VENUE"
+          ? "Own Venue"
+          : serviceModeFilter === "FREELANCE"
+            ? "Freelance"
+            : "Hybrid",
+      onRemove: () => setServiceModeFilter("ALL"),
+    });
+  }
+  if (minRate || maxRate) {
+    activeFilters.push({
+      id: "rate",
+      label: priceRangeLabel(minRate, maxRate),
+      onRemove: () => {
+        setMinRate("");
+        setMaxRate("");
+      },
+    });
+  }
+  if (Number(minRating) > 0) {
+    activeFilters.push({
+      id: "rating",
+      label: `${minRating}+ ★`,
+      onRemove: () => setMinRating("0"),
+    });
+  }
+  if (sortBy !== "relevance") {
+    activeFilters.push({
+      id: "sort",
+      label: `Sort: ${sortBy === "priceAsc" ? "Price ↑" : sortBy === "priceDesc" ? "Price ↓" : sortBy === "nearest" ? "Nearest" : "Top rated"}`,
+      onRemove: () => setSortBy("relevance"),
+    });
+  }
+  if (certifiedOnly) {
+    activeFilters.push({
+      id: "certified",
+      label: "Certified",
+      onRemove: () => setCertifiedOnly(false),
+    });
+  }
+
+  const hasFilters = activeFilters.length > 0 || appliedSportFilter !== "";
+
+  const coachHasRate = (coach: (typeof filteredCoaches)[number]) => {
+    const rate = Number(getStartingRate(coach));
+    return Number.isFinite(rate) && rate > 0;
+  };
+  const bookableCoaches = filteredCoaches.filter(coachHasRate);
+  const enquiryCoaches = filteredCoaches.filter((coach) => !coachHasRate(coach));
+
+  const renderCoachCard = (coach: (typeof filteredCoaches)[number], idx: number) => {
+    const coachId = String(coach.id || coach._id || "");
+    const key = coachId || `${String(coach.userId)}-${idx}`;
+    const startingRate = Number(getStartingRate(coach));
+    const hasRate = Number.isFinite(startingRate) && startingRate > 0;
+    const primarySport = coach.sports[0] || "General";
+    const dist = getDistanceFromUser(coach);
+    const showDist = sortBy === "nearest" && userLocation !== null && dist !== null;
+    const coachRoute = `/coaches/${coachId}`;
+    const isFollowed = followedCoachIds.includes(coachId);
+    const badge = getVerificationBadge(coach);
+    const name = getDisplayName(coach);
+    const initials = getInitials(coach);
+    const city = getServingCity(coach);
+
+    const onToggleFollow = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!coachId) return;
+      clientFollowStore.toggle({
+        kind: "coach",
+        id: coachId,
+        label: name,
+        subtitle: coach.sports.join(", "),
+        href: coachRoute,
+      });
+      setFollowedCoachIds(clientFollowStore.getByKind("coach").map((i) => i.id));
+    };
+
+    return (
+      <StaggerItem key={key} className="h-full">
+        <ListingCard
+          href={coachRoute}
+          title={name}
+          media={
+            <CoachImageWithFallback
+              sources={getCoachImages(coach)}
+              alt={name}
+              fallbackLabel={initials}
+              className={LISTING_IMAGE_CLASS}
+            />
+          }
+          badge={badge.label === "Verified" ? "Verified" : undefined}
+          rating={
+            Number.isFinite(Number(coach.rating)) && Number(coach.rating) > 0
+              ? { value: Number(coach.rating) }
+              : undefined
+          }
+          subtitle={city ? `${city}${showDist ? ` · ${formatDistanceKm(dist!)}` : ""}` : undefined}
+          details={coach.sports.slice(0, 2).join(" · ") || primarySport}
+          price={hasRate ? `₹${startingRate}` : "Contact us"}
+          priceUnit={hasRate ? "per hour" : undefined}
+          checked={coach.checks}
+          saved={isFollowed}
+          saveLabel={isFollowed ? "Unsave coach" : "Save coach"}
+          onToggleSave={onToggleFollow}
+        />
+      </StaggerItem>
+    );
+  };
+
+  return (
+    <div>
+      <FilterBar
+        searchValue={sportInput}
+        onSearchChange={setSportInput}
+        searchPlaceholder="Search by name, sport or city…"
+        onSearchClear={() => setSportInput("")}
+        onSubmit={handleSearch}
+        isModalOpen={isFilterModalOpen}
+        onModalOpenChange={setIsFilterModalOpen}
+        activeFilters={activeFilters}
+        onClearAll={handleClear}
+        quickFilters={
+          <SportChips
+            value={appliedSportFilter}
+            onSelect={(sport) => {
+              setSportInput(sport);
+              setAppliedSportFilter(normalizeSearchTerm(sport));
+            }}
+          />
+        }
+      >
+        {/* Service Mode */}
+        <div>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Service Mode</label>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { val: "ALL", label: "Any" },
+              { val: "OWN_VENUE", label: "Own Venue" },
+              { val: "FREELANCE", label: "Freelance" },
+              { val: "HYBRID", label: "Hybrid" },
+            ].map((opt) => (
+              <button
+                key={opt.val}
+                type="button"
+                onClick={() => setServiceModeFilter(opt.val)}
+                className={cn(
+                  "rounded-xl border py-2.5 text-sm font-semibold transition-all",
+                  serviceModeFilter === opt.val
+                    ? "border-turf-green text-turf-green bg-emerald-50"
+                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Qualifications */}
+        <div>
+          <label className="mb-3 block text-sm font-bold text-slate-900">Qualifications</label>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => setCertifiedOnly(!certifiedOnly)}
+              className={cn(
+                "flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-semibold transition-all",
+                certifiedOnly
+                  ? "border-indigo-300 bg-indigo-50 text-indigo-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+              )}
+            >
+              {certifiedOnly && <span className="font-bold text-indigo-500">✓</span>}
+              Certified Coaches Only
+            </button>
+          </div>
+        </div>
+
+        <PriceRangeSection
+          label="Hourly Rate (₹/hr)"
+          min={minRate}
+          max={maxRate}
+          onMinChange={setMinRate}
+          onMaxChange={setMaxRate}
+        />
+
+        <RatingSection value={minRating} onChange={setMinRating} />
+
+        <SortSection
+          value={sortBy}
+          onChange={setSortBy}
+          extraOptions={[{ val: "nearest", label: "Nearest" }]}
+        />
+      </FilterBar>
+
+      {sortBy === "nearest" && hasLocationDenied && (
+        <p className="mt-2 text-xs text-slate-500">Location access is off. Showing all coaches.</p>
+      )}
+      {/* ── Content ─────────────────────────────────────────────── */}
+      <div className="max-w-8xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/*
+          Coaches are found here by DISTANCE, the discovery query is a geospatial
+          search over coaches with a base location. A coach who only teaches
+          online has neither, so they can never appear in this list no matter
+          which filters are set. This points at the lane where they do.
+        */}
+        <Link
+          href="/programmes?online=true"
+          className="hover:border-power-orange mb-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <Globe className="text-power-orange h-5 w-5 shrink-0" aria-hidden="true" />
+            <span>
+              <span className="block text-sm font-bold text-slate-900">
+                Looking for online coaching?
+              </span>
+              <span className="block text-sm text-slate-500">
+                Chess and other online classes run as weekly programmes, not one-off sessions.
+              </span>
+            </span>
+          </span>
+          <span className="text-power-orange shrink-0 text-sm font-semibold">Browse →</span>
+        </Link>
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-24">
+            <div className="border-t-turf-green h-10 w-10 animate-spin rounded-full border-2 border-slate-100" />
+            <p className="text-sm font-medium text-slate-500">Loading coaches…</p>
+          </div>
+        ) : filteredCoaches.length === 0 ? (
+          <div className="rounded-2xl border border-slate-100 bg-white p-8 text-center">
+            <Users size={40} className="mx-auto mb-3 text-slate-200" />
+            <h3 className="text-lg font-bold text-slate-900">
+              {appliedSportFilter
+                ? `No coaches for "${appliedSportFilter}"`
+                : "No coaches available"}
+            </h3>
+            <p className="mt-1 text-sm text-slate-500">
+              {appliedSportFilter ? "Try a different sport or clear filters." : "Check back soon."}
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-3">
+              {hasFilters && (
+                <Button variant="secondary" onClick={handleClear}>
+                  Clear filters
+                </Button>
+              )}
+              <Button asChild variant="outline">
+                <a
+                  href={communityUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() =>
+                    statsApi.trackFunnelEventNonBlocking({
+                      eventName: "community_cta_click",
+                      entityType: "Coach",
+                      metadata: communityIntent.analyticsMetadata,
+                      source: "WEB",
+                    })
+                  }
+                >
+                  <MessageCircle size={14} className="mr-1.5" />
+                  Ask community
+                </a>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mb-5">
+              <h2 className="font-title text-xl font-bold text-slate-900">
+                {appliedSportFilter ? `${appliedSportFilter} Coaches` : "All Coaches"}
+              </h2>
+            </div>
+
+            {bookableCoaches.length > 0 && (
+              <StaggerContainer className="grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {bookableCoaches.map(renderCoachCard)}
+              </StaggerContainer>
+            )}
+
+            {enquiryCoaches.length > 0 && (
+              <section
+                aria-labelledby="coach-enquiry-heading"
+                className={bookableCoaches.length > 0 ? "mt-16" : ""}
+              >
+                <h3
+                  id="coach-enquiry-heading"
+                  className="font-title text-lg font-bold text-slate-900"
+                >
+                  Ask first
+                </h3>
+                <p className="text-ink-muted mt-1 max-w-2xl text-sm">
+                  These coaches have not listed a rate yet. Open a profile to see what they offer.
+                </p>
+                <StaggerContainer className="mt-6 grid grid-cols-1 gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {enquiryCoaches.map(renderCoachCard)}
+                </StaggerContainer>
+              </section>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function CoachesTab() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center gap-3 py-24">
+          <div className="border-t-turf-green h-10 w-10 animate-spin rounded-full border-2 border-slate-100" />
+          <p className="text-sm font-medium text-slate-500">Loading coaches…</p>
+        </div>
+      }
+    >
+      <CoachesTabContent />
+    </Suspense>
+  );
+}

@@ -8,6 +8,8 @@ import { User } from "../models/User";
 import { Server } from "socket.io";
 import { sendEmail } from "../../utils/email";
 import * as pushNotificationService from "./pushNotificationService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("notification");
 
 export interface NotificationData {
   userId: string;
@@ -38,27 +40,35 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   BOOKING_CANCELLED: "BOOKING",
   BOOKING_STATUS_UPDATED: "BOOKING",
   BOOKING_REMINDER: "BOOKING",
+  SESSION_LINK_REQUIRED: "BOOKING",
+  SESSION_MOM_ADDED: "BOOKING",
+  SESSION_MOM_REMINDER: "BOOKING",
   INVITATION_EXPIRY: "BOOKING",
   PAYMENT_FAILED: "PAYMENT",
   PAYMENT_CONFIRMED: "PAYMENT",
   PAYMENT_REFUND: "PAYMENT",
   PAYMENT_SPLIT_RECEIVED: "PAYMENT",
+  PAYOUT_PROCESSED: "PAYMENT",
   REVIEW_POSTED: "REVIEW",
   REVIEW_RESPONSE: "REVIEW",
   REVIEW_REMINDER: "REVIEW",
-  COACH_VERIFICATION_PENDING: "ADMIN",
-  COACH_VERIFICATION_REVIEW: "ADMIN",
-  COACH_VERIFICATION_VERIFIED: "ADMIN",
-  COACH_VERIFICATION_REJECTED: "ADMIN",
-  VENUE_APPROVAL_PENDING: "ADMIN",
-  VENUE_APPROVAL_APPROVED: "ADMIN",
-  VENUE_APPROVAL_REJECTED: "ADMIN",
-  VENUE_MARKED_FOR_REVIEW: "ADMIN",
-  ACADEMY_APPROVED: "ADMIN",
-  ACADEMY_REJECTED: "ADMIN",
-  DISPUTE_FILED: "ADMIN",
-  DISPUTE_RESOLVED: "ADMIN",
+  COACH_VERIFICATION_PENDING: "Admin",
+  COACH_VERIFICATION_REVIEW: "Admin",
+  COACH_VERIFICATION_VERIFIED: "Admin",
+  COACH_VERIFICATION_REJECTED: "Admin",
+  VENUE_APPROVAL_PENDING: "Admin",
+  VENUE_APPROVAL_APPROVED: "Admin",
+  VENUE_APPROVAL_REJECTED: "Admin",
+  VENUE_MARKED_FOR_REVIEW: "Admin",
+  ACADEMY_APPROVED: "Admin",
+  ACADEMY_REJECTED: "Admin",
+  DISPUTE_FILED: "Admin",
+  DISPUTE_RESOLVED: "Admin",
   MESSAGE_RECEIVED: "COMMUNITY",
+  PLAN_CHECKIN: "PLAN",
+  EXPERIENCE_NUDGE: "COMMUNITY",
+  RANKING_DIGEST: "RANKING",
+  OPPORTUNITY_ALERT: "OPPORTUNITY",
 };
 
 // Notification type to preference key mapping
@@ -71,6 +81,7 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   | "bookingCancellations"
   | "reviews"
   | "payments"
+  | "rankingUpdates"
   | "admin"
   | "marketing"
 > = {
@@ -83,11 +94,15 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   BOOKING_CANCELLED: "bookingCancellations",
   BOOKING_STATUS_UPDATED: "bookingConfirmations",
   BOOKING_REMINDER: "bookingReminders",
+  SESSION_LINK_REQUIRED: "bookingReminders",
+  SESSION_MOM_ADDED: "bookingConfirmations",
+  SESSION_MOM_REMINDER: "bookingReminders",
   INVITATION_EXPIRY: "bookingInvitations",
   PAYMENT_FAILED: "payments",
   PAYMENT_CONFIRMED: "payments",
   PAYMENT_REFUND: "payments",
   PAYMENT_SPLIT_RECEIVED: "payments",
+  PAYOUT_PROCESSED: "payments",
   REVIEW_POSTED: "reviews",
   REVIEW_RESPONSE: "reviews",
   REVIEW_REMINDER: "reviews",
@@ -104,6 +119,12 @@ const TYPE_TO_PREFERENCE_KEY: Record<
   DISPUTE_FILED: "admin",
   DISPUTE_RESOLVED: "admin",
   MESSAGE_RECEIVED: "friendRequests", // Reuse for community
+  PLAN_CHECKIN: "friendRequests", // Reuse for community
+  EXPERIENCE_NUDGE: "bookingReminders",
+  RANKING_DIGEST: "rankingUpdates", // Closest existing key — no dedicated preference yet
+  // No preference of its own: following an entry is the opt-in and unfollowing is
+  // the off switch. Reminders is the closest key, as for EXPERIENCE_NUDGE.
+  OPPORTUNITY_ALERT: "bookingReminders",
 };
 
 let socketInstance: Server | null = null;
@@ -138,7 +159,7 @@ export class NotificationService {
    */
   static async send(
     data: NotificationData,
-    options: SendOptions = {},
+    options: SendOptions = {}
   ): Promise<INotification | null> {
     const {
       persistToDb = true,
@@ -149,12 +170,12 @@ export class NotificationService {
       emailData = {},
     } = options;
 
-    // Get user preferences
-    const user = await User.findById(data.userId).select(
-      "email name notificationPreferences pushSubscriptions",
-    );
+    // Get user preferences — read-only, never saved.
+    const user = await User.findById(data.userId)
+      .select("email name notificationPreferences pushSubscriptions")
+      .lean();
     if (!user) {
-      console.error(`User ${data.userId} not found for notification`);
+      log.error(`User ${data.userId} not found for notification`);
       return null;
     }
 
@@ -171,44 +192,53 @@ export class NotificationService {
       }
     }
 
-    // Send via socket (real-time)
+    // Socket delivery needs `notification` to exist (created above, so this
+    // stays sequential with that step) — but email and push depend on
+    // neither `notification` nor each other, so all three fire concurrently
+    // instead of one after another.
+    const deliveries: Promise<unknown>[] = [];
+
     if (shouldSendSocket) {
       const socketEnabled = preferences?.inApp?.[preferenceKey] !== false;
       if (socketEnabled && notification) {
-        await this.sendSocket(data.userId, data.type, {
-          notificationId: notification._id.toString(),
-          title: data.title,
-          message: data.message,
-          data: data.data,
-          createdAt: notification.createdAt,
-        });
+        deliveries.push(
+          this.sendSocket(data.userId, data.type, {
+            notificationId: notification._id.toString(),
+            title: data.title,
+            message: data.message,
+            data: data.data,
+            createdAt: notification.createdAt,
+          })
+        );
       }
     }
 
-    // Send via email
     if (shouldSendEmail) {
       const emailEnabled = preferences?.email?.[preferenceKey] !== false;
       if (emailEnabled) {
-        await this.sendEmailNotification(
-          user.email,
-          user.name,
-          data.title,
-          data.message,
-          emailTemplate,
-          emailData,
-        ).catch((err) => {
-          console.error("Failed to send email notification:", err);
-        });
+        deliveries.push(
+          this.sendEmailNotification(
+            user.email,
+            user.name,
+            data.title,
+            data.message,
+            emailTemplate,
+            emailData
+          ).catch((err) => {
+            log.error("Failed to send email notification:", err);
+          })
+        );
       }
     }
 
-    // Send via push (future implementation)
     if (shouldSendPush) {
       const pushEnabled = preferences?.push?.[preferenceKey] !== false;
       if (pushEnabled) {
-        await this.sendPush(data.userId, data.title, data.message, data.data);
+        deliveries.push(this.sendPush(data.userId, data.title, data.message, data.data));
       }
     }
+
+    await Promise.all(deliveries);
 
     return notification;
   }
@@ -219,10 +249,10 @@ export class NotificationService {
   private static async sendSocket(
     userId: string,
     type: NotificationType,
-    payload: Record<string, unknown>,
+    payload: Record<string, unknown>
   ): Promise<void> {
     if (!socketInstance) {
-      console.warn("Socket instance not initialized, cannot send notification");
+      log.warn("Socket instance not initialized, cannot send notification");
       return;
     }
 
@@ -254,7 +284,7 @@ export class NotificationService {
     title: string,
     message: string,
     template?: string,
-    templateData?: Record<string, unknown>,
+    templateData?: Record<string, unknown>
   ): Promise<void> {
     // If a custom template is provided, use it
     if (template && templateData) {
@@ -286,7 +316,7 @@ export class NotificationService {
     userId: string,
     title: string,
     message: string,
-    data?: Record<string, unknown>,
+    data?: Record<string, unknown>
   ): Promise<void> {
     try {
       const pushService = pushNotificationService;
@@ -318,7 +348,7 @@ export class NotificationService {
           endpoint: string;
           keys: { p256dh: string; auth: string };
         }>,
-        payload,
+        payload
       );
 
       if (result.expiredEndpoints.length > 0) {
@@ -331,17 +361,14 @@ export class NotificationService {
         });
       }
     } catch (error) {
-      console.error("Failed to send push notification:", error);
+      log.error("Failed to send push notification:", error);
     }
   }
 
   /**
    * Mark a notification as read
    */
-  static async markRead(
-    notificationId: string,
-    userId: string,
-  ): Promise<INotification | null> {
+  static async markRead(notificationId: string, userId: string): Promise<INotification | null> {
     const notification = await Notification.findOneAndUpdate(
       {
         _id: new mongoose.Types.ObjectId(notificationId),
@@ -351,7 +378,7 @@ export class NotificationService {
         isRead: true,
         readAt: new Date(),
       },
-      { new: true },
+      { new: true }
     );
 
     return notification;
@@ -370,7 +397,7 @@ export class NotificationService {
       {
         isRead: true,
         readAt: new Date(),
-      },
+      }
     );
 
     return result.modifiedCount;
@@ -386,7 +413,7 @@ export class NotificationService {
     filters?: {
       category?: NotificationCategory;
       isRead?: boolean;
-    },
+    }
   ): Promise<{ notifications: INotification[]; total: number; pages: number }> {
     const query: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(userId),
@@ -404,11 +431,7 @@ export class NotificationService {
     const skip = (page - 1) * limit;
 
     const [notifications, total] = await Promise.all([
-      Notification.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       Notification.countDocuments(query),
     ]);
 
@@ -422,10 +445,7 @@ export class NotificationService {
   /**
    * Get unread notification count for a user
    */
-  static async getUnreadCount(
-    userId: string,
-    category?: NotificationCategory,
-  ): Promise<number> {
+  static async getUnreadCount(userId: string, category?: NotificationCategory): Promise<number> {
     const query: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(userId),
       isRead: false,
@@ -445,7 +465,7 @@ export class NotificationService {
    */
   static async deleteNotification(
     notificationId: string,
-    userId: string,
+    userId: string
   ): Promise<INotification | null> {
     const notification = await Notification.findOneAndUpdate(
       {
@@ -455,7 +475,7 @@ export class NotificationService {
       {
         deletedAt: new Date(),
       },
-      { new: true },
+      { new: true }
     );
 
     return notification;

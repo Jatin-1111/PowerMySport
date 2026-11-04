@@ -4,11 +4,14 @@ import {
   getPlatformStats,
   getAllUsers,
   getAllVenues,
+  getVenueDetail,
   getAllBookings,
   getUserRoleSummary,
   getPlayersUsers,
   getCoachUsers,
   getVenueListerUsers,
+  getExpertUsers,
+  getParentUsers,
   getPlayersAnalytics,
   getCoachesAnalytics,
   getVenueListersAnalytics,
@@ -17,42 +20,132 @@ import {
   getFinanceReconciliation,
   getFunnelSummary,
   getObservabilityStats,
+  getLatencyProfileStats,
   trackFunnelEvent,
+  trackGuestEvents,
+  getGuestActivity,
+  clearAnalyticsData,
+  getPendingCounts,
+  getUnsupportedSportsStats,
 } from "../controllers/statsController";
-import { authMiddleware, adminMiddleware } from "../../middleware/auth";
-import { funnelEventSchema } from "../../middleware/schemas";
+import {
+  getInfraOverviewController,
+  getInfraMetricsController,
+} from "../controllers/infraController";
+import {
+  authMiddleware,
+  adminMiddleware,
+  superAdminMiddleware,
+  requirePermission,
+} from "../../middleware/auth";
+import { funnelEventSchema, guestEventSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
+import { guestTrackRateLimiter } from "../../middleware/rateLimit";
+import { guestEventBudget } from "../../utils/guestEventBudget";
+import { cacheResponse } from "../../middleware/cacheMiddleware";
 
 const router = Router();
 
 router.get("/public", getPublicPlatformStats);
 
+// Public, anonymous visitor activity ingest (no auth — not-signed-in guests).
+// Rate-limited, schema-validated and byte-budgeted; stores no personal data.
+// The rate limiter counts requests; the budget counts what is actually stored,
+// which is what fills the cluster. Stored events expire after 90 days (TTL
+// index, migration 51).
+router.post(
+  "/guest/event",
+  guestTrackRateLimiter,
+  validateRequest(guestEventSchema),
+  guestEventBudget,
+  trackGuestEvents
+);
+
 // Authenticated events (players/coaches/venue-listers/admins)
 router.use(authMiddleware);
-router.post(
-  "/funnel/event",
-  validateRequest(funnelEventSchema),
-  trackFunnelEvent,
-);
+router.post("/funnel/event", validateRequest(funnelEventSchema), trackFunnelEvent);
 
 // All routes below require admin authentication
 router.use(adminMiddleware);
 
-router.get("/platform", getPlatformStats);
-router.get("/users/summary", getUserRoleSummary);
-router.get("/users/players", getPlayersUsers);
-router.get("/users/coaches", getCoachUsers);
-router.get("/users/venue-listers", getVenueListerUsers);
-router.get("/users/analytics/players", getPlayersAnalytics);
-router.get("/users/analytics/coaches", getCoachesAnalytics);
-router.get("/users/analytics/venue-listers", getVenueListersAnalytics);
-router.get("/users/growth", getUserGrowthAnalytics);
-router.get("/users", getAllUsers);
-router.get("/venues", getAllVenues);
-router.get("/bookings", getAllBookings);
-router.get("/funnel/summary", getFunnelSummary);
-router.get("/funnel/trends", getFunnelTrends);
-router.get("/finance/reconciliation", getFinanceReconciliation);
-router.get("/observability", getObservabilityStats);
+// Basic app-shell data every admin needs regardless of role: the dashboard
+// landing page and sidebar nav badges. Deliberately left ungated beyond
+// "is an active admin" — restricting these would break the home page for
+// any role whose custom permission set doesn't happen to include the
+// permission chosen here.
+router.get("/platform", cacheResponse(30), getPlatformStats);
+router.get("/pending-counts", cacheResponse(15), getPendingCounts);
+
+// Destructive / irreversible — reserved for System Admin, same tier as
+// admin-account creation.
+router.delete("/analytics", superAdminMiddleware, clearAnalyticsData);
+
+// AWS Elastic Beanstalk / CloudWatch infrastructure monitoring — part of the
+// Analytics page's Server tab.
+router.get("/infra/overview", requirePermission("analytics:view"), getInfraOverviewController);
+router.get("/infra/metrics", requirePermission("analytics:view"), getInfraMetricsController);
+
+router.get(
+  "/guests/activity",
+  requirePermission("analytics:view"),
+  cacheResponse(60),
+  getGuestActivity
+);
+router.get(
+  "/users/growth",
+  requirePermission("analytics:view"),
+  cacheResponse(60),
+  getUserGrowthAnalytics
+);
+router.get(
+  "/funnel/summary",
+  requirePermission("analytics:view"),
+  cacheResponse(60),
+  getFunnelSummary
+);
+router.get(
+  "/funnel/trends",
+  requirePermission("analytics:view"),
+  cacheResponse(60),
+  getFunnelTrends
+);
+router.get(
+  "/finance/reconciliation",
+  requirePermission("analytics:view"),
+  cacheResponse(60),
+  getFinanceReconciliation
+);
+router.get("/observability", requirePermission("analytics:view"), getObservabilityStats);
+router.get("/observability/latency", requirePermission("analytics:view"), getLatencyProfileStats);
+
+// Entity list/detail endpoints — gated by the same permission as their
+// equivalent admin CRUD routes, since they back the Users/Venues/Bookings
+// admin pages (shared by every role that already needs those pages, not
+// just Analytics Admin).
+router.get("/users/summary", requirePermission("users:view"), getUserRoleSummary);
+router.get("/users/players", requirePermission("users:view"), getPlayersUsers);
+router.get("/users/coaches", requirePermission("users:view"), getCoachUsers);
+router.get("/users/venue-listers", requirePermission("users:view"), getVenueListerUsers);
+router.get("/users/analytics/players", requirePermission("users:view"), getPlayersAnalytics);
+router.get("/users/analytics/coaches", requirePermission("users:view"), getCoachesAnalytics);
+router.get(
+  "/users/analytics/venue-listers",
+  requirePermission("users:view"),
+  cacheResponse(60),
+  getVenueListersAnalytics
+);
+router.get("/users/experts", requirePermission("users:view"), getExpertUsers);
+router.get("/users/parents", requirePermission("users:view"), getParentUsers);
+router.get("/users", requirePermission("users:view"), getAllUsers);
+router.get("/venues", requirePermission("venues:view"), getAllVenues);
+router.get("/venues/:venueId", requirePermission("venues:view"), getVenueDetail);
+router.get("/bookings", requirePermission("bookings:view"), getAllBookings);
+
+router.get(
+  "/unsupported-sports",
+  requirePermission("analytics:view"),
+  cacheResponse(60),
+  getUnsupportedSportsStats
+);
 
 export default router;

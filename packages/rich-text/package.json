@@ -1,0 +1,16 @@
+{
+  "name": "@powermysport/rich-text",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Formatted text for pathway content: the renderer the website draws it with, and the paste cleaner and toolbar logic the admin editor uses, so what an editor previews is what a parent sees. Ships raw TypeScript; the apps compile it (transpilePackages).",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "sideEffects": false,
+  "dependencies": {
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "peerDependencies": {
+    "react": "*"
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { useAsync } from "@/lib/hooks/useAsync";
 
 export interface Conversation {
@@ -31,18 +31,16 @@ interface UseConversationStateOptions {
 export function useConversationState(
   fetchConversations: (
     page: number,
-    filters: ConversationFilters,
+    filters: ConversationFilters
   ) => Promise<{
     conversations: Conversation[];
     pagination: { hasMore: boolean; page: number };
   }>,
-  options: UseConversationStateOptions = {},
+  options: UseConversationStateOptions = {}
 ) {
   // Core data state
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    string | null
-  >(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -55,7 +53,7 @@ export function useConversationState(
 
   // Loading states consolidated into one async operation per logical flow
   const initialLoadAsync = useAsync(
-    async (signal) => {
+    async () => {
       const result = await fetchConversations(1, {
         search: searchQuery,
         groupId: groupFilter,
@@ -71,11 +69,11 @@ export function useConversationState(
         options.onConversationsLoaded?.(result.conversations);
       },
       onError: options.onError,
-    },
+    }
   );
 
   const loadMoreAsync = useAsync(
-    async (signal) => {
+    async () => {
       const result = await fetchConversations(page + 1, {
         search: searchQuery,
         groupId: groupFilter,
@@ -91,7 +89,7 @@ export function useConversationState(
         setHasMore(result.pagination.hasMore);
       },
       onError: options.onError,
-    },
+    }
   );
 
   const handleLoadMore = useCallback(async () => {
@@ -100,21 +98,15 @@ export function useConversationState(
     }
   }, [loadMoreAsync, hasMore]);
 
-  const handleFilterChange = useCallback(
-    (search: string, group: string | null) => {
-      setSearchQuery(search);
-      setGroupFilter(group);
-      setHasConversationFilters(!!(search || group));
-    },
-    [],
-  );
+  const handleFilterChange = useCallback((search: string, group: string | null) => {
+    setSearchQuery(search);
+    setGroupFilter(group);
+    setHasConversationFilters(!!(search || group));
+  }, []);
 
-  const handleSelectConversation = useCallback(
-    (conversationId: string | null) => {
-      setSelectedConversationId(conversationId);
-    },
-    [],
-  );
+  const handleSelectConversation = useCallback((conversationId: string | null) => {
+    setSelectedConversationId(conversationId);
+  }, []);
 
   const handleDeleteConversation = useCallback(
     (conversationId: string) => {
@@ -123,7 +115,7 @@ export function useConversationState(
         setSelectedConversationId(null);
       }
     },
-    [selectedConversationId],
+    [selectedConversationId]
   );
 
   return {

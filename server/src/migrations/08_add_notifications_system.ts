@@ -25,14 +25,10 @@ export async function up(): Promise<void> {
     // Create notifications collection with indexes
     // The Notification model already has indexes defined, but we ensure they exist
     const db = mongoose.connection.db;
-    const collections = await db
-      ?.listCollections({ name: "notifications" })
-      .toArray();
+    const collections = await db?.listCollections({ name: "notifications" }).toArray();
 
     if (collections && collections.length > 0) {
-      console.log(
-        "Notifications collection exists, dropping to recreate with correct indexes...",
-      );
+      console.log("Notifications collection exists, dropping to recreate with correct indexes...");
       await db?.collection("notifications").drop();
       console.log("✓ Old notifications collection dropped");
     }
@@ -88,14 +84,12 @@ export async function up(): Promise<void> {
           notificationPreferences: defaultPreferences,
           pushSubscriptions: [],
         },
-      },
+      }
     );
 
     console.log(`Migration completed successfully:`);
     console.log(`- Notifications collection created with indexes`);
-    console.log(
-      `- Updated ${result.modifiedCount} users with default notification preferences`,
-    );
+    console.log(`- Updated ${result.modifiedCount} users with default notification preferences`);
   } catch (error) {
     console.error("Migration failed:", error);
     throw error;
@@ -122,11 +116,11 @@ export async function down(): Promise<void> {
           notificationPreferences: "",
           pushSubscriptions: "",
         },
-      },
+      }
     );
 
     console.log(
-      `Rollback completed: Removed notification fields from ${result.modifiedCount} users`,
+      `Rollback completed: Removed notification fields from ${result.modifiedCount} users`
     );
   } catch (error) {
     console.error("Rollback failed:", error);
@@ -138,8 +132,7 @@ export async function down(): Promise<void> {
 if (require.main === module) {
   const runMigration = async () => {
     try {
-      const mongoUri =
-        process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
+      const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
       await mongoose.connect(mongoUri);
       console.log("Connected to MongoDB");
 

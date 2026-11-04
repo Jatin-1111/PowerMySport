@@ -8,7 +8,9 @@ import CommunityOverviewPanel from "@/modules/community/components/page/home/Com
 import CommunityConversationsWorkspace from "@/modules/community/components/page/home/CommunityConversationsWorkspace";
 import CommunityPageModals from "@/modules/community/components/page/home/CommunityPageModals";
 
-export default function CommunityHomeClient({ forceView }: { forceView?: "community-overview" | "conversations" } = {}) {
+export default function CommunityHomeClient({
+  forceView,
+}: { forceView?: "community-overview" | "conversations" } = {}) {
   const page = useCommunityPage(forceView ? { forceView } : undefined);
 
   if (page.isLoading) {
@@ -23,18 +25,16 @@ export default function CommunityHomeClient({ forceView }: { forceView?: "commun
         initial={prefersReducedMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.28 }}
-        className="absolute inset-0 overflow-hidden flex flex-col bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)]"
+        className="bg-paper absolute inset-0 flex flex-col overflow-hidden"
       >
         <motion.div
           variants={shellVariants}
           initial="hidden"
           animate="show"
-          className="mx-auto grid h-full min-h-0 w-full max-w-full gap-0 grid-cols-1"
+          className="mx-auto grid h-full min-h-0 w-full max-w-full grid-cols-1 gap-0"
         >
           {isCommunityView && <CommunityOverviewPanel page={page} />}
-          {isConversationsView && (
-            <CommunityConversationsWorkspace page={page} />
-          )}
+          {isConversationsView && <CommunityConversationsWorkspace page={page} />}
         </motion.div>
       </motion.div>
 

@@ -1,5 +1,8 @@
+import mongoose from "mongoose";
 import { ScheduledNotification } from "../models/ScheduledNotification";
 import { sendEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("reminderMonitoring");
 
 interface MonitoringStats {
   total: number;
@@ -21,8 +24,10 @@ interface SchedulerHealthStatus {
 }
 
 interface FailedReminderInfo {
-  reminderId: string;
+  _id: string;
   userId: string;
+  userName: string;
+  userEmail: string;
   bookingId: string;
   interval: string;
   failedAt: Date;
@@ -61,21 +66,15 @@ export class ReminderMonitoringService {
         acc[stat._id.toLowerCase()] = stat.count;
         return acc;
       },
-      { pending: 0, sent: 0, failed: 0, cancelled: 0 } as Record<
-        string,
-        number
-      >,
+      { pending: 0, sent: 0, failed: 0, cancelled: 0 } as Record<string, number>
     );
 
     const total = (Object.values(statusCounts) as number[]).reduce(
       (sum: number, count: number) => sum + count,
-      0,
+      0
     );
     const failureRate =
-      total > 0
-        ? (statusCounts.failed / (statusCounts.sent + statusCounts.failed)) *
-          100
-        : 0;
+      total > 0 ? (statusCounts.failed / (statusCounts.sent + statusCounts.failed)) * 100 : 0;
 
     // Get last processed reminder
     const lastProcessed = await ScheduledNotification.findOne({
@@ -107,31 +106,30 @@ export class ReminderMonitoringService {
       ? Math.floor((now.getTime() - this.lastProcessingTime.getTime()) / 60000)
       : null;
 
-    // Get pending and overdue counts
-    const pendingCount = await ScheduledNotification.countDocuments({
-      status: "PENDING",
-    });
-
-    const overdueCount = await ScheduledNotification.countDocuments({
-      status: "PENDING",
-      scheduledFor: { $lte: now },
-    });
+    // Independent reads — none depends on another's result.
+    const [pendingCount, overdueCount, stats] = await Promise.all([
+      ScheduledNotification.countDocuments({ status: "PENDING" }),
+      ScheduledNotification.countDocuments({
+        status: "PENDING",
+        scheduledFor: { $lte: now },
+      }),
+      this.getMonitoringStats(),
+    ]);
 
     // Determine health issues
     if (minutesSinceLastRun !== null && minutesSinceLastRun > 10) {
       issues.push(
-        `Scheduler hasn't run in ${minutesSinceLastRun} minutes (expected: every 1-5 minutes)`,
+        `Scheduler hasn't run in ${minutesSinceLastRun} minutes (expected: every 1-5 minutes)`
       );
     }
 
     if (overdueCount > 50) {
       issues.push(
-        `High number of overdue reminders: ${overdueCount} (may indicate processing bottleneck)`,
+        `High number of overdue reminders: ${overdueCount} (may indicate processing bottleneck)`
       );
     }
 
     // Check failure rate
-    const stats = await this.getMonitoringStats();
     if (stats.failureRate > 10) {
       issues.push(`High failure rate: ${stats.failureRate}% (threshold: 10%)`);
     }
@@ -159,9 +157,7 @@ export class ReminderMonitoringService {
   /**
    * Get failed reminders for investigation
    */
-  static async getFailedReminders(
-    limit: number = 50,
-  ): Promise<FailedReminderInfo[]> {
+  static async getFailedReminders(limit: number = 50): Promise<FailedReminderInfo[]> {
     const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const failedReminders = await ScheduledNotification.find({
@@ -170,33 +166,39 @@ export class ReminderMonitoringService {
     })
       .sort({ failedAt: -1 })
       .limit(limit)
-      .select("userId bookingId interval failedAt failureReason retryCount");
+      .select("userId bookingId interval failedAt failureReason retryCount")
+      .populate("userId", "name email")
+      .lean();
 
-    return failedReminders.map((reminder) => ({
-      reminderId: reminder._id.toString(),
-      userId: reminder.userId.toString(),
-      bookingId: reminder.bookingId?.toString() || "unknown",
-      interval: reminder.interval,
-      failedAt: reminder.failedAt!,
-      failureReason: reminder.failureReason || "Unknown error",
-      retryCount: reminder.retryCount || 0,
-    }));
+    return failedReminders.map((reminder) => {
+      const user = reminder.userId as unknown as
+        { _id: unknown; name?: string; email?: string } | mongoose.Types.ObjectId;
+      const isPopulated = typeof user === "object" && "name" in user;
+
+      return {
+        _id: reminder._id.toString(),
+        userId: isPopulated ? String((user as { _id: unknown })._id) : String(user),
+        userName: isPopulated ? (user as { name?: string }).name || "Unknown user" : "Unknown user",
+        userEmail: isPopulated ? (user as { email?: string }).email || "" : "",
+        bookingId: reminder.bookingId?.toString() || "unknown",
+        interval: reminder.interval,
+        failedAt: reminder.failedAt!,
+        failureReason: reminder.failureReason || "Unknown error",
+        retryCount: reminder.retryCount || 0,
+      };
+    });
   }
 
   /**
    * Send alert email to admins about critical issues
    */
-  static async sendHealthAlert(
-    healthStatus: SchedulerHealthStatus,
-  ): Promise<void> {
+  static async sendHealthAlert(healthStatus: SchedulerHealthStatus): Promise<void> {
     if (healthStatus.isHealthy) {
       return; // No alert needed
     }
 
     const adminEmail =
-      process.env.ALERT_EMAIL ||
-      process.env.EMAIL_USER ||
-      "teams@powermysport.com";
+      process.env.ALERT_EMAIL || process.env.EMAIL_USER || "teams@powermysport.com";
     const appName = "PowerMySport Reminder System";
 
     const issuesList = healthStatus.issues
@@ -225,7 +227,7 @@ export class ReminderMonitoringService {
   </div>
   
   <div class="content">
-    <p><strong>Alert Time:</strong> ${new Date().toLocaleString("en-IN")}</p>
+    <p><strong>Alert Time:</strong> ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
     
     <div class="alert-box">
       <h3 style="margin-top:0;color:#991b1b;">Issues Detected:</h3>
@@ -238,7 +240,7 @@ export class ReminderMonitoringService {
     <table class="stats-table">
       <tr>
         <td>Last Scheduler Run</td>
-        <td>${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN") : "Never"}</td>
+        <td>${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "Never"}</td>
       </tr>
       <tr>
         <td>Minutes Since Last Run</td>
@@ -282,9 +284,9 @@ export class ReminderMonitoringService {
         subject: `🚨 [ALERT] Reminder System Health Issues Detected - ${appName}`,
         html,
       });
-      console.log(`📧 Health alert sent to ${adminEmail}`);
+      log.info(`Health alert sent to ${adminEmail}`);
     } catch (error) {
-      console.error("Failed to send health alert email:", error);
+      log.error("Failed to send health alert email:", error);
     }
   }
 
@@ -293,9 +295,7 @@ export class ReminderMonitoringService {
    */
   static async sendDailySummary(): Promise<void> {
     const adminEmail =
-      process.env.ALERT_EMAIL ||
-      process.env.EMAIL_USER ||
-      "teams@powermysport.com";
+      process.env.ALERT_EMAIL || process.env.EMAIL_USER || "teams@powermysport.com";
     const stats = await this.getMonitoringStats();
     const healthStatus = await this.checkSchedulerHealth();
     const failedReminders = await this.getFailedReminders(10);
@@ -307,11 +307,11 @@ export class ReminderMonitoringService {
               (r) => `
       <tr>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.interval}</td>
-        <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failedAt.toLocaleString("en-IN")}</td>
+        <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</td>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${r.failureReason.substring(0, 50)}${r.failureReason.length > 50 ? "..." : ""}</td>
         <td style="padding:8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">${r.retryCount}</td>
       </tr>
-    `,
+    `
             )
             .join("")
         : '<tr><td colspan="4" style="padding:15px;text-align:center;color:#64748b;">No failed reminders in the last 24 hours 🎉</td></tr>';
@@ -340,7 +340,7 @@ export class ReminderMonitoringService {
   <div style="background:#eef2f7;padding:20px;">
     <div class="header">
       <h1 style="margin:0;">📊 Daily Reminder System Report</h1>
-      <p style="margin:10px 0 0;opacity:0.9;">${new Date().toLocaleDateString("en-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+      <p style="margin:10px 0 0;opacity:0.9;">${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
     </div>
     
     <div class="content">
@@ -385,7 +385,7 @@ export class ReminderMonitoringService {
         </tr>
         <tr>
           <td style="padding:10px;background:#f8fafc;font-weight:bold;color:#64748b;">Last Scheduler Run</td>
-          <td style="padding:10px;background:#f8fafc;">${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN") : "N/A"}</td>
+          <td style="padding:10px;background:#f8fafc;">${healthStatus.lastRun ? healthStatus.lastRun.toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) : "N/A"}</td>
         </tr>
       </table>
 
@@ -412,7 +412,7 @@ export class ReminderMonitoringService {
 
       <div class="footer">
         <p>This is an automated daily report from PowerMySport Reminder System.<br/>
-        Server: ${process.env.NODE_ENV || "development"} | Generated: ${new Date().toLocaleString("en-IN")}</p>
+        Server: ${process.env.NODE_ENV || "development"} | Generated: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
       </div>
     </div>
   </div>
@@ -423,12 +423,12 @@ export class ReminderMonitoringService {
     try {
       await sendEmail({
         to: adminEmail,
-        subject: `📊 Daily Reminder System Report - ${new Date().toLocaleDateString("en-IN")}`,
+        subject: `📊 Daily Reminder System Report - ${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}`,
         html,
       });
-      console.log(`📧 Daily summary sent to ${adminEmail}`);
+      log.info(`Daily summary sent to ${adminEmail}`);
     } catch (error) {
-      console.error("Failed to send daily summary email:", error);
+      log.error("Failed to send daily summary email:", error);
     }
   }
 
@@ -436,7 +436,7 @@ export class ReminderMonitoringService {
    * Retry a failed reminder
    */
   static async retryFailedReminder(
-    reminderId: string,
+    reminderId: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       const reminder = await ScheduledNotification.findById(reminderId);
@@ -462,8 +462,8 @@ export class ReminderMonitoringService {
 
       await reminder.save();
 
-      console.log(
-        `✅ Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`,
+      log.info(
+        `Reminder ${reminderId} reset to PENDING for retry (total attempts: ${reminder.retryCount})`
       );
 
       return {
@@ -471,7 +471,7 @@ export class ReminderMonitoringService {
         message: `Reminder queued for retry (attempt ${reminder.retryCount + 1})`,
       };
     } catch (error) {
-      console.error("Failed to retry reminder:", error);
+      log.error("Failed to retry reminder:", error);
       return { success: false, message: "Failed to retry reminder" };
     }
   }
@@ -486,7 +486,7 @@ export class ReminderMonitoringService {
       reminderIds.map(async (id) => {
         const result = await this.retryFailedReminder(id);
         return { reminderId: id, ...result };
-      }),
+      })
     );
 
     const successCount = results.filter((r) => r.success).length;
@@ -505,10 +505,10 @@ export class ReminderMonitoringService {
     const healthStatus = await this.checkSchedulerHealth();
 
     if (!healthStatus.isHealthy) {
-      console.warn("⚠️ Scheduler health check failed:", healthStatus.issues);
+      log.warn("Scheduler health check failed:", healthStatus.issues);
       await this.sendHealthAlert(healthStatus);
     } else {
-      console.log("✅ Scheduler health check passed");
+      log.info("Scheduler health check passed");
     }
   }
 }

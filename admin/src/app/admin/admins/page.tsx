@@ -3,74 +3,30 @@
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import PermissionSelector from "@/modules/admin/components/PermissionSelector";
 import { Admin, adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
 import { toast } from "@/lib/toast";
-import { ChevronLeft, ChevronRight, Mail } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { RoleTemplate } from "@/types";
+import { Mail, Pencil } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { PermissionModule, RoleTemplate } from "@/types";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
-const PERMISSION_LABELS: Record<string, string> = {
-  // Users
-  "users:view": "View Users",
-  "users:manage": "Manage Users",
-  "users:delete": "Delete Users",
-  // Venues
-  "venues:view": "View Venues",
-  "venues:manage": "Manage Venues",
-  "venues:delete": "Delete Venues",
-  "venues:approve": "Approve Venues",
-  // Bookings
-  "bookings:view": "View Bookings",
-  "bookings:manage": "Manage Bookings",
-  "bookings:cancel": "Cancel Bookings",
-  "bookings:refund": "Process Refunds",
-  // Coaches
-  "coaches:view": "View Coaches",
-  "coaches:manage": "Manage Coaches",
-  "coaches:verify": "Verify Coaches",
-  "coaches:delete": "Delete Coaches",
-  // Inquiries
-  "inquiries:view": "View Inquiries",
-  "inquiries:manage": "Manage Inquiries",
-  "inquiries:delete": "Delete Inquiries",
-  // Disputes
-  "disputes:view": "View Disputes",
-  "disputes:manage": "Manage Disputes",
-  "disputes:resolve": "Resolve Disputes",
-  // Analytics
-  "analytics:view": "View Analytics",
-  "analytics:export": "Export Reports",
-  // Admins
-  "admins:view": "View Admins",
-  "admins:manage": "Manage Admins",
-  "admins:delete": "Delete Admins",
-  // Settings
-  "settings:view": "View Settings",
-  "settings:manage": "Manage Settings",
-  // Reviews
-  "reviews:view": "View Reviews",
-  "reviews:manage": "Manage Reviews",
-  "reviews:delete": "Delete Reviews",
-  // Products
-  "products:view": "View Products",
-  "products:create": "Create Products",
-  "products:manage": "Manage Products",
-  // Orders
-  "orders:view": "View Orders",
-  "orders:manage": "Manage Orders",
-  "orders:refund": "Refund Orders",
-  // Coach Subscriptions
-  "coach-subscriptions:view": "View Coach Subscriptions",
-  "coach-subscriptions:create": "Create Coach Plans",
-  "coach-subscriptions:manage": "Manage Coach Plans",
-  "coach-subscriptions:cancel": "Cancel Coach Subscriptions",
-  "coach-subscriptions:refund": "Refund Coach Subscriptions",
-  "coach-subscriptions:override-review": "Review Coach Plan Overrides",
+const formatLastLogin = (value?: string) => {
+  if (!value) return "Never logged in";
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return "Never logged in";
+  }
 };
 
-const formatPermissionLabel = (permission: string): string => {
-  if (PERMISSION_LABELS[permission]) {
-    return PERMISSION_LABELS[permission];
+const formatPermissionLabel = (permission: string, labels: Record<string, string>): string => {
+  if (labels[permission]) {
+    return labels[permission];
   }
 
   return permission
@@ -86,12 +42,11 @@ const formatPermissionLabel = (permission: string): string => {
 export default function AdminsManagementPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [roleTemplates, setRoleTemplates] = useState<RoleTemplate[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<PermissionModule[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastInvitationEmail, setLastInvitationEmail] = useState<string | null>(
-    null,
-  );
+  const [lastInvitationEmail, setLastInvitationEmail] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -103,21 +58,47 @@ export default function AdminsManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 8;
 
-  const canManageAdmins = useMemo(() => {
-    if (typeof window === "undefined") return false;
+  const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    role: "",
+    permissions: [] as string[],
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<Admin | null>(null);
+  const [statusBusy, setStatusBusy] = useState(false);
+
+  // Reading localStorage synchronously in useMemo would return a different
+  // value during SSR (no window) vs. the client's first render, causing a
+  // hydration mismatch. useSyncExternalStore is React's supported fix: the
+  // server/first-paint snapshot is always null, then it syncs to the real
+  // client value in a passive effect after hydration completes.
+  const storedAdminRaw = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") return () => {};
+      window.addEventListener("storage", onStoreChange);
+      return () => window.removeEventListener("storage", onStoreChange);
+    },
+    () => (typeof window === "undefined" ? null : localStorage.getItem("admin")),
+    () => null
+  );
+
+  const storedAdmin = useMemo(() => {
+    if (!storedAdminRaw) return null;
     try {
-      const raw = localStorage.getItem("admin");
-      if (!raw) return false;
-      const parsed = JSON.parse(raw) as { role?: string };
-      return (
-        parsed.role === "SYSTEM_ADMIN" ||
-        parsed.role === "SUPER_ADMIN" ||
-        parsed.role === "ADMIN"
-      );
+      return JSON.parse(storedAdminRaw) as { id?: string; role?: string };
     } catch {
-      return false;
+      return null;
     }
-  }, []);
+  }, [storedAdminRaw]);
+
+  const canManageAdmins =
+    storedAdmin?.role === "SYSTEM_ADMIN" ||
+    storedAdmin?.role === "SUPER_ADMIN" ||
+    storedAdmin?.role === "Admin";
+
+  const currentAdminId = storedAdmin?.id || null;
 
   const loadAdmins = useCallback(async () => {
     if (!canManageAdmins) {
@@ -144,14 +125,28 @@ export default function AdminsManagementPage() {
 
   const loadRoleTemplates = useCallback(async () => {
     try {
-      const response = await adminApi.getRoleTemplates();
-      if (response.success && response.data) {
-        setRoleTemplates(response.data);
+      const [templates, catalog] = await Promise.all([
+        adminApi.getRoleTemplates(),
+        adminApi.getPermissionCatalog(),
+      ]);
+      if (templates.success && templates.data) {
+        setRoleTemplates(templates.data);
+      }
+      if (catalog.success && catalog.data) {
+        setPermissionCatalog(catalog.data);
       }
     } catch (err) {
       console.error("Failed to load role templates:", err);
     }
   }, []);
+
+  const permissionLabels = useMemo(() => {
+    const labels: Record<string, string> = {};
+    for (const permModule of permissionCatalog) {
+      for (const p of permModule.permissions) labels[p.key] = p.label;
+    }
+    return labels;
+  }, [permissionCatalog]);
 
   useEffect(() => {
     loadAdmins();
@@ -183,9 +178,7 @@ export default function AdminsManagementPage() {
         return;
       }
 
-      toast.success(
-        "Admin created successfully. Temporary password sent to email.",
-      );
+      toast.success("Admin created successfully. Temporary password sent to email.");
       setLastInvitationEmail(form.email.trim().toLowerCase());
       setForm({
         name: "",
@@ -195,11 +188,74 @@ export default function AdminsManagementPage() {
       });
       await loadAdmins();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to create admin.",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to create admin.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const openEdit = (admin: Admin) => {
+    setEditingAdmin(admin);
+    setEditForm({
+      name: admin.name,
+      role: admin.role,
+      permissions: [...admin.permissions],
+    });
+  };
+
+  const closeEdit = () => {
+    setEditingAdmin(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editingAdmin) return;
+    if (!editForm.name.trim()) {
+      toast.error("Name is required.");
+      return;
+    }
+    if (!editForm.role) {
+      toast.error("Please select a role.");
+      return;
+    }
+
+    setEditSaving(true);
+    try {
+      if (editForm.name.trim() !== editingAdmin.name) {
+        await adminApi.updateAdminProfile(editingAdmin.id, editForm.name.trim());
+      }
+      if (editForm.role !== editingAdmin.role) {
+        await adminApi.updateAdminRole(editingAdmin.id, editForm.role);
+      }
+      await adminApi.updateAdminPermissions(editingAdmin.id, editForm.permissions);
+
+      toast.success("Admin updated successfully.");
+      closeEdit();
+      await loadAdmins();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update admin.");
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const confirmStatusChange = async () => {
+    if (!statusTarget) return;
+
+    setStatusBusy(true);
+    try {
+      const response = await adminApi.updateAdminStatus(statusTarget.id, !statusTarget.isActive);
+      if (!response.success) {
+        toast.error(response.message || "Failed to update admin status.");
+        return;
+      }
+
+      toast.success(`Admin ${statusTarget.isActive ? "deactivated" : "activated"} successfully.`);
+      setStatusTarget(null);
+      await loadAdmins();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update admin status.");
+    } finally {
+      setStatusBusy(false);
     }
   };
 
@@ -207,10 +263,7 @@ export default function AdminsManagementPage() {
     .filter((admin) => {
       const query = searchQuery.trim().toLowerCase();
       if (!query) return true;
-      return (
-        admin.name.toLowerCase().includes(query) ||
-        admin.email.toLowerCase().includes(query)
-      );
+      return admin.name.toLowerCase().includes(query) || admin.email.toLowerCase().includes(query);
     })
     .sort((left, right) => {
       if (sortBy === "name") {
@@ -232,7 +285,7 @@ export default function AdminsManagementPage() {
   const totalPages = Math.max(1, Math.ceil(visibleAdmins.length / PAGE_SIZE));
   const paginatedAdmins = visibleAdmins.slice(
     (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE
   );
 
   useEffect(() => {
@@ -249,170 +302,200 @@ export default function AdminsManagementPage() {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
+          badge="System"
           title="Admins"
-          subtitle="Manage administrator accounts (Super Admin only)."
+          subtitle="Create and manage administrator accounts."
         />
-        <Card className="bg-white">
-          <div className="py-10 text-center text-slate-600">
-            You do not have permission to manage admin accounts.
-          </div>
-        </Card>
+        <EmptyState
+          title="You can't manage admin accounts"
+          description="Only a super admin can create or change them."
+        />
       </div>
     );
   }
 
   if (loading) {
-    return <div className="py-12 text-center">Loading admins...</div>;
+    return <SkeletonBlock rows={6} label="Loading admins" />;
   }
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Super Admin"
+        badge="System"
         title="Admins"
-        subtitle="Create and manage administrator accounts."
+        subtitle="Who can sign in to this panel, and what each person can do."
+        action={
+          <button
+            type="button"
+            onClick={() => setShowCreate((v) => !v)}
+            aria-expanded={showCreate}
+            className={showCreate ? btn("outline") : btn("accent")}
+          >
+            {showCreate ? "Close" : "Add admin"}
+          </button>
+        }
       />
 
-      {error && (
-        <Card className="bg-white">
-          <div className="py-6 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
-            <button
-              onClick={loadAdmins}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-            >
-              Retry
-            </button>
+      {error && <ErrorNotice message={error} onRetry={loadAdmins} />}
+
+      {showCreate && (
+        <Panel
+          title="Add an admin"
+          description="They get a temporary password by email and must change it the first time they sign in."
+        >
+          <div className="mb-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+            <div className="flex items-start gap-2">
+              <Mail className="mt-0.5 h-4 w-4 text-slate-500" aria-hidden />
+              <p>Use an inbox they actively check. The credentials go to this address.</p>
+            </div>
           </div>
-        </Card>
+
+          <form onSubmit={handleCreateAdmin} className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label htmlFor="admin-name" className={labelClass}>
+                  Full name
+                </label>
+                <input
+                  id="admin-name"
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Priya Raman"
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="admin-email" className={labelClass}>
+                  Email address
+                </label>
+                <input
+                  id="admin-email"
+                  value={form.email}
+                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="name@powermysport.com"
+                  type="email"
+                  className={fieldClass}
+                />
+              </div>
+            </div>
+
+            <PermissionSelector
+              roleTemplates={roleTemplates}
+              permissionCatalog={permissionCatalog}
+              selectedRole={form.role}
+              selectedPermissions={form.permissions}
+              onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
+              onPermissionsChange={(permissions) => setForm((prev) => ({ ...prev, permissions }))}
+              disabled={submitting}
+            />
+
+            <div>
+              <button type="submit" disabled={submitting || !form.role} className={btn("primary")}>
+                {submitting ? "Creating…" : "Create admin"}
+              </button>
+            </div>
+          </form>
+
+          {lastInvitationEmail && (
+            <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+              Invitation email sent to <span className="font-semibold">{lastInvitationEmail}</span>.
+            </div>
+          )}
+        </Panel>
       )}
 
-      <Card className="bg-white">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Create Admin
-        </h2>
-        <p className="mb-5 text-sm text-slate-600">
-          Enter name, email, and select a role with permissions. A temporary
-          password is auto-generated and sent via email. Admin must change it on
-          first login.
-        </p>
-
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-          <div className="flex items-start gap-2">
-            <Mail className="mt-0.5 h-4 w-4 text-slate-500" />
-            <p>
-              Use an active inbox. The admin receives temporary credentials at
-              this address and must reset password on first login.
-            </p>
-          </div>
-        </div>
-
-        <form onSubmit={handleCreateAdmin} className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Full name
-              </label>
-              <input
-                value={form.name}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, name: event.target.value }))
-                }
-                placeholder="Enter full name"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                Email address
-              </label>
-              <input
-                value={form.email}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, email: event.target.value }))
-                }
-                placeholder="name@company.com"
-                type="email"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-power-orange focus:ring-2 focus:ring-power-orange/30"
-              />
-              <p className="mt-1.5 text-xs text-slate-500">
-                Temporary credentials will be sent to this email.
-              </p>
-            </div>
-          </div>
-
-          <PermissionSelector
-            roleTemplates={roleTemplates}
-            selectedRole={form.role}
-            selectedPermissions={form.permissions}
-            onRoleChange={(role) => setForm((prev) => ({ ...prev, role }))}
-            onPermissionsChange={(permissions) =>
-              setForm((prev) => ({ ...prev, permissions }))
-            }
-            disabled={submitting}
-          />
-
-          <div>
-            <button
-              type="submit"
-              disabled={submitting || !form.role}
-              className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Creating..." : "Create Admin"}
-            </button>
-          </div>
-        </form>
-
-        {lastInvitationEmail && (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            Invitation email sent to{" "}
-            <span className="font-semibold">{lastInvitationEmail}</span>.
-          </div>
-        )}
-      </Card>
-
-      <Card className="bg-white">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">
-          Admin Accounts
-        </h2>
+      <Panel title="Admin accounts">
         <div className="mb-4 grid gap-3 md:grid-cols-2">
           <input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search admins"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            aria-label="Search admins"
+            className={fieldClass}
           />
           <select
             value={sortBy}
-            onChange={(event) =>
-              setSortBy(event.target.value as "role" | "name" | "email")
-            }
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            aria-label="Sort admins"
+            onChange={(event) => setSortBy(event.target.value as "role" | "name" | "email")}
+            className={fieldClass}
           >
             <option value="role">Role priority</option>
             <option value="name">Name (A-Z)</option>
             <option value="email">Email (A-Z)</option>
           </select>
         </div>
+        {visibleAdmins.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <ExportCsvButton
+              filename="admins.csv"
+              rows={visibleAdmins}
+              columns={[
+                { header: "Name", value: (a) => a.name },
+                { header: "Email", value: (a) => a.email },
+                { header: "Role", value: (a) => a.role },
+                {
+                  header: "Status",
+                  value: (a) => (a.isActive ? "Active" : "Inactive"),
+                },
+                { header: "Last Login", value: (a) => a.lastLogin || "" },
+                {
+                  header: "Permissions",
+                  value: (a) => a.permissions.join("; "),
+                },
+              ]}
+            />
+          </div>
+        )}
         {visibleAdmins.length === 0 ? (
-          <p className="text-slate-600">No admin accounts found.</p>
+          <EmptyState
+            title="No admin accounts match"
+            description="Clear the search to see everyone."
+          />
         ) : (
           <div className="space-y-3">
             {paginatedAdmins.map((admin) => (
               <div
                 key={admin.id}
-                className="rounded-lg border border-slate-200 p-4"
+                className={`rounded-lg border p-4 ${
+                  admin.isActive ? "border-slate-200" : "border-red-200 bg-red-50/40"
+                }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-slate-900">{admin.name}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900">{admin.name}</p>
+                      {!admin.isActive && <StatusBadge status="Inactive" tone="red" size="sm" />}
+                      {admin.id === currentAdminId && (
+                        <StatusBadge status="You" tone="slate" dot={false} size="sm" />
+                      )}
+                    </div>
                     <p className="text-sm text-slate-600">{admin.email}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Last login: {formatLastLogin(admin.lastLogin)}
+                    </p>
                   </div>
-                  <span className="rounded-full bg-power-orange/10 px-3 py-1 text-xs font-semibold text-power-orange">
-                    {admin.role}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <StatusBadge status={admin.role} tone="orange" dot={false} size="sm" />
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => openEdit(admin)} className={btn("outline", "sm")}>
+                        <Pencil size={12} aria-hidden />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setStatusTarget(admin)}
+                        disabled={admin.id === currentAdminId}
+                        title={
+                          admin.id === currentAdminId
+                            ? "You cannot deactivate your own account"
+                            : undefined
+                        }
+                        className={btn(admin.isActive ? "dangerOutline" : "outline", "sm")}
+                      >
+                        {admin.isActive ? "Deactivate" : "Activate"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {admin.permissions?.length ? (
@@ -420,83 +503,125 @@ export default function AdminsManagementPage() {
                     {admin.permissions.slice(0, 8).map((permission) => (
                       <span
                         key={`${admin.id}-${permission}`}
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                        className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                           permission.includes(":manage") ||
                           permission.includes(":delete") ||
                           permission.includes(":verify") ||
                           permission.includes(":approve") ||
                           permission.includes(":resolve")
-                            ? "bg-indigo-50 text-indigo-700 border border-indigo-200"
-                            : "bg-slate-100 text-slate-700 border border-slate-200"
+                            ? "border border-sky-200 bg-sky-50 text-sky-700"
+                            : "border border-slate-200 bg-slate-100 text-slate-700"
                         }`}
                       >
-                        {formatPermissionLabel(permission)}
+                        {formatPermissionLabel(permission, permissionLabels)}
                       </span>
                     ))}
                     {admin.permissions.length > 8 && (
-                      <span className="rounded-full px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-600">
+                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
                         +{admin.permissions.length - 8} more
                       </span>
                     )}
                   </div>
                 ) : (
-                  <p className="mt-3 text-xs text-slate-500">
-                    No explicit permissions assigned.
-                  </p>
+                  <p className="mt-3 text-xs text-slate-500">No explicit permissions assigned.</p>
                 )}
               </div>
             ))}
 
-            {totalPages > 1 && (
-              <div className="mt-4 flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-center text-sm text-slate-600 sm:text-left">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, visibleAdmins.length)} of{" "}
-                  {visibleAdmins.length} admins
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .slice(
-                      Math.max(0, currentPage - 2),
-                      Math.min(totalPages, currentPage + 1),
-                    )
-                    .map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
-                          currentPage === page
-                            ? "bg-power-orange text-white"
-                            : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage(Math.min(totalPages, currentPage + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
+            <Pagination
+              className="mt-4"
+              page={currentPage}
+              totalPages={totalPages}
+              total={visibleAdmins.length}
+              onPageChange={setCurrentPage}
+            />
           </div>
         )}
-      </Card>
+      </Panel>
+
+      {editingAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Edit ${editingAdmin.name}`}
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
+          >
+            <h3 className="text-lg font-semibold text-slate-900">Edit {editingAdmin.name}</h3>
+            <p className="mt-1 text-sm text-slate-500">{editingAdmin.email}</p>
+
+            <div className="mt-4 space-y-5">
+              <div>
+                <label htmlFor="edit-admin-name" className={labelClass}>
+                  Full name
+                </label>
+                <input
+                  id="edit-admin-name"
+                  value={editForm.name}
+                  onChange={(event) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      name: event.target.value,
+                    }))
+                  }
+                  className={fieldClass}
+                />
+              </div>
+
+              <PermissionSelector
+                roleTemplates={roleTemplates}
+                permissionCatalog={permissionCatalog}
+                selectedRole={editForm.role}
+                selectedPermissions={editForm.permissions}
+                onRoleChange={(role) => setEditForm((prev) => ({ ...prev, role }))}
+                onPermissionsChange={(permissions) =>
+                  setEditForm((prev) => ({ ...prev, permissions }))
+                }
+                disabled={editSaving}
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={closeEdit}
+                disabled={editSaving}
+                className={btn("outline")}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveEdit}
+                disabled={editSaving}
+                className={btn("primary")}
+              >
+                {editSaving ? "Saving…" : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmModal
+        open={statusTarget !== null}
+        title={
+          statusTarget?.isActive
+            ? `Deactivate ${statusTarget?.name}?`
+            : `Activate ${statusTarget?.name}?`
+        }
+        description={
+          statusTarget?.isActive
+            ? "This admin will immediately lose access to the panel. You can reactivate them later."
+            : "This admin will regain access to the panel with their existing role and permissions."
+        }
+        confirmLabel={statusTarget?.isActive ? "Deactivate" : "Activate"}
+        cancelLabel="Cancel"
+        variant={statusTarget?.isActive ? "danger" : "default"}
+        loading={statusBusy}
+        onConfirm={confirmStatusChange}
+        onCancel={() => setStatusTarget(null)}
+      />
     </div>
   );
 }

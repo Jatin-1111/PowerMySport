@@ -40,9 +40,7 @@ const pickFirstString = (...values: unknown[]): string | undefined => {
   return undefined;
 };
 
-const readStateFromPayload = (
-  payload: Record<string, unknown>,
-): PaymentState => {
+const readStateFromPayload = (payload: Record<string, unknown>): PaymentState => {
   return normalizeState(
     pickFirstString(
       payload.state,
@@ -50,14 +48,12 @@ const readStateFromPayload = (
       asRecord(payload.data).state,
       asRecord(payload.event).state,
       asRecord(asRecord(payload.payload).paymentDetails).state,
-      asRecord(asRecord(payload.data).paymentDetails).state,
-    ),
+      asRecord(asRecord(payload.data).paymentDetails).state
+    )
   );
 };
 
-const readMerchantOrderIdFromPayload = (
-  payload: Record<string, unknown>,
-): string | undefined => {
+const readMerchantOrderIdFromPayload = (payload: Record<string, unknown>): string | undefined => {
   return pickFirstString(
     payload.originalMerchantOrderId,
     payload.merchantOrderId,
@@ -66,24 +62,22 @@ const readMerchantOrderIdFromPayload = (
     asRecord(payload.data).originalMerchantOrderId,
     asRecord(payload.data).merchantOrderId,
     asRecord(asRecord(payload.payload).paymentDetails).merchantOrderId,
-    asRecord(asRecord(payload.data).paymentDetails).merchantOrderId,
+    asRecord(asRecord(payload.data).paymentDetails).merchantOrderId
   );
 };
 
-const readPhonePeOrderIdFromPayload = (
-  payload: Record<string, unknown>,
-): string | undefined => {
+const readPhonePeOrderIdFromPayload = (payload: Record<string, unknown>): string | undefined => {
   return pickFirstString(
     payload.orderId,
     asRecord(payload.payload).orderId,
     asRecord(payload.data).orderId,
     asRecord(asRecord(payload.payload).paymentDetails).orderId,
-    asRecord(asRecord(payload.data).paymentDetails).orderId,
+    asRecord(asRecord(payload.data).paymentDetails).orderId
   );
 };
 
 const applySubscriptionActivation = async (
-  transaction: CoachSubscriptionPaymentDocument,
+  transaction: CoachSubscriptionPaymentDocument
 ): Promise<void> => {
   if (transaction.linkedSubscriptionId) {
     return;
@@ -91,11 +85,34 @@ const applySubscriptionActivation = async (
 
   const subscription = await subscribeToCoachPackage({
     userId: transaction.userId.toString(),
+    ...(transaction.dependentId ? { dependentId: transaction.dependentId.toString() } : {}),
     coachId: transaction.coachId.toString(),
     packageId: transaction.packageId.toString(),
   });
 
   transaction.linkedSubscriptionId = subscription._id;
+
+  // A payment that bought a place in a recurring programme also turns the held
+  // seat into a live enrolment and grants its credits. Doing it HERE rather
+  // than at the enrol endpoint is the whole point: credits are minted by money
+  // arriving, not by someone submitting a form.
+  //
+  // Imported lazily to keep the payment module free of a static dependency on
+  // the programme services, which already depend on the ledger.
+  if (transaction.enrollmentId) {
+    const { activateEnrollmentAfterPayment } = await import("./CoachOfferingService");
+
+    // `baseAmount` is what the coach was paid for the period — the platform fee
+    // and tax on top are ours, and must not end up in the student's credits or
+    // in the coach's payout.
+    await activateEnrollmentAfterPayment({
+      enrollmentId: transaction.enrollmentId,
+      subscriptionId: subscription._id as typeof subscription._id,
+      periodStart: subscription.currentPeriodStart,
+      periodEnd: subscription.currentPeriodEnd,
+      feePaise: transaction.baseAmount,
+    });
+  }
 };
 
 export const reconcileCoachSubscriptionPaymentByIdentifiers = async (params: {
@@ -106,13 +123,9 @@ export const reconcileCoachSubscriptionPaymentByIdentifiers = async (params: {
   allowActivation?: boolean;
 }) => {
   const merchantOrderId =
-    typeof params.merchantOrderId === "string"
-      ? params.merchantOrderId.trim()
-      : "";
+    typeof params.merchantOrderId === "string" ? params.merchantOrderId.trim() : "";
   const phonepeOrderId =
-    typeof params.phonepeOrderId === "string"
-      ? params.phonepeOrderId.trim()
-      : "";
+    typeof params.phonepeOrderId === "string" ? params.phonepeOrderId.trim() : "";
 
   if (!merchantOrderId && !phonepeOrderId) {
     return null;
@@ -145,9 +158,7 @@ export const reconcileCoachSubscriptionPaymentByIdentifiers = async (params: {
   return transaction;
 };
 
-export const reconcileCoachSubscriptionPaymentFromWebhookPayload = async (
-  rawPayload: unknown,
-) => {
+export const reconcileCoachSubscriptionPaymentFromWebhookPayload = async (rawPayload: unknown) => {
   const payload = asRecord(rawPayload);
   const merchantOrderId = readMerchantOrderIdFromPayload(payload);
   const phonepeOrderId = readPhonePeOrderIdFromPayload(payload);

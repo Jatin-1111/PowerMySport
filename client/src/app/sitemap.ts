@@ -1,39 +1,7 @@
 import type { MetadataRoute } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
+import { buildSitemapEntries } from "@/modules/marketing/services/sitemapEntries";
 
-const staticRoutes = [
-  "",
-  "/about",
-  "/services",
-  "/how-it-works",
-  "/faq",
-  "/contact",
-  "/careers",
-  "/privacy",
-  "/terms",
-  "/cookies",
-  "/content-policy",
-  "/refund-policy",
-  "/health-waiver",
-  "/parental-consent",
-  "/coaches",
-  "/venues",
-  "/academies",
-] as const;
-
-export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
-  return staticRoutes.map((route) => ({
-    url: `${siteUrl}${route}`,
-    lastModified: now,
-    changeFrequency: route === "" ? "daily" : "weekly",
-    priority:
-      route === ""
-        ? 1
-        : route === "/coaches" || route === "/venues" || route === "/academies"
-          ? 0.9
-          : 0.7,
-  }));
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  return buildSitemapEntries();
 }

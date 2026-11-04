@@ -56,9 +56,7 @@ const runAllMigrations = async () => {
     console.log();
 
     // Migration 6: Separate Coach and Venue-Lister Roles
-    console.log(
-      "📋 Running Migration 6: Separate Coach and Venue-Lister Roles",
-    );
+    console.log("📋 Running Migration 6: Separate Coach and Venue-Lister Roles");
     console.log("-".repeat(60));
     await migrateCoachVenueToProfile();
     console.log();

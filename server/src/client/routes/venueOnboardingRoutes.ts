@@ -25,6 +25,7 @@ import {
   vendorMiddleware,
   adminMiddleware,
 } from "../../middleware/auth";
+import { sendVerificationRateLimiter } from "../../middleware/rateLimit";
 import { validateRequest } from "../../middleware/validation";
 import {
   venueOnboardingStep1Schema,
@@ -50,11 +51,7 @@ const router = Router();
  * STEP 1: Create venue with venue lister contact info
  * POST /api/venues/onboarding/step1
  */
-router.post(
-  "/step1",
-  validateRequest(venueOnboardingStep1Schema),
-  createVenueStep1,
-);
+router.post("/step1", validateRequest(venueOnboardingStep1Schema), createVenueStep1);
 
 /**
  * Send email verification code
@@ -62,19 +59,16 @@ router.post(
  */
 router.post(
   "/send-verification",
+  sendVerificationRateLimiter,
   validateRequest(sendVerificationCodeSchema),
-  sendVerificationCodeHandler,
+  sendVerificationCodeHandler
 );
 
 /**
  * Verify email code
  * POST /api/venues/onboarding/verify-email
  */
-router.post(
-  "/verify-email",
-  validateRequest(verifyEmailCodeSchema),
-  verifyEmailHandler,
-);
+router.post("/verify-email", validateRequest(verifyEmailCodeSchema), verifyEmailHandler);
 
 /**
  * STEP 2: Update venue with detailed information
@@ -84,7 +78,7 @@ router.post(
   "/step2",
   onboardingAuthMiddleware,
   validateRequest(venueOnboardingStep2Schema),
-  updateVenueDetailsStep2,
+  updateVenueDetailsStep2
 );
 
 /**
@@ -95,7 +89,7 @@ router.post(
   "/step3/upload-urls",
   onboardingAuthMiddleware,
   validateRequest(getImageUploadUrlsSchema),
-  getImageUploadUrls,
+  getImageUploadUrls
 );
 
 /**
@@ -106,7 +100,7 @@ router.post(
   "/step3/confirm",
   onboardingAuthMiddleware,
   validateRequest(venueOnboardingStep3ImagesSchema),
-  confirmImagesStep2,
+  confirmImagesStep2
 );
 
 /**
@@ -117,7 +111,7 @@ router.post(
   "/step4/upload-urls",
   onboardingAuthMiddleware,
   validateRequest(getDocumentUploadUrlsSchema),
-  getDocumentUploadUrls,
+  getDocumentUploadUrls
 );
 
 /**
@@ -128,14 +122,14 @@ router.post(
   "/step4/finalize",
   onboardingAuthMiddleware,
   validateRequest(venueOnboardingStep4Schema),
-  finalizeOnboardingStep3,
+  finalizeOnboardingStep3
 );
 
 router.post(
   "/step5/coaches",
   onboardingAuthMiddleware,
   validateRequest(venueOnboardingStep5Schema),
-  addVenueCoaches,
+  addVenueCoaches
 );
 
 /**
@@ -158,34 +152,19 @@ router.delete("/:venueId", onboardingAuthMiddleware, deleteVenueOnboardingHandle
  * List all pending venues
  * GET /api/venues/onboarding/admin/pending?page=1&limit=20&status=PENDING
  */
-router.get(
-  "/admin/pending",
-  authMiddleware,
-  adminMiddleware,
-  listPendingVenues,
-);
+router.get("/admin/pending", authMiddleware, adminMiddleware, listPendingVenues);
 
 /**
  * Get venue details for admin review
  * GET /api/venues/onboarding/admin/:venueId
  */
-router.get(
-  "/admin/:venueId",
-  authMiddleware,
-  adminMiddleware,
-  getVenueOnboardingDetailsForAdmin,
-);
+router.get("/admin/:venueId", authMiddleware, adminMiddleware, getVenueOnboardingDetailsForAdmin);
 
 /**
  * Approve venue
  * POST /api/venues/onboarding/admin/:venueId/approve
  */
-router.post(
-  "/admin/:venueId/approve",
-  authMiddleware,
-  adminMiddleware,
-  approveVenueHandler,
-);
+router.post("/admin/:venueId/approve", authMiddleware, adminMiddleware, approveVenueHandler);
 
 /**
  * Reject venue
@@ -197,7 +176,7 @@ router.post(
   authMiddleware,
   adminMiddleware,
   validateRequest(adminRejectVenueSchema),
-  rejectVenueHandler,
+  rejectVenueHandler
 );
 
 /**
@@ -210,7 +189,7 @@ router.post(
   authMiddleware,
   adminMiddleware,
   validateRequest(adminReviewVenueSchema),
-  markVenueForReviewHandler,
+  markVenueForReviewHandler
 );
 
 export default router;

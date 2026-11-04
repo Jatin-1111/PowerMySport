@@ -1,0 +1,184 @@
+/**
+ * Query keys, declared in one place.
+ *
+ * Keys are what tie a mutation's invalidation to the queries it affects, so
+ * scattering them is how caches go stale in ways nobody can trace. Declaring
+ * them here means an invalidation can be checked against its readers by reading
+ * one file.
+ *
+ * Deliberately NO user id in any key: `QueryProvider` scopes the whole cache to
+ * the signed-in session and empties it on any identity change, so per-key
+ * scoping would be redundant — and a convention every future contributor has to
+ * remember is exactly the thing that failed before (the old `requestCache` was
+ * keyed by URL alone and leaked between users on a shared device).
+ */
+export const queryKeys = {
+  auth: {
+    profile: ["auth", "profile"] as const,
+  },
+
+  notifications: {
+    /** Unread in-app notification count. */
+    unreadCount: ["notifications", "unread-count"] as const,
+  },
+
+  /** The coach's console overview. */
+  coachConsole: {
+    profile: ["coach-console", "profile"] as const,
+    earnings: ["coach-console", "earnings"] as const,
+    analytics: ["coach-console", "analytics"] as const,
+    bookings: ["coach-console", "bookings"] as const,
+  },
+
+  /** The expert's console: their profile and their sessions. */
+  expertConsole: {
+    profile: ["expert-console", "profile"] as const,
+    sessions: ["expert-console", "sessions"] as const,
+  },
+
+  /** The venue lister's console overview. */
+  venueConsole: {
+    venues: ["venue-console", "venues"] as const,
+    earnings: ["venue-console", "earnings"] as const,
+    analytics: ["venue-console", "analytics"] as const,
+    bookings: ["venue-console", "bookings"] as const,
+  },
+
+  /** The academy owner's console overview. */
+  academy: {
+    mine: ["academy", "mine"] as const,
+    earnings: ["academy", "earnings"] as const,
+    analytics: ["academy", "analytics"] as const,
+  },
+
+  /**
+   * The user-oriented dashboard.
+   *
+   * `all` is the invalidation handle for socket events that could change
+   * anything the dashboard shows; individual sections read from their own
+   * domain's keys (profile, friends, bookings) so a mutation there refreshes
+   * the dashboard without the dashboard owning a copy of that data.
+   */
+  dashboard: {
+    all: ["dashboard"] as const,
+  },
+
+  community: {
+    all: ["community"] as const,
+    /** Contribution counters for the dashboard's community link-out card. */
+    reputation: ["community", "reputation"] as const,
+  },
+
+  friends: {
+    all: ["friends"] as const,
+    list: (page: number, limit: number, search?: string) =>
+      ["friends", "list", { page, limit, search: search ?? "" }] as const,
+    pendingRequests: ["friends", "pending-requests"] as const,
+    pendingRequestsCount: ["friends", "pending-requests-count"] as const,
+    searchUsers: (query: string, page: number) =>
+      ["friends", "search-users", { query, page }] as const,
+    forBooking: (query: string) => ["friends", "for-booking", query] as const,
+    status: (targetId: string) => ["friends", "status", targetId] as const,
+  },
+
+  coachPrograms: {
+    all: ["coach-programmes"] as const,
+    browse: (sport: string, online: boolean) =>
+      ["coach-programmes", "browse", { sport, online }] as const,
+    mine: ["coach-programmes", "mine"] as const,
+    mySessions: ["coach-programmes", "sessions", "mine"] as const,
+    makeupsOwed: ["coach-programmes", "sessions", "makeups-owed"] as const,
+    earnings: ["coach-programmes", "sessions", "earnings"] as const,
+    myEnrollments: ["coach-programmes", "my", "enrollments"] as const,
+    myUpcoming: ["coach-programmes", "my", "sessions"] as const,
+    myPackages: ["coach-programmes", "packages", "mine"] as const,
+  },
+
+  /**
+   * Federation ranking links. One query for the whole account rather than one
+   * per child: the endpoint returns every link the account holds, and a child's
+   * profile page picks its own out of that list, so opening three children in
+   * turn costs one request instead of three.
+   */
+  rankingClaims: {
+    all: ["ranking-claims"] as const,
+  },
+
+  /**
+   * The upcoming tournament calendar, per sport. Public data and small — the
+   * whole tennis calendar is under fifty rows — so it is fetched once and
+   * filtered in memory by whoever needs it.
+   */
+  tournamentEditions: {
+    upcoming: (sportSlug: string) => ["tournament-editions", "upcoming", sportSlug] as const,
+  },
+
+  /** The admission and scholarship entries this parent follows. One list per account. */
+  opportunityFollows: {
+    all: ["opportunity-follows"] as const,
+  },
+
+  /** One child's tournament plan. Keyed per child, because that is how it is
+   * read and written — there is no view of every plan at once. */
+  seasonPlan: {
+    forDependent: (dependentId: string) => ["season-plan", dependentId] as const,
+  },
+
+  /** One child's sporting history: the header, tiles, academics and timeline, read as one. */
+  childHistory: {
+    forChild: (childId: string) => ["child-history", childId] as const,
+    shares: (childId: string) => ["child-history", childId, "shares"] as const,
+  },
+
+  /** The server-judged planner for one child: verdicts and plan together. */
+  planner: {
+    /** Whether this parent has been through the planner's tour. Not per child. */
+    tour: ["planner-tour"] as const,
+    forDependent: (dependentId: string) => ["planner", dependentId] as const,
+    recommendations: (dependentId: string) => ["planner", dependentId, "recommendations"] as const,
+    /** Prefix for every cost query of one child, whatever slugs it was asked about. */
+    costsFor: (dependentId: string) => ["planner", dependentId, "costs"] as const,
+    costs: (dependentId: string, slugs: string[]) =>
+      ["planner", dependentId, "costs", [...slugs].sort().join(",")] as const,
+  },
+
+  bookings: {
+    all: ["bookings"] as const,
+    quote: (subtotal: number, discount: number) =>
+      ["bookings", "quote", { subtotal, discount }] as const,
+    subscriptionQuote: (basePaise: number) =>
+      ["bookings", "subscription-quote", basePaise] as const,
+    invitations: (status?: string) => ["bookings", "invitations", status ?? "ALL"] as const,
+    pendingInvitationsCount: ["bookings", "pending-invitations-count"] as const,
+  },
+
+  federations: {
+    tournaments: (slug: string) => ["federations", slug, "tournaments"] as const,
+    editions: (slug: string) => ["federations", slug, "editions"] as const,
+    savedEvents: (slug: string, from: string, to: string) =>
+      ["federations", slug, "saved-events", { from, to }] as const,
+  },
+
+  coachSchedule: {
+    calendar: (view: string, start: string, end: string) =>
+      ["coach-schedule", "calendar", { view, start, end }] as const,
+  },
+
+  sellerDashboard: {
+    products: ["seller-dashboard", "products"] as const,
+    orders: ["seller-dashboard", "orders"] as const,
+  },
+
+  discovery: {
+    all: ["discovery"] as const,
+    nearbyVenues: (params: unknown) => ["discovery", "nearby-venues", params] as const,
+    nearbyCoaches: (params: unknown) => ["discovery", "nearby-coaches", params] as const,
+    venue: (id: string) => ["discovery", "venue", id] as const,
+    coach: (id: string) => ["discovery", "coach", id] as const,
+  },
+
+  /** What the WhatsApp assistant kept about a parent's children, behind a link's token. */
+  whatsappHandoff: {
+    preview: (token: string) => ["whatsapp-handoff", "preview", token] as const,
+  },
+} as const;

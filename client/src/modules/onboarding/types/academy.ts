@@ -9,23 +9,20 @@ export interface AcademyDocument {
   fileName: string;
 }
 
-export type AcademyBusinessType =
-  | "sole_proprietorship"
-  | "partnership"
-  | "pvt_ltd"
-  | "ngo_trust";
+export type AcademyBusinessType = "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
 
 export type AcademyBatchTiming = "morning" | "evening" | "both";
 
 export type AcademyPayoutFrequency = "weekly" | "biweekly" | "monthly";
 
-export type AcademyStepPayload =
-  | AcademyStep1Payload
+/** What `PUT /onboarding/:id/step/:n` takes, for the steps 2 to 7. */
+export type AcademySaveStepPayload =
   | AcademyStep2Payload
   | AcademyStep3Payload
-  | AcademyStep4Payload
-  | AcademyStep5Payload
-  | AcademyStep6Payload;
+  | AcademyVenuesPayload
+  | AcademyCoachesPayload
+  | AcademyPricingPayload
+  | AcademyPayoutsPayload;
 
 export interface AcademyOwner {
   name: string;
@@ -79,11 +76,7 @@ export interface OnboardingAcademy {
   placeId?: string;
 
   // Legal & Compliance
-  businessType?:
-    | "sole_proprietorship"
-    | "partnership"
-    | "pvt_ltd"
-    | "ngo_trust";
+  businessType?: "sole_proprietorship" | "partnership" | "pvt_ltd" | "ngo_trust";
   panNumber?: string;
   panDocumentUrl?: string;
   panDocumentKey?: string;
@@ -93,10 +86,7 @@ export interface OnboardingAcademy {
   aadhaarLast4?: string;
 
   // Operational
-  operatingHours?: Record<
-    string,
-    { isOpen: boolean; openTime?: string; closeTime?: string }
-  >;
+  operatingHours?: Record<string, { isOpen: boolean; openTime?: string; closeTime?: string }>;
   languagesSpoken?: string[];
   contactPersonName?: string;
   contactEmail?: string;
@@ -188,31 +178,97 @@ export interface AcademyStep3Payload {
   aadhaarLast4: string; // Last 4 digits only
 }
 
-export interface AcademyStep4Payload {
-  academyId: string;
-  allowsExternalCoaches: boolean;
-  venueIds?: string[];
-  coachIds?: string[];
+// ── Server-numbered step payloads ────────────────────────────────────────────
+// What the server's step 4 to 7 validators expect.
+
+export interface AcademyOpeningDay {
+  isOpen: boolean;
+  openTime?: string;
+  closeTime?: string;
+  slots?: { startTime: string; endTime: string }[];
 }
 
-export interface AcademyStep5Payload {
-  academyId: string;
-  sessionRatePerHour: number; // In paise
-  batchTimings: ("morning" | "evening" | "both")[];
+export interface AcademyOpeningHours {
+  monday: AcademyOpeningDay;
+  tuesday: AcademyOpeningDay;
+  wednesday: AcademyOpeningDay;
+  thursday: AcademyOpeningDay;
+  friday: AcademyOpeningDay;
+  saturday: AcademyOpeningDay;
+  sunday: AcademyOpeningDay;
+}
+
+/** A facility the academy teaches at. Prices are in paise. */
+export interface AcademyVenueInput {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  placeId?: string;
+  location: { type: "Point"; coordinates: [number, number] };
+  sports: string[];
+  pricePerHour: number;
+  sportPricing?: Record<string, number>;
+  amenities: string[];
+  description?: string;
+  openingHours: AcademyOpeningHours;
+  allowExternalCoaches: boolean;
+  /** At least 3. */
+  generalImages: string[];
+  generalImageKeys: string[];
+  /** At least 5 for every sport the venue lists. */
+  sportImages: Record<string, string[]>;
+  sportImageKeys: Record<string, string[]>;
+  coverPhotoUrl: string;
+  coverPhotoKey?: string;
+}
+
+/** A coach the academy says works there: a name, an email and sports, nothing more. */
+export interface AcademyCoachInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  sports: string[];
+}
+
+/** Server step 4. */
+export interface AcademyVenuesPayload {
+  academyVenues: AcademyVenueInput[];
+}
+
+/** Server step 5. Optional: an empty list is fine. */
+export interface AcademyCoachesPayload {
+  academyCoaches: AcademyCoachInput[];
+}
+
+/**
+ * Server step 6. Money is in paise. Subscription plans and session packages are
+ * not collected at sign-up: they are created from the academy's dashboard after
+ * approval.
+ */
+export interface AcademyPricingPayload {
+  sessionRatePerHour: number;
+  batchTimings: AcademyBatchTiming[];
   maxBatchSize: number;
   trialsessionOffered: boolean;
-  trialSessionPrice?: number; // In paise
+  trialSessionPrice?: number;
 }
 
-export interface AcademyStep6Payload {
-  academyId: string;
-  bankAccountNumber: string;
-  bankIfsc: string;
-  bankAccountName: string;
-  upiId: string;
-  payoutFrequency: "weekly" | "biweekly" | "monthly";
+/**
+ * Server step 7. A complete bank account (typed twice), a UPI ID, or both; bank
+ * details are all or nothing. The terms must be agreed.
+ */
+export interface AcademyPayoutsPayload {
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankAccountNumberConfirm?: string;
+  bankIfsc?: string;
+  upiId?: string;
+  payoutFrequency: AcademyPayoutFrequency;
   cancellationPolicy: string;
   refundPolicy: string;
+  agreeToTerms: boolean;
 }
 
 export interface ConfirmImagesPayload {

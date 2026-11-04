@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type CommunityMessageType = "TEXT" | "IMAGE";
+export type CommunityMessageType = "TEXT" | "IMAGE" | "FILE" | "VOICE";
 
 export interface CommunityMessageDocument extends Document {
   conversationId: mongoose.Types.ObjectId;
@@ -11,13 +11,33 @@ export interface CommunityMessageDocument extends Document {
     width?: number;
     height?: number;
     caption?: string;
+    /** FILE: the name to show and to download as — never used as the S3 key,
+     *  which is generated server-side. */
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    /** VOICE: clip length, so the player can render a duration before the
+     *  audio has loaded. */
+    durationMs?: number;
+    /** VOICE: amplitude peaks, 0-100, computed once by the recorder. Storing
+     *  them means every viewer draws the same waveform without downloading and
+     *  decoding the audio first — a thread of voice notes would otherwise fetch
+     *  and decode every clip just to paint bars. */
+    waveform?: number[];
   };
+  /** The message this one is a reply to. Kept as a reference rather than a
+   *  copied snippet so an edit to the original is reflected in the quote,
+   *  and a deletion is visible rather than leaving stale text quoted. */
+  replyToId?: mongoose.Types.ObjectId | null;
   readBy: mongoose.Types.ObjectId[];
   deliveredTo: mongoose.Types.ObjectId[];
   isDeleted: boolean;
   deletedAt?: Date | null;
   deletedBy?: mongoose.Types.ObjectId | null;
   editedAt?: Date | null;
+  /** Every text this message held before an edit or a delete overwrote it,
+   *  oldest first. Moderators read it; it is never sent to participants. */
+  contentHistory?: Array<{ content: string; at: Date; reason: "EDIT" | "DELETE" }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,13 +58,13 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
     },
     type: {
       type: String,
-      enum: ["TEXT", "IMAGE"],
+      enum: ["TEXT", "IMAGE", "FILE", "VOICE"],
       default: "TEXT",
       index: true,
     },
     content: {
-      // For TEXT messages: the message text.
-      // For IMAGE messages: the S3 object key (never the full URL).
+      // TEXT: the message text.
+      // IMAGE / FILE / VOICE: the S3 object key (never the full URL).
       type: String,
       required: true,
       trim: true,
@@ -55,6 +75,23 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
       width: { type: Number },
       height: { type: Number },
       caption: { type: String, maxlength: 2000 },
+      fileName: { type: String, maxlength: 255 },
+      fileSize: { type: Number, min: 0 },
+      mimeType: { type: String, maxlength: 100 },
+      durationMs: { type: Number, min: 0 },
+      waveform: {
+        type: [Number],
+        default: undefined,
+        validate: {
+          validator: (value: number[]) => !value || value.length <= 64,
+          message: "A waveform can have at most 64 bars",
+        },
+      },
+    },
+    replyToId: {
+      type: Schema.Types.ObjectId,
+      ref: "CommunityMessage",
+      default: null,
     },
     readBy: [
       {
@@ -86,8 +123,22 @@ const communityMessageSchema = new Schema<CommunityMessageDocument>(
       type: Date,
       default: null,
     },
+    // `select: false` so no existing query or serializer picks it up by
+    // accident; only code that asks for `+contentHistory` sees it.
+    contentHistory: {
+      type: [
+        {
+          _id: false,
+          content: { type: String, maxlength: 2000 },
+          at: { type: Date, default: Date.now },
+          reason: { type: String, enum: ["EDIT", "DELETE"] },
+        },
+      ],
+      select: false,
+      default: undefined,
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 communityMessageSchema.index({ conversationId: 1, createdAt: -1 });
@@ -100,5 +151,5 @@ communityMessageSchema.index({ conversationId: 1, readBy: 1, createdAt: -1 });
 
 export const CommunityMessage = mongoose.model<CommunityMessageDocument>(
   "CommunityMessage",
-  communityMessageSchema,
+  communityMessageSchema
 );

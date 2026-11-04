@@ -19,41 +19,17 @@ router.get("/coach", authMiddleware, listCoachPayoutMethods);
 router.post("/coach", authMiddleware, addCoachPayoutMethod);
 router.put("/coach/:methodId", authMiddleware, updateCoachPayoutMethod);
 router.delete("/coach/:methodId", authMiddleware, deleteCoachPayoutMethod);
-router.patch(
-  "/coach/:methodId/set-default",
-  authMiddleware,
-  setDefaultCoachPayoutMethod,
-);
+router.patch("/coach/:methodId/set-default", authMiddleware, setDefaultCoachPayoutMethod);
 
-router.get(
-  "/venue",
-  authMiddleware,
-  venueListerMiddleware,
-  listVenuePayoutMethods,
-);
-router.post(
-  "/venue",
-  authMiddleware,
-  venueListerMiddleware,
-  addVenuePayoutMethod,
-);
-router.put(
-  "/venue/:methodId",
-  authMiddleware,
-  venueListerMiddleware,
-  updateVenuePayoutMethod,
-);
-router.delete(
-  "/venue/:methodId",
-  authMiddleware,
-  venueListerMiddleware,
-  deleteVenuePayoutMethod,
-);
+router.get("/venue", authMiddleware, venueListerMiddleware, listVenuePayoutMethods);
+router.post("/venue", authMiddleware, venueListerMiddleware, addVenuePayoutMethod);
+router.put("/venue/:methodId", authMiddleware, venueListerMiddleware, updateVenuePayoutMethod);
+router.delete("/venue/:methodId", authMiddleware, venueListerMiddleware, deleteVenuePayoutMethod);
 router.patch(
   "/venue/:methodId/set-default",
   authMiddleware,
   venueListerMiddleware,
-  setDefaultVenuePayoutMethod,
+  setDefaultVenuePayoutMethod
 );
 
 export default router;

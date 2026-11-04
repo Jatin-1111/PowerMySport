@@ -1,21 +1,28 @@
 // ============================================
 // ROLE & ENUM TYPES
 // ============================================
-export type UserRole =
-  | "PLAYER"
-  | "VENUE_LISTER"
-  | "COACH"
-  | "ACADEMY_OWNER"
-  | "ADMIN"
-  | "VENUE_ONBOARDING";
+// UserRole, BookingStatus, OCCUPYING_BOOKING_STATUSES,
+// CANCELLABLE_BOOKING_STATUSES, PaymentUserType, PaymentStatus and
+// ApiResponse now live in @powermysport/shared-types — this was the
+// canonical source they were copied from into admin's and client's
+// independent (and drifted) local copies, so this is the one declaration
+// site all four apps import from.
+import type {
+  UserRole,
+  PaymentUserType,
+  PaymentStatus,
+  ApiResponse,
+  BookingStatus,
+} from "@powermysport/shared-types";
+export type { UserRole, PaymentUserType, PaymentStatus, ApiResponse, BookingStatus };
+export {
+  OCCUPYING_BOOKING_STATUSES,
+  CANCELLABLE_BOOKING_STATUSES,
+} from "@powermysport/shared-types";
 
 // Admin role types
 export type AdminRole =
-  | "SUPPORT_ADMIN"
-  | "OPERATIONS_ADMIN"
-  | "FINANCE_ADMIN"
-  | "ANALYTICS_ADMIN"
-  | "SYSTEM_ADMIN";
+  "SUPPORT_ADMIN" | "OPERATIONS_ADMIN" | "FINANCE_ADMIN" | "ANALYTICS_ADMIN" | "SYSTEM_ADMIN";
 
 export type Permission = string; // e.g., "users:view", "venues:manage"
 
@@ -27,63 +34,20 @@ export interface RoleTemplate {
 }
 
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-export type BookingStatus =
-  | "PENDING_INVITES" // Group booking waiting for invites to be accepted
-  | "PENDING_CONFIRMATION" // Awaiting coach/venue confirmation
-  | "CONFIRMED"
-  | "IN_PROGRESS" // Booking started, check-in completed
-  | "COMPLETED" // Booking finished successfully
-  | "NO_SHOW" // User didn't show up
-  | "CANCELLED";
 
 // ============================================
 // USER TYPES
 // ============================================
 
-export interface IPlayerProfile {
-  sports?: string[];
-}
-
-export interface IBusinessDetails {
-  name: string;
-  gstNumber?: string;
-  address: string;
-}
-
-export interface IPayoutInfo {
-  accountNumber: string;
-  ifsc: string;
-  bankName: string;
-}
-
-export interface IVenueListerProfile {
-  businessDetails: IBusinessDetails;
-  payoutInfo: IPayoutInfo;
-  canAddMoreVenues?: boolean;
-}
-
-export interface IUser {
-  id?: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: UserRole;
-  userType?: string;
-  password: string;
-  photoUrl?: string;
-  photoS3Key?: string; // S3 key for profile picture
-  playerProfile?: IPlayerProfile;
-  venueListerProfile?: IVenueListerProfile;
-  lastActiveAt?: Date;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+// IUser, IPlayerProfile, IBusinessDetails, IPayoutInfo and IVenueListerProfile
+// were all dead code — declared here, never imported anywhere else in the
+// server, superseded long ago by the real Mongoose model in
+// client/models/User.ts. Removed rather than migrated.
 
 export interface IUserPayload {
   id: string;
   email: string;
   role: UserRole | AdminRole;
-  userType?: string;
   jti?: string;
   exp?: number;
   iat?: number;
@@ -140,12 +104,7 @@ export interface ICoach {
   availabilityBySport?: Record<string, IAvailability[]>;
   onboardingProgressStep?: 1 | 2 | 3;
   verificationDocuments?: Array<{
-    type:
-      | "CERTIFICATION"
-      | "ID_PROOF"
-      | "BACKGROUND_CHECK"
-      | "INSURANCE"
-      | "OTHER";
+    type: "CERTIFICATION" | "ID_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
     url: string;
     s3Key?: string; // S3 key for document
     fileName: string;
@@ -154,6 +113,7 @@ export interface ICoach {
   isVerified: boolean;
   rating: number;
   reviewCount: number;
+  gstNumber?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -203,6 +163,7 @@ export interface IVenue {
   documents?: IVenueDocument[];
   rating: number;
   reviewCount: number;
+  gstNumber?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -221,6 +182,9 @@ export interface IAcademyPendingReview {
   ownerPhone: string;
   isApproved: boolean;
   kycVerified: boolean;
+  isActive?: boolean;
+  rejectionReason?: string | undefined;
+  lifecycle?: string | undefined;
   submittedAt?: Date;
   lastReviewedAt?: Date;
 }
@@ -237,12 +201,7 @@ export interface IAcademyDocument {
 // VENUE ONBOARDING TYPES
 // ============================================
 export interface IVenueDocument {
-  type:
-    | "OWNERSHIP_PROOF"
-    | "BUSINESS_REGISTRATION"
-    | "TAX_DOCUMENT"
-    | "INSURANCE"
-    | "CERTIFICATE";
+  type: "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
   url: string;
   s3Key?: string; // S3 object key for regenerating presigned URLs
   fileName: string;
@@ -293,11 +252,7 @@ export interface IVenueOnboardingStep4 {
   coverPhotoKey: string; // S3 key for cover photo
   documents: {
     type:
-      | "OWNERSHIP_PROOF"
-      | "BUSINESS_REGISTRATION"
-      | "TAX_DOCUMENT"
-      | "INSURANCE"
-      | "CERTIFICATE";
+      "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
     url: string;
     s3Key?: string; // S3 object key for regenerating URLs
     fileName: string;
@@ -328,41 +283,21 @@ export interface IPendingVenue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export type PaymentUserType = "VENUE_LISTER" | "COACH" | "PLAYER";
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+// PaymentUserType, PaymentStatus and ApiResponse are re-exported from
+// @powermysport/shared-types at the top of this file.
 
 export interface IPayment {
   userId: string;
   userType: PaymentUserType;
+  /** Payee entries carry the NET payable; see BookingPayment.amount. */
   amount: number;
+  grossAmount?: number;
+  commissionAmount?: number;
+  commissionGstAmount?: number;
+  commissionRate?: number;
   status: PaymentStatus;
   paidAt?: Date;
 }
 
-export interface IBooking {
-  id?: string;
-  userId: string; // Player
-  venueId: string;
-  coachId?: string; // Optional
-  date: Date;
-  startTime: string; // "18:00"
-  endTime: string; // "19:00"
-  totalAmount: number;
-  status: BookingStatus;
-  expiresAt: Date;
-  checkInCode?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: IUser;
-}
+// IBooking and AuthResponse were dead code too — same story as IUser above,
+// superseded by the real Mongoose model in client/models/Booking.ts.

@@ -1,32 +1,45 @@
 "use client";
 
-import { bookingApi } from "@/modules/booking/services/booking";
+import { Badge } from "@/modules/shared/ui/Badge";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { toast } from "@/lib/toast";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
-import { Card, CardContent } from "@/modules/shared/ui/Card";
-import { EmptyState } from "@/modules/shared/ui/EmptyState";
+import { Card } from "@/modules/shared/ui/Card";
 import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Booking } from "@/types";
-import { formatDate, formatTime } from "@/utils/format";
+import { formatDate, formatTime, formatTimestampTime } from "@/utils/format";
 import {
   Calendar,
-  Clock,
-  IndianRupee,
+  CalendarX,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  MapPin,
-  Award,
-  CalendarX,
+  Clock,
   CreditCard,
   FileText,
+  IndianRupee,
+  RefreshCw,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { toast } from "@/lib/toast";
+import {
+  BookingProviderHeading,
+  BookingTabBar,
+  bookingTabConfig,
+} from "@/modules/booking/components/myBookingsTabs";
+import { BookingCalendar } from "@/modules/booking/components/calendar/BookingCalendar";
+import {
+  BookingStatsStrip,
+  BookingsViewSwitch,
+  type BookingsView,
+} from "@/modules/booking/components/myBookingsChrome";
+import { bucketBookings, type BookingTabId } from "@/modules/booking/utils/bookingBuckets";
 
 interface PaginationInfo {
   total: number;
@@ -34,19 +47,20 @@ interface PaginationInfo {
   totalPages: number;
 }
 
-type TabType = "venues" | "coaches";
 const canViewInvoice = (status: Booking["status"]): boolean => {
   return ["CONFIRMED", "IN_PROGRESS", "COMPLETED", "NO_SHOW"].includes(status);
 };
 
 const STATUS_STYLES: Record<string, string> = {
   CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  PENDING_CONFIRMATION: "bg-amber-50 text-amber-700 border-amber-200",
-  PENDING_INVITES: "bg-blue-50 text-blue-700 border-blue-200",
+  AWAITING_PAYMENT: "bg-amber-50 text-amber-700 border-amber-200",
+  AWAITING_PROVIDER: "bg-amber-50 text-amber-700 border-amber-200",
+  PENDING_INVITES: "bg-indigo-50 text-indigo-700 border-indigo-200",
   IN_PROGRESS: "bg-yellow-50 text-yellow-700 border-yellow-200",
   COMPLETED: "bg-slate-50 text-slate-600 border-slate-200",
   CANCELLED: "bg-red-50 text-red-700 border-red-200",
   NO_SHOW: "bg-red-50 text-red-700 border-red-200",
+  EXPIRED: "bg-red-50 text-red-700 border-red-200",
 };
 
 function getStatusStyle(status: string) {
@@ -54,10 +68,26 @@ function getStatusStyle(status: string) {
 }
 
 function formatBookingStatus(status: string) {
-  return status
-    .charAt(0)
-    .toUpperCase()
-    .concat(status.slice(1).toLowerCase().replace(/_/g, " "));
+  return status.charAt(0).toUpperCase().concat(status.slice(1).toLowerCase().replace(/_/g, " "));
+}
+
+// Compute expected refund percentage client-side based on the same policy the
+// server applies. Used only for the cancel-dialog preview — the server is the
+// source of truth for the real calculation.
+function getRefundPreview(booking: Booking): {
+  percentage: number;
+  amount: number;
+} {
+  const dateStr = booking.date.split("T")[0]; // "YYYY-MM-DD"
+  const [h, m] = booking.startTime.split(":").map(Number);
+  const bookingStart = new Date(
+    `${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`
+  );
+  const hoursUntil = (bookingStart.getTime() - Date.now()) / (1000 * 60 * 60);
+
+  if (hoursUntil > 48) return { percentage: 100, amount: booking.totalAmount };
+  if (hoursUntil > 24) return { percentage: 50, amount: Math.round(booking.totalAmount * 0.5) };
+  return { percentage: 0, amount: 0 };
 }
 
 export default function BookingsPage() {
@@ -71,13 +101,16 @@ export default function BookingsPage() {
     totalPages: 0,
   });
   const [itemsPerPage] = useState(10);
-  const [activeTab, setActiveTab] = useState<TabType>("venues");
+  const [activeTab, setActiveTab] = useState<BookingTabId>("venues");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
+  const [cancelRefundPreview, setCancelRefundPreview] = useState<{
+    percentage: number;
+    amount: number;
+  } | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(
-    null,
-  );
+  const [retryingRefundId, setRetryingRefundId] = useState<string | null>(null);
+  const [isCoveringPaymentId, setIsCoveringPaymentId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -103,8 +136,32 @@ export default function BookingsPage() {
     fetchBookings();
   }, [currentPage, itemsPerPage]);
 
-  const handleCancelClick = (bookingId: string) => {
-    setBookingToCancel(bookingId);
+  // Poll every 30 s while any booking has a PENDING refund so the user sees the
+  // status flip to PROCESSED without needing to reload.
+  useEffect(() => {
+    const hasPendingRefund = bookings.some((b) => b.refundStatus === "PENDING");
+    if (!hasPendingRefund) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await bookingApi.getMyBookings({
+          page: currentPage,
+          limit: itemsPerPage,
+        });
+        if (response.success && response.data) {
+          setBookings(response.data);
+        }
+      } catch {
+        // silent — don't interrupt the user
+      }
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [bookings, currentPage, itemsPerPage]);
+
+  const handleCancelClick = (booking: Booking) => {
+    setBookingToCancel(booking.id);
+    setCancelRefundPreview(getRefundPreview(booking));
     setConfirmDialogOpen(true);
   };
 
@@ -113,16 +170,65 @@ export default function BookingsPage() {
 
     try {
       setIsCancelling(true);
-      await bookingApi.cancelBooking(bookingToCancel);
-      setBookings(bookings.filter((b) => b.id !== bookingToCancel));
-      toast.success("Booking cancelled successfully");
+      const result = await bookingApi.cancelBooking(bookingToCancel);
+      const refundAmount = result.data?.refundAmount ?? 0;
+      // Update the booking in-place so refund status shows immediately
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingToCancel
+            ? {
+                ...b,
+                status: "CANCELLED" as const,
+                refundStatus: refundAmount > 0 ? ("PENDING" as const) : undefined,
+                refundAmount: refundAmount > 0 ? refundAmount : undefined,
+              }
+            : b
+        )
+      );
+      if (refundAmount > 0) {
+        toast.success(
+          `Booking cancelled, ₹${refundAmount.toLocaleString("en-IN")} refund initiated`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.success("Booking cancelled");
+      }
       setConfirmDialogOpen(false);
       setBookingToCancel(null);
+      setCancelRefundPreview(null);
     } catch (error) {
       console.error("Failed to cancel booking:", error);
       toast.error("Failed to cancel booking. Please try again.");
     } finally {
       setIsCancelling(false);
+    }
+  };
+
+  const handleRetryRefund = async (bookingId: string) => {
+    try {
+      setRetryingRefundId(bookingId);
+      const result = await bookingApi.retryRefund(bookingId);
+      if (result.success && result.data) {
+        setBookings((prev) =>
+          prev.map((b) =>
+            b.id === bookingId
+              ? {
+                  ...b,
+                  refundStatus: result.data!.refundStatus as Booking["refundStatus"],
+                  refundAmount:
+                    result.data!.refundAmount > 0 ? result.data!.refundAmount : b.refundAmount,
+                }
+              : b
+          )
+        );
+        toast.success("Refund retry initiated.");
+      } else {
+        toast.error(result.message || "Failed to retry refund.");
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Failed to retry refund. Please try again.");
+    } finally {
+      setRetryingRefundId(null);
     }
   };
 
@@ -134,9 +240,7 @@ export default function BookingsPage() {
         toast.success("Unpaid shares covered successfully");
         if (response.data) {
           setBookings((prev) =>
-            prev.map((b) =>
-              b.id === bookingId ? { ...b, ...response.data } : b,
-            ),
+            prev.map((b) => (b.id === bookingId ? { ...b, ...response.data } : b))
           );
         }
       }
@@ -148,27 +252,24 @@ export default function BookingsPage() {
   };
 
   // Filter bookings by type
-  const venueBookings = bookings.filter((b) => b.venueId && !b.coachId);
-  const coachBookings = bookings.filter((b) => b.coachId);
-  const filteredBookings =
-    activeTab === "venues" ? venueBookings : coachBookings;
+  const buckets = bucketBookings(bookings);
+  const tabCounts = {
+    venues: buckets.venues.length,
+    coaches: buckets.coaches.length,
+    academies: buckets.academies.length,
+    experts: buckets.experts.length,
+  };
+  const filteredBookings = buckets[activeTab];
+  const activeTabConfig = bookingTabConfig(activeTab);
 
   // Stats
-  const confirmedCount = bookings.filter(
-    (b) => b.status === "CONFIRMED",
-  ).length;
-  const upcomingCount = bookings.filter(
-    (b) => new Date(b.date) >= new Date(),
-  ).length;
+  const [view, setView] = useState<BookingsView>("list");
 
   if (isLoading) {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "My Bookings" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Bookings" }]}
         />
 
         <PlayerPageHeader
@@ -183,12 +284,7 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "My Bookings" },
-        ]}
-      />
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "My Bookings" }]} />
 
       <PlayerPageHeader
         badge="Player"
@@ -196,148 +292,71 @@ export default function BookingsPage() {
         subtitle="Keep track of your upcoming sessions, payments, and history in one place."
         action={
           <div className="flex flex-wrap gap-3">
-            <Link href="/venues">
-              <Button variant="secondary">Browse Venues</Button>
+            <Link href="/booking">
+              <Button variant="outline">Book a venue</Button>
             </Link>
-            <Link href="/coaches">
-              <Button variant="primary">Find a Coach</Button>
+            <Link href="/booking?tab=coaches">
+              <Button variant="primary">Find a coach</Button>
             </Link>
           </div>
         }
       />
 
-      {/* Stats strip */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Total
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {bookings.length}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Upcoming
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {upcomingCount}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200/70 bg-white/70 px-4 py-3 premium-shadow shop-surface">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Confirmed
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {confirmedCount}
-          </p>
-        </div>
-      </div>
+      <BookingStatsStrip bookings={bookings} />
 
-      {bookings.length === 0 ? (
-        <Card className="shop-surface premium-shadow">
+      <BookingsViewSwitch view={view} onChange={setView} />
+
+      {view === "calendar" ? (
+        <BookingCalendar />
+      ) : bookings.length === 0 ? (
+        <Card>
           <EmptyState
             icon={CalendarX}
             title="No bookings yet"
             description="Explore venues or connect with a coach to schedule your first session."
-            actionLabel="Browse Venues"
-            onAction={() => (window.location.href = "/venues")}
+            actionLabel="Book Venue"
+            onAction={() => (window.location.href = "/booking")}
             secondaryActionLabel="Find a Coach"
-            onSecondaryAction={() => (window.location.href = "/coaches")}
+            onSecondaryAction={() => (window.location.href = "/booking?tab=coaches")}
           />
         </Card>
       ) : (
         <div className="space-y-6">
           {/* Tabs */}
-          <Card className="shop-surface premium-shadow overflow-hidden p-0">
-            <div className="flex flex-col border-b border-slate-200/60 sm:flex-row">
-              <button
-                onClick={() => {
-                  setActiveTab("venues");
-                  setCurrentPage(1);
-                }}
-                className={`flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:px-6 ${
-                  activeTab === "venues"
-                    ? "border-power-orange bg-orange-50/50 text-power-orange"
-                    : "border-transparent text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2 flex-wrap">
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-lg ${activeTab === "venues" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"}`}
-                  >
-                    <MapPin className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm sm:text-base">Venue Bookings</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs ${activeTab === "venues" ? "bg-power-orange/10 text-power-orange" : "bg-slate-100 text-slate-600"}`}
-                  >
-                    {venueBookings.length}
-                  </span>
-                </div>
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("coaches");
-                  setCurrentPage(1);
-                }}
-                className={`flex-1 border-b-2 px-3 py-4 font-semibold transition-colors sm:border-b-2 sm:border-l sm:px-6 ${
-                  activeTab === "coaches"
-                    ? "border-power-orange bg-orange-50/50 text-power-orange"
-                    : "border-transparent text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                <div className="flex items-center justify-center gap-2 flex-wrap">
-                  <div
-                    className={`flex h-7 w-7 items-center justify-center rounded-lg ${activeTab === "coaches" ? "bg-power-orange text-white" : "bg-slate-100 text-slate-500"}`}
-                  >
-                    <Award className="h-4 w-4" />
-                  </div>
-                  <span className="text-sm sm:text-base">Coach Bookings</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:text-xs ${activeTab === "coaches" ? "bg-power-orange/10 text-power-orange" : "bg-purple-100/70 text-purple-700"}`}
-                  >
-                    {coachBookings.length}
-                  </span>
-                </div>
-              </button>
-            </div>
+          <Card className="overflow-hidden p-0">
+            <BookingTabBar
+              activeTab={activeTab}
+              counts={tabCounts}
+              onTabChange={(tab) => {
+                setActiveTab(tab);
+                setCurrentPage(1);
+              }}
+            />
           </Card>
 
           {/* Bookings List */}
           {filteredBookings.length === 0 ? (
-            <Card className="shop-surface premium-shadow">
+            <Card>
               <EmptyState
-                icon={activeTab === "venues" ? MapPin : Award}
-                title={`No ${activeTab} bookings`}
-                description={
-                  activeTab === "venues"
-                    ? "You haven't booked any venues yet."
-                    : "You haven't booked any coaches yet."
-                }
-                actionLabel={
-                  activeTab === "venues" ? "Browse Venues" : "Find a Coach"
-                }
-                onAction={() =>
-                  (window.location.href =
-                    activeTab === "venues" ? "/venues" : "/coaches")
-                }
+                icon={activeTabConfig.icon}
+                title={activeTabConfig.emptyTitle}
+                description={activeTabConfig.emptyDescription}
+                actionLabel={activeTabConfig.emptyActionLabel}
+                onAction={() => (window.location.href = activeTabConfig.browseHref)}
               />
             </Card>
           ) : (
             <div className="space-y-4">
               {filteredBookings.map((booking) => (
-                <Card
-                  key={booking.id}
-                  className="shop-surface premium-shadow overflow-hidden p-0 transition-all duration-200 hover:shadow-md"
-                >
+                <Card key={booking.id} className="overflow-hidden p-0">
                   {/* Colored left stripe based on status */}
                   <div className="flex">
                     <div
                       className={`w-1 shrink-0 ${
                         booking.status === "CONFIRMED"
-                          ? "bg-emerald-400"
-                          : booking.status === "PENDING_CONFIRMATION" ||
+                          ? "bg-turf-green"
+                          : booking.status === "AWAITING_PAYMENT" ||
+                              booking.status === "AWAITING_PROVIDER" ||
                               booking.status === "PENDING_INVITES"
                             ? "bg-amber-400"
                             : booking.status === "IN_PROGRESS"
@@ -347,60 +366,7 @@ export default function BookingsPage() {
                     />
                     <div className="flex flex-1 flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                       <div className="flex-1">
-                        {/* Venue Booking */}
-                        {activeTab === "venues" &&
-                        typeof booking.venueId === "object" &&
-                        booking.venueId !== null ? (
-                          <>
-                            <Link
-                              href={`/venues/${(booking.venueId as any)._id || (booking.venueId as any).id}`}
-                              className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900 hover:text-power-orange transition-colors"
-                            >
-                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100">
-                                <MapPin className="h-4 w-4 text-blue-600" />
-                              </div>
-                              {(booking.venueId as any).name || "Venue"}
-                            </Link>
-                            {(booking.venueId as any).address && (
-                              <p className="mb-2 flex items-center gap-2 text-sm text-slate-500">
-                                <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                                {(booking.venueId as any).address}
-                              </p>
-                            )}
-                          </>
-                        ) : activeTab === "venues" ? (
-                          <div className="mb-2">
-                            <h3 className="text-base font-bold text-slate-900">
-                              Venue details pending
-                            </h3>
-                            <p className="text-sm text-slate-500">
-                              We'll show the full location once the venue
-                              details are resolved.
-                            </p>
-                          </div>
-                        ) : null}
-
-                        {/* Coach Booking */}
-                        {activeTab === "coaches" && booking.coach ? (
-                          <>
-                            <div className="mb-1 inline-flex items-center gap-2 text-base font-bold text-slate-900">
-                              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100">
-                                <Award className="h-4 w-4 text-purple-600" />
-                              </div>
-                              {booking.coach.sports?.[0] || "Coach"} Coach
-                            </div>
-                            <p className="mb-2 text-sm text-slate-500">
-                              Service:{" "}
-                              <span className="font-medium text-slate-700">
-                                {booking.coach.serviceMode === "FREELANCE"
-                                  ? "Freelance"
-                                  : booking.coach.serviceMode === "OWN_VENUE"
-                                    ? "Own Venue"
-                                    : "Hybrid"}
-                              </span>
-                            </p>
-                          </>
-                        ) : null}
+                        <BookingProviderHeading booking={booking} tab={activeTab} />
 
                         {/* Common Details */}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -410,38 +376,33 @@ export default function BookingsPage() {
                           </span>
                           <span className="inline-flex items-center gap-1.5">
                             <Clock className="h-3.5 w-3.5 text-slate-400" />
-                            {formatTime(booking.startTime)} –{" "}
-                            {formatTime(booking.endTime)}
+                            {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
                           </span>
                         </div>
 
                         {booking.sport && (
                           <p className="mt-2 text-sm text-slate-600">
-                            Sport:{" "}
-                            <span className="font-medium">{booking.sport}</span>
+                            Sport: <span className="font-medium">{booking.sport}</span>
                           </p>
                         )}
 
                         {booking.participantName && (
                           <p className="mt-1 text-sm text-slate-600">
                             Participant:{" "}
-                            <span className="font-medium">
-                              {booking.participantName}
-                            </span>
+                            <span className="font-medium">{booking.participantName}</span>
                           </p>
                         )}
 
-                        {booking.status === "CONFIRMED" &&
-                          booking.checkInCode && (
-                            <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                              <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-                                Check-in Code
-                              </span>
-                              <span className="font-mono text-sm font-bold text-emerald-900">
-                                {booking.checkInCode}
-                              </span>
-                            </div>
-                          )}
+                        {booking.status === "CONFIRMED" && booking.checkInCode && (
+                          <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                              Check-in Code
+                            </span>
+                            <span className="font-mono text-sm font-bold text-emerald-900">
+                              {booking.checkInCode}
+                            </span>
+                          </div>
+                        )}
 
                         <div className="mt-3 flex flex-wrap items-center gap-3">
                           <span className="inline-flex items-center gap-1 font-semibold text-slate-900">
@@ -455,24 +416,65 @@ export default function BookingsPage() {
                           </Badge>
                         </div>
 
+                        {/* Refund status strip — only for cancelled / expired bookings */}
+                        {(booking.status === "CANCELLED" || booking.status === "EXPIRED") &&
+                          booking.refundStatus && (
+                            <div
+                              className={`mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                                booking.refundStatus === "PROCESSED"
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                  : booking.refundStatus === "REJECTED"
+                                    ? "border-red-200 bg-red-50 text-red-700"
+                                    : "border-amber-200 bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              {booking.refundStatus === "PROCESSED" ? (
+                                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                              ) : booking.refundStatus === "REJECTED" ? (
+                                <XCircle className="h-4 w-4 shrink-0" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 shrink-0 animate-spin" />
+                              )}
+                              <span className="font-medium">
+                                {booking.refundStatus === "PROCESSED"
+                                  ? `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} processed`
+                                  : booking.refundStatus === "REJECTED"
+                                    ? "Refund failed"
+                                    : `Refund of ₹${(booking.refundAmount ?? 0).toLocaleString("en-IN")} pending`}
+                              </span>
+                              {booking.refundStatus === "PENDING" && (
+                                <span className="ml-auto text-xs opacity-70">
+                                  3–5 business days
+                                </span>
+                              )}
+                              {booking.refundStatus === "REJECTED" && (
+                                <button
+                                  onClick={() => handleRetryRefund(booking.id)}
+                                  disabled={retryingRefundId === booking.id}
+                                  className="ml-auto flex items-center gap-1 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
+                                >
+                                  <RefreshCw
+                                    className={`h-3 w-3 ${retryingRefundId === booking.id ? "animate-spin" : ""}`}
+                                  />
+                                  {retryingRefundId === booking.id ? "Retrying…" : "Retry"}
+                                </button>
+                              )}
+                            </div>
+                          )}
+
                         {booking.createdAt && (
-                          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-1.5 text-xs text-slate-400">
+                          <div className="mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3 text-xs text-slate-400">
                             <Clock className="h-3 w-3" />
-                            Booked on {formatDate(booking.createdAt)} at {formatTime(booking.createdAt)}
+                            Booked on {formatDate(booking.createdAt)} at{" "}
+                            {formatTimestampTime(booking.createdAt)}
                           </div>
                         )}
                       </div>
 
                       <div className="flex flex-col gap-2 sm:w-auto">
                         {canViewInvoice(booking.status) && (
-                          <Link
-                            href={`/dashboard/my-bookings/${booking.id}/invoice`}
-                          >
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              icon={<FileText size={14} />}
-                            >
+                          <Link href={`/dashboard/my-bookings/${booking.id}/invoice`}>
+                            <Button variant="secondary" size="sm" icon={<FileText size={14} />}>
                               Invoice
                             </Button>
                           </Link>
@@ -493,10 +495,11 @@ export default function BookingsPage() {
                             </Button>
                           )}
                         {(booking.status === "CONFIRMED" ||
-                          booking.status === "PENDING_CONFIRMATION" ||
+                          booking.status === "AWAITING_PAYMENT" ||
+                          booking.status === "AWAITING_PROVIDER" ||
                           booking.status === "PENDING_INVITES") && (
                           <Button
-                            onClick={() => handleCancelClick(booking.id)}
+                            onClick={() => handleCancelClick(booking)}
                             variant="danger"
                             size="sm"
                           >
@@ -513,11 +516,11 @@ export default function BookingsPage() {
 
           {/* Pagination */}
           {pagination.totalPages > 1 && filteredBookings.length > 0 && (
-            <Card className="shop-surface premium-shadow">
+            <Card>
               <div className="flex items-center justify-between gap-4">
                 <div className="text-sm text-slate-600">
-                  Page {currentPage} of {pagination.totalPages} •{" "}
-                  {filteredBookings.length} {activeTab} bookings
+                  Page {currentPage} of {pagination.totalPages} • {filteredBookings.length}{" "}
+                  {activeTab} bookings
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -532,14 +535,8 @@ export default function BookingsPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() =>
-                      setCurrentPage((p) =>
-                        Math.min(pagination.totalPages, p + 1),
-                      )
-                    }
-                    disabled={
-                      currentPage === pagination.totalPages || isLoading
-                    }
+                    onClick={() => setCurrentPage((p) => Math.min(pagination.totalPages, p + 1))}
+                    disabled={currentPage === pagination.totalPages || isLoading}
                   >
                     Next
                     <ChevronRight className="ml-1 h-4 w-4" />
@@ -554,10 +551,17 @@ export default function BookingsPage() {
       {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
+        onClose={() => {
+          setConfirmDialogOpen(false);
+          setCancelRefundPreview(null);
+        }}
         onConfirm={handleCancelConfirm}
         title="Cancel Booking"
-        message="Are you sure you want to cancel this booking? This action cannot be undone."
+        message={
+          cancelRefundPreview && cancelRefundPreview.percentage > 0
+            ? `You'll receive a ${cancelRefundPreview.percentage}% refund of ₹${cancelRefundPreview.amount.toLocaleString("en-IN")} to your original payment method. This action cannot be undone.`
+            : "No refund applies at this stage. Are you sure you want to cancel? This action cannot be undone."
+        }
         confirmLabel="Yes, Cancel Booking"
         cancelLabel="Keep Booking"
         variant="danger"

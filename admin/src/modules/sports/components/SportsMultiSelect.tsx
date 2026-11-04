@@ -1,15 +1,16 @@
 "use client";
 
 import { sportsApi, Sport } from "@/modules/sports/services/sports";
-import { Button } from "@/modules/shared/ui/Button";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronDown, X, Loader, Plus } from "lucide-react";
+import { ChevronDown, X, Loader } from "lucide-react";
 
 interface SportsMultiSelectProps {
   value: string[];
   onChange: (sports: string[]) => void;
   disabled?: boolean;
   required?: boolean;
+  /** When provided, only these sport names (case-insensitive) are selectable. */
+  allowedSports?: string[];
 }
 
 export default function SportsMultiSelect({
@@ -17,24 +18,19 @@ export default function SportsMultiSelect({
   onChange,
   disabled = false,
   required = false,
+  allowedSports,
 }: SportsMultiSelectProps) {
   const [allSports, setAllSports] = useState<Sport[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredSports, setFilteredSports] = useState<Sport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [customSportInput, setCustomSportInput] = useState("");
-  const [isVerifyingCustom, setIsVerifyingCustom] = useState(false);
-  const [customSportError, setCustomSportError] = useState("");
   // simple filter - avoid adding fuse dependency to admin
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -55,7 +51,12 @@ export default function SportsMultiSelect({
     const fetchSports = async () => {
       try {
         setIsLoading(true);
-        const sports = await sportsApi.getAllSports();
+        const fetched = await sportsApi.getAllSports();
+        const sports = allowedSports
+          ? fetched.filter((s) =>
+              allowedSports.some((allowed) => allowed.toLowerCase() === s.name.toLowerCase())
+            )
+          : fetched;
         setAllSports(sports);
         setFilteredSports(sports);
       } catch (err) {
@@ -65,22 +66,21 @@ export default function SportsMultiSelect({
       }
     };
     fetchSports();
+    // allowedSports is expected to be a stable reference (module-level constant)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      setCustomSportError("");
       if (!query.trim()) {
         setFilteredSports(allSports);
         return;
       }
       const q = query.trim().toLowerCase();
-      setFilteredSports(
-        allSports.filter((s) => s.name.toLowerCase().includes(q)),
-      );
+      setFilteredSports(allSports.filter((s) => s.name.toLowerCase().includes(q)));
     },
-    [allSports],
+    [allSports]
   );
 
   const handleSelectSport = (sport: string) => {
@@ -89,36 +89,7 @@ export default function SportsMultiSelect({
     setIsOpen(true);
   };
 
-  const handleRemoveSport = (sport: string) =>
-    onChange(value.filter((s) => s !== sport));
-
-  const handleAddCustomSport = async () => {
-    if (!customSportInput.trim()) {
-      setCustomSportError("Please enter a sport name");
-      return;
-    }
-    setIsVerifyingCustom(true);
-    setCustomSportError("");
-    try {
-      const verification = await sportsApi.verifySport(customSportInput.trim());
-      if (!verification.isValid) {
-        setCustomSportError(`Invalid sport: ${verification.message}`);
-        setIsVerifyingCustom(false);
-        return;
-      }
-      const newSport = await sportsApi.addCustomSport(customSportInput.trim());
-      if (newSport) {
-        setAllSports((p) => [...p, newSport]);
-        handleSelectSport(newSport.name);
-        setCustomSportInput("");
-      }
-    } catch (err) {
-      setCustomSportError("Failed to add sport");
-      console.error(err);
-    } finally {
-      setIsVerifyingCustom(false);
-    }
-  };
+  const handleRemoveSport = (sport: string) => onChange(value.filter((s) => s !== sport));
 
   const selectedSportObjects = allSports.filter((s) => value.includes(s.name));
 
@@ -154,14 +125,11 @@ export default function SportsMultiSelect({
             disabled={disabled || isLoading}
             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50"
           />
-          <ChevronDown
-            size={18}
-            className="absolute right-3 top-2.5 text-slate-400"
-          />
+          <ChevronDown size={18} className="absolute right-3 top-2.5 text-slate-500" />
         </div>
 
         {isOpen && !disabled && (
-          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]">
             {isLoading ? (
               <div className="flex items-center justify-center px-4 py-6">
                 <Loader size={20} className="animate-spin text-blue-500" />
@@ -178,15 +146,11 @@ export default function SportsMultiSelect({
                           type="button"
                           onClick={() => handleSelectSport(sport.name)}
                           disabled={isSelected}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:cursor-default disabled:bg-blue-50 disabled:text-slate-600 focus:outline-none"
+                          className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 focus:outline-none disabled:cursor-default disabled:bg-blue-50 disabled:text-slate-600"
                         >
                           <div className="flex items-center gap-2">
-                            {isSelected && (
-                              <div className="h-4 w-4 rounded bg-blue-500" />
-                            )}
-                            <span className={isSelected ? "font-semibold" : ""}>
-                              {sport.name}
-                            </span>
+                            {isSelected && <div className="h-4 w-4 rounded bg-blue-500" />}
+                            <span className={isSelected ? "font-semibold" : ""}>{sport.name}</span>
                           </div>
                         </button>
                       );
@@ -199,51 +163,6 @@ export default function SportsMultiSelect({
                     No sports found
                   </div>
                 )}
-
-                <div className="border-t border-slate-200 px-4 py-3">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
-                    <Plus size={14} />
-                    Add Custom Sport
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g., Parkour"
-                      value={customSportInput}
-                      onChange={(e) => {
-                        setCustomSportInput(e.target.value);
-                        setCustomSportError("");
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddCustomSport();
-                        }
-                      }}
-                      disabled={isVerifyingCustom}
-                      className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-sm placeholder-slate-400 focus:border-blue-500 focus:outline-none disabled:bg-slate-50"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddCustomSport}
-                      disabled={isVerifyingCustom || !customSportInput.trim()}
-                      size="sm"
-                      variant="primary"
-                      className="sm:whitespace-nowrap"
-                    >
-                      {isVerifyingCustom ? (
-                        <Loader size={14} className="animate-spin" />
-                      ) : (
-                        "Add"
-                      )}
-                    </Button>
-                  </div>
-                  {customSportError && (
-                    <div className="mt-2 flex items-start gap-2 rounded bg-red-50 p-2 text-xs text-red-600">
-                      {customSportError}
-                    </div>
-                  )}
-                </div>
               </>
             )}
           </div>
@@ -251,9 +170,7 @@ export default function SportsMultiSelect({
       </div>
 
       {required && value.length === 0 && (
-        <p className="mt-1 text-xs text-red-500">
-          Please select at least one sport
-        </p>
+        <p className="mt-1 text-xs text-red-500">Please select at least one sport</p>
       )}
     </div>
   );

@@ -1,28 +1,47 @@
 import { Router } from "express";
+import type { ClientRateLimitInfo, Store } from "express-rate-limit";
 import rateLimit from "express-rate-limit";
 import redis from "../../config/redis";
+import { authMiddleware } from "../../middleware/auth";
+import { dependentsWriteRateLimiter } from "../../middleware/rateLimit";
 import {
+  addDependentSchema,
+  googleAuthSchema,
+  loginSchema,
+  registerSchema,
+  updateDependentSchema,
+} from "../../middleware/schemas";
+import {
+  getWhatsAppConsentHandler,
+  setWhatsAppConsentHandler,
+} from "../controller/whatsappConsentController";
+import { validateRequest } from "../../middleware/validation";
+import {
+  addAddressHandler,
   addDependentHandler,
+  changePasswordHandler,
   confirmProfilePictureUploadHandler,
+  deleteAccountHandler,
+  deleteAddressHandler,
   deleteDependentHandler,
   forgotPassword,
+  getAddressesHandler,
   getAuthBridge,
+  getMyPlayersHandler,
   getProfile,
   getProfilePictureUploadUrlHandler,
   googleAuth,
   graduateDependentHandler,
+  linkGoogleHandler,
   login,
   logout,
   register,
   resetPasswordHandler,
+  setDefaultAddressHandler,
+  updateAddressHandler,
   updateDependentHandler,
   updateProfileHandler,
-  getMyPlayersHandler,
 } from "../controller/authController";
-import { authMiddleware } from "../../middleware/auth";
-import { loginSchema, registerSchema } from "../../middleware/schemas";
-import { validateRequest } from "../../middleware/validation";
-import type { ClientRateLimitInfo, Store } from "express-rate-limit";
 
 const router = Router();
 
@@ -46,10 +65,7 @@ const createRedisRateLimitStore = (prefix: string): Store => {
         const ttl = await redis.pttl(redisKey);
         return {
           totalHits,
-          resetTime:
-            ttl > 0
-              ? new Date(Date.now() + ttl)
-              : new Date(Date.now() + windowMs),
+          resetTime: ttl > 0 ? new Date(Date.now() + ttl) : new Date(Date.now() + windowMs),
         };
       } catch {
         return {
@@ -129,47 +145,84 @@ const resetPasswordRateLimiter = rateLimit({
   store: createRedisRateLimitStore("rl:auth:reset-password:"),
   message: {
     success: false,
-    message:
-      "Too many password reset attempts. Please try again in 15 minutes.",
+    message: "Too many password reset attempts. Please try again in 15 minutes.",
   },
 });
 
-router.post(
-  "/register",
-  registerRateLimiter,
-  validateRequest(registerSchema),
-  register,
-);
+// Both require the current password, so brute-forcing it needs the same
+// throttle as login.
+const changePasswordRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:auth:change-password:"),
+  message: {
+    success: false,
+    message: "Too many attempts. Please try again in 15 minutes.",
+  },
+});
+
+const deleteAccountRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:auth:delete-account:"),
+  message: {
+    success: false,
+    message: "Too many attempts. Please try again in 15 minutes.",
+  },
+});
+
+router.post("/register", registerRateLimiter, validateRequest(registerSchema), register);
 router.post("/login", loginRateLimiter, validateRequest(loginSchema), login);
 router.post("/logout", authMiddleware, logout);
 router.get("/profile", authMiddleware, getProfile);
 router.get("/bridge", authMiddleware, getAuthBridge);
 router.put("/profile", authMiddleware, updateProfileHandler);
+router.get("/whatsapp-consent", authMiddleware, getWhatsAppConsentHandler);
+router.put("/whatsapp-consent", authMiddleware, setWhatsAppConsentHandler);
 router.post("/forgot-password", forgotPasswordRateLimiter, forgotPassword);
 router.post("/reset-password", resetPasswordRateLimiter, resetPasswordHandler);
-router.post("/google", googleAuth);
+router.post("/google", validateRequest(googleAuthSchema), googleAuth);
+router.post("/google/link", authMiddleware, linkGoogleHandler);
 router.post("/graduate", authMiddleware, graduateDependentHandler);
+router.put("/change-password", authMiddleware, changePasswordRateLimiter, changePasswordHandler);
+router.post("/delete-account", authMiddleware, deleteAccountRateLimiter, deleteAccountHandler);
 
 // Profile picture endpoints
-router.post(
-  "/profile-picture/upload-url",
-  authMiddleware,
-  getProfilePictureUploadUrlHandler,
-);
-router.post(
-  "/profile-picture/confirm",
-  authMiddleware,
-  confirmProfilePictureUploadHandler,
-);
+router.post("/profile-picture/upload-url", authMiddleware, getProfilePictureUploadUrlHandler);
+router.post("/profile-picture/confirm", authMiddleware, confirmProfilePictureUploadHandler);
 
 // Dependent management endpoints
 router.get("/players", authMiddleware, getMyPlayersHandler);
-router.post("/dependents", authMiddleware, addDependentHandler);
-router.put("/dependents/:dependentId", authMiddleware, updateDependentHandler);
+router.post(
+  "/dependents",
+  authMiddleware,
+  dependentsWriteRateLimiter,
+  validateRequest(addDependentSchema),
+  addDependentHandler
+);
+router.put(
+  "/dependents/:dependentId",
+  authMiddleware,
+  dependentsWriteRateLimiter,
+  validateRequest(updateDependentSchema),
+  updateDependentHandler
+);
 router.delete(
   "/dependents/:dependentId",
   authMiddleware,
-  deleteDependentHandler,
+  dependentsWriteRateLimiter,
+  deleteDependentHandler
 );
+
+// Address management endpoints
+router.get("/addresses", authMiddleware, getAddressesHandler);
+router.post("/addresses", authMiddleware, addAddressHandler);
+router.put("/addresses/:addressId", authMiddleware, updateAddressHandler);
+router.delete("/addresses/:addressId", authMiddleware, deleteAddressHandler);
+router.patch("/addresses/:addressId/set-default", authMiddleware, setDefaultAddressHandler);
 
 export default router;

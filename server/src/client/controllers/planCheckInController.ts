@@ -1,0 +1,230 @@
+import { Request, Response } from "express";
+import mongoose from "mongoose";
+import { PlanCheckIn } from "../../shared/models/PlanCheckIn";
+import { PlanCheckInService } from "../../shared/services/PlanCheckInService";
+import { Player } from "../models/Player";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+
+const TRIAL_WEEKS = 4;
+
+/**
+ * POST /plan-checkins/find-sport-trial
+ * Created client-side right after a /find-sport recommendation is saved to
+ * a dependent — there's no server-side generation step to hook into (the
+ * scorer runs in the browser), so this is the one check-in type the client
+ * initiates directly rather than the server creating it as a side effect.
+ */
+export const createFindSportTrialCheckIn = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { dependentId, sport, signals } = req.body;
+    if (!sport || typeof sport !== "string" || !sport.trim()) {
+      throw new AppError("sport is required", 400);
+    }
+
+    let validDependentId: string | null = null;
+    if (dependentId && mongoose.isValidObjectId(dependentId)) {
+      const dep = await Player.findOne({ _id: dependentId, userId: req.user.id }).lean();
+      if (dep) validDependentId = dependentId;
+    }
+
+    const cleanSignals = Array.isArray(signals)
+      ? signals
+          .filter((s) => typeof s === "string")
+          .slice(0, 4)
+          .map((s) => s.slice(0, 300))
+      : [];
+
+    const checkInDueAt = new Date(Date.now() + TRIAL_WEEKS * 7 * 24 * 60 * 60 * 1000);
+    const sportName = sport.trim().slice(0, 60);
+
+    // Idempotent: retaking the wizard reuses the child's active trial rather
+    // than queuing another nudge and email.
+    const checkIn = await PlanCheckInService.scheduleFindSportTrial({
+      userId: req.user.id,
+      dependentId: validDependentId,
+      sport: sportName,
+      title: `We recommended ${sportName} about ${TRIAL_WEEKS} weeks ago — how did the trial go?`,
+      signals: cleanSignals,
+      checkInDueAt,
+    });
+
+    res.status(201).json({ success: true, data: checkIn });
+  }
+);
+
+/**
+ * POST /plan-checkins/find-sport-trial/choice
+ *
+ * The parent picking a sport on the results page — the one point in the flow
+ * where we learn what they actually decided, rather than inferring it from the
+ * highest score. Two writes, deliberately in one call so the profile and the
+ * scheduled nudge can't disagree about which sport this family is trying:
+ *
+ *   1. `chosenSport` on the dependent — the durable record of the decision.
+ *   2. The already-scheduled trial check-in, repointed at that sport.
+ */
+export const recordFindSportChoice = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { dependentId, sport, signals } = req.body;
+    if (!sport || typeof sport !== "string" || !sport.trim()) {
+      throw new AppError("sport is required", 400);
+    }
+    const sportName = sport.trim().slice(0, 60);
+
+    let validDependentId: string | null = null;
+    if (dependentId && mongoose.isValidObjectId(dependentId)) {
+      const updated = await Player.findOneAndUpdate(
+        { _id: dependentId, userId: req.user.id },
+        {
+          $set: { chosenSport: sportName, chosenSportAt: new Date() },
+          // ── Why the choice also lands in `sportsFocus` ──
+          //
+          // `sportsFocus` is the field the rest of the product reads as "what
+          // does this child play": the profile modal's Sports selector binds to
+          // it, and the completion scorer counts it. The wizard only ever filled
+          // it from `answers.priorSports` — the sports the child ALREADY played —
+          // which is empty for exactly the beginners this flow is built for.
+          //
+          // The result was a dashboard that named the sport, ticked "Sport
+          // chosen" and linked a badminton roadmap while sitting at 90% under an
+          // "Add their sport" button, and a profile modal whose Sports field was
+          // blank. A decision is the strongest possible statement of interest, so
+          // it belongs in both.
+          //
+          // `$addToSet`, so retaking the assessment and picking a second sport
+          // adds to the list rather than replacing what the parent told us.
+          $addToSet: { sportsFocus: sportName },
+        }
+      ).lean();
+      if (updated) validDependentId = dependentId;
+    }
+
+    const cleanSignals = Array.isArray(signals)
+      ? signals
+          .filter((s) => typeof s === "string")
+          .slice(0, 4)
+          .map((s) => s.slice(0, 300))
+      : [];
+    const title = `You picked ${sportName} about ${TRIAL_WEEKS} weeks ago — how did the trial go?`;
+
+    const retargeted = await PlanCheckInService.retargetFindSportTrial({
+      userId: req.user.id,
+      dependentId: validDependentId,
+      sport: sportName,
+      title,
+      signals: cleanSignals,
+    });
+
+    // No check-in to retarget — the parent reached results as a guest and
+    // registered later, or the original scheduling failed. Start the clock now.
+    const checkIn =
+      retargeted ??
+      (await PlanCheckInService.scheduleFindSportTrial({
+        userId: req.user.id,
+        dependentId: validDependentId,
+        sport: sportName,
+        title,
+        signals: cleanSignals,
+        checkInDueAt: new Date(Date.now() + TRIAL_WEEKS * 7 * 24 * 60 * 60 * 1000),
+      }));
+
+    res.status(200).json({ success: true, data: checkIn });
+  }
+);
+
+/**
+ * GET /plan-checkins/:id
+ * Fetch a single check-in — this is what the emailed link lands on.
+ */
+export const getPlanCheckIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const { id } = req.params;
+  if (!id || !mongoose.isValidObjectId(id)) {
+    throw new AppError("Invalid check-in id", 400);
+  }
+
+  const checkIn = await PlanCheckIn.findById(id).lean();
+  if (!checkIn) {
+    throw new AppError("Check-in not found", 404);
+  }
+  if (checkIn.userId.toString() !== req.user.id) {
+    throw new AppError("Forbidden", 403);
+  }
+
+  res.status(200).json({ success: true, data: checkIn });
+});
+
+/**
+ * GET /plan-checkins
+ * Active/due check-ins for the logged-in parent (e.g. an "active plans" list).
+ */
+export const listPlanCheckIns = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  const checkIns = await PlanCheckIn.find({
+    userId: req.user.id,
+    status: { $in: ["active", "due"] },
+  })
+    .sort({ checkInDueAt: 1 })
+    .lean();
+
+  res.status(200).json({ success: true, data: checkIns });
+});
+
+const RESPOND_STATUSES = ["progressing", "not_progressing", "ambiguous", "abandoned"];
+
+/**
+ * POST /plan-checkins/:id/respond
+ * The parent's answer to "how's it going?" — returns what the client should
+ * offer next (re-diagnose, escalate to the team, try another sport, or done).
+ */
+export const respondToPlanCheckIn = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { id } = req.params;
+    if (!id || !mongoose.isValidObjectId(id)) {
+      throw new AppError("Invalid check-in id", 400);
+    }
+
+    const { status, outcomeNote } = req.body;
+    if (!RESPOND_STATUSES.includes(status)) {
+      throw new AppError(`status must be one of: ${RESPOND_STATUSES.join(", ")}`, 400);
+    }
+
+    const checkIn = await PlanCheckIn.findById(id);
+    if (!checkIn) {
+      throw new AppError("Check-in not found", 404);
+    }
+    if (checkIn.userId.toString() !== req.user.id) {
+      throw new AppError("Forbidden", 403);
+    }
+
+    checkIn.status = status;
+    if (typeof outcomeNote === "string") {
+      checkIn.outcomeNote = outcomeNote.slice(0, 2000);
+    }
+    checkIn.respondedAt = new Date();
+    await checkIn.save();
+
+    const followUp = PlanCheckInService.computeFollowUp(checkIn);
+
+    res.status(200).json({ success: true, data: { checkIn, followUp } });
+  }
+);

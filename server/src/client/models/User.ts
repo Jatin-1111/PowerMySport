@@ -2,28 +2,67 @@ import bcrypt from "bcryptjs";
 import mongoose, { Document, Schema } from "mongoose";
 import { S3Service } from "../../shared/services/S3Service";
 import { UserRole } from "../../types/index";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("user");
 
 export interface UserDocument extends Document {
   name: string;
   email: string;
   phone: string;
   role: UserRole;
-  userType: "Parent" | "Recreational" | "Coach" | "Academy" | "VenueLister" | "Admin";
   password?: string;
   googleId?: string;
   photoUrl?: string;
   photoS3Key?: string;
   city?: string;
+  /** True once the parent has finished or skipped the season planner's tour. */
+  plannerTourSeen?: boolean;
   lastActiveAt?: Date;
   dob?: Date;
+  // Parent-only profile fields — previously lived on the (now-removed)
+  // ParentUser discriminator sub-schema; moved onto the base model since
+  // discriminators were dropped along with userType.
+  bio?: string;
+  sportInterests?: string[];
+  involvementYears?: number;
+  /**
+   * An adult's own sport details (the "My sports" card). Lived on a `type: "SELF"` Player
+   * row until migration 65, which made `players` hold children only.
+   */
+  athleteProfile?: {
+    sportsFocus?: string[];
+    yearsPlaying?: number;
+    personalityTags?: string[];
+    primaryObjective?: "Recreational" | "Fitness" | "Compete";
+    weeklyTimeCommitment?: number;
+    budgetTier?: "Budget" | "Moderate" | "Premium";
+    location?: string;
+  };
   legalConsents?: {
-    terms?: { accepted: boolean; acceptedAt?: Date; version?: string; };
-    privacy?: { accepted: boolean; acceptedAt?: Date; version?: string; };
+    terms?: { accepted: boolean; acceptedAt?: Date; version?: string };
+    privacy?: { accepted: boolean; acceptedAt?: Date; version?: string };
+    /** The parent's agreement to the Parental Consent policy, given when adding a child. */
+    parentalConsent?: { accepted: boolean; acceptedAt?: Date; version?: string };
+    /** The parent's agreement to PMS storing videos of their child, given before the first upload. */
+    childVideo?: { accepted: boolean; acceptedAt?: Date; version?: string };
+  };
+  /**
+   * Whether this person agreed to get WhatsApp messages from us (Meta requires an
+   * opt-in before a business messages someone first). `at` and `source` are the
+   * proof; `withdrawnAt` is set when they switch it off or reply STOP.
+   */
+  whatsappConsent?: {
+    granted: boolean;
+    at?: Date;
+    source?: "signup" | "settings" | "booking";
+    withdrawnAt?: Date;
   };
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   notificationPreferences?: {
-    email?: any; push?: any; inApp?: any;
+    email?: any;
+    push?: any;
+    inApp?: any;
   };
   reminderPreferences?: any;
   pushSubscriptions?: any[];
@@ -32,6 +71,10 @@ export interface UserDocument extends Document {
   suspendedAt?: Date;
   suspendedBy?: mongoose.Types.ObjectId;
   deactivatedAt?: Date;
+  /** Set when the user requests self-deletion; cleared if they log back in
+   *  within the grace period, or once `finalizeAccountDeletion` has run. */
+  pendingDeletion?: boolean;
+  deletionRequestedAt?: Date;
   refundMethods?: Array<{
     id?: string;
     type: "ORIGINAL_CARD" | "BANK_ACCOUNT" | "STORE_CREDIT";
@@ -43,6 +86,33 @@ export interface UserDocument extends Document {
     addedAt?: Date;
     updatedAt?: Date;
   }>;
+  addresses?: Array<{
+    _id?: mongoose.Types.ObjectId;
+    fullName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    isDefault?: boolean;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }>;
+  defaultAddressId?: mongoose.Types.ObjectId;
+  shippingAddress?: {
+    fullName: string;
+    email: string;
+    phone: string;
+    addressLine1: string;
+    addressLine2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
   createdAt: Date;
   updatedAt: Date;
   comparePassword(password: string): Promise<boolean>;
@@ -52,53 +122,214 @@ export interface UserDocument extends Document {
 const userSchema = new Schema<UserDocument>(
   {
     name: { type: String, required: [true, "Name is required"], trim: true },
-    email: { type: String, required: [true, "Email is required"], unique: true, lowercase: true },
-    phone: { type: String, required: [true, "Phone number is required"], unique: true },
-    role: { type: String, enum: ["PLAYER", "VENUE_LISTER", "COACH", "ACADEMY_OWNER", "ADMIN"], default: "PLAYER" },
-    userType: { type: String, enum: ["Parent", "Recreational", "Coach", "Academy", "VenueLister", "Admin"], default: "Recreational" },
-    password: { type: String, required: function (this: UserDocument) { return !this.googleId; }, minlength: 6, select: false },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+    },
+    phone: {
+      type: String,
+      required: [true, "Phone number is required"],
+      unique: true,
+    },
+    role: {
+      type: String,
+      enum: ["Player", "Parent", "VenueLister", "Coach", "Academy", "EXPERT", "Admin"],
+      default: "Player",
+    },
+    password: {
+      type: String,
+      required: function (this: UserDocument) {
+        return !this.googleId;
+      },
+      minlength: 6,
+      select: false,
+    },
     googleId: { type: String, unique: true, sparse: true },
     photoUrl: { type: String },
     photoS3Key: { type: String },
     city: { type: String, trim: true },
+    plannerTourSeen: { type: Boolean, default: false },
     lastActiveAt: { type: Date, default: Date.now, index: true },
     dob: { type: Date },
+    bio: { type: String, maxlength: 300 },
+    sportInterests: { type: [String], default: [] },
+    involvementYears: { type: Number, min: 0, max: 40 },
+    athleteProfile: {
+      type: new Schema(
+        {
+          sportsFocus: { type: [String], default: [] },
+          yearsPlaying: { type: Number, min: 0, max: 20 },
+          personalityTags: { type: [String] },
+          primaryObjective: { type: String, enum: ["Recreational", "Fitness", "Compete"] },
+          weeklyTimeCommitment: { type: Number },
+          budgetTier: { type: String, enum: ["Budget", "Moderate", "Premium"] },
+          location: { type: String, trim: true },
+        },
+        { _id: false }
+      ),
+      default: undefined,
+    },
     legalConsents: {
-      terms: { accepted: { type: Boolean, default: false }, acceptedAt: { type: Date }, version: { type: String } },
-      privacy: { accepted: { type: Boolean, default: false }, acceptedAt: { type: Date }, version: { type: String } },
+      terms: {
+        accepted: { type: Boolean, default: false },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+      privacy: {
+        accepted: { type: Boolean, default: false },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+      parentalConsent: {
+        accepted: { type: Boolean },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+      childVideo: {
+        accepted: { type: Boolean },
+        acceptedAt: { type: Date },
+        version: { type: String },
+      },
+    },
+    whatsappConsent: {
+      granted: { type: Boolean, default: false },
+      at: { type: Date },
+      source: { type: String, enum: ["signup", "settings", "booking"] },
+      withdrawnAt: { type: Date },
     },
     resetPasswordToken: { type: String, select: false },
     resetPasswordExpires: { type: Date, select: false },
-    
-    // Notification & Reminders Simplified for brevity, retaining exact types is generally okay, 
+
+    // Notification & Reminders Simplified for brevity, retaining exact types is generally okay,
     // but I'll add the full object so it doesn't break TS.
     notificationPreferences: {
-      email: { friendRequests: { type: Boolean, default: true }, bookingInvitations: { type: Boolean, default: true }, bookingConfirmations: { type: Boolean, default: true }, bookingReminders: { type: Boolean, default: true }, bookingCancellations: { type: Boolean, default: true }, reviews: { type: Boolean, default: true }, payments: { type: Boolean, default: true }, admin: { type: Boolean, default: true }, marketing: { type: Boolean, default: false } },
-      push: { friendRequests: { type: Boolean, default: true }, bookingInvitations: { type: Boolean, default: true }, bookingConfirmations: { type: Boolean, default: true }, bookingReminders: { type: Boolean, default: true }, bookingCancellations: { type: Boolean, default: true }, reviews: { type: Boolean, default: true }, payments: { type: Boolean, default: true }, admin: { type: Boolean, default: true }, marketing: { type: Boolean, default: false } },
-      inApp: { friendRequests: { type: Boolean, default: true }, bookingInvitations: { type: Boolean, default: true }, bookingConfirmations: { type: Boolean, default: true }, bookingReminders: { type: Boolean, default: true }, bookingCancellations: { type: Boolean, default: true }, reviews: { type: Boolean, default: true }, payments: { type: Boolean, default: true }, admin: { type: Boolean, default: true }, marketing: { type: Boolean, default: true } },
+      email: {
+        friendRequests: { type: Boolean, default: true },
+        bookingInvitations: { type: Boolean, default: true },
+        bookingConfirmations: { type: Boolean, default: true },
+        bookingReminders: { type: Boolean, default: true },
+        bookingCancellations: { type: Boolean, default: true },
+        reviews: { type: Boolean, default: true },
+        payments: { type: Boolean, default: true },
+        // On by default: this only ever reaches someone who went and linked
+        // their own child's ranking, which is as explicit a request to hear
+        // about it as this platform has. Marketing is off by default because
+        // nobody asked for it; this is the opposite case.
+        rankingUpdates: { type: Boolean, default: true },
+        admin: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: false },
+      },
+      push: {
+        friendRequests: { type: Boolean, default: true },
+        bookingInvitations: { type: Boolean, default: true },
+        bookingConfirmations: { type: Boolean, default: true },
+        bookingReminders: { type: Boolean, default: true },
+        bookingCancellations: { type: Boolean, default: true },
+        reviews: { type: Boolean, default: true },
+        payments: { type: Boolean, default: true },
+        // On by default: this only ever reaches someone who went and linked
+        // their own child's ranking, which is as explicit a request to hear
+        // about it as this platform has. Marketing is off by default because
+        // nobody asked for it; this is the opposite case.
+        rankingUpdates: { type: Boolean, default: true },
+        admin: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: false },
+      },
+      inApp: {
+        friendRequests: { type: Boolean, default: true },
+        bookingInvitations: { type: Boolean, default: true },
+        bookingConfirmations: { type: Boolean, default: true },
+        bookingReminders: { type: Boolean, default: true },
+        bookingCancellations: { type: Boolean, default: true },
+        reviews: { type: Boolean, default: true },
+        payments: { type: Boolean, default: true },
+        rankingUpdates: { type: Boolean, default: true },
+        admin: { type: Boolean, default: true },
+        marketing: { type: Boolean, default: true },
+      },
     },
     reminderPreferences: {
-      bookingReminders: { enabled: { type: Boolean, default: true }, intervals: { twentyFourHours: { type: Boolean, default: true }, oneHour: { type: Boolean, default: true }, fifteenMinutes: { type: Boolean, default: true } } },
+      bookingReminders: {
+        enabled: { type: Boolean, default: true },
+        intervals: {
+          twentyFourHours: { type: Boolean, default: true },
+          oneHour: { type: Boolean, default: true },
+          fifteenMinutes: { type: Boolean, default: true },
+        },
+      },
     },
     pushSubscriptions: [
-      { endpoint: { type: String, required: true }, keys: { p256dh: { type: String, required: true }, auth: { type: String, required: true } }, userAgent: String, createdAt: { type: Date, default: Date.now } },
+      {
+        endpoint: { type: String, required: true },
+        keys: {
+          p256dh: { type: String, required: true },
+          auth: { type: String, required: true },
+        },
+        userAgent: String,
+        createdAt: { type: Date, default: Date.now },
+      },
     ],
     isActive: { type: Boolean, default: true, index: true },
     suspensionReason: { type: String, default: "", maxlength: 500 },
     suspendedAt: { type: Date, default: null },
     suspendedBy: { type: Schema.Types.ObjectId, ref: "Admin", default: null },
     deactivatedAt: { type: Date, default: null },
+    pendingDeletion: { type: Boolean, default: false, index: true },
+    deletionRequestedAt: { type: Date, default: null },
     refundMethods: [
-      { type: { type: String, enum: ["ORIGINAL_CARD", "BANK_ACCOUNT", "STORE_CREDIT"], default: "ORIGINAL_CARD" }, accountHolderName: { type: String, trim: true }, accountNumber: { type: String, trim: true }, ifscCode: { type: String, trim: true, uppercase: true }, bankName: { type: String, trim: true }, isDefault: { type: Boolean, default: false }, addedAt: { type: Date, default: Date.now }, updatedAt: { type: Date, default: Date.now } },
+      {
+        type: {
+          type: String,
+          enum: ["ORIGINAL_CARD", "BANK_ACCOUNT", "STORE_CREDIT"],
+          default: "ORIGINAL_CARD",
+        },
+        accountHolderName: { type: String, trim: true },
+        accountNumber: { type: String, trim: true },
+        ifscCode: { type: String, trim: true, uppercase: true },
+        bankName: { type: String, trim: true },
+        isDefault: { type: Boolean, default: false },
+        addedAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now },
+      },
     ],
+    addresses: [
+      {
+        fullName: { type: String, trim: true, required: true },
+        email: { type: String, trim: true, lowercase: true, required: true },
+        phone: { type: String, trim: true, required: true },
+        addressLine1: { type: String, trim: true, required: true },
+        addressLine2: { type: String, trim: true },
+        city: { type: String, trim: true, required: true },
+        state: { type: String, trim: true, required: true },
+        postalCode: { type: String, trim: true, required: true },
+        country: { type: String, trim: true, default: "IN", required: true },
+        isDefault: { type: Boolean, default: false },
+        createdAt: { type: Date, default: Date.now },
+        updatedAt: { type: Date, default: Date.now },
+      },
+    ],
+    defaultAddressId: { type: Schema.Types.ObjectId, default: null },
+    shippingAddress: {
+      fullName: { type: String, trim: true },
+      email: { type: String, trim: true, lowercase: true },
+      phone: { type: String, trim: true },
+      addressLine1: { type: String, trim: true },
+      addressLine2: { type: String, trim: true },
+      city: { type: String, trim: true },
+      state: { type: String, trim: true },
+      postalCode: { type: String, trim: true },
+      country: { type: String, trim: true, default: "IN" },
+    },
   },
-  { timestamps: true, discriminatorKey: "userType" },
+  { timestamps: true }
 );
 
 userSchema.pre<UserDocument>("save", async function () {
   if (!this.isModified("password") || !this.password) return;
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
     throw error instanceof Error ? error : new Error("Password hashing failed");
@@ -115,18 +346,17 @@ userSchema.methods.refreshPhotoUrl = async function (this: UserDocument): Promis
     const s3Service = new S3Service();
     this.photoUrl = await s3Service.generateDownloadUrl(this.photoS3Key, "images", 604800);
   } catch (error) {
-    console.error("Failed to refresh profile photo URL:", error);
+    log.error("Failed to refresh profile photo URL:", error);
   }
 };
 
 userSchema.index({ role: 1, createdAt: -1 });
 userSchema.index({ role: 1, isActive: 1 });
+// Backs admin listUsersForSafety — filters {role (or $in list)} + optional
+// {isActive}, sorts {updatedAt:-1}. Two variants since isActive is optional:
+// an unconstrained middle field blocks a compound index from serving the
+// trailing sort.
+userSchema.index({ role: 1, updatedAt: -1 });
+userSchema.index({ role: 1, isActive: 1, updatedAt: -1 });
 
 export const User = mongoose.model<UserDocument>("User", userSchema);
-
-// Discriminators for Hierarchical User Collection
-export const ParentUser = User.discriminator("ParentUser", new Schema({}), "Parent");
-export const RecreationalUser = User.discriminator("RecreationalUser", new Schema({}), "Recreational");
-export const CoachUser = User.discriminator("CoachUser", new Schema({}), "Coach");
-export const AcademyOwnerUser = User.discriminator("AcademyOwnerUser", new Schema({}), "Academy");
-export const VenueListerUser = User.discriminator("VenueListerUser", new Schema({}), "VenueLister");

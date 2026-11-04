@@ -1,11 +1,17 @@
 import mongoose, { Document, Schema } from "mongoose";
+import { IAvailability, IOwnVenueDetails, ServiceMode } from "../../types/index";
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
 import {
-  IAvailability,
-  IOwnVenueDetails,
-  ServiceMode,
-} from "../../types/index";
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
 
 export type PayoutMethodType = "BANK_TRANSFER" | "UPI";
+
+// Matches the GST_REGEX used in ExpertsService.ts / Academy's Step3Legal.tsx —
+// enforces the literal checksum-style "Z" in the 14th character.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 export interface IPayoutMethod {
   id?: string; // MongoDB ObjectId string for individual payout method
@@ -54,6 +60,10 @@ export interface CoachDocument extends Document {
   verificationDocuments?: CoachDocumentFile[]; // Certification proofs, ID verification
   verificationStatus?: CoachVerificationStatus;
   verificationNotes?: string;
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
+  /** Claim-field edits awaiting admin review; the approved values stay live. */
+  pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
   onboardingProgressStep?: 1 | 2 | 3;
   activeSubscriptionId?: mongoose.Types.ObjectId | null;
   subscriptionStatus?: "NONE" | "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
@@ -71,6 +81,8 @@ export interface CoachDocument extends Document {
    */
   payoutMethods?: IPayoutMethod[];
   blockedDates?: IBlockedDate[];
+  /** GST number — optional; not every individual coach is GST-registered. */
+  gstNumber?: string;
   rating: number;
   reviewCount: number;
   createdAt: Date;
@@ -79,25 +91,14 @@ export interface CoachDocument extends Document {
 
 export interface CoachDocumentFile {
   id?: string;
-  type:
-    | "CERTIFICATION"
-    | "ID_PROOF"
-    | "ADDRESS_PROOF"
-    | "BACKGROUND_CHECK"
-    | "INSURANCE"
-    | "OTHER";
+  type: "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
   url: string;
   s3Key?: string; // S3 key for document
   fileName: string;
   uploadedAt: Date;
 }
 
-export type CoachVerificationStatus =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "REVIEW"
-  | "VERIFIED"
-  | "REJECTED";
+export type CoachVerificationStatus = "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 const coachSchema = new Schema<CoachDocument>(
   {
@@ -158,9 +159,7 @@ const coachSchema = new Schema<CoachDocument>(
               // Must be an array with exactly 2 numbers
               if (!Array.isArray(v) || v.length !== 2) return false;
               // Both elements must be numbers
-              return v.every(
-                (coord) => typeof coord === "number" && !isNaN(coord),
-              );
+              return v.every((coord) => typeof coord === "number" && !isNaN(coord));
             },
             message: "Coordinates must be [longitude, latitude]",
           },
@@ -185,9 +184,7 @@ const coachSchema = new Schema<CoachDocument>(
           validator(v: any) {
             // baseLocation coordinates should always be present and valid
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every(
-              (coord) => typeof coord === "number" && !isNaN(coord),
-            );
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
           },
           message: "Coordinates must be [longitude, latitude]",
         },
@@ -213,18 +210,12 @@ const coachSchema = new Schema<CoachDocument>(
           startTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "Start time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "Start time must be in HH:mm format"],
           },
           endTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "End time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"],
           },
         },
       ],
@@ -243,18 +234,12 @@ const coachSchema = new Schema<CoachDocument>(
           startTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "Start time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "Start time must be in HH:mm format"],
           },
           endTime: {
             type: String,
             required: true,
-            match: [
-              /^([01]\d|2[0-3]):([0-5]\d)$/,
-              "End time must be in HH:mm format",
-            ],
+            match: [/^([01]\d|2[0-3]):([0-5]\d)$/, "End time must be in HH:mm format"],
           },
         },
       ],
@@ -309,6 +294,14 @@ const coachSchema = new Schema<CoachDocument>(
     verificationNotes: {
       type: String,
       default: "",
+    },
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
+    // Claim-field edits made after approval, held until an admin approves them.
+    pendingChanges: {
+      fields: { type: Schema.Types.Mixed },
+      submittedAt: { type: Date },
     },
     onboardingProgressStep: {
       type: Number,
@@ -365,20 +358,44 @@ const coachSchema = new Schema<CoachDocument>(
           enum: ["BANK_TRANSFER", "UPI"],
         },
         accountHolderName: { type: String, trim: true },
-        accountNumber: { type: String, trim: true },
-        ifscCode: { type: String, trim: true, uppercase: true },
+        accountNumber: {
+          type: String,
+          trim: true,
+          get: (v: string) => decryptValue(v),
+        },
+        ifscCode: {
+          type: String,
+          trim: true,
+          uppercase: true,
+          get: (v: string) => decryptValue(v),
+        },
         bankName: { type: String, trim: true },
-        upiId: { type: String, trim: true },
+        upiId: { type: String, trim: true, get: (v: string) => decryptValue(v) },
         isDefault: { type: Boolean, default: false },
         addedAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
       },
     ],
+    // GST — not encrypted: a business-registration number, semi-public by
+    // nature, unlike bank details. Matches Expert/Academy's own precedent.
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      validate: {
+        validator(v: string) {
+          if (!v) return true; // Optional field
+          return GST_REGEX.test(v);
+        },
+        message: "Invalid GST number format",
+      },
+    },
   },
   {
     timestamps: true,
     toJSON: {
       virtuals: true,
+      getters: true,
       transform(doc: any, ret: any) {
         ret.id = ret._id?.toString();
         delete ret.__v;
@@ -394,6 +411,7 @@ const coachSchema = new Schema<CoachDocument>(
     },
     toObject: {
       virtuals: true,
+      getters: true,
       transform(doc: any, ret: any) {
         ret.id = ret._id?.toString();
         delete ret.__v;
@@ -407,8 +425,24 @@ const coachSchema = new Schema<CoachDocument>(
         return ret;
       },
     },
-  },
+  }
 );
+
+coachSchema.pre("save", function () {
+  if (this.isModified("payoutMethods") && Array.isArray(this.payoutMethods)) {
+    this.payoutMethods.forEach((method) => {
+      if (method.accountNumber && !isEncryptedValue(method.accountNumber)) {
+        method.accountNumber = encryptValue(method.accountNumber);
+      }
+      if (method.ifscCode && !isEncryptedValue(method.ifscCode)) {
+        method.ifscCode = encryptValue(method.ifscCode);
+      }
+      if (method.upiId && !isEncryptedValue(method.upiId)) {
+        method.upiId = encryptValue(method.upiId);
+      }
+    });
+  }
+});
 
 // Virtual for easy access to id as a string
 coachSchema.virtual("id").get(function (this: CoachDocument) {
@@ -439,5 +473,36 @@ coachSchema.index({ serviceMode: 1 });
 coachSchema.index({ isVerified: 1 });
 coachSchema.index({ verificationStatus: 1 });
 coachSchema.index({ subscriptionStatus: 1 });
+
+// Backs getAllCoaches' public discovery sort — filter on
+// {isVerified, verificationStatus, sports?} then sort
+// {rating:-1, reviewCount:-1, _id:1}. Two variants for the same reason as
+// Venue's equivalent pair: `sports` is an optional filter, and an
+// unconstrained middle field in a compound index blocks the index from
+// serving the sort, so "browse all sports" needs its own index. Production
+// has autoIndex off, so both also need migration 34.
+coachSchema.index({
+  isVerified: 1,
+  verificationStatus: 1,
+  rating: -1,
+  reviewCount: -1,
+  _id: 1,
+});
+coachSchema.index({
+  isVerified: 1,
+  verificationStatus: 1,
+  sports: 1,
+  rating: -1,
+  reviewCount: -1,
+  _id: 1,
+});
+
+// Backs admin listCoaches — filters {} or {verificationStatus} and always
+// sorts {createdAt:-1}; the solo verificationStatus index above doesn't
+// cover the sort.
+coachSchema.index({ verificationStatus: 1, createdAt: -1 });
+coachSchema.index({ createdAt: -1 });
+
+attachLifecycleSync(coachSchema, "coach");
 
 export const Coach = mongoose.model<CoachDocument>("Coach", coachSchema);

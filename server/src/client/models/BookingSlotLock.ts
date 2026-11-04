@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface BookingSlotLockDocument extends Document {
-  resourceType: "VENUE_SLOT" | "COACH_SLOT";
+  resourceType: "VENUE_SLOT" | "COACH_SLOT" | "ACADEMY_SLOT" | "EXPERT_SLOT";
   resourceId: mongoose.Types.ObjectId;
   dateKey: string;
   version: number;
@@ -14,7 +14,7 @@ const bookingSlotLockSchema = new Schema<BookingSlotLockDocument>(
   {
     resourceType: {
       type: String,
-      enum: ["VENUE_SLOT", "COACH_SLOT"],
+      enum: ["VENUE_SLOT", "COACH_SLOT", "ACADEMY_SLOT", "EXPERT_SLOT"],
       required: true,
     },
     resourceId: {
@@ -38,21 +38,21 @@ const bookingSlotLockSchema = new Schema<BookingSlotLockDocument>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 bookingSlotLockSchema.index(
   { resourceType: 1, resourceId: 1, dateKey: 1 },
-  { unique: true, name: "unique_booking_slot_lock" },
+  { unique: true, name: "unique_booking_slot_lock" }
 );
 
 // TTL index to auto-delete locks after 7 days (stale locks from past bookings)
 bookingSlotLockSchema.index(
   { lastLockedAt: 1 },
-  { expireAfterSeconds: 7 * 24 * 60 * 60, name: "lock_ttl" },
+  { expireAfterSeconds: 7 * 24 * 60 * 60, name: "lock_ttl" }
 );
 
 export const BookingSlotLock = mongoose.model<BookingSlotLockDocument>(
   "BookingSlotLock",
-  bookingSlotLockSchema,
+  bookingSlotLockSchema
 );

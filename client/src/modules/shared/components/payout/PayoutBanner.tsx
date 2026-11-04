@@ -6,64 +6,60 @@ import Link from "next/link";
 import { useState } from "react";
 
 interface PayoutBannerProps {
-  /** Null = not loaded yet, undefined = still fetching */
+  /** Null = no method set up, undefined = still fetching */
   payoutMethod: IPayoutMethod | null | undefined;
   /** Path to the payout settings page */
   payoutHref: string;
-  /** Display name for the CTA */
+  /** Text of the link to the payout settings page */
   ctaLabel?: string;
 }
 
 /**
- * Shows a prominent animated warning banner when the user hasn't set up a
- * payout method. Disappears once the method is configured.
+ * A quiet notice that payouts are not set up yet. It is a single line with a
+ * text link, not a card with a button, because it sits above every page of the
+ * console and must not compete with the page's own primary action. It goes
+ * away once a method exists, or when dismissed.
  */
 export function PayoutBanner({
   payoutMethod,
   payoutHref,
-  ctaLabel = "Set Up Payouts",
+  ctaLabel = "Set up payouts",
 }: PayoutBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
-  // Still loading or method exists or user dismissed
+  // Still loading, a method exists, or the user dismissed it.
   if (payoutMethod !== null || dismissed) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-500">
-      <div className="flex items-start gap-4">
-        {/* Icon */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-          <AlertTriangle size={20} className="text-amber-600" />
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-amber-900">
-            Payout method not set up
-          </p>
-          <p className="mt-0.5 text-sm text-amber-700">
-            You&apos;re not set up to receive payouts yet. Add your bank account
-            or UPI details so earnings from bookings reach you automatically.
-          </p>
-          <div className="mt-3">
-            <Link
-              href={payoutHref}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-power-orange px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 transition-colors"
-            >
-              {ctaLabel}
-            </Link>
-          </div>
-        </div>
-
-        {/* Dismiss */}
-        <button
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss"
-          className="shrink-0 rounded-lg p-1.5 text-amber-500/60 hover:bg-amber-500/10 hover:text-amber-300 transition-colors"
+    <div
+      role="region"
+      aria-label="Payout setup"
+      className="mb-8 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 py-3 pl-4 pr-2"
+    >
+      <AlertTriangle
+        size={18}
+        strokeWidth={1.5}
+        aria-hidden="true"
+        className="mt-0.5 shrink-0 text-amber-800"
+      />
+      <p className="min-w-0 flex-1 text-pretty text-sm leading-relaxed text-amber-900">
+        <span className="font-semibold">Payouts are not set up.</span> Add a bank account or UPI ID
+        so earnings from bookings reach you.{" "}
+        <Link
+          href={payoutHref}
+          className="rounded-sm font-semibold underline decoration-amber-900/40 underline-offset-4 transition-colors duration-200 hover:decoration-amber-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-900 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
         >
-          <X size={14} />
-        </button>
-      </div>
+          {ctaLabel}
+        </Link>
+      </p>
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss payout notice"
+        className="-my-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-amber-800 transition-colors duration-200 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-900"
+      >
+        <X size={16} strokeWidth={1.5} aria-hidden="true" />
+      </button>
     </div>
   );
 }

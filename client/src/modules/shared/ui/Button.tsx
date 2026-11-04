@@ -4,13 +4,7 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?:
-    | "primary"
-    | "secondary"
-    | "outline"
-    | "ghost"
-    | "success"
-    | "danger";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "success" | "danger";
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   loading?: boolean;
@@ -37,22 +31,27 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       ...props
     },
-    ref,
+    ref
   ) => {
+    // Every variant carries a 1px border (transparent on the solid ones) so an
+    // outline button and a filled one placed side by side are the same height.
+    // Hover only ever darkens or tints: the primary used to go lighter on hover,
+    // to orange-600, which also dropped white text below AA while hovered.
+    // Focus rings are keyboard-only (`focus-visible`), not drawn on every click.
     const baseStyles =
-      "inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+      "btn-motion inline-flex items-center justify-center gap-2 rounded-md border border-transparent font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
       primary:
-        "bg-power-orange text-white hover:bg-orange-600 focus:ring-power-orange",
-      secondary:
-        "bg-deep-slate text-white hover:bg-slate-700 focus:ring-deep-slate",
+        "bg-power-orange-solid text-white hover:bg-orange-800 focus-visible:ring-power-orange-solid",
+      secondary: "bg-ink text-white hover:bg-ink-hover focus-visible:ring-ink",
       outline:
-        "border-2 border-power-orange text-power-orange hover:bg-power-orange hover:text-white focus:ring-power-orange",
-      ghost: "text-power-orange hover:bg-orange-50 focus:ring-power-orange",
-      success:
-        "bg-turf-green text-white hover:bg-green-600 focus:ring-turf-green",
-      danger: "bg-error-red text-white hover:bg-red-600 focus:ring-error-red",
+        "border-ink/25 text-ink hover:border-ink/40 hover:bg-paper-deep focus-visible:ring-ink",
+      ghost: "text-power-orange-solid hover:bg-orange-50 focus-visible:ring-power-orange-solid",
+      // The 700 steps, not the brand turf-green/error-red: white text on those
+      // measures 2.3:1 and 3.8:1.
+      success: "bg-green-700 text-white hover:bg-green-800 focus-visible:ring-green-700",
+      danger: "bg-red-700 text-white hover:bg-red-800 focus-visible:ring-red-700",
     };
 
     const sizes = {
@@ -71,7 +70,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             sizes[size],
             fullWidth && "w-full",
             loading && "cursor-wait",
-            className,
+            className
           )}
           {...props}
         >
@@ -89,14 +88,14 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           sizes[size],
           fullWidth && "w-full",
           loading && "cursor-wait",
-          className,
+          className
         )}
         disabled={disabled || loading}
         {...props}
       >
         {loading ? (
           <>
-            <Loader2 className="animate-spin h-5 w-5" />
+            <Loader2 className="h-5 w-5 animate-spin" />
             <span>Loading...</span>
           </>
         ) : (
@@ -107,7 +106,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </button>
     );
-  },
+  }
 );
 
 Button.displayName = "Button";

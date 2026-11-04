@@ -15,8 +15,18 @@ export interface CoachClientNoteDocument extends Document {
 
 const coachClientNoteSchema = new Schema<CoachClientNoteDocument>(
   {
-    coachId: { type: Schema.Types.ObjectId, ref: "Coach", required: true, index: true },
-    clientId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    coachId: {
+      type: Schema.Types.ObjectId,
+      ref: "Coach",
+      required: true,
+      index: true,
+    },
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     note: { type: String, required: true, trim: true, maxlength: 2000 },
     noteType: {
       type: String,
@@ -26,12 +36,12 @@ const coachClientNoteSchema = new Schema<CoachClientNoteDocument>(
     sessionDate: { type: Date },
     bookingId: { type: Schema.Types.ObjectId, ref: "Booking" },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 coachClientNoteSchema.index({ coachId: 1, clientId: 1, createdAt: -1 });
 
 export const CoachClientNote = mongoose.model<CoachClientNoteDocument>(
   "CoachClientNote",
-  coachClientNoteSchema,
+  coachClientNoteSchema
 );

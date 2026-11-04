@@ -1,0 +1,69 @@
+import { User, UserDocument } from "../../../client/models/User";
+import { invalidateAccountStatusCache } from "../../../middleware/auth";
+import { log as __rootLog } from "../../../utils/logger";
+
+export const log = __rootLog.child("auth");
+
+export const LEGAL_POLICY_VERSION = "2026-04";
+
+/**
+ * The version of the Parental Consent & Minor Protection Policy a parent accepts
+ * before adding a child. Raise it when that policy changes in a way parents must
+ * agree to again; every parent is then asked once more at their next add or edit.
+ */
+export const PARENTAL_CONSENT_VERSION = "2026-10";
+
+/**
+ * The version of the video notice a parent agrees to before the first clip of a child is
+ * stored. It is a separate purpose from the Parental Consent policy, so it is asked and
+ * recorded on its own. Raise it when the wording changes; every parent is asked once more
+ * at their next upload.
+ */
+export const CHILD_VIDEO_CONSENT_VERSION = "2026-10";
+
+/**
+ * The version of the sharing notice a parent agrees to each time they create a link for a
+ * coach. It is stored on the link itself, so what a parent agreed to is a fact about that link.
+ * Raise it when the wording changes.
+ */
+export const CHILD_SHARING_CONSENT_VERSION = "2026-10";
+
+/**
+ * Grace period (in ms) between a self-service deletion request and the
+ * scheduled job actually finalizing it. Overridable for testing.
+ */
+export const ACCOUNT_DELETION_GRACE_PERIOD_MS =
+  (Number(process.env.ACCOUNT_DELETION_GRACE_PERIOD_DAYS) || 30) * 24 * 60 * 60 * 1000;
+
+/**
+ * A successful sign-in within the grace period cancels a pending
+ * self-deletion and restores full access — shared by every sign-in path
+ * (password `loginUser`, `googleLogin`) so none of them can drift out of
+ * sync with the others. Mutates `user` in place to match the just-applied
+ * DB write, and returns whether a restore happened.
+ */
+export const restoreIfPendingDeletion = async (user: UserDocument): Promise<boolean> => {
+  if (
+    !user.pendingDeletion ||
+    !user.deletionRequestedAt ||
+    Date.now() - user.deletionRequestedAt.getTime() >= ACCOUNT_DELETION_GRACE_PERIOD_MS
+  ) {
+    return false;
+  }
+
+  await User.updateOne(
+    { _id: user._id },
+    {
+      $set: { isActive: true, pendingDeletion: false },
+      $unset: { deletionRequestedAt: "", deactivatedAt: "" },
+    }
+  );
+  user.isActive = true;
+  user.pendingDeletion = false;
+  // A request in the last ACCOUNT_STATUS_CACHE_TTL_SECONDS (e.g. background
+  // polling with the pre-deletion token) may have cached isActive:false —
+  // without this, the account can 403 on its own next request despite the
+  // DB already showing it restored.
+  invalidateAccountStatusCache(user._id.toString());
+  return true;
+};

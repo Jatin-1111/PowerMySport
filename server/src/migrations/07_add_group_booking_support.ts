@@ -39,7 +39,7 @@ export async function up(): Promise<void> {
         $setOnInsert: {
           // Set organizerId to userId if it doesn't exist
         },
-      },
+      }
     );
 
     // Set organizerId to userId for all bookings that don't have it
@@ -52,16 +52,12 @@ export async function up(): Promise<void> {
             organizerId: "$userId",
           },
         },
-      ],
+      ]
     );
 
     console.log(`Migration completed successfully:`);
-    console.log(
-      `- Updated ${result.modifiedCount} bookings with group booking defaults`,
-    );
-    console.log(
-      `- Set organizerId for ${bookingsWithoutOrganizer.modifiedCount} bookings`,
-    );
+    console.log(`- Updated ${result.modifiedCount} bookings with group booking defaults`);
+    console.log(`- Set organizerId for ${bookingsWithoutOrganizer.modifiedCount} bookings`);
   } catch (error) {
     console.error("Migration failed:", error);
     throw error;
@@ -86,11 +82,11 @@ export async function down(): Promise<void> {
           paymentType: "",
           splitMethod: "",
         },
-      },
+      }
     );
 
     console.log(
-      `Rollback completed: Removed group booking fields from ${result.modifiedCount} bookings`,
+      `Rollback completed: Removed group booking fields from ${result.modifiedCount} bookings`
     );
   } catch (error) {
     console.error("Rollback failed:", error);
@@ -102,8 +98,7 @@ export async function down(): Promise<void> {
 if (require.main === module) {
   const runMigration = async () => {
     try {
-      const mongoUri =
-        process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
+      const mongoUri = process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
       await mongoose.connect(mongoUri);
       console.log("Connected to MongoDB");
 

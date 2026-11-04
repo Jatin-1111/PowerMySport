@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getMainAppUrl } from "@/lib/auth/redirect";
+import { hasAuthToken } from "@/lib/auth/token";
 import { communityService } from "@/modules/community/services/community";
 import { getCommunitySocket } from "@/lib/realtime/socket";
 import {
@@ -18,36 +19,44 @@ import {
   Trophy,
   UserX,
   ExternalLink,
-  Settings2,
   ChevronDown,
-  ChevronLeft,
   MessagesSquare,
-  BrainCircuit,
   Heart,
   Compass,
+  Newspaper,
 } from "lucide-react";
 
 // ─── Additional Settings dropdown items ────────────────────────────────────
+/** The "More" menu. Following lives here rather than in the main bar, which is
+ *  already carrying seven items — but it has to be somewhere on desktop: it was
+ *  only in the mobile drawer, so /following was unreachable on a large screen. */
 const SETTINGS_ITEMS = [
+  { href: "/following", icon: Heart, label: "Following" },
   { href: "/reports", icon: FileWarning, label: "Reports" },
-  { href: "/safety",  icon: UserX,       label: "Safety"  },
-  { href: "/privacy", icon: Shield,      label: "Privacy" },
+  { href: "/safety", icon: UserX, label: "Safety" },
+  { href: "/privacy", icon: Shield, label: "Privacy" },
 ];
 
 export default function CommunityTopNav() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const sidebar = searchParams?.get("sidebar");
-  const mainAppUrl = getMainAppUrl();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen]     = useState(false);
-  const [unreadCount, setUnreadCount]           = useState(0);
-  const isMounted  = typeof document !== "undefined";
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadChatsCount, setUnreadChatsCount] = useState(0);
+  const isMounted = typeof document !== "undefined";
   const settingsRef = useRef<HTMLDivElement>(null);
 
   // ── load / refresh unread badge ──────────────────────────────────────────
+  // This nav renders on every page, including public ones (blog/Q&A posts,
+  // writer profiles, home) — these two counts are personal, so skip them
+  // entirely for guests rather than let a 401 trip the global axios
+  // interceptor and bounce a guest reader to login.
   useEffect(() => {
     const loadUnreadCount = async () => {
+      if (!hasAuthToken()) {
+        setUnreadCount(0);
+        return;
+      }
       try {
         const count = await communityService.getCommunityUnreadNotificationCount();
         setUnreadCount(count);
@@ -56,17 +65,54 @@ export default function CommunityTopNav() {
       }
     };
 
+    const loadUnreadChatsCount = async () => {
+      if (!hasAuthToken()) {
+        setUnreadChatsCount(0);
+        return;
+      }
+      try {
+        const count = await communityService.getUnreadConversationCount();
+        setUnreadChatsCount(count);
+      } catch {
+        setUnreadChatsCount(0);
+      }
+    };
+
     void loadUnreadCount();
+    void loadUnreadChatsCount();
 
     const socket = getCommunitySocket();
+    // A burst of messages persists a notification each; refetch once, not per event.
+    let notificationRefreshTimer: ReturnType<typeof setTimeout> | null = null;
     const handleNewNotification = () => {
-      void communityService.clearNotificationCache();
-      void loadUnreadCount();
+      if (notificationRefreshTimer) clearTimeout(notificationRefreshTimer);
+      notificationRefreshTimer = setTimeout(() => {
+        notificationRefreshTimer = null;
+        void communityService.clearNotificationCache();
+        void loadUnreadCount();
+      }, 300);
+    };
+    // The count is cached client-side, so a socket event has to drop the cache
+    // first or the refetch just returns the number from before the change.
+    // One message fires newMessage, conversationUpdated and messagesRead within
+    // a few hundred ms, and a burst fires them in dozens: collapse them into a
+    // single refetch so clearing the cache does not become one request each.
+    let chatsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+    const handleChatsChanged = () => {
+      if (chatsRefreshTimer) clearTimeout(chatsRefreshTimer);
+      chatsRefreshTimer = setTimeout(() => {
+        chatsRefreshTimer = null;
+        void communityService.clearUnreadConversationCache();
+        void loadUnreadChatsCount();
+      }, 300);
     };
 
     socket.on("notification:new", handleNewNotification);
+    socket.on("community:newMessage", handleChatsChanged);
+    socket.on("community:messagesRead", handleChatsChanged);
+    socket.on("community:conversationUpdated", handleChatsChanged);
     if (!socket.connected) socket.connect();
-    
+
     // Also update badge when notifications are marked read locally
     const handleLocalRead = () => {
       void loadUnreadCount();
@@ -74,7 +120,12 @@ export default function CommunityTopNav() {
     window.addEventListener("community:notificationsRead", handleLocalRead);
 
     return () => {
+      if (chatsRefreshTimer) clearTimeout(chatsRefreshTimer);
+      if (notificationRefreshTimer) clearTimeout(notificationRefreshTimer);
       socket.off("notification:new", handleNewNotification);
+      socket.off("community:newMessage", handleChatsChanged);
+      socket.off("community:messagesRead", handleChatsChanged);
+      socket.off("community:conversationUpdated", handleChatsChanged);
       window.removeEventListener("community:notificationsRead", handleLocalRead);
     };
   }, []);
@@ -94,83 +145,91 @@ export default function CommunityTopNav() {
   // ── hide on join pages ────────────────────────────────────────────────────
   if (pathname.startsWith("/join/")) return null;
 
-  const isSettingsActive = SETTINGS_ITEMS.some((item) =>
-    pathname.startsWith(item.href),
-  );
+  const isSettingsActive = SETTINGS_ITEMS.some((item) => pathname.startsWith(item.href));
 
   // ── primary nav-link style helper (center) ───────────────────────────────
   const navLinkCls = (active: boolean) =>
-    `inline-flex min-h-10 items-center gap-1.5 rounded-2xl px-2 lg:px-3 py-2 text-[13px] font-bold whitespace-nowrap transition-all duration-200 ${
+    `inline-flex min-h-10 items-center gap-1.5 rounded-md px-2 py-2 text-sm font-medium whitespace-nowrap transition-colors duration-200 xl:px-3 ${
       active
-        ? "bg-power-orange/10 text-power-orange"
-        : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900"
+        ? "text-power-orange-solid bg-paper-deep"
+        : "text-ink-body hover:bg-paper-deep hover:text-ink"
     }`;
 
   return (
-    <header className="sticky top-0 z-120 border-b border-white/70 bg-white/90 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 sm:py-4 lg:px-8">
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/70 bg-white/75 px-3 py-2.5 shadow-sm shadow-slate-900/5 backdrop-blur sm:px-4">
-
+    <header className="z-120 border-hairline bg-paper/90 sticky top-0 border-b">
+      <div className="mx-auto flex w-full max-w-7xl flex-col px-3 sm:px-4 lg:px-6">
+        <div className="flex h-16 items-center justify-between gap-2 lg:gap-3">
           {/* Left section: Back button & Logo */}
-          <div className="flex items-center flex-shrink-0">
+          <div className="flex flex-shrink-0 items-center">
             {/* ── Logo ──────────────────────────────────────────────────────── */}
-            <Link href="/" className="flex flex-col items-start justify-center">
-              <span className="font-title inline-block origin-left scale-x-[0.92] text-[1.1rem] font-extrabold leading-none tracking-tighter lg:text-[1.25rem]">
-                <span className="text-power-orange">Power</span>
-                <span className="text-slate-900">MySport</span>
+            {/* Goes to the main site's home, not this app's own "/" — that
+             * destination is a separate app/origin, so a plain anchor is used
+             * rather than next/link's same-app client-side Link. */}
+            <a
+              href={getMainAppUrl()}
+              className="inline-flex h-full flex-col items-start justify-center"
+            >
+              <span className="font-editorial text-[27px] font-medium leading-none">
+                <span className="text-ink">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-ink">Sport</span>
               </span>
-              <span className="mt-0.5 pl-[1px] text-[9px] font-black uppercase tracking-[0.3em] text-slate-400/80 leading-none">
+              <span className="text-ink-muted mt-1 text-xs font-medium leading-none">
                 Community
               </span>
-            </Link>
+            </a>
           </div>
 
           {/* ── Desktop Center Nav ────────────────────────────────────────── */}
-          <div className="hidden xl:flex flex-1 items-center justify-center gap-0.5 mx-2">
-            <Link
-              href="/discover"
-              className={navLinkCls(pathname.startsWith("/discover"))}
-            >
+          <div className="hidden flex-1 items-center justify-center gap-0.5 lg:mx-1 lg:flex xl:mx-2">
+            <Link href="/" className={navLinkCls(pathname === "/")}>
+              <House size={16} />
+              Home
+            </Link>
+
+            <Link href="/discover" className={navLinkCls(pathname.startsWith("/discover"))}>
               <Compass size={16} />
               Discover
             </Link>
 
             <Link
               href="/chats?sidebar=conversations"
-              className={navLinkCls(pathname.startsWith("/chats"))}
+              className={`relative ${navLinkCls(pathname.startsWith("/chats"))}`}
             >
               <MessagesSquare size={16} />
               Chats
+              {unreadChatsCount > 0 && (
+                <span className="bg-power-orange-solid ring-paper absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white ring-2">
+                  {unreadChatsCount > 99 ? "99+" : unreadChatsCount}
+                </span>
+              )}
             </Link>
 
-            <Link
-              href="/q"
-              className={navLinkCls(pathname.startsWith("/q"))}
-            >
+            <Link href="/experiences" className={navLinkCls(pathname.startsWith("/experiences"))}>
+              <Newspaper size={16} />
+              Experiences
+            </Link>
+
+            <Link href="/questions" className={navLinkCls(pathname.startsWith("/questions"))}>
               <MessageSquare size={16} />
-              Knowledge
+              Questions
             </Link>
-
-
-            <Link
-              href="/contributors"
-              className={navLinkCls(pathname.startsWith("/contributors"))}
-            >
+            <Link href="/contributors" className={navLinkCls(pathname.startsWith("/contributors"))}>
               <Trophy size={16} />
               Contributors
             </Link>
           </div>
 
           {/* ── Desktop Right Actions ─────────────────────────────────────── */}
-          <div className="hidden xl:flex items-center justify-end gap-3 flex-shrink-0">
+          <div className="hidden flex-shrink-0 items-center justify-end gap-2 lg:flex xl:gap-3">
             {/* Notifications */}
             <Link
               href="/notifications"
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+              className="text-ink-body hover:bg-paper-deep hover:text-ink relative inline-flex h-10 w-10 items-center justify-center rounded-lg transition-colors duration-200"
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-power-orange px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+                <span className="bg-power-orange-solid ring-paper absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white ring-2">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -181,10 +240,10 @@ export default function CommunityTopNav() {
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen((prev) => !prev)}
-                className={`inline-flex min-h-10 items-center gap-1 rounded-xl px-3 py-2 text-[13px] font-bold transition ${
+                className={`inline-flex min-h-10 items-center gap-1 rounded-md px-2.5 py-2 text-sm font-medium transition-colors duration-200 xl:px-3 ${
                   isSettingsActive
-                    ? "bg-power-orange/10 text-power-orange"
-                    : "text-slate-500 hover:bg-slate-100/80 hover:text-slate-900"
+                    ? "text-power-orange-solid bg-paper-deep"
+                    : "text-ink-body hover:bg-paper-deep hover:text-ink"
                 }`}
               >
                 More
@@ -201,22 +260,18 @@ export default function CommunityTopNav() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.97 }}
                     transition={{ duration: 0.15, ease: "easeOut" }}
-                    className="absolute right-0 top-[calc(100%+8px)] z-50 min-w-44 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/10"
+                    className="border-hairline absolute right-0 top-[calc(100%+8px)] z-50 min-w-48 overflow-hidden rounded-xl border bg-white shadow-lg"
                   >
                     <div className="px-3 pb-1 pt-3">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                        Settings
-                      </p>
+                      <p className="text-ink-muted text-xs font-medium">Settings</p>
                     </div>
                     {SETTINGS_ITEMS.map(({ href, icon: Icon, label }) => (
                       <Link
                         key={href}
                         href={href}
                         onClick={() => setIsSettingsOpen(false)}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition hover:bg-slate-50 ${
-                          pathname.startsWith(href)
-                            ? "text-power-orange"
-                            : "text-slate-700"
+                        className={`hover:bg-paper-deep flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                          pathname.startsWith(href) ? "text-power-orange-solid" : "text-ink-body"
                         }`}
                       >
                         <Icon size={16} />
@@ -228,26 +283,17 @@ export default function CommunityTopNav() {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Main App */}
-            <a
-              href={mainAppUrl}
-              className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-power-orange to-[#d96610] px-4 py-2 text-[13px] font-bold text-white shadow-[0_8px_16px_-6px_rgba(233,115,22,0.4)] transition hover:opacity-90 hover:shadow-[0_8px_20px_-6px_rgba(233,115,22,0.6)]"
-            >
-              Main App
-              <ExternalLink size={14} />
-            </a>
           </div>
 
           {/* ── Mobile hamburger ──────────────────────────────────────────── */}
-          <div className="flex xl:hidden items-center gap-2">
+          <div className="flex items-center gap-2 lg:hidden">
             <Link
               href="/notifications"
-              className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-600 transition hover:bg-slate-100"
+              className="text-ink-body hover:bg-paper-deep relative inline-flex h-11 w-11 items-center justify-center rounded-lg transition-colors duration-200"
             >
               <Bell size={18} />
               {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-power-orange px-1 text-[9px] font-bold text-white ring-2 ring-white">
+                <span className="bg-power-orange-solid ring-paper absolute right-1 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[9px] font-semibold text-white ring-2">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -257,7 +303,7 @@ export default function CommunityTopNav() {
               onClick={() => setIsMobileMenuOpen(true)}
               aria-label="Open navigation menu"
               aria-expanded={isMobileMenuOpen}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+              className="border-hairline text-ink hover:border-ink/40 inline-flex h-11 w-11 items-center justify-center rounded-lg border bg-white transition-colors duration-200"
             >
               <Menu size={18} />
             </button>
@@ -274,7 +320,7 @@ export default function CommunityTopNav() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm xl:hidden"
+                className="bg-ink/40 fixed inset-0 lg:hidden"
                 style={{ zIndex: 2147483000 }}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -283,77 +329,79 @@ export default function CommunityTopNav() {
                   animate={{ x: 0, opacity: 1 }}
                   exit={{ x: -24, opacity: 0 }}
                   transition={{ duration: 0.22, ease: "easeOut" }}
-                  className="absolute left-0 top-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98))] p-4 shadow-2xl"
+                  className="border-hairline bg-paper absolute left-0 top-0 h-full w-[88vw] max-w-sm overflow-y-auto border-r p-4"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Header */}
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-                        Navigate
-                      </p>
-                      <h2 className="mt-1 text-lg font-semibold text-slate-900">
+                      <p className="text-ink-muted text-sm font-medium">Navigate</p>
+                      <h2 className="font-editorial text-ink mt-1 text-2xl font-light">
                         Community menu
                       </h2>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="border-hairline text-ink hover:border-ink/40 inline-flex h-10 w-10 items-center justify-center rounded-lg border bg-white transition-colors duration-200"
                       aria-label="Close navigation menu"
                     >
                       <span className="text-lg leading-none">×</span>
                     </button>
                   </div>
 
-                  {/* Home shortcut */}
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <Link
-                      href="/"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 rounded-xl px-3 py-3 transition hover:bg-slate-50"
+                  {/* Main App link — a different origin, hence a plain anchor
+                   * rather than next/link's same-app Link (it was pointing at
+                   * this app's own "/" and never actually leaving). */}
+                  <div className="border-hairline mt-4 rounded-xl border bg-white p-3">
+                    <a
+                      href={getMainAppUrl()}
+                      className="hover:bg-paper-deep flex items-center gap-3 rounded-lg px-3 py-3 transition-colors duration-200"
                     >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-power-orange/10 text-power-orange">
-                        <House size={18} />
+                      <span className="bg-paper-deep text-ink flex h-10 w-10 items-center justify-center rounded-lg">
+                        <ExternalLink size={18} />
                       </span>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          PowerMySport Home
-                        </p>
-                        <p className="text-xs text-slate-500">Overview and chat</p>
+                        <p className="text-sm font-semibold text-slate-900">Main App</p>
+                        <p className="text-xs text-slate-500">Return to main site</p>
                       </div>
-                    </Link>
+                    </a>
                   </div>
 
-                  {/* Main App link */}
-                  <a
-                    href={mainAppUrl}
-                    className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-power-orange/30 bg-power-orange/10 px-3 py-3 text-sm font-semibold text-power-orange shadow-sm transition hover:bg-power-orange/15"
-                  >
-                    Main App
-                    <ExternalLink size={15} />
-                  </a>
-
                   {/* Primary nav items */}
-                  <p className="mt-5 mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 px-1">
-                    Main
-                  </p>
+                  <p className="text-ink-muted mb-2 mt-5 px-1 text-sm font-medium">Main</p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { href: "/chats?sidebar=conversations",           icon: MessagesSquare, label: "Chats"        },
-                      { href: "/discover",        icon: Compass,        label: "Discover"     },
-                      { href: "/q",               icon: MessageSquare,  label: "Knowledge"    },
-                      { href: "/contributors",    icon: Trophy,         label: "Contributors" },
-                      { href: "/following",       icon: Heart,          label: "Following"    },
-                    ].map(({ href, icon: Icon, label }) => (
+                      { href: "/", icon: House, label: "Home" },
+                      {
+                        href: "/chats?sidebar=conversations",
+                        icon: MessagesSquare,
+                        label: "Chats",
+                        badge: unreadChatsCount,
+                      },
+                      { href: "/discover", icon: Compass, label: "Discover" },
+                      { href: "/experiences", icon: Newspaper, label: "Experiences" },
+                      { href: "/questions", icon: MessageSquare, label: "Questions" },
+                      {
+                        href: "/contributors",
+                        icon: Trophy,
+                        label: "Contributors",
+                      },
+                      { href: "/following", icon: Heart, label: "Following" },
+                    ].map(({ href, icon: Icon, label, badge }) => (
                       <Link
                         key={href}
                         href={href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                        className="border-hairline text-ink-body hover:border-ink/40 hover:text-ink relative inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-3 py-3 text-sm font-medium transition-colors duration-200"
                       >
                         <Icon size={15} />
                         {label}
+                        {!!badge && badge > 0 && (
+                          <span className="bg-power-orange-solid ring-paper absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-xs font-semibold text-white ring-2">
+                            {badge > 99 ? "99+" : badge}
+                          </span>
+                        )}
                       </Link>
                     ))}
 
@@ -361,26 +409,26 @@ export default function CommunityTopNav() {
                     <Link
                       href="/notifications"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="border-hairline text-ink-body hover:border-ink/40 hover:text-ink col-span-2 inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-3 py-3 text-sm font-medium transition-colors duration-200"
                     >
                       <Bell size={15} />
                       Notifications
                       {unreadCount > 0 && (
-                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-power-orange px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <span className="bg-power-orange-solid inline-flex min-w-5 items-center justify-center rounded-md px-1.5 py-0.5 text-xs font-semibold text-white">
                           {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}
                     </Link>
                     <Link
                       href="/reports"
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="border-hairline text-ink-body hover:border-ink/40 hover:text-ink inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-3 py-3 text-sm font-medium transition-colors duration-200"
                     >
                       <FileWarning size={15} />
                       Reports
                     </Link>
                     <Link
                       href="/contributors"
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="border-hairline text-ink-body hover:border-ink/40 hover:text-ink inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-3 py-3 text-sm font-medium transition-colors duration-200"
                     >
                       <Trophy size={15} />
                       Contributors
@@ -388,14 +436,14 @@ export default function CommunityTopNav() {
 
                     <Link
                       href="/safety"
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="border-hairline text-ink-body hover:border-ink/40 hover:text-ink inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-3 py-3 text-sm font-medium transition-colors duration-200"
                     >
                       <UserX size={15} />
                       Safety
                     </Link>
                     <Link
                       href="/privacy"
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      className="border-hairline text-ink-body hover:border-ink/40 hover:text-ink inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-white px-3 py-3 text-sm font-medium transition-colors duration-200"
                     >
                       <Shield size={15} />
                       Privacy
@@ -403,20 +451,18 @@ export default function CommunityTopNav() {
                   </div>
 
                   {/* Tip */}
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      Quick note
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Use the drawer to move fast on mobile. The page keeps your
-                      current context while navigating.
+                  <div className="bg-paper-deep mt-4 rounded-xl p-4">
+                    <p className="text-ink text-sm font-medium">Quick note</p>
+                    <p className="text-ink-body mt-2 text-sm leading-6">
+                      Use the drawer to move fast on mobile. The page keeps your current context
+                      while navigating.
                     </p>
                   </div>
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>,
-          document.body,
+          document.body
         )}
     </header>
   );

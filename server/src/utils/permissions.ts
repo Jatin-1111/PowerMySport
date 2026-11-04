@@ -45,6 +45,11 @@ const PERMISSION_HIERARCHY: Record<string, string[]> = {
   // Reviews Module
   "reviews:delete": ["reviews:manage", "reviews:view"],
   "reviews:manage": ["reviews:view"],
+
+  // Sport Pathways Module
+  "pathways:manage": ["pathways:view"],
+  "opportunities:manage": ["opportunities:view"],
+  "notifications:manage": ["notifications:view"],
 };
 
 /**
@@ -73,10 +78,7 @@ export const expandPermissions = (permissions: string[]): string[] => {
  * Check if a permission matches a pattern (supports wildcards)
  * E.g., "venues:*" matches "venues:view", "venues:manage", etc.
  */
-export const matchesPermissionPattern = (
-  permission: string,
-  pattern: string,
-): boolean => {
+export const matchesPermissionPattern = (permission: string, pattern: string): boolean => {
   // Exact match
   if (permission === pattern) return true;
 
@@ -100,7 +102,7 @@ export const matchesPermissionPattern = (
 export const hasPermission = (
   adminPermissions: string[],
   adminRole: string,
-  requiredPermission: string,
+  requiredPermission: string
 ): boolean => {
   // System Admins have all permissions
   if (isSystemAdminRole(adminRole)) {
@@ -112,9 +114,7 @@ export const hasPermission = (
 
   // Check for direct match or pattern match
   return expandedPermissions.some(
-    (perm) =>
-      perm === requiredPermission ||
-      matchesPermissionPattern(requiredPermission, perm),
+    (perm) => perm === requiredPermission || matchesPermissionPattern(requiredPermission, perm)
   );
 };
 
@@ -124,7 +124,7 @@ export const hasPermission = (
 export const hasAnyPermission = (
   adminPermissions: string[],
   adminRole: string,
-  requiredPermissions: string[],
+  requiredPermissions: string[]
 ): boolean => {
   // System Admins have all permissions
   if (isSystemAdminRole(adminRole)) {
@@ -132,7 +132,7 @@ export const hasAnyPermission = (
   }
 
   return requiredPermissions.some((required) =>
-    hasPermission(adminPermissions, adminRole, required),
+    hasPermission(adminPermissions, adminRole, required)
   );
 };
 
@@ -142,7 +142,7 @@ export const hasAnyPermission = (
 export const hasAllPermissions = (
   adminPermissions: string[],
   adminRole: string,
-  requiredPermissions: string[],
+  requiredPermissions: string[]
 ): boolean => {
   // System Admins have all permissions
   if (isSystemAdminRole(adminRole)) {
@@ -150,7 +150,7 @@ export const hasAllPermissions = (
   }
 
   return requiredPermissions.every((required) =>
-    hasPermission(adminPermissions, adminRole, required),
+    hasPermission(adminPermissions, adminRole, required)
   );
 };
 
@@ -159,7 +159,7 @@ export const hasAllPermissions = (
  */
 export const areValidPermissions = (
   permissions: string[],
-  validPermissions: readonly string[],
+  validPermissions: readonly string[]
 ): boolean => {
   return permissions.every((perm) => validPermissions.includes(perm));
 };
@@ -190,9 +190,7 @@ export const getPermissionAction = (permission: string): string => {
 /**
  * Group permissions by module
  */
-export const groupPermissionsByModule = (
-  permissions: string[],
-): Record<string, string[]> => {
+export const groupPermissionsByModule = (permissions: string[]): Record<string, string[]> => {
   return permissions.reduce(
     (groups, permission) => {
       const module = getPermissionModule(permission);
@@ -202,14 +200,10 @@ export const groupPermissionsByModule = (
       groups[module].push(permission);
       return groups;
     },
-    {} as Record<string, string[]>,
+    {} as Record<string, string[]>
   );
 };
 
 export const isSystemAdminRole = (role: string | undefined | null): boolean => {
-  return (
-    role === ADMIN_ROLES.SYSTEM_ADMIN ||
-    role === "SUPER_ADMIN" ||
-    role === "ADMIN"
-  );
+  return role === ADMIN_ROLES.SYSTEM_ADMIN || role === "SUPER_ADMIN" || role === "Admin";
 };

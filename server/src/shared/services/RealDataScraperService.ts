@@ -1,10 +1,12 @@
-import dotenv from "dotenv";
+import "../../config/env";
 import { GoogleGenAI } from "@google/genai";
 import { Tournament } from "../models/Tournament";
 import { Scholarship } from "../models/Scholarship";
 import { University } from "../models/University";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("realDataScraper");
 
-dotenv.config();
+// Env is loaded once, quietly, by config/env.
 
 type EntityType = "tournament" | "scholarship" | "university";
 
@@ -20,11 +22,9 @@ interface GroundedExtractionResult {
 }
 
 const scraperModelCandidates = [
-  process.env.GEMINI_SCRAPER_MODEL,
   "gemini-2.5-flash",
+  "gemini-3.5-flash",
   "gemini-2.5-flash-lite",
-  "gemini-2.0-flash",
-  "gemini-1.5-flash",
 ].filter(Boolean) as string[];
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
@@ -55,7 +55,6 @@ function schemaBullets(type: EntityType): string {
 - prerequisiteGuide (array of 2-4 short steps to apply)
 - documentChecklist (array of documents typically required)`;
   }
-
   return `- name (string — the real university name)
 - location (string — "City, State")
 - admissionCriteria (string — real sports-quota admission criteria)
@@ -69,8 +68,7 @@ function schemaBullets(type: EntityType): string {
 
 function entityLabel(type: EntityType): string {
   if (type === "tournament") return "tournaments";
-  if (type === "scholarship")
-    return "scholarships or financial support schemes";
+  if (type === "scholarship") return "scholarships or financial support schemes";
   return "universities/colleges offering admission via sports quota";
 }
 
@@ -90,8 +88,8 @@ function buildGroundingPrompt(type: EntityType, ctx: ScrapeContext): string {
     : "";
 
   if (type === "tournament") {
-    return `Use Google Search to research REAL, CURRENTLY ACTIVE tennis tournaments in
-India for the sport "${ctx.sportName}"${cityClause}. I need at least 6 DIFFERENT tournament series or
+    return `Use Google Search to research REAL, CURRENTLY ACTIVE ${ctx.sportName} tournaments in
+India${cityClause}. I need at least 6 DIFFERENT tournament series or
 events, not 6 city editions of the same series.
 
 Rules:
@@ -127,10 +125,7 @@ from memory or guessing.`;
  * reliable here. Converts step 1's free-form grounded findings into strict
  * JSON, without adding anything not already present in the findings.
  */
-function buildFormattingPrompt(
-  type: EntityType,
-  groundedFindings: string,
-): string {
+function buildFormattingPrompt(type: EntityType, groundedFindings: string): string {
   return `Below is research about real ${entityLabel(type)}. Convert ONLY the real items
 explicitly mentioned into a JSON array. Do not add, invent, or infer anything not present in
 the research. If the research does not clearly mention any real items, return an empty array.
@@ -151,7 +146,7 @@ Return ONLY the JSON array. No markdown fences, no commentary.`;
 async function extractWithGrounding(
   genAI: GoogleGenAI,
   type: EntityType,
-  ctx: ScrapeContext,
+  ctx: ScrapeContext
 ): Promise<GroundedExtractionResult> {
   const groundingPrompt = buildGroundingPrompt(type, ctx);
 
@@ -167,15 +162,13 @@ async function extractWithGrounding(
       });
 
       const groundedFindings = (groundingResponse.text ?? "").trim();
-      const chunks =
-        groundingResponse.candidates?.[0]?.groundingMetadata?.groundingChunks ??
-        [];
+      const chunks = groundingResponse.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
       const sourceUrls = Array.from(
         new Set(
           chunks
             .map((c: any) => c?.web?.uri)
-            .filter((uri: unknown): uri is string => typeof uri === "string"),
-        ),
+            .filter((uri: unknown): uri is string => typeof uri === "string")
+        )
       );
 
       if (!groundedFindings) {
@@ -226,16 +219,13 @@ async function extractWithGrounding(
     } catch (error) {
       const statusCode = (error as { status?: number }).status;
       if (statusCode === 429) {
-        console.warn(
-          `[RealDataScraperService] ${type} model ${model} is rate-limited or over quota, trying next candidate.`,
+        log.warn(
+          `[RealDataScraperService] ${type} model ${model} is rate-limited or over quota, trying next candidate.`
         );
         continue;
       }
 
-      console.error(
-        `[RealDataScraperService] ${type} extraction failed with model ${model}:`,
-        error,
-      );
+      log.error(`[RealDataScraperService] ${type} extraction failed with model ${model}:`, error);
       // try next model
     }
   }
@@ -272,41 +262,48 @@ function dedupeTournamentItems(items: any[]): any[] {
 
 // ─── Upsert helpers (dedupe by sportSlug + name, so re-scraping updates facts in place) ──
 
-async function upsertTournaments(
-  sportSlug: string,
-  items: any[],
-  sourceUrls: string[],
-) {
+/**
+ * Curated tournaments (isCurated=true, hand-seeded by seedCuratedTournaments)
+ * are never touched. The filter skips them, and because { sportSlug, name } is
+ * unique the upsert then collides with the curated doc (E11000) instead of
+ * inserting a duplicate; that collision is the expected "leave it alone" path.
+ */
+export async function upsertTournaments(sportSlug: string, items: any[], sourceUrls: string[]) {
   for (const item of dedupeTournamentItems(items)) {
     if (!item?.name) continue;
-    await Tournament.findOneAndUpdate(
-      { sportSlug, name: item.name },
-      {
-        $set: {
-          level: item.level || "National",
-          description: item.description || "",
-          ageGroup: item.ageGroup || "Open",
-          city: item.city,
-          typicalDates: item.typicalDates || undefined,
-          registrationDeadline: item.registrationDeadline || undefined,
-          prerequisiteId: item.prerequisiteId,
-          prerequisiteName: item.prerequisiteName,
-          prerequisiteGuide: item.prerequisiteGuide || [],
-          documentChecklist: item.documentChecklist || [],
-          sourceUrls,
-          lastScrapedAt: new Date(),
-        },
-      },
-      { upsert: true, new: true },
-    );
+    try {
+      await upsertScrapedTournament(sportSlug, item, sourceUrls);
+    } catch (error) {
+      if ((error as { code?: number })?.code === 11000) continue;
+      throw error;
+    }
   }
 }
 
-async function upsertScholarships(
-  sportSlug: string,
-  items: any[],
-  sourceUrls: string[],
-) {
+async function upsertScrapedTournament(sportSlug: string, item: any, sourceUrls: string[]) {
+  await Tournament.findOneAndUpdate(
+    { sportSlug, name: item.name, isCurated: { $ne: true } },
+    {
+      $set: {
+        level: item.level || "National",
+        description: item.description || "",
+        ageGroup: item.ageGroup || "Open",
+        city: item.city,
+        typicalDates: item.typicalDates || undefined,
+        registrationDeadline: item.registrationDeadline || undefined,
+        prerequisiteId: item.prerequisiteId,
+        prerequisiteName: item.prerequisiteName,
+        prerequisiteGuide: item.prerequisiteGuide || [],
+        documentChecklist: item.documentChecklist || [],
+        sourceUrls,
+        lastScrapedAt: new Date(),
+      },
+    },
+    { upsert: true, new: true }
+  );
+}
+
+async function upsertScholarships(sportSlug: string, items: any[], sourceUrls: string[]) {
   for (const item of items) {
     if (!item?.name) continue;
     await Scholarship.findOneAndUpdate(
@@ -325,16 +322,12 @@ async function upsertScholarships(
           lastScrapedAt: new Date(),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
   }
 }
 
-async function upsertUniversities(
-  sportSlug: string,
-  items: any[],
-  sourceUrls: string[],
-) {
+async function upsertUniversities(sportSlug: string, items: any[], sourceUrls: string[]) {
   for (const item of items) {
     if (!item?.name) continue;
     await University.findOneAndUpdate(
@@ -353,7 +346,7 @@ async function upsertUniversities(
           lastScrapedAt: new Date(),
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
   }
 }
@@ -416,38 +409,21 @@ export class RealDataScraperService {
     universities: number;
   }> {
     if (!this.genAI) {
-      console.warn(
-        "[RealDataScraperService] No GEMINI_API_KEY/GOOGLE_API_KEY set — skipping.",
-      );
+      log.warn("[RealDataScraperService] No GEMINI_API_KEY/GOOGLE_API_KEY set — skipping.");
       return { tournaments: 0, scholarships: 0, universities: 0 };
     }
 
-    const [tournamentResult, scholarshipResult, universityResult] =
-      await Promise.all([
-        extractWithGrounding(this.genAI, "tournament", ctx),
-        extractWithGrounding(this.genAI, "scholarship", ctx),
-        extractWithGrounding(this.genAI, "university", ctx),
-      ]);
+    const [tournamentResult, scholarshipResult, universityResult] = await Promise.all([
+      extractWithGrounding(this.genAI, "tournament", ctx),
+      extractWithGrounding(this.genAI, "scholarship", ctx),
+      extractWithGrounding(this.genAI, "university", ctx),
+    ]);
 
-    const dedupedTournamentItems = dedupeTournamentItems(
-      tournamentResult.items,
-    );
+    const dedupedTournamentItems = dedupeTournamentItems(tournamentResult.items);
 
-    await upsertTournaments(
-      ctx.sportSlug,
-      dedupedTournamentItems,
-      tournamentResult.sourceUrls,
-    );
-    await upsertScholarships(
-      ctx.sportSlug,
-      scholarshipResult.items,
-      scholarshipResult.sourceUrls,
-    );
-    await upsertUniversities(
-      ctx.sportSlug,
-      universityResult.items,
-      universityResult.sourceUrls,
-    );
+    await upsertTournaments(ctx.sportSlug, dedupedTournamentItems, tournamentResult.sourceUrls);
+    await upsertScholarships(ctx.sportSlug, scholarshipResult.items, scholarshipResult.sourceUrls);
+    await upsertUniversities(ctx.sportSlug, universityResult.items, universityResult.sourceUrls);
 
     return {
       tournaments: dedupedTournamentItems.length,

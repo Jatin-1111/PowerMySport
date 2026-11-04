@@ -53,7 +53,7 @@ const communityConversationSchema = new Schema<CommunityConversationDocument>(
       default: Date.now,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 communityConversationSchema.index({ participants: 1, updatedAt: -1 });
@@ -67,11 +67,10 @@ communityConversationSchema.index(
       conversationType: "DM",
       participantKey: { $type: "string" },
     },
-  },
+  }
 );
 
-export const CommunityConversation =
-  mongoose.model<CommunityConversationDocument>(
-    "CommunityConversation",
-    communityConversationSchema,
-  );
+export const CommunityConversation = mongoose.model<CommunityConversationDocument>(
+  "CommunityConversation",
+  communityConversationSchema
+);

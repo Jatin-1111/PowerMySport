@@ -1,18 +1,67 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi } from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
-import { Coach } from "@/types";
-import { ChevronLeft, ChevronRight, MapPin, Plus } from "lucide-react";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
+import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
+import { toast } from "@/lib/toast";
+import { Coach, CoachVerificationStatus } from "@/types";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ErrorNotice } from "@/modules/shared/ui/States";
+
+const VERIFICATION_STATUSES: CoachVerificationStatus[] = [
+  "UNVERIFIED",
+  "PENDING",
+  "REVIEW",
+  "VERIFIED",
+  "REJECTED",
+];
+
+interface CoachEditForm {
+  bio: string;
+  hourlyRate: number;
+  verificationStatus: CoachVerificationStatus;
+}
 
 interface PaginationData {
   total: number;
   page: number;
   totalPages: number;
 }
+
+type SortColumn = "name" | "joined" | "rating";
+type SortDirection = "asc" | "desc";
+
+const getCoachUser = (coach: Coach): Record<string, unknown> | null =>
+  typeof coach.userId === "object" && coach.userId !== null
+    ? (coach.userId as Record<string, unknown>)
+    : null;
+
+const getCoachName = (coach: Coach): string => {
+  const user = getCoachUser(coach);
+  return typeof user?.name === "string" ? user.name : "Unnamed coach";
+};
+
+const getCoachEmail = (coach: Coach): string => {
+  const user = getCoachUser(coach);
+  return typeof user?.email === "string" ? user.email : "";
+};
+
+const getCoachId = (coach: Coach): string => coach.id || coach._id || "";
+
+const formatDate = (value?: string): string =>
+  value
+    ? new Date(value).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 export default function AdminCoachesPage() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -24,6 +73,17 @@ export default function AdminCoachesPage() {
     totalPages: 1,
   });
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("joined");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState<CoachEditForm>({
+    bio: "",
+    hourlyRate: 0,
+    verificationStatus: "UNVERIFIED",
+  });
+  const [saving, setSaving] = useState(false);
   const PAGE_SIZE = 12;
 
   const loadCoaches = useCallback(async () => {
@@ -34,15 +94,11 @@ export default function AdminCoachesPage() {
         page: currentPage,
         limit: PAGE_SIZE,
       });
-
       if (response.success && response.data) {
         setCoaches(response.data);
-        if (response.pagination) {
-          setPagination(response.pagination);
-        }
+        if (response.pagination) setPagination(response.pagination);
         return;
       }
-
       setError(response.message || "Failed to load coaches.");
     } catch (loadError) {
       console.error("Failed to load coaches:", loadError);
@@ -56,29 +112,152 @@ export default function AdminCoachesPage() {
     loadCoaches();
   }, [loadCoaches]);
 
-  if (loading) {
-    return <div className="py-12 text-center">Loading coaches...</div>;
-  }
+  const openCoach = (coach: Coach) => {
+    setSelectedCoach(coach);
+    setEditing(false);
+    setEditForm({
+      bio: coach.bio || "",
+      hourlyRate: coach.hourlyRate || 0,
+      verificationStatus: coach.verificationStatus || "UNVERIFIED",
+    });
+  };
+
+  const closeCoach = () => {
+    setSelectedCoach(null);
+    setEditing(false);
+  };
+
+  const saveEdit = async () => {
+    if (!selectedCoach) return;
+    const coachId = getCoachId(selectedCoach);
+    if (!coachId) return;
+
+    setSaving(true);
+    try {
+      const response = await adminApi.updateCoach(coachId, { ...editForm });
+      if (response.success) {
+        toast.success("Coach updated.");
+        setEditing(false);
+        setSelectedCoach(null);
+        await loadCoaches();
+      } else {
+        toast.error(response.message || "Failed to update coach.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to update coach.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onSortChange = (column: string) => {
+    const col = column as SortColumn;
+    if (sortColumn === col) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(col);
+      setSortDirection(col === "name" ? "asc" : "desc");
+    }
+  };
+
+  const visibleCoaches = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = coaches.filter((coach) => {
+      if (!query) return true;
+      return (
+        getCoachName(coach).toLowerCase().includes(query) ||
+        getCoachEmail(coach).toLowerCase().includes(query) ||
+        (coach.sports || []).join(" ").toLowerCase().includes(query)
+      );
+    });
+
+    const factor = sortDirection === "asc" ? 1 : -1;
+    return [...filtered].sort((left, right) => {
+      if (sortColumn === "name") {
+        return factor * getCoachName(left).localeCompare(getCoachName(right));
+      }
+      if (sortColumn === "rating") {
+        return factor * ((left.rating ?? 0) - (right.rating ?? 0));
+      }
+      return (
+        factor *
+        (new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime())
+      );
+    });
+  }, [coaches, searchQuery, sortColumn, sortDirection]);
+
+  const columns: AdminDataTableColumn<Coach>[] = [
+    {
+      key: "name",
+      header: "Coach",
+      sortable: true,
+      render: (c) => <EntityBadge name={getCoachName(c)} email={getCoachEmail(c)} />,
+    },
+    {
+      key: "verification",
+      header: "Verification",
+      render: (c) => <LifecycleBadge kind="coach" source={c} />,
+    },
+    {
+      key: "sports",
+      header: "Sports",
+      render: (c) =>
+        c.sports?.length ? (
+          <div className="flex flex-wrap gap-1">
+            {c.sports.slice(0, 2).map((sport) => (
+              <span
+                key={sport}
+                className="rounded-md bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
+              >
+                {sport}
+              </span>
+            ))}
+            {c.sports.length > 2 && (
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                +{c.sports.length - 2}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-slate-500">—</span>
+        ),
+    },
+    {
+      key: "rate",
+      header: "Rate",
+      align: "right",
+      render: (c) => <span className="text-slate-700">₹{c.hourlyRate}</span>,
+    },
+    {
+      key: "rating",
+      header: "Rating",
+      sortable: true,
+      align: "right",
+      render: (c) => (
+        <span className="text-slate-700">
+          {(c.rating ?? 0).toFixed(1)}{" "}
+          <span className="text-slate-500">({c.reviewCount ?? 0})</span>
+        </span>
+      ),
+    },
+    {
+      key: "joined",
+      header: "Joined",
+      sortable: true,
+      render: (c) => <span className="text-slate-600">{formatDate(c.createdAt)}</span>,
+    },
+  ];
 
   if (error) {
     return (
       <div className="space-y-6">
         <AdminPageHeader
-          badge="Admin"
+          badge="People"
           title="Coaches"
           subtitle="Browse and manage coach accounts on the platform."
         />
-        <Card className="bg-white">
-          <div className="space-y-3 py-10 text-center">
-            <p className="font-semibold text-red-600">{error}</p>
-            <button
-              onClick={loadCoaches}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        <ErrorNotice message={error} onRetry={loadCoaches} />
       </div>
     );
   }
@@ -86,171 +265,236 @@ export default function AdminCoachesPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="People"
         title="Coaches"
         subtitle="Browse and manage coach accounts on the platform."
+        action={
+          <Link
+            href="/admin/coaches/add"
+            className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-800"
+          >
+            <Plus size={16} /> Add coach
+          </Link>
+        }
       />
 
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-slate-600">
-          {pagination.total} coach{pagination.total === 1 ? "" : "es"} found
-        </p>
-        <Link
-          href="/admin/coaches/add"
-          className="inline-flex items-center gap-2 rounded-xl bg-power-orange px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          <Plus size={16} /> Add coach
-        </Link>
-      </div>
+      <AdminDataTable<Coach>
+        columns={columns}
+        rows={visibleCoaches}
+        getRowKey={(c) => getCoachId(c) || getCoachName(c)}
+        loading={loading}
+        emptyMessage={
+          coaches.length === 0
+            ? "Coach accounts created from the admin portal will appear here."
+            : "No coaches match your search on this page."
+        }
+        onRowClick={openCoach}
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: "Search this page by name, email, or sport",
+        }}
+        sort={{
+          column: sortColumn,
+          direction: sortDirection,
+          onChange: onSortChange,
+        }}
+        pagination={{
+          page: currentPage,
+          totalPages: pagination.totalPages,
+          total: pagination.total,
+          onPageChange: setCurrentPage,
+        }}
+        toolbarExtra={
+          <ExportCsvButton
+            filename="coaches.csv"
+            rows={visibleCoaches}
+            label="Export Page CSV"
+            columns={[
+              { header: "Name", value: (c) => getCoachName(c) },
+              { header: "Email", value: (c) => getCoachEmail(c) },
+              {
+                header: "Verification Status",
+                value: (c) => c.verificationStatus || "UNVERIFIED",
+              },
+              { header: "Sports", value: (c) => (c.sports || []).join("; ") },
+              { header: "Hourly Rate", value: (c) => c.hourlyRate },
+              { header: "Rating", value: (c) => c.rating ?? 0 },
+              { header: "Reviews", value: (c) => c.reviewCount ?? 0 },
+              {
+                header: "Joined",
+                value: (c) => (c.createdAt ? new Date(c.createdAt).toISOString() : ""),
+              },
+            ]}
+          />
+        }
+      />
 
-      {coaches.length === 0 ? (
-        <Card className="bg-white">
-          <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
-              No coaches yet
-            </div>
-            <p className="max-w-md text-slate-600">
-              Coach accounts created from the admin portal will appear here.
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {coaches.map((coach, coachIndex) => {
-            const coachKey =
-              coach.id ||
-              coach._id ||
-              `${coach.bio}-${coach.createdAt}-${coachIndex}`;
-            const userInfo =
-              typeof coach.userId === "object" && coach.userId !== null
-                ? (coach.userId as Record<string, unknown>)
-                : null;
-            const displayName =
-              typeof userInfo?.name === "string"
-                ? userInfo.name
-                : "Unnamed coach";
+      <DetailDrawer
+        open={Boolean(selectedCoach)}
+        onClose={closeCoach}
+        title={selectedCoach ? getCoachName(selectedCoach) : "Coach"}
+        subtitle={selectedCoach ? getCoachEmail(selectedCoach) : undefined}
+        headerExtra={selectedCoach ? <LifecycleBadge kind="coach" source={selectedCoach} /> : null}
+        footer={
+          selectedCoach ? (
+            editing ? (
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveEdit}
+                  disabled={saving}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setEditing(true)}
+                  className="bg-power-orange-solid rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-800"
+                >
+                  Edit coach
+                </button>
+              </div>
+            )
+          ) : null
+        }
+      >
+        {selectedCoach && !editing && (
+          <>
+            <DetailSection title="Overview">
+              <DetailRow label="Service mode" value={selectedCoach.serviceMode || "—"} />
+              <DetailRow label="Hourly rate" value={`₹${selectedCoach.hourlyRate}`} />
+              <DetailRow
+                label="Rating"
+                value={`${(selectedCoach.rating ?? 0).toFixed(1)} (${selectedCoach.reviewCount ?? 0} reviews)`}
+              />
+              <DetailRow label="Joined" value={formatDate(selectedCoach.createdAt)} />
+              {selectedCoach.ownVenueDetails?.address && (
+                <DetailRow label="Own venue" value={selectedCoach.ownVenueDetails.address} />
+              )}
+            </DetailSection>
 
-            return (
-              <Card
-                key={coachKey}
-                className="bg-white transition-shadow hover:shadow-lg"
-              >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {displayName}
-                      </h3>
-                      <p className="text-sm text-slate-500">
-                        {typeof userInfo?.email === "string"
-                          ? userInfo.email
-                          : "No email"}
-                      </p>
-                    </div>
-                    <span className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {coach.verificationStatus || "UNVERIFIED"}
-                    </span>
-                  </div>
+            <DetailSection title="Bio">
+              <p className="text-sm leading-relaxed text-slate-700">
+                {selectedCoach.bio || "No bio provided."}
+              </p>
+            </DetailSection>
 
-                  <p className="line-clamp-3 text-sm text-slate-600">
-                    {coach.bio || "No bio provided."}
-                  </p>
-
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin size={16} />
-                    <span>
-                      {coach.serviceMode}
-                      {coach.ownVenueDetails?.address
-                        ? ` • ${coach.ownVenueDetails.address}`
+            <DetailSection title="Sports">
+              {selectedCoach.sports?.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCoach.sports.map((sport) => (
+                    <span
+                      key={sport}
+                      className="rounded-md bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-800"
+                    >
+                      {sport}
+                      {selectedCoach.sportPricing?.[sport] != null
+                        ? ` · ₹${selectedCoach.sportPricing[sport]}`
                         : ""}
                     </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {coach.sports?.length ? (
-                      coach.sports.map((sport) => (
-                        <span
-                          key={`${coachKey}-${sport}`}
-                          className="rounded-full bg-power-orange/10 px-2 py-1 text-xs font-medium text-power-orange"
-                        >
-                          {sport}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-sm text-slate-500">No sports</span>
-                    )}
-                  </div>
-
-                  <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
-                    <p>
-                      Rate:{" "}
-                      <span className="font-semibold">₹{coach.hourlyRate}</span>
-                    </p>
-                    <p>
-                      Rating:{" "}
-                      <span className="font-semibold">{coach.rating ?? 0}</span>
-                    </p>
-                    <p>
-                      Reviews:{" "}
-                      <span className="font-semibold">
-                        {coach.reviewCount ?? 0}
-                      </span>
-                    </p>
-                  </div>
+                  ))}
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+              ) : (
+                <p className="text-sm text-slate-500">No sports listed.</p>
+              )}
+            </DetailSection>
 
-      {pagination.totalPages > 1 ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-center text-sm text-slate-600 sm:text-left">
-            Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-            {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
-            {pagination.total} coaches
-          </p>
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronLeft size={18} />
-            </button>
+            <DetailSection title="Certifications">
+              {selectedCoach.certifications?.length ? (
+                <ul className="list-inside list-disc space-y-1 text-sm text-slate-700">
+                  {selectedCoach.certifications.map((cert, index) => (
+                    <li key={`${cert}-${index}`}>{cert}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-slate-500">No certifications listed.</p>
+              )}
+            </DetailSection>
 
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-              .slice(
-                Math.max(0, currentPage - 2),
-                Math.min(pagination.totalPages, currentPage + 1),
-              )
-              .map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
-                    currentPage === page
-                      ? "bg-power-orange text-white"
-                      : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                  }`}
+            <DetailSection title="Verification">
+              <DetailRow
+                label="Status"
+                value={<LifecycleBadge kind="coach" source={selectedCoach} />}
+              />
+              <DetailRow
+                label="Documents"
+                value={selectedCoach.verificationDocuments?.length ?? 0}
+              />
+              <DetailRow
+                label="Submitted"
+                value={formatDate(selectedCoach.verificationSubmittedAt)}
+              />
+              <DetailRow label="Verified" value={formatDate(selectedCoach.verifiedAt)} />
+              {selectedCoach.verificationNotes && (
+                <DetailRow label="Notes" value={selectedCoach.verificationNotes} />
+              )}
+            </DetailSection>
+          </>
+        )}
+
+        {selectedCoach && editing && (
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold text-slate-500">Bio</label>
+              <textarea
+                rows={5}
+                value={editForm.bio}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-500">
+                  Hourly rate (₹)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.hourlyRate}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      hourlyRate: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-500">
+                  Verification status
+                </label>
+                <select
+                  value={editForm.verificationStatus}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      verificationStatus: e.target.value as CoachVerificationStatus,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 >
-                  {page}
-                </button>
-              ))}
-
-            <button
-              onClick={() =>
-                setCurrentPage(Math.min(pagination.totalPages, currentPage + 1))
-              }
-              disabled={currentPage === pagination.totalPages}
-              className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ChevronRight size={18} />
-            </button>
+                  {VERIFICATION_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
-      ) : null}
+        )}
+      </DetailDrawer>
     </div>
   );
 }

@@ -13,7 +13,7 @@ async function testPresignedUrl() {
       "test_image.jpg",
       "image/jpeg",
       "test-venue-id",
-      false,
+      false
     );
 
     console.log("Generated URLs:");

@@ -1,21 +1,35 @@
 import { Request, Response } from "express";
+import { generateToken, revokeToken, TOKEN_MAX_AGE_MS } from "../../utils/jwt";
 import {
+  addAddress,
   addDependent,
+  hasCurrentParentalConsent,
+  changePassword,
   confirmProfilePictureUpload,
+  requestAccountDeletion,
+  deleteAddress,
   deleteDependent,
+  getPlayersByUserId,
   getProfilePictureUploadUrl,
+  getUserAddresses,
   getUserById,
   googleLogin,
+  verifyGoogleCredential,
   graduateDependent,
   loginUser,
   registerUser,
+  linkGoogleAccount,
   requestPasswordReset,
   resetPassword,
+  setDefaultAddress,
+  updateAddress,
   updateDependent,
   updateProfile,
-  getPlayersByUserId,
 } from "../services/AuthService";
-import { generateToken, revokeToken } from "../../utils/jwt";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { setWhatsAppConsent } from "../services/whatsappConsent";
+import { AppError } from "../../utils/AppError";
+import { serializeChildForParent } from "../services/AuthService/childProfile";
 
 const authCookieDomain = process.env.AUTH_COOKIE_DOMAIN?.trim();
 
@@ -24,6 +38,13 @@ const authCookieOptions = {
   secure: process.env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
+  // Without this the cookie is a *session* cookie: it dies when the browser
+  // closes, while the token it carries stays valid for 7 days and is also held
+  // in localStorage. That left returning users routinely holding a valid session
+  // and no cookie, so the cookie could not be treated as the session of record
+  // and server-side auth gating had to stay disabled. Derived from the token's
+  // own lifetime so the two cannot drift apart.
+  maxAge: TOKEN_MAX_AGE_MS,
   // Only set domain in production to allow cross-subdomain auth (e.g. .powermysport.com)
   // In development, omit it so localhost handles it gracefully across ports
   ...(authCookieDomain && process.env.NODE_ENV === "production"
@@ -31,83 +52,68 @@ const authCookieOptions = {
     : {}),
 };
 
-export const register = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const user = await registerUser({
-      ...req.body,
-      role: req.body.role || "PLAYER",
-      userType: req.body.userType || "Recreational",
-    });
-
-    const token = generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-      userType: user.userType,
-    });
-
-    res.cookie("token", token, authCookieOptions);
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          userType: user.userType,
-        },
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Registration failed",
-    });
+export const register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // role always arrives already defaulted here — registerSchema (applied by
+  // the validateRequest middleware ahead of this handler) guarantees it's
+  // present and valid before req.body reaches this point.
+  const { whatsappConsent, ...registration } = req.body;
+  const user = await registerUser({ ...registration });
+  if (whatsappConsent === true) {
+    await setWhatsAppConsent(user._id.toString(), true, "signup");
   }
-};
 
-export const login = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const user = await loginUser(req.body);
+  const token = generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
 
-    const token = generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-      userType: user.userType,
-    });
+  res.cookie("token", token, authCookieOptions);
 
-    res.cookie("token", token, authCookieOptions);
-
-    res.status(200).json({
-      success: true,
-      message: "Login successful",
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          userType: user.userType,
-        },
+  res.status(201).json({
+    success: true,
+    message: "User registered successfully",
+    data: {
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
-    });
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Login failed",
-    });
-  }
-};
+    },
+  });
+});
 
-export const logout = async (req: Request, res: Response): Promise<void> => {
-  const token =
-    req.cookies?.token || req.headers.authorization?.slice(7).trim();
+export const login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { user, deletionCancelled } = await loginUser(req.body);
+
+  const token = generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
+
+  res.cookie("token", token, authCookieOptions);
+
+  res.status(200).json({
+    success: true,
+    message: "Login successful",
+    data: {
+      token,
+      deletionCancelled,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    },
+  });
+});
+
+export const logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const token = req.cookies?.token || req.headers.authorization?.slice(7).trim();
   if (token) {
     await revokeToken(token);
   }
@@ -117,156 +123,121 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
     success: true,
     message: "Logout successful",
   });
-};
+});
 
-export const getProfile = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
+export const getProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
+  }
 
-    const user = await getUserById(req.user.id);
+  const user = await getUserById(req.user.id);
 
-    if (!user) {
-      res.clearCookie("token", authCookieOptions);
-      res.status(401).json({
-        success: false,
-        message: "Session expired. Please login again.",
-      });
-      return;
-    }
+  if (!user) {
+    res.clearCookie("token", authCookieOptions);
+    throw new AppError("Session expired. Please login again.", 401);
+  }
 
-    // Refresh profile photo URL if S3 key exists
-    if (user.photoS3Key) {
-      await user.refreshPhotoUrl();
-    }
+  // Refresh profile photo URL if S3 key exists
+  if (user.photoS3Key) {
+    await user.refreshPhotoUrl();
+  }
 
-    const allPlayers = await getPlayersByUserId(user._id.toString());
-    const dependents = allPlayers
-      .filter((p: any) => p.type === "DEPENDENT")
-      .map((p: any) => ({
-        _id: p._id,
-        name: p.name,
-        dob: p.dob || null,
-        age: p.age,
-        sports: p.sportsFocus || [],
-        skillLevel: p.skillLevel,
-        personalityTags: p.personalityTags,
-        primaryObjective: p.primaryObjective,
-        weeklyTimeCommitment: p.weeklyTimeCommitment,
-        budgetTier: p.budgetTier,
-      }));
+  const dependents = (await getPlayersByUserId(user._id.toString())).map(serializeChildForParent);
 
-    const selfPlayer = allPlayers.find((p: any) => p.type === "SELF");
-    const playerProfile = selfPlayer
+  const athlete = (user as any).athleteProfile;
+  const playerProfile = athlete
+    ? {
+        sportsFocus: athlete.sportsFocus || [],
+        yearsPlaying: athlete.yearsPlaying,
+        personalityTags: athlete.personalityTags,
+        primaryObjective: athlete.primaryObjective,
+        weeklyTimeCommitment: athlete.weeklyTimeCommitment,
+        budgetTier: athlete.budgetTier,
+        location: athlete.location,
+      }
+    : undefined;
+
+  const parentProfile =
+    user.role === "Parent"
       ? {
-          sports: selfPlayer.sportsFocus || [],
-          personalityTags: selfPlayer.personalityTags,
-          primaryObjective: selfPlayer.primaryObjective,
-          weeklyTimeCommitment: selfPlayer.weeklyTimeCommitment,
-          budgetTier: selfPlayer.budgetTier,
+          bio: (user as any).bio ?? undefined,
+          sportInterests: (user as any).sportInterests ?? [],
+          involvementYears: (user as any).involvementYears ?? undefined,
         }
       : undefined;
 
-    res.status(200).json({
-      success: true,
-      message: "Profile retrieved successfully",
-      data: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        userType: user.userType,
-        dob: user.dob,
-        photoUrl: user.photoUrl,
-        photoS3Key: user.photoS3Key,
-        playerProfile,
-        dependents,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch profile",
-    });
+  res.status(200).json({
+    success: true,
+    message: "Profile retrieved successfully",
+    data: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      dob: user.dob,
+      photoUrl: user.photoUrl,
+      photoS3Key: user.photoS3Key,
+      playerProfile,
+      parentProfile,
+      dependents,
+      parentalConsentCurrent: hasCurrentParentalConsent(user),
+      shippingAddress: user.shippingAddress,
+      hasPassword: !!user.password,
+    },
+  });
+});
+
+export const getAuthBridge = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
   }
-};
 
-export const getAuthBridge = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
-    }
+  const user = await getUserById(req.user.id);
 
-    const user = await getUserById(req.user.id);
-
-    if (!user) {
-      res.clearCookie("token", authCookieOptions);
-      res.status(401).json({
-        success: false,
-        message: "Session expired. Please login again.",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Session valid",
-      data: {
-        id: user._id,
-        role: user.role,
-        userType: user.userType,
-        name: user.name,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to validate session",
-    });
+  if (!user) {
+    res.clearCookie("token", authCookieOptions);
+    throw new AppError("Session expired. Please login again.", 401);
   }
-};
 
-export const updateProfileHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+  res.status(200).json({
+    success: true,
+    message: "Session valid",
+    data: {
+      id: user._id,
+      role: user.role,
+      name: user.name,
+      email: user.email,
+    },
+  });
+});
+
+export const updateProfileHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
-    const { name, email, phone, dob, playerProfile } = req.body;
+    const { name, email, phone, dob, parentProfile, playerProfile, shippingAddress } = req.body;
 
     const updatedUser = await updateProfile(req.user.id, {
       name,
       email,
       phone,
       dob,
+      parentProfile,
       playerProfile,
+      shippingAddress,
     });
+
+    const updatedParentProfile =
+      updatedUser.role === "Parent"
+        ? {
+            bio: (updatedUser as any).bio ?? undefined,
+            sportInterests: (updatedUser as any).sportInterests ?? [],
+            involvementYears: (updatedUser as any).involvementYears ?? undefined,
+          }
+        : undefined;
 
     res.status(200).json({
       success: true,
@@ -277,46 +248,28 @@ export const updateProfileHandler = async (
         email: updatedUser.email,
         phone: updatedUser.phone,
         role: updatedUser.role,
-        userType: updatedUser.userType,
         dob: updatedUser.dob,
         photoUrl: updatedUser.photoUrl,
         photoS3Key: updatedUser.photoS3Key,
+        shippingAddress: updatedUser.shippingAddress,
+        parentProfile: updatedParentProfile,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update profile",
-    });
   }
-};
+);
 
-export const forgotPassword = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { email } = req.body;
-    await requestPasswordReset(email);
+export const forgotPassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body;
+  await requestPasswordReset(email);
 
-    res.status(200).json({
-      success: true,
-      message: "Password reset instructions sent to your email",
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Request failed",
-    });
-  }
-};
+  res.status(200).json({
+    success: true,
+    message: "Password reset instructions sent to your email",
+  });
+});
 
-export const resetPasswordHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const resetPasswordHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { token, newPassword } = req.body;
     await resetPassword(token, newPassword);
 
@@ -324,121 +277,121 @@ export const resetPasswordHandler = async (
       success: true,
       message: "Password reset successfully",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Password reset failed",
-    });
   }
-};
+);
 
-export const googleAuth = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const {
-      googleId,
-      email,
-      name,
-      photoUrl,
-      role,
-      userType,
-      action,
-      acceptedTerms,
-      acceptedPrivacy,
-    } = req.body;
+export const changePasswordHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
 
-    const user = await googleLogin({
-      googleId,
-      email,
-      name,
-      photoUrl,
-      role,
-      userType,
-      action,
-      acceptedTerms,
-      acceptedPrivacy,
-    });
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      throw new AppError("Current password and new password are required", 400);
+    }
+    if (newPassword.length < 6) {
+      throw new AppError("New password must be at least 6 characters", 400);
+    }
 
-    const token = generateToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: user.role,
-      userType: user.userType,
-    });
-
-    res.cookie("token", token, authCookieOptions);
+    await changePassword(req.user.id, currentPassword, newPassword);
 
     res.status(200).json({
       success: true,
-      message: "Google login successful",
-      data: {
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          userType: user.userType,
-          photoUrl: user.photoUrl,
-        },
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Google login failed",
+      message: "Password changed successfully",
     });
   }
-};
+);
 
-export const graduateDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const deleteAccountHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { password } = req.body;
+    await requestAccountDeletion(req.user.id, password || "");
+
+    const token = req.cookies?.token || req.headers.authorization?.slice(7).trim();
+    if (token) {
+      await revokeToken(token);
+    }
+    res.clearCookie("token", authCookieOptions);
+
+    res.status(200).json({
+      success: true,
+      message:
+        "Your account has been deactivated and is scheduled for permanent deletion in 30 days. Log back in before then to cancel.",
+    });
+  }
+);
+
+export const googleAuth = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { credential, role, action, acceptedTerms, acceptedPrivacy } = req.body;
+
+  // Verify the Google ID token server-side. Identity (googleId/email/name) is
+  // derived ONLY from the verified token — never from client-supplied fields.
+  const identity = await verifyGoogleCredential(credential);
+
+  const { user, deletionCancelled } = await googleLogin({
+    googleId: identity.googleId,
+    email: identity.email,
+    name: identity.name || identity.email.split("@")[0] || "User",
+    ...(identity.photoUrl ? { photoUrl: identity.photoUrl } : {}),
+    role,
+    action,
+    acceptedTerms,
+    acceptedPrivacy,
+  });
+
+  const token = generateToken({
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+  });
+
+  res.cookie("token", token, authCookieOptions);
+
+  res.status(200).json({
+    success: true,
+    message: "Google login successful",
+    data: {
+      token,
+      deletionCancelled,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        photoUrl: user.photoUrl,
+      },
+    },
+  });
+});
+
+export const graduateDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId, email, password, phone } = req.body;
 
     // Validate required fields
     if (!dependentId) {
-      res.status(400).json({
-        success: false,
-        message: "Dependent ID is required",
-      });
-      return;
+      throw new AppError("Dependent ID is required", 400);
     }
 
     if (!email || !email.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Email is required",
-      });
-      return;
+      throw new AppError("Email is required", 400);
     }
 
     if (!password || password.length < 8) {
-      res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters",
-      });
-      return;
+      throw new AppError("Password must be at least 8 characters", 400);
     }
 
     if (!phone || !phone.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "Phone number is required",
-      });
-      return;
+      throw new AppError("Phone number is required", 400);
     }
 
     const newUser = await graduateDependent({
@@ -459,30 +412,16 @@ export const graduateDependentHandler = async (
           email: newUser.email,
           phone: newUser.phone,
           role: newUser.role,
-          userType: newUser.userType,
         },
       },
     });
-  } catch (error) {
-    console.error("Graduate dependent error:", error);
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Graduation failed",
-    });
   }
-};
+);
 
-export const getMyPlayersHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getMyPlayersHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const players = await getPlayersByUserId(req.user.id);
@@ -490,28 +429,16 @@ export const getMyPlayersHandler = async (
     res.status(200).json({
       success: true,
       message: "Players fetched successfully",
-      data: players,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch players",
+      // The same view of a child as the profile.
+      data: players.map(serializeChildForParent),
     });
   }
-};
+);
 
-export const addDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const addDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const dependent = await addDependent(req.user.id, req.body);
@@ -521,35 +448,18 @@ export const addDependentHandler = async (
       message: "Dependent added successfully",
       data: dependent,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to add dependent",
-    });
   }
-};
+);
 
-export const updateDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const updateDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId } = req.params;
     if (!dependentId || typeof dependentId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid dependent ID",
-      });
-      return;
+      throw new AppError("Invalid dependent ID", 400);
     }
     const dependent = await updateDependent(req.user.id, dependentId, req.body);
 
@@ -558,35 +468,18 @@ export const updateDependentHandler = async (
       message: "Dependent updated successfully",
       data: dependent,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update dependent",
-    });
   }
-};
+);
 
-export const deleteDependentHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const deleteDependentHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const { dependentId } = req.params;
     if (!dependentId || typeof dependentId !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "Invalid dependent ID",
-      });
-      return;
+      throw new AppError("Invalid dependent ID", 400);
     }
     await deleteDependent(req.user.id, dependentId);
 
@@ -594,104 +487,55 @@ export const deleteDependentHandler = async (
       success: true,
       message: "Dependent deleted successfully",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete dependent",
-    });
   }
-};
+);
 
 /**
  * Get presigned URL for profile picture upload
  */
-export const getProfilePictureUploadUrlHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getProfilePictureUploadUrlHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { fileName, contentType } = req.body;
 
     if (!fileName || !contentType) {
-      res.status(400).json({
-        success: false,
-        message: "fileName and contentType are required",
-      });
-      return;
+      throw new AppError("fileName and contentType are required", 400);
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(contentType)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
-      });
-      return;
+      throw new AppError(`Invalid content type. Allowed: ${allowedTypes.join(", ")}`, 400);
     }
 
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
-    const result = await getProfilePictureUploadUrl(
-      req.user.id,
-      fileName,
-      contentType,
-    );
+    const result = await getProfilePictureUploadUrl(req.user.id, fileName, contentType);
 
     res.status(200).json({
       success: true,
       message: "Presigned URL generated successfully",
       data: result,
     });
-  } catch (error) {
-    console.error("Profile picture upload URL error:", error);
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate upload URL",
-    });
   }
-};
+);
 
 /**
  * Confirm profile picture upload
  */
-export const confirmProfilePictureUploadHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const confirmProfilePictureUploadHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { photoUrl, photoS3Key } = req.body;
 
     if (!photoUrl || !photoS3Key) {
-      res.status(400).json({
-        success: false,
-        message: "photoUrl and photoS3Key are required",
-      });
-      return;
+      throw new AppError("photoUrl and photoS3Key are required", 400);
     }
 
     if (!req.user?.id) {
-      res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-      });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
-    const user = await confirmProfilePictureUpload(
-      req.user.id,
-      photoUrl,
-      photoS3Key,
-    );
+    const user = await confirmProfilePictureUpload(req.user.id, photoUrl, photoS3Key);
 
     res.status(200).json({
       success: true,
@@ -706,13 +550,185 @@ export const confirmProfilePictureUploadHandler = async (
         photoS3Key: user.photoS3Key,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to confirm profile picture upload",
+  }
+);
+
+/**
+ * Add a new address for the user
+ */
+export const addAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { fullName, email, phone, addressLine1, addressLine2, city, state, postalCode, country } =
+      req.body;
+
+    if (!fullName || !email || !phone || !addressLine1 || !city || !state || !postalCode) {
+      throw new AppError("All required fields must be provided", 400);
+    }
+
+    const user = await addAddress(req.user.id, {
+      fullName,
+      email,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country: country || "IN",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Address added successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
     });
   }
-};
+);
+
+/**
+ * Get all addresses for the user
+ */
+export const getAddressesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const addresses = await getUserAddresses(req.user.id);
+
+    res.status(200).json({
+      success: true,
+      data: addresses,
+    });
+  }
+);
+
+/**
+ * Update an existing address
+ */
+export const updateAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      throw new AppError("Invalid address ID", 400);
+    }
+    const { fullName, email, phone, addressLine1, addressLine2, city, state, postalCode, country } =
+      req.body;
+
+    const user = await updateAddress(req.user.id, addressId, {
+      fullName,
+      email,
+      phone,
+      addressLine1,
+      addressLine2,
+      city,
+      state,
+      postalCode,
+      country,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Address updated successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  }
+);
+
+/**
+ * Delete an address
+ */
+export const deleteAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      throw new AppError("Invalid address ID", 400);
+    }
+
+    const user = await deleteAddress(req.user.id, addressId);
+
+    res.status(200).json({
+      success: true,
+      message: "Address deleted successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  }
+);
+
+/**
+ * Set default address
+ */
+export const setDefaultAddressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { addressId } = req.params;
+    if (!addressId || typeof addressId !== "string") {
+      throw new AppError("Invalid address ID", 400);
+    }
+
+    const user = await setDefaultAddress(req.user.id, addressId);
+
+    res.status(200).json({
+      success: true,
+      message: "Default address set successfully",
+      data: {
+        addresses: user.addresses,
+        defaultAddressId: user.defaultAddressId,
+      },
+    });
+  }
+);
+
+export const linkGoogleHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    const { credential } = req.body;
+    if (!credential) {
+      throw new AppError("Credential is required", 400);
+    }
+
+    const user = await linkGoogleAccount(req.user.id, credential);
+
+    res.status(200).json({
+      success: true,
+      message: "Google account linked successfully",
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          googleId: user.googleId,
+          photoUrl: user.photoUrl,
+        },
+      },
+    });
+  }
+);

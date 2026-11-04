@@ -1,4 +1,5 @@
 import { PromoCode, PromoCodeDocument } from "../../shared/models/PromoCode";
+import { User } from "../models/User";
 
 export interface CreatePromoCodePayload {
   code: string;
@@ -19,7 +20,7 @@ export interface CreatePromoCodePayload {
  * Create a new promo code (admin only)
  */
 export const createPromoCode = async (
-  payload: CreatePromoCodePayload,
+  payload: CreatePromoCodePayload
 ): Promise<PromoCodeDocument> => {
   // Validate discount value
   if (payload.discountType === "PERCENTAGE") {
@@ -57,7 +58,7 @@ export const validatePromoCode = async (
   options?: {
     hasCoach?: boolean;
     context?: "BOOKING" | "MERCHANDISE";
-  },
+  }
 ): Promise<{
   isValid: boolean;
   discountAmount: number;
@@ -66,7 +67,9 @@ export const validatePromoCode = async (
   const hasCoach = options?.hasCoach ?? false;
   const context = options?.context ?? "BOOKING";
 
-  const promoCode = await PromoCode.findOne({ code: code.toUpperCase() });
+  const promoCode = await PromoCode.findOne({
+    code: code.toUpperCase(),
+  }).lean();
 
   if (!promoCode) {
     return { isValid: false, discountAmount: 0, message: "Invalid promo code" };
@@ -108,10 +111,7 @@ export const validatePromoCode = async (
   }
 
   // Check total usage limit
-  if (
-    promoCode.maxUsageTotal &&
-    promoCode.currentUsageCount >= promoCode.maxUsageTotal
-  ) {
+  if (promoCode.maxUsageTotal && promoCode.currentUsageCount >= promoCode.maxUsageTotal) {
     return {
       isValid: false,
       discountAmount: 0,
@@ -121,13 +121,10 @@ export const validatePromoCode = async (
 
   // Check per-user usage limit
   const userUsageCount = promoCode.usedBy.filter(
-    (usage) => usage.userId.toString() === userId,
+    (usage) => usage.userId.toString() === userId
   ).length;
 
-  if (
-    promoCode.maxUsagePerUser &&
-    userUsageCount >= promoCode.maxUsagePerUser
-  ) {
+  if (promoCode.maxUsagePerUser && userUsageCount >= promoCode.maxUsagePerUser) {
     return {
       isValid: false,
       discountAmount: 0,
@@ -144,10 +141,7 @@ export const validatePromoCode = async (
     };
   }
 
-  if (
-    promoCode.applicableTo === "MERCHANDISE_ONLY" &&
-    context !== "MERCHANDISE"
-  ) {
+  if (promoCode.applicableTo === "MERCHANDISE_ONLY" && context !== "MERCHANDISE") {
     return {
       isValid: false,
       discountAmount: 0,
@@ -157,8 +151,7 @@ export const validatePromoCode = async (
 
   if (
     context === "MERCHANDISE" &&
-    (promoCode.applicableTo === "COACH_ONLY" ||
-      promoCode.applicableTo === "VENUE_ONLY")
+    (promoCode.applicableTo === "COACH_ONLY" || promoCode.applicableTo === "VENUE_ONLY")
   ) {
     return {
       isValid: false,
@@ -173,10 +166,7 @@ export const validatePromoCode = async (
     discountAmount = (amount * promoCode.discountValue) / 100;
 
     // Apply max discount cap if set
-    if (
-      promoCode.maxDiscountAmount &&
-      discountAmount > promoCode.maxDiscountAmount
-    ) {
+    if (promoCode.maxDiscountAmount && discountAmount > promoCode.maxDiscountAmount) {
       discountAmount = promoCode.maxDiscountAmount;
     }
   } else {
@@ -199,8 +189,8 @@ export const applyPromoCode = async (
   userId: string,
   bookingId: string | null,
   orderId: string | null,
-  discountApplied: number,
-): Promise<void> => {
+  discountApplied: number
+): Promise<boolean> => {
   const usagePayload: {
     userId: string;
     discountApplied: number;
@@ -220,14 +210,63 @@ export const applyPromoCode = async (
     usagePayload.orderId = orderId;
   }
 
-  await PromoCode.findOneAndUpdate(
-    { code: code.toUpperCase() },
+  // The usage limits are part of the update's filter, so checking and recording are
+  // one atomic step: two concurrent requests can no longer both pass a limit that
+  // only has room for one. `maxUsageTotal` / `maxUsagePerUser` of 0 or unset mean
+  // unlimited, as in validatePromoCode.
+  const updated = await PromoCode.findOneAndUpdate(
+    {
+      code: code.toUpperCase(),
+      $expr: {
+        $and: [
+          {
+            $or: [
+              { $not: [{ $gt: [{ $ifNull: ["$maxUsageTotal", 0] }, 0] }] },
+              { $lt: ["$currentUsageCount", "$maxUsageTotal"] },
+            ],
+          },
+          {
+            $or: [
+              { $not: [{ $gt: [{ $ifNull: ["$maxUsagePerUser", 0] }, 0] }] },
+              {
+                $lt: [
+                  {
+                    $size: {
+                      $filter: {
+                        input: { $ifNull: ["$usedBy", []] },
+                        cond: { $eq: [{ $toString: "$$this.userId" }, String(userId)] },
+                      },
+                    },
+                  },
+                  "$maxUsagePerUser",
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
     {
       $inc: { currentUsageCount: 1 },
       $push: {
         usedBy: usagePayload,
       },
-    },
+    }
+  );
+  return Boolean(updated);
+};
+
+/**
+ * Give back the usage an order consumed, when that order is cancelled or could not
+ * be created. Matches on the order id so it can only undo its own usage, once.
+ */
+export const releasePromoUsage = async (code: string, orderId: string): Promise<void> => {
+  await PromoCode.findOneAndUpdate(
+    { code: code.toUpperCase(), "usedBy.orderId": orderId },
+    {
+      $inc: { currentUsageCount: -1 },
+      $pull: { usedBy: { orderId } },
+    }
   );
 };
 
@@ -235,7 +274,7 @@ export const applyPromoCode = async (
  * Get all promo codes (admin only)
  */
 export const getAllPromoCodes = async (): Promise<PromoCodeDocument[]> => {
-  return PromoCode.find().sort({ createdAt: -1 });
+  return PromoCode.find().sort({ createdAt: -1 }).lean();
 };
 
 /**
@@ -252,27 +291,23 @@ export const getActivePromoCodes = async (): Promise<PromoCodeDocument[]> => {
       { maxUsageTotal: { $exists: false } },
       { $expr: { $lt: ["$currentUsageCount", "$maxUsageTotal"] } },
     ],
-  }).sort({ createdAt: -1 });
+  })
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 /**
  * Deactivate a promo code
  */
-export const deactivatePromoCode = async (
-  codeId: string,
-): Promise<PromoCodeDocument | null> => {
-  return PromoCode.findByIdAndUpdate(
-    codeId,
-    { isActive: false },
-    { new: true },
-  );
+export const deactivatePromoCode = async (codeId: string): Promise<PromoCodeDocument | null> => {
+  return PromoCode.findByIdAndUpdate(codeId, { isActive: false }, { new: true });
 };
 
 /**
  * Get promo code usage statistics
  */
 export const getPromoCodeStats = async (
-  codeId: string,
+  codeId: string
 ): Promise<{
   code: string;
   totalUsage: number;
@@ -280,6 +315,8 @@ export const getPromoCodeStats = async (
   uniqueUsers: number;
   recentUsages: Array<{
     userId: string;
+    userName: string;
+    userEmail: string;
     discountApplied: number;
     usedAt: Date;
   }>;
@@ -292,20 +329,30 @@ export const getPromoCodeStats = async (
 
   const totalDiscountGiven = promoCode.usedBy.reduce(
     (sum, usage) => sum + usage.discountApplied,
-    0,
+    0
   );
 
-  const uniqueUsers = new Set(promoCode.usedBy.map((u) => u.userId.toString()))
-    .size;
+  const uniqueUsers = new Set(promoCode.usedBy.map((u) => u.userId.toString())).size;
 
-  const recentUsages = promoCode.usedBy
-    .slice(-10)
-    .reverse()
-    .map((usage) => ({
+  const recentRaw = promoCode.usedBy.slice(-10).reverse();
+
+  const users = await User.find({
+    _id: { $in: recentRaw.map((usage) => usage.userId) },
+  })
+    .select("name email")
+    .lean();
+  const userById = new Map(users.map((user) => [String(user._id), user]));
+
+  const recentUsages = recentRaw.map((usage) => {
+    const user = userById.get(usage.userId.toString());
+    return {
       userId: usage.userId.toString(),
+      userName: user?.name || "Unknown user",
+      userEmail: user?.email || "",
       discountApplied: usage.discountApplied,
       usedAt: usage.usedAt,
-    }));
+    };
+  });
 
   return {
     code: promoCode.code,

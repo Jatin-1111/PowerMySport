@@ -1,12 +1,27 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-export type ReminderType = "BOOKING_REMINDER" | "PATHWAY_DOCUMENT_REMINDER";
-export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS";
-export type ScheduledNotificationStatus =
-  | "PENDING"
-  | "SENT"
-  | "FAILED"
-  | "CANCELLED";
+export type ReminderType =
+  | "BOOKING_REMINDER"
+  | "PATHWAY_DOCUMENT_REMINDER"
+  | "PLAN_CHECKIN"
+  // Post-event, not pre-event like the others: "you were at X, want to share
+  // your experience?" — see ExperienceNudgeService. Fires through the same
+  // ScheduledNotificationService.processPendingReminders sweep; it needs no
+  // type-specific handling there because it sends in-app only (no booking
+  // lookup, no email template).
+  | "EXPERIENCE_NUDGE"
+  // A new ranking list has been published and a claimed player's standing moved.
+  // Like EXPERIENCE_NUDGE it is post-event rather than pre-event, so `interval`
+  // is always CUSTOM: there is nothing to count down to. Unlike it, it does send
+  // an email, so the sweep has a branch for it.
+  | "RANKING_DIGEST"
+  // A window a parent follows has opened or is about to close. Event-driven like
+  // RANKING_DIGEST, so `interval` is always CUSTOM. See opportunityAlerts.ts.
+  | "OPPORTUNITY_ALERT";
+// "CUSTOM" is for reminders whose timing isn't "X before an event" (e.g. a
+// plan check-in due N weeks out) — scheduledFor is the only date that matters.
+export type ReminderInterval = "24_HOURS" | "1_HOUR" | "15_MINUTES" | "7_DAYS" | "CUSTOM";
+export type ScheduledNotificationStatus = "PENDING" | "SENT" | "FAILED" | "CANCELLED";
 
 export interface ScheduledNotificationDocument extends Document {
   userId: mongoose.Types.ObjectId;
@@ -50,13 +65,20 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
     },
     type: {
       type: String,
-      enum: ["BOOKING_REMINDER", "PATHWAY_DOCUMENT_REMINDER"],
+      enum: [
+        "BOOKING_REMINDER",
+        "PATHWAY_DOCUMENT_REMINDER",
+        "PLAN_CHECKIN",
+        "EXPERIENCE_NUDGE",
+        "RANKING_DIGEST",
+        "OPPORTUNITY_ALERT",
+      ],
       required: true,
       default: "BOOKING_REMINDER",
     },
     interval: {
       type: String,
-      enum: ["24_HOURS", "1_HOUR", "15_MINUTES", "7_DAYS"],
+      enum: ["24_HOURS", "1_HOUR", "15_MINUTES", "7_DAYS", "CUSTOM"],
       required: true,
     },
     scheduledFor: {
@@ -107,13 +129,17 @@ const scheduledNotificationSchema = new Schema<ScheduledNotificationDocument>(
       min: 0,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Compound index for efficient queries
 scheduledNotificationSchema.index({ status: 1, scheduledFor: 1 });
 scheduledNotificationSchema.index({ bookingId: 1, interval: 1 });
 scheduledNotificationSchema.index({ userId: 1, type: 1, status: 1 });
+// Backs getUserUpcomingReminders' {userId, status:"PENDING", scheduledFor:{$gt}}
+// + sort {scheduledFor:1} — none of the indexes above cover userId+scheduledFor
+// together. Production has autoIndex off, so this also needs migration 35.
+scheduledNotificationSchema.index({ userId: 1, status: 1, scheduledFor: 1 });
 
 // TTL index to auto-delete old sent notifications after 30 days
 scheduledNotificationSchema.index(
@@ -121,11 +147,10 @@ scheduledNotificationSchema.index(
   {
     expireAfterSeconds: 30 * 24 * 60 * 60, // 30 days
     partialFilterExpression: { status: "SENT" },
-  },
+  }
 );
 
-export const ScheduledNotification =
-  mongoose.model<ScheduledNotificationDocument>(
-    "ScheduledNotification",
-    scheduledNotificationSchema,
-  );
+export const ScheduledNotification = mongoose.model<ScheduledNotificationDocument>(
+  "ScheduledNotification",
+  scheduledNotificationSchema
+);

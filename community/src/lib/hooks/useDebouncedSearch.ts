@@ -16,7 +16,7 @@ export interface UseDebouncedSearchOptions {
  */
 export function useDebouncedSearch<T>(
   searchFn: (query: string, signal: AbortSignal) => Promise<T[]>,
-  options: UseDebouncedSearchOptions = {},
+  options: UseDebouncedSearchOptions = {}
 ) {
   const { delayMs = 300, minChars = 2 } = options;
 
@@ -73,7 +73,7 @@ export function useDebouncedSearch<T>(
         }
       }
     },
-    [searchFn, minChars],
+    [searchFn, minChars]
   );
 
   // Debounce input changes

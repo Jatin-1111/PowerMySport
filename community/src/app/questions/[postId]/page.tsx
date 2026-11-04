@@ -1,0 +1,117 @@
+import type { Metadata } from "next";
+import QnAPostDetailClient from "@/modules/community/components/page/QnAPostDetailClient";
+import { breadcrumbSchema, JsonLd } from "@/modules/community/components/seo/JsonLd";
+import { buildMetadata, clampText, communityUrl, fetchPublicData } from "@/lib/seo";
+import type { CommunityPostDetailResponse } from "@/modules/community/types";
+
+// Matches the client's own initial page size (`ANSWERS_PER_PAGE` in
+// QnAPostDetailClient) — otherwise SSR would seed more answers than the first
+// paint is meant to show, and the list would visibly shrink once the client
+// re-fetches with the smaller limit.
+const getPost = (postId: string) =>
+  fetchPublicData<CommunityPostDetailResponse>(`/community/posts/${postId}?limit=5`);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ postId: string }>;
+}): Promise<Metadata> {
+  const { postId } = await params;
+  const detail = await getPost(postId);
+  const post = detail?.post;
+
+  if (!post) {
+    return buildMetadata({
+      title: "Community Question",
+      description: "Ask sports questions and get answers from parents on PowerMySport.",
+      path: `/questions/${postId}`,
+    });
+  }
+
+  const contextTags = [post.sport, post.city, post.category].filter(Boolean) as string[];
+
+  return buildMetadata({
+    title: post.title,
+    description: clampText(post.body, 160),
+    path: `/questions/${postId}`,
+    keywords: [...(post.tags ?? []), ...contextTags],
+    type: "article",
+    publishedTime: post.createdAt,
+    modifiedTime: post.updatedAt,
+    authors: post.author?.displayName ? [post.author.displayName] : undefined,
+  });
+}
+
+export default async function CommunityQnADetailPage({
+  params,
+}: {
+  params: Promise<{ postId: string }>;
+}) {
+  const { postId } = await params;
+  const detail = await getPost(postId);
+  const post = detail?.post;
+  const answers = detail?.answers ?? [];
+
+  // `acceptedAnswer` is emitted only when the asker actually accepted one.
+  // Everything else is a `suggestedAnswer` — the earlier version advertised the
+  // top-voted answer as accepted, which claimed something the data never said.
+  const acceptedAnswer = answers.find((answer) => answer.id === post?.acceptedAnswerId);
+  const suggestedAnswers = answers.filter((answer) => answer.id !== acceptedAnswer?.id);
+
+  // `jobTitle` carries the verification a reader sees on the badge, so the
+  // credential travels with the answer into search results. Only set when the
+  // server actually granted one.
+  const personSchema = (author?: { displayName?: string; expertTitle?: string }) => ({
+    "@type": "Person",
+    name: author?.displayName || "PowerMySport Community",
+    ...(author?.expertTitle ? { jobTitle: author.expertTitle } : {}),
+  });
+
+  const answerSchema = (answer: (typeof answers)[number]) => ({
+    "@type": "Answer",
+    text: clampText(answer.content, 500),
+    upvoteCount: answer.upvoteCount,
+    datePublished: answer.createdAt,
+    url: communityUrl(`/questions/${postId}`),
+    author: personSchema(answer.author),
+  });
+
+  const qaSchema = post
+    ? {
+        "@context": "https://schema.org",
+        "@type": "QAPage",
+        mainEntity: {
+          "@type": "Question",
+          name: post.title,
+          text: clampText(post.body, 500),
+          answerCount: post.answerCount,
+          upvoteCount: post.upvoteCount,
+          datePublished: post.createdAt,
+          author: personSchema(post.author),
+          url: communityUrl(`/questions/${postId}`),
+          ...(acceptedAnswer ? { acceptedAnswer: answerSchema(acceptedAnswer) } : {}),
+          ...(suggestedAnswers.length
+            ? { suggestedAnswer: suggestedAnswers.map(answerSchema) }
+            : {}),
+        },
+      }
+    : null;
+
+  return (
+    <div className="bg-background min-h-[calc(100vh-88px)]">
+      {post && qaSchema ? (
+        <JsonLd
+          data={[
+            qaSchema,
+            breadcrumbSchema([
+              { name: "Community", path: "/" },
+              { name: "Q&A", path: "/questions" },
+              { name: post.title, path: `/questions/${postId}` },
+            ]),
+          ]}
+        />
+      ) : null}
+      <QnAPostDetailClient postId={postId} initialData={detail} />
+    </div>
+  );
+}

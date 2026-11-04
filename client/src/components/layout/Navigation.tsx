@@ -1,30 +1,41 @@
 "use client";
 
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
+import { WHATSAPP_OPENERS } from "@powermysport/shared-types";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { Button } from "@/modules/shared/ui/Button";
 import { cn } from "@/utils/cn";
-import { getDashboardPathByRole } from "@/utils/roleDashboard";
+import { consoleHomeFor, settingsHomeFor } from "@/flow/policy";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BrainCircuit,
-  Building2,
+  CalendarCheck,
   ChevronDown,
-  GraduationCap,
   LayoutDashboard,
   LogOut,
+  ListOrdered,
   Map,
-  MapPin,
   Menu,
   Settings,
   ShoppingBag,
+  Star,
+  Trophy,
+  GraduationCap,
+  HandCoins,
   User,
-  Users,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
-import { Button } from "@/modules/shared/ui/Button";
+import React, { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import {
+  NavDropdownDivider,
+  NavDropdownFooter,
+  NavDropdownHeading,
+  NavDropdownItem,
+  NavDropdownPanel,
+} from "./NavDropdown";
+import { MobileMenu, type MobileMenuItem } from "./MobileMenu";
 import { NotificationDropdown } from "./NotificationDropdown";
 
 export interface NavProps {
@@ -32,67 +43,116 @@ export interface NavProps {
   sticky?: boolean;
 }
 
+const isShopLive = process.env.NEXT_PUBLIC_SHOP_IS_LIVE !== "false";
+const isBookingLive = process.env.NEXT_PUBLIC_BOOKING_IS_LIVE !== "false";
+
+/** Nav subtitle under "Book" — Venues/Coaches/Academies hidden for now, Experts only. */
+const BOOK_TABS = "Experts";
+
+// Experts deliberately absent: it is a tab inside Book, so listing it here as a
+// sibling of Book pointed out of Book and straight back into it. It is named in
+// the Book entry's subtitle instead.
 const servicesItems = [
-  {
-    href: "/experts",
-    label: "Experts",
-    description: "Guidance for your sports plan",
-    icon: Users,
-  },
-  {
-    href: "/venues",
-    label: "Venues",
-    description: "Find & book sports venues",
-    icon: MapPin,
-  },
-  {
-    href: "/coaches",
-    label: "Coaches",
-    description: "Connect with expert coaches",
-    icon: GraduationCap,
-  },
-  {
-    href: "/academies",
-    label: "Academies",
-    description: "Join top sports academies",
-    icon: Building2,
-  },
-  {
-    href: "/shop",
-    label: "Shop",
-    description: "Sports gear and equipment",
-    icon: ShoppingBag,
-  },
+  ...(isShopLive
+    ? [
+        {
+          href: "/shop",
+          label: "Shop",
+          description: "Sports gear and equipment",
+          icon: ShoppingBag,
+        },
+      ]
+    : []),
 ];
 
+// Grouped so six items read as three decisions: where to start, how to compete,
+// and what comes after. Descriptions stay to one or two lines so the menu is
+// an even height; the longer explanation lives on each page.
 const exploreItems = [
   {
+    group: "Start here",
+    href: "/assessment",
+    label: "Get Started",
+    description: "Know the sport, or need help deciding",
+    icon: Star,
+  },
+  {
+    group: "Start here",
     href: "/roadmap",
-    label: "Roadmap",
-    description: "Discover sports pathways & plans",
+    label: "Sports Pathways",
+    description: "The journey ahead for your child's sport",
     icon: Map,
   },
   {
-    href: "/guidance",
-    label: "Guidance",
-    description: "AI-powered sports guidance portal",
-    icon: BrainCircuit,
+    group: "Compete",
+    href: "/tournaments",
+    label: "Tournaments",
+    description: "Upcoming dates, by age group",
+    icon: Trophy,
+  },
+  // Powermysport AI hidden for now.
+  {
+    group: "Compete",
+    href: "/planner",
+    label: "Season Planner",
+    description: "Plan the events they can enter",
+    icon: CalendarCheck,
+  },
+  {
+    group: "Compete",
+    href: "/rankings",
+    label: "Rankings",
+    description: "Official federation lists",
+    icon: ListOrdered,
+  },
+  {
+    group: "Beyond the court",
+    href: "/admissions",
+    label: "Admissions",
+    description: "Sports quotas at schools and colleges",
+    icon: GraduationCap,
+  },
+  {
+    group: "Beyond the court",
+    href: "/scholarships",
+    label: "Scholarships",
+    description: "Funding for young athletes",
+    icon: HandCoins,
   },
 ];
+
+/** The same items, one column per group, for the side-by-side desktop menu. */
+const exploreGroups = exploreItems.reduce<
+  Array<{ group: string; items: (typeof exploreItems)[number][] }>
+>((groups, item) => {
+  const last = groups[groups.length - 1];
+  if (last?.group === item.group) last.items.push(item);
+  else groups.push({ group: item.group, items: [item] });
+  return groups;
+}, []);
+
+/**
+ * Served by the community app through a rewrite, so it has no page in this route tree.
+ * Links to it must not prefetch: the prefetch asks for a React Server Components payload,
+ * which the community app does not answer, so every page on the site made one failed
+ * request (a 404 on `/community?_rsc=...`). Clicking still works; it is a normal navigation.
+ */
+const COMMUNITY_PATH = "/community";
+
+/** "SUPER_ADMIN" as "Super admin": sentence case, for the menu's account block. */
+const roleLabel = (role?: string) => {
+  const text = (role ?? "").replace(/_/g, " ").toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
 
 /**
  * Global Navigation Bar for marketing pages
  */
-export const Navigation: React.FC<NavProps> = ({
-  variant = "light",
-  sticky = true,
-}) => {
+export const Navigation: React.FC<NavProps> = ({ variant = "light", sticky = true }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
-  const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
-  const [mobileExploreOpen, setMobileExploreOpen] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const servicesDropdownRef = useRef<HTMLDivElement>(null);
@@ -105,10 +165,7 @@ export const Navigation: React.FC<NavProps> = ({
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setUserDropdownOpen(false);
       }
       if (
@@ -125,8 +182,20 @@ export const Navigation: React.FC<NavProps> = ({
       }
     };
 
+    // Escape closes whichever menu is open, as keyboard users expect.
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setExploreDropdownOpen(false);
+      setServicesDropdownOpen(false);
+      setUserDropdownOpen(false);
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
   const navigationLinksRight = [
@@ -134,10 +203,16 @@ export const Navigation: React.FC<NavProps> = ({
     { href: "/contact", label: "Contact" },
   ];
 
-  const isExploreActive = exploreItems.some((item) => pathname === item.href);
+  // Prefix match, so a sport's tournament list or a single tournament still
+  // lights up Explore rather than leaving the reader with no active section.
+  const isExploreActive = exploreItems.some(
+    (item) => pathname === item.href || pathname?.startsWith(`${item.href}/`)
+  );
 
   const isActive = (path: string) => pathname === path;
-  const isServicesActive = servicesItems.some((item) => pathname === item.href);
+  const isBookingActive = pathname === "/booking";
+  const isServicesActive =
+    isBookingActive || servicesItems.some((item) => pathname === item.href.split("?")[0]);
 
   const handleLogout = async () => {
     try {
@@ -152,54 +227,76 @@ export const Navigation: React.FC<NavProps> = ({
     }
   };
 
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
+  // Prefix match so a page inside a section still lights up its row.
+  const isMenuActive = (href: string) =>
+    pathname === href || (href !== "/" && !!pathname?.startsWith(`${href}/`));
+
+  const mobileMenuItems: MobileMenuItem[] = [
+    {
+      kind: "group",
+      key: "explore",
+      label: "Explore",
+      links: exploreItems.map(({ href, label, description }) => ({ href, label, description })),
+    },
+    { kind: "link", href: COMMUNITY_PATH, label: "Community", prefetch: false },
+    {
+      kind: "group",
+      key: "services",
+      label: "Services",
+      links: [
+        ...(isBookingLive ? [{ href: "/booking", label: "Book", description: BOOK_TABS }] : []),
+        ...servicesItems.map(({ href, label, description }) => ({ href, label, description })),
+      ],
+    },
+    ...navigationLinksRight.map((link) => ({ kind: "link" as const, ...link })),
+  ];
+
   const getDashboardLink = () => {
     if (!user) return null;
-    return getDashboardPathByRole(user.role);
+    return consoleHomeFor(user.role);
   };
 
   return (
     <nav
       className={cn(
-        "border-b border-white/60 bg-white/75 backdrop-blur-xl text-slate-900 transition-all duration-300",
-        sticky && "sticky top-0 z-50 shadow-sm",
-        variant === "dark" && "bg-white/80 text-slate-900",
+        "border-hairline bg-paper/90 text-ink border-b backdrop-blur-xl transition-all duration-300",
+        sticky && "fixed inset-x-0 top-0 z-50 w-full",
+        variant === "dark" && "bg-paper/90 text-ink"
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <div className="shrink-0 relative z-50 h-full">
-            <Link href="/" className="inline-flex items-center h-full">
-              <span className="font-title text-2xl font-extrabold tracking-tight leading-none">
-                <span className="text-power-orange">Power</span>
-                <span className="text-slate-900">MySport</span>
+          <div className="relative z-50 h-full shrink-0">
+            {/* The wordmark alone. A tagline sat under it at 9px in slate-400
+                (2.6:1), and at a legible 12px it would be wider than the logo. */}
+            <Link href="/" className="inline-flex h-full flex-col items-start justify-center">
+              <span className="font-editorial text-[1.7rem] font-medium leading-none">
+                <span className="text-ink">Power</span>
+                <span className="text-power-orange">My</span>
+                <span className="text-ink">Sport</span>
               </span>
             </Link>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {/* Home */}
-            <Link
-              href="/"
-              className={cn(
-                "shop-nav-link relative font-medium",
-                isActive("/") &&
-                  "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
-              )}
-            >
-              Home
-            </Link>
-
+          <div className="hidden items-center space-x-8 md:flex">
             {/* Explore Dropdown (Roadmap + Guidance) */}
             <div className="relative" ref={exploreDropdownRef}>
               <button
+                aria-expanded={exploreDropdownOpen}
+                aria-haspopup="true"
                 onClick={() => setExploreDropdownOpen(!exploreDropdownOpen)}
-                onMouseEnter={() => { setExploreDropdownOpen(true); setServicesDropdownOpen(false); }}
+                onMouseEnter={() => {
+                  setExploreDropdownOpen(true);
+                  setServicesDropdownOpen(false);
+                }}
                 className={cn(
-                  "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
+                  "shop-nav-link relative flex items-center gap-1 font-medium focus:outline-none",
                   isExploreActive &&
-                    "text-power-orange after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+                    "text-power-orange-solid after:bg-power-orange/70 after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full"
                 )}
               >
                 Explore
@@ -208,87 +305,49 @@ export const Navigation: React.FC<NavProps> = ({
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                   className="inline-flex"
                 >
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="h-4 w-4" />
                 </motion.span>
               </button>
 
-              <AnimatePresence>
-                {exploreDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    onMouseLeave={() => setExploreDropdownOpen(false)}
-                    className="absolute left-1/2 -translate-x-1/2 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden"
-                  >
-                    {/* subtle top accent */}
-                    <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
-
-                    <div className="py-2">
-                      {exploreItems.map((item, index) => {
-                        const Icon = item.icon;
-                        return (
-                          <motion.div
-                            key={item.href}
-                            initial={{ opacity: 0, x: -6 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{
-                              delay: index * 0.05,
-                              duration: 0.15,
-                              ease: "easeOut",
-                            }}
-                          >
-                            <Link
-                              href={item.href}
-                              onClick={() => setExploreDropdownOpen(false)}
-                              className={cn(
-                                "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
-                                pathname === item.href && "bg-orange-50",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
-                                  pathname === item.href
-                                    ? "bg-power-orange text-white"
-                                    : "bg-slate-100 text-slate-500 group-hover:bg-power-orange/10 group-hover:text-power-orange",
-                                )}
-                              >
-                                <Icon className="w-4 h-4" />
-                              </span>
-                              <div>
-                                <p
-                                  className={cn(
-                                    "text-sm font-medium leading-none mb-0.5",
-                                    pathname === item.href
-                                      ? "text-power-orange"
-                                      : "text-slate-800 group-hover:text-power-orange",
-                                  )}
-                                >
-                                  {item.label}
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                  {item.description}
-                                </p>
-                              </div>
-                            </Link>
-                          </motion.div>
-                        );
-                      })}
+              <NavDropdownPanel
+                wide
+                open={exploreDropdownOpen}
+                onMouseLeave={() => setExploreDropdownOpen(false)}
+              >
+                <div className="grid grid-cols-3 divide-x divide-slate-100">
+                  {exploreGroups.map(({ group, items }) => (
+                    <div key={group} className="pb-1">
+                      <NavDropdownHeading first>{group}</NavDropdownHeading>
+                      {items.map((item) => (
+                        <NavDropdownItem
+                          key={item.href}
+                          href={item.href}
+                          icon={item.icon}
+                          label={item.label}
+                          description={item.description}
+                          active={pathname === item.href}
+                          onNavigate={() => setExploreDropdownOpen(false)}
+                        />
+                      ))}
                     </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  ))}
+                </div>
+                <NavDropdownFooter
+                  href={buildWhatsAppUrl(WHATSAPP_OPENERS.notSureWhereToStart)}
+                  prompt="Not sure where to start?"
+                  label="Talk to PMS on WhatsApp"
+                />
+              </NavDropdownPanel>
             </div>
 
             {/* Community Link */}
             <Link
-              href="/community"
+              href={COMMUNITY_PATH}
+              prefetch={false}
               className={cn(
                 "shop-nav-link relative font-medium",
                 isActive("/community") &&
-                  "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+                  "text-power-orange-solid after:bg-power-orange/70 bg-transparent after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full"
               )}
             >
               Community
@@ -298,91 +357,59 @@ export const Navigation: React.FC<NavProps> = ({
             <div className="relative" ref={servicesDropdownRef}>
               <button
                 onClick={() => setServicesDropdownOpen(!servicesDropdownOpen)}
-                onMouseEnter={() => { setServicesDropdownOpen(true); setExploreDropdownOpen(false); }}
+                onMouseEnter={() => {
+                  setServicesDropdownOpen(true);
+                  setExploreDropdownOpen(false);
+                }}
                 className={cn(
-                  "shop-nav-link relative font-medium flex items-center gap-1 focus:outline-none",
+                  "shop-nav-link relative font-medium focus:outline-none",
                   isServicesActive &&
-                    "text-power-orange after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+                    "text-power-orange-solid after:bg-power-orange/70 after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-0.5 after:rounded-full"
                 )}
               >
-                Services
-                <motion.span
-                  animate={{ rotate: servicesDropdownOpen ? 180 : 0 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="inline-flex"
-                >
-                  <ChevronDown className="w-4 h-4" />
-                </motion.span>
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-1">
+                    Services
+                    <motion.span
+                      animate={{ rotate: servicesDropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="inline-flex"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </motion.span>
+                  </div>
+                </div>
               </button>
 
-              <AnimatePresence>
-                {servicesDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                    transition={{ duration: 0.18, ease: "easeOut" }}
-                    onMouseLeave={() => setServicesDropdownOpen(false)}
-                    className="absolute left-1/2 -translate-x-1/2 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden"
-                  >
-                    {/* subtle top accent */}
-                    <div className="h-0.5 w-full bg-gradient-to-r from-power-orange/60 via-power-orange to-power-orange/60" />
-
-                    <div className="py-2">
-                      {servicesItems.map((item, index) => {
-                        const Icon = item.icon;
-                        return (
-                          <motion.div
-                            key={item.href}
-                            initial={{ opacity: 0, x: -6 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{
-                              delay: index * 0.05,
-                              duration: 0.15,
-                              ease: "easeOut",
-                            }}
-                          >
-                            <Link
-                              href={item.href}
-                              onClick={() => setServicesDropdownOpen(false)}
-                              className={cn(
-                                "flex items-center gap-3 px-4 py-3 group transition-colors hover:bg-orange-50",
-                                pathname === item.href && "bg-orange-50",
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  "flex items-center justify-center w-8 h-8 rounded-lg transition-colors",
-                                  pathname === item.href
-                                    ? "bg-power-orange text-white"
-                                    : "bg-slate-100 text-slate-500 group-hover:bg-power-orange/10 group-hover:text-power-orange",
-                                )}
-                              >
-                                <Icon className="w-4 h-4" />
-                              </span>
-                              <div>
-                                <p
-                                  className={cn(
-                                    "text-sm font-medium leading-none mb-0.5",
-                                    pathname === item.href
-                                      ? "text-power-orange"
-                                      : "text-slate-800 group-hover:text-power-orange",
-                                  )}
-                                >
-                                  {item.label}
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                  {item.description}
-                                </p>
-                              </div>
-                            </Link>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
+              <NavDropdownPanel
+                open={servicesDropdownOpen}
+                onMouseLeave={() => setServicesDropdownOpen(false)}
+              >
+                {isBookingLive && (
+                  <>
+                    <NavDropdownItem
+                      href="/booking"
+                      icon={CalendarCheck}
+                      label="Book"
+                      description={BOOK_TABS}
+                      active={isBookingActive}
+                      onNavigate={() => setServicesDropdownOpen(false)}
+                    />
+                    {servicesItems.length > 0 && <NavDropdownDivider />}
+                  </>
                 )}
-              </AnimatePresence>
+                {servicesItems.map((item) => (
+                  <NavDropdownItem
+                    key={item.href}
+                    href={item.href}
+                    icon={item.icon}
+                    label={item.label}
+                    description={item.description}
+                    active={pathname === item.href}
+                    onNavigate={() => setServicesDropdownOpen(false)}
+                  />
+                ))}
+              </NavDropdownPanel>
             </div>
 
             {/* Right Nav Links */}
@@ -393,7 +420,7 @@ export const Navigation: React.FC<NavProps> = ({
                 className={cn(
                   "shop-nav-link relative font-medium",
                   isActive(link.href) &&
-                    "bg-transparent text-power-orange after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full after:bg-power-orange/70",
+                    "text-power-orange-solid after:bg-power-orange/70 bg-transparent after:absolute after:-bottom-1 after:left-3 after:right-3 after:h-0.5 after:rounded-full"
                 )}
               >
                 {link.label}
@@ -402,7 +429,7 @@ export const Navigation: React.FC<NavProps> = ({
           </div>
 
           {/* Auth Buttons (Desktop) */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden items-center space-x-4 md:flex">
             {user ? (
               <>
                 <NotificationDropdown />
@@ -410,10 +437,10 @@ export const Navigation: React.FC<NavProps> = ({
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center justify-center w-10 h-10 rounded-full bg-power-orange hover:bg-orange-600 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-2"
+                    className="bg-power-orange-solid focus:ring-power-orange flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2"
                     aria-label="User menu"
                   >
-                    <User className="w-5 h-5" />
+                    <User className="h-5 w-5" />
                   </button>
 
                   <AnimatePresence>
@@ -423,14 +450,13 @@ export const Navigation: React.FC<NavProps> = ({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-2 w-56 bg-card rounded-lg shadow-lg border border-border overflow-hidden"
+                        className="bg-card border-border absolute right-0 mt-2 w-56 overflow-hidden rounded-lg border shadow-lg"
                       >
-                        <div className="px-4 py-3 border-b border-border">
-                          <p className="text-sm font-medium text-card-foreground">
-                            {user.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {user.email}
+                        <div className="border-border border-b px-4 py-3">
+                          <p className="text-card-foreground text-sm font-medium">{user.name}</p>
+                          <p className="text-muted-foreground mt-1 text-xs">{user.email}</p>
+                          <p className="text-power-orange-solid mt-1.5 text-xs font-semibold uppercase tracking-wider">
+                            {user.role.replace("_", " ")}
                           </p>
                         </div>
 
@@ -438,26 +464,37 @@ export const Navigation: React.FC<NavProps> = ({
                           <Link
                             href={getDashboardLink() || "/"}
                             onClick={() => setUserDropdownOpen(false)}
-                            className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                            className="text-card-foreground hover:bg-muted flex items-center px-4 py-2 text-sm transition-colors"
                           >
-                            <LayoutDashboard className="w-4 h-4 mr-3" />
+                            <LayoutDashboard className="mr-3 h-4 w-4" />
                             Dashboard
                           </Link>
 
+                          {user.role !== "EXPERT" && (
+                            <Link
+                              href="/experts/sessions"
+                              onClick={() => setUserDropdownOpen(false)}
+                              className="text-card-foreground hover:bg-muted flex items-center px-4 py-2 text-sm transition-colors"
+                            >
+                              <CalendarCheck className="mr-3 h-4 w-4" />
+                              My Sessions
+                            </Link>
+                          )}
+
                           <Link
-                            href="/settings"
+                            href={settingsHomeFor(user.role)}
                             onClick={() => setUserDropdownOpen(false)}
-                            className="flex items-center px-4 py-2 text-sm text-card-foreground hover:bg-muted transition-colors"
+                            className="text-card-foreground hover:bg-muted flex items-center px-4 py-2 text-sm transition-colors"
                           >
-                            <Settings className="w-4 h-4 mr-3" />
+                            <Settings className="mr-3 h-4 w-4" />
                             Settings
                           </Link>
 
                           <button
                             onClick={handleLogout}
-                            className="flex items-center w-full px-4 py-2 text-sm text-error-red hover:bg-muted transition-colors"
+                            className="text-error-red hover:bg-muted flex w-full items-center px-4 py-2 text-sm transition-colors"
                           >
-                            <LogOut className="w-4 h-4 mr-3" />
+                            <LogOut className="mr-3 h-4 w-4" />
                             Logout
                           </button>
                         </div>
@@ -468,16 +505,12 @@ export const Navigation: React.FC<NavProps> = ({
               </>
             ) : (
               <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button variant="primary" size="sm">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/login">Login</Link>
+                </Button>
+                <Button asChild variant="primary" size="sm">
+                  <Link href="/register">Get Started</Link>
+                </Button>
               </>
             )}
           </div>
@@ -486,270 +519,36 @@ export const Navigation: React.FC<NavProps> = ({
           <div className="md:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-slate-800 hover:text-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange p-2 rounded-md"
-              aria-label="Toggle menu"
+              className="hover:text-power-orange-solid focus:ring-power-orange rounded-md p-2 text-slate-800 focus:outline-none focus:ring-2"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
             >
-              {mobileMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
-            className="md:hidden border-t border-slate-200 overflow-hidden bg-white/95"
-          >
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {/* Home */}
-              <Link
-                href="/"
-                className={cn(
-                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                  isActive("/")
-                    ? "text-power-orange bg-orange-50"
-                    : "text-slate-700",
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-
-              {/* Mobile Explore Accordion (Roadmap + Guidance) */}
-              <div>
-                <button
-                  onClick={() => setMobileExploreOpen(!mobileExploreOpen)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors",
-                    isExploreActive
-                      ? "text-power-orange bg-orange-50"
-                      : "text-slate-700 hover:bg-indigo-50",
-                  )}
-                >
-                  Explore
-                  <motion.span
-                    animate={{ rotate: mobileExploreOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="inline-flex"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.span>
-                </button>
-
-                <AnimatePresence>
-                  {mobileExploreOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
-                        {exploreItems.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => {
-                                setMobileExploreOpen(false);
-                                setMobileMenuOpen(false);
-                              }}
-                              className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                pathname === item.href
-                                  ? "text-power-orange bg-orange-50"
-                                  : "text-slate-600 hover:bg-orange-50 hover:text-power-orange",
-                              )}
-                            >
-                              <Icon className="w-4 h-4 shrink-0" />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Community Link */}
-              <Link
-                href="/community"
-                className={cn(
-                  "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                  isActive("/community")
-                    ? "text-power-orange bg-orange-50"
-                    : "text-slate-700",
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Community
-              </Link>
-
-              {/* Mobile Services Accordion */}
-              <div>
-                <button
-                  onClick={() => setMobileServicesOpen(!mobileServicesOpen)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium transition-colors",
-                    isServicesActive
-                      ? "text-power-orange bg-orange-50"
-                      : "text-slate-700 hover:bg-indigo-50",
-                  )}
-                >
-                  Services
-                  <motion.span
-                    animate={{ rotate: mobileServicesOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="inline-flex"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                  </motion.span>
-                </button>
-
-                <AnimatePresence>
-                  {mobileServicesOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
-                      <div className="ml-3 mt-1 space-y-1 border-l-2 border-orange-100 pl-3">
-                        {servicesItems.map((item) => {
-                          const Icon = item.icon;
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              onClick={() => {
-                                setMobileServicesOpen(false);
-                                setMobileMenuOpen(false);
-                              }}
-                              className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                                pathname === item.href
-                                  ? "text-power-orange bg-orange-50"
-                                  : "text-slate-600 hover:bg-orange-50 hover:text-power-orange",
-                              )}
-                            >
-                              <Icon className="w-4 h-4 shrink-0" />
-                              {item.label}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Right Nav Links */}
-              {navigationLinksRight.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={cn(
-                    "block px-3 py-2 rounded-md text-base font-medium hover:bg-indigo-50 transition-colors",
-                    isActive(link.href)
-                      ? "text-power-orange bg-orange-50"
-                      : "text-slate-700",
-                  )}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {link.label}
-                </Link>
-              ))}
-
-              {/* Mobile Auth Buttons */}
-              <div className="pt-4 pb-2 space-y-2">
-                {user ? (
-                  <>
-                    <div className="px-3 py-2 border-b border-border">
-                      <p className="text-sm font-medium text-slate-900">
-                        {user.name}
-                      </p>
-                      <p className="text-xs mt-1 text-slate-500">{user.email}</p>
-                    </div>
-
-                    <Link href={getDashboardLink() || "/"}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
-                        <LayoutDashboard className="w-4 h-4 mr-2" />
-                        Dashboard
-                      </Button>
-                    </Link>
-
-                    <Link href="/settings">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="justify-start"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </Button>
-                    </Link>
-
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      fullWidth
-                      onClick={handleLogout}
-                      className="justify-start text-error-red"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Login
-                      </Button>
-                    </Link>
-                    <Link href="/register">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        fullWidth
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Get Started
-                      </Button>
-                    </Link>
-                  </>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <MobileMenu
+        open={mobileMenuOpen}
+        onClose={closeMobileMenu}
+        items={mobileMenuItems}
+        isActive={isMenuActive}
+        account={
+          user
+            ? {
+                name: user.name,
+                email: user.email,
+                roleLabel: roleLabel(user.role),
+                dashboardHref: getDashboardLink() || "/",
+                sessionsHref: user.role !== "EXPERT" ? "/experts/sessions" : undefined,
+                settingsHref: settingsHomeFor(user.role),
+                onLogout: handleLogout,
+              }
+            : null
+        }
+      />
     </nav>
   );
 };

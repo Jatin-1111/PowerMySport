@@ -7,10 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
 import { reviewApi } from "@/modules/review/services/review";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
+import { StaggerContainer, StaggerItem } from "@/modules/shared/ui/motion/StaggerContainer";
 import { Coach, ReviewItem, ReviewListData, ReviewSummary } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -61,21 +58,13 @@ function StarRow({ rating, size = 16, className = "" }: StarRowProps) {
         return (
           <span key={n} className="relative" style={{ width: size, height: size }}>
             {/* Background star (empty) */}
-            <Star
-              size={size}
-              className="absolute inset-0 text-slate-200"
-              fill="currentColor"
-            />
+            <Star size={size} className="absolute inset-0 text-slate-200" fill="currentColor" />
             {/* Foreground star (filled or half) */}
             <span
               className="absolute inset-0 overflow-hidden"
               style={{ width: filled ? "100%" : half ? "50%" : "0%" }}
             >
-              <Star
-                size={size}
-                className="text-orange-500"
-                fill="currentColor"
-              />
+              <Star size={size} className="text-power-orange" fill="currentColor" />
             </span>
           </span>
         );
@@ -89,10 +78,10 @@ function StarRow({ rating, size = 16, className = "" }: StarRowProps) {
 // ---------------------------------------------------------------------------
 
 const STAR_COLORS: Record<number, string> = {
-  5: "bg-emerald-500",
-  4: "bg-green-500",
+  5: "bg-turf-green",
+  4: "bg-turf-green",
   3: "bg-amber-400",
-  2: "bg-orange-500",
+  2: "bg-power-orange",
   1: "bg-rose-500",
 };
 
@@ -139,33 +128,27 @@ export default function CoachReviewsPage() {
   }, []);
 
   // ── 2. Fetch reviews whenever coach id changes ────────────────────────────
-  const fetchReviews = useCallback(
-    async (coachId: string, pageNum: number, append: boolean) => {
-      try {
-        append ? setLoadingMore(true) : setLoadingReviews(true);
-        const res = await reviewApi.getCoachReviews(coachId, pageNum, LIMIT);
-        if (res.success && res.data) {
-          const data: ReviewListData = res.data;
-          setAllReviews((prev) =>
-            append ? [...prev, ...data.reviews] : data.reviews,
-          );
-          setSummary(data.summary);
-          // Derive totalPages from pagination metadata if provided
-          const pagination = (res as { pagination?: { totalPages?: number } })
-            .pagination;
-          setTotalPages(pagination?.totalPages ?? 1);
-        } else {
-          toast.error("Could not load reviews.");
-        }
-      } catch {
+  const fetchReviews = useCallback(async (coachId: string, pageNum: number, append: boolean) => {
+    try {
+      append ? setLoadingMore(true) : setLoadingReviews(true);
+      const res = await reviewApi.getCoachReviews(coachId, pageNum, LIMIT);
+      if (res.success && res.data) {
+        const data: ReviewListData = res.data;
+        setAllReviews((prev) => (append ? [...prev, ...data.reviews] : data.reviews));
+        setSummary(data.summary);
+        // Derive totalPages from pagination metadata if provided
+        const pagination = (res as { pagination?: { totalPages?: number } }).pagination;
+        setTotalPages(pagination?.totalPages ?? 1);
+      } else {
         toast.error("Could not load reviews.");
-      } finally {
-        setLoadingMore(false);
-        setLoadingReviews(false);
       }
-    },
-    [],
-  );
+    } catch {
+      toast.error("Could not load reviews.");
+    } finally {
+      setLoadingMore(false);
+      setLoadingReviews(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!coach?.id) return;
@@ -203,7 +186,7 @@ export default function CoachReviewsPage() {
   if (loadingProfile) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -230,8 +213,8 @@ export default function CoachReviewsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      <div className="max-w-4xl">
         {/* ── Page Header ─────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
@@ -239,9 +222,7 @@ export default function CoachReviewsPage() {
           transition={{ duration: 0.45 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            Reviews &amp; Ratings
-          </h1>
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">Reviews</h1>
           <p className="mt-1 text-sm text-slate-500">
             See what your clients are saying about your coaching.
           </p>
@@ -258,7 +239,7 @@ export default function CoachReviewsPage() {
             {/* Left — big number */}
             <div className="flex flex-col items-center justify-center gap-2 sm:min-w-[160px]">
               <span className="text-6xl font-extrabold tracking-tight text-slate-900">
-                {avgRating > 0 ? avgRating.toFixed(1) : "—"}
+                {avgRating > 0 ? avgRating.toFixed(1) : "N/A"}
               </span>
               <StarRow rating={avgRating} size={22} />
               <span className="text-sm text-slate-400">
@@ -274,26 +255,23 @@ export default function CoachReviewsPage() {
             <div className="flex flex-1 flex-col gap-2.5">
               {[5, 4, 3, 2, 1].map((star) => {
                 const count = distribution[star] ?? 0;
-                const pct =
-                  totalReviewsLoaded > 0
-                    ? (count / totalReviewsLoaded) * 100
-                    : 0;
+                const pct = totalReviewsLoaded > 0 ? (count / totalReviewsLoaded) * 100 : 0;
                 return (
                   <div key={star} className="flex items-center gap-3">
                     <span className="w-5 text-right text-xs font-semibold text-slate-500">
                       {star}
                     </span>
-                    <Star
-                      size={13}
-                      className="shrink-0 text-orange-400"
-                      fill="currentColor"
-                    />
+                    <Star size={13} className="shrink-0 text-orange-400" fill="currentColor" />
                     <div className="flex-1 rounded-full bg-slate-100">
                       <motion.div
                         className={`h-2 rounded-full ${STAR_COLORS[star]}`}
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                        transition={{
+                          duration: 0.6,
+                          ease: "easeOut",
+                          delay: 0.2,
+                        }}
                       />
                     </div>
                     <span className="w-6 text-xs text-slate-400">{count}</span>
@@ -316,9 +294,9 @@ export default function CoachReviewsPage() {
             <button
               key={tab.value}
               onClick={() => setActiveFilter(tab.value)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                 activeFilter === tab.value
-                  ? "bg-orange-500 text-white shadow-sm"
+                  ? "bg-power-orange-solid text-white shadow-sm"
                   : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
               }`}
             >
@@ -330,7 +308,7 @@ export default function CoachReviewsPage() {
         {/* ── Review List ──────────────────────────────────────── */}
         {loadingReviews ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
           </div>
         ) : filteredReviews.length === 0 ? (
           <EmptyState activeFilter={activeFilter} />
@@ -354,9 +332,7 @@ export default function CoachReviewsPage() {
               disabled={loadingMore}
               className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loadingMore && (
-                <Loader2 size={15} className="animate-spin text-orange-500" />
-              )}
+              {loadingMore && <Loader2 size={15} className="text-power-orange animate-spin" />}
               {loadingMore ? "Loading…" : "Load more reviews"}
             </button>
           </div>
@@ -374,17 +350,14 @@ function ReviewCard({ review }: { review: ReviewItem }) {
   const name = getReviewerName(review.userId);
   const initials = getInitials(name);
   const avatarColors = [
-    "bg-violet-100 text-violet-700",
+    "bg-indigo-100 text-indigo-700",
     "bg-sky-100 text-sky-700",
     "bg-teal-100 text-teal-700",
     "bg-rose-100 text-rose-700",
     "bg-amber-100 text-amber-700",
   ];
   // Deterministic colour based on name
-  const colorClass =
-    avatarColors[
-      name.charCodeAt(0) % avatarColors.length
-    ];
+  const colorClass = avatarColors[name.charCodeAt(0) % avatarColors.length];
 
   return (
     <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -397,12 +370,12 @@ function ReviewCard({ review }: { review: ReviewItem }) {
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-semibold text-slate-800">{name}</span>
             {/* Verified badge placeholder — ReviewItem has no isVerified field; keeping for UI completeness */}
             {(review as ReviewItem & { isVerified?: boolean }).isVerified && (
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600 ring-1 ring-emerald-200">
+              <span className="rounded-sm bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-emerald-200">
                 Verified
               </span>
             )}
@@ -418,20 +391,14 @@ function ReviewCard({ review }: { review: ReviewItem }) {
 
           {/* Review text */}
           {review.review && (
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              {review.review}
-            </p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">{review.review}</p>
           )}
 
           {/* Helpful count */}
-          {(review as ReviewItem & { helpfulCount?: number }).helpfulCount !==
-            undefined && (
+          {(review as ReviewItem & { helpfulCount?: number }).helpfulCount !== undefined && (
             <div className="mt-3 flex items-center gap-1.5 text-xs text-slate-400">
               <ThumbsUp size={13} />
-              <span>
-                {(review as ReviewItem & { helpfulCount?: number }).helpfulCount}{" "}
-                helpful
-              </span>
+              <span>{(review as ReviewItem & { helpfulCount?: number }).helpfulCount} helpful</span>
             </div>
           )}
         </div>
@@ -453,9 +420,7 @@ function EmptyState({ activeFilter }: { activeFilter: FilterTab }) {
       </div>
       <div>
         <p className="font-semibold text-slate-700">
-          {activeFilter === "all"
-            ? "No reviews yet"
-            : `No ${activeFilter}-star reviews`}
+          {activeFilter === "all" ? "No reviews yet" : `No ${activeFilter}-star reviews`}
         </p>
         <p className="mt-1 text-sm text-slate-400">
           {activeFilter === "all"

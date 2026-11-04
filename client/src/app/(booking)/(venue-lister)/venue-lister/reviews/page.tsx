@@ -1,17 +1,15 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Star, Filter, Loader2, Building2, ChevronDown } from "lucide-react";
-import { toast } from "@/lib/toast";
 import axiosInstance from "@/lib/api/axios";
+import { toast } from "@/lib/toast";
 import { reviewApi } from "@/modules/review/services/review";
-import {
-  StarDisplay,
-  ReviewCard,
-  ReviewSummaryCard,
-} from "@/modules/shared/components/dashboard/reviews";
+import { ReviewCard, ReviewSummaryCard } from "@/modules/shared/components/dashboard/reviews";
+import { Button } from "@/modules/shared/ui/Button";
+import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
 import type { ReviewItem, ReviewSummary, Venue } from "@/types";
+import { AnimatePresence, motion } from "framer-motion";
+import { Building2, ChevronDown, Loader2, Star } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -19,13 +17,13 @@ import type { ReviewItem, ReviewSummary, Venue } from "@/types";
 
 const PAGE_LIMIT = 10;
 
-const FILTER_TABS: { label: string; value: number | null }[] = [
-  { label: "All", value: null },
-  { label: "5★", value: 5 },
-  { label: "4★", value: 4 },
-  { label: "3★", value: 3 },
-  { label: "2★", value: 2 },
-  { label: "1★", value: 1 },
+const FILTER_TABS: { label: string; value: string }[] = [
+  { label: "All", value: "all" },
+  { label: "5 stars", value: "5" },
+  { label: "4 stars", value: "4" },
+  { label: "3 stars", value: "3" },
+  { label: "2 stars", value: "2" },
+  { label: "1 star", value: "1" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -95,9 +93,7 @@ export default function VenueListerReviewsPage() {
           }
           // Determine if there are more pages
           const total = res.pagination?.total ?? fetchedSummary.reviewCount ?? 0;
-          const loaded = append
-            ? allReviews.length + fetched.length
-            : fetched.length;
+          const loaded = append ? allReviews.length + fetched.length : fetched.length;
           setHasMore(loaded < total);
         }
       } catch (err) {
@@ -138,9 +134,7 @@ export default function VenueListerReviewsPage() {
   // ── Filtered reviews (client-side) ────────────────────────────────────────
   const filteredReviews = useMemo(() => {
     if (activeFilter === null) return allReviews;
-    return allReviews.filter(
-      (r) => Math.round(r.rating) === activeFilter
-    );
+    return allReviews.filter((r) => Math.round(r.rating) === activeFilter);
   }, [allReviews, activeFilter]);
 
   // ── Derived selected venue name ───────────────────────────────────────────
@@ -154,13 +148,11 @@ export default function VenueListerReviewsPage() {
   // ────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div>
+      <div className="max-w-4xl space-y-8">
         {/* ── Page Header ── */}
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            Reviews &amp; Ratings
-          </h1>
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">Reviews</h1>
           <p className="mt-1 text-sm text-slate-500">
             See what players are saying about your venues.
           </p>
@@ -169,7 +161,7 @@ export default function VenueListerReviewsPage() {
         {/* ── Venues Loading ── */}
         {venuesLoading && (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
+            <Loader2 className="text-power-orange h-7 w-7 animate-spin" />
           </div>
         )}
 
@@ -178,14 +170,14 @@ export default function VenueListerReviewsPage() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 gap-4 text-center"
+            className="flex flex-col items-center justify-center gap-4 py-20 text-center"
           >
-            <div className="w-16 h-16 rounded-full bg-orange-50 flex items-center justify-center">
-              <Building2 className="w-8 h-8 text-orange-400" />
+            <div className="bg-paper-deep flex h-16 w-16 items-center justify-center rounded-full">
+              <Building2 className="text-ink-body h-8 w-8" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="font-semibold text-slate-700 text-lg">No venues yet</p>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-lg font-semibold text-slate-700">No venues yet</p>
+              <p className="mt-1 text-sm text-slate-500">
                 Create a venue to start receiving reviews from players.
               </p>
             </div>
@@ -197,12 +189,12 @@ export default function VenueListerReviewsPage() {
           <div className="space-y-6">
             {/* ── Venue Selector (only if multiple venues) ── */}
             {venues.length > 1 && (
-              <div className="relative inline-flex items-center w-full sm:w-auto">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <div className="relative inline-flex w-full items-center sm:w-auto">
+                <Building2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <select
                   value={selectedVenueId}
                   onChange={handleVenueChange}
-                  className="appearance-none w-full sm:w-72 pl-9 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 cursor-pointer transition"
+                  className="focus:border-ink focus:ring-ink w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-10 text-sm font-medium text-slate-700 transition focus:outline-none focus:ring-2 sm:w-72"
                 >
                   {venues.map((v) => {
                     const id = v._id ?? v.id;
@@ -213,24 +205,22 @@ export default function VenueListerReviewsPage() {
                     );
                   })}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               </div>
             )}
 
             {/* ── Single venue label ── */}
             {venues.length === 1 && selectedVenueName && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-orange-50 rounded-full border border-orange-100">
-                <Building2 className="w-3.5 h-3.5 text-orange-500" />
-                <span className="text-xs font-medium text-orange-700">
-                  {selectedVenueName}
-                </span>
-              </div>
+              <p className="text-ink-body flex items-center gap-2 text-sm">
+                <Building2 className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                {selectedVenueName}
+              </p>
             )}
 
             {/* ── Reviews Loading ── */}
             {reviewsLoading && (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+                <Loader2 className="text-power-orange h-6 w-6 animate-spin" />
               </div>
             )}
 
@@ -244,34 +234,12 @@ export default function VenueListerReviewsPage() {
 
                 {/* Filter Tabs */}
                 {allReviews.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-1 text-xs text-slate-400 font-medium mr-1">
-                      <Filter className="w-3.5 h-3.5" />
-                      Filter
-                    </div>
-                    {FILTER_TABS.map((tab) => {
-                      const isActive = activeFilter === tab.value;
-                      return (
-                        <button
-                          key={tab.label}
-                          onClick={() => setActiveFilter(tab.value)}
-                          className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                            isActive
-                              ? "bg-orange-500 border-orange-500 text-white shadow-sm"
-                              : "bg-white border-slate-200 text-slate-600 hover:border-orange-300 hover:text-orange-600"
-                          }`}
-                        >
-                          {tab.value !== null && (
-                            <Star
-                              className={`w-3 h-3 ${isActive ? "text-white" : "text-orange-400"}`}
-                              style={{ fill: "currentColor" }}
-                            />
-                          )}
-                          {tab.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <UnderlineFilter
+                    label="Filter reviews by rating"
+                    value={activeFilter === null ? "all" : String(activeFilter)}
+                    onChange={(next) => setActiveFilter(next === "all" ? null : Number(next))}
+                    items={FILTER_TABS}
+                  />
                 )}
 
                 {/* Review Cards */}
@@ -279,14 +247,14 @@ export default function VenueListerReviewsPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col items-center justify-center py-16 gap-3 text-center"
+                    className="flex flex-col items-center justify-center gap-3 py-16 text-center"
                   >
-                    <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
-                      <Star className="w-7 h-7 text-slate-300" />
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                      <Star className="h-7 w-7 text-slate-300" />
                     </div>
                     <div>
                       <p className="font-semibold text-slate-600">No reviews yet</p>
-                      <p className="text-sm text-slate-400 mt-1">
+                      <p className="mt-1 text-sm text-slate-400">
                         Reviews will appear here once players complete bookings at this venue.
                       </p>
                     </div>
@@ -326,20 +294,14 @@ export default function VenueListerReviewsPage() {
                 {/* Load More Button */}
                 {hasMore && activeFilter === null && (
                   <div className="flex justify-center pt-2">
-                    <button
+                    <Button
+                      variant="outline"
                       onClick={handleLoadMore}
                       disabled={loadingMore}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:border-orange-300 hover:text-orange-600 transition disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+                      className="min-h-11"
                     >
-                      {loadingMore ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading...
-                        </>
-                      ) : (
-                        "Load more reviews"
-                      )}
-                    </button>
+                      {loadingMore ? "Loading" : "Load more reviews"}
+                    </Button>
                   </div>
                 )}
               </>

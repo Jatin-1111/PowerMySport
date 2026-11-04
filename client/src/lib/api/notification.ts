@@ -4,7 +4,8 @@ export interface Notification {
   _id: string;
   userId: string;
   type: string;
-  category: "SOCIAL" | "BOOKING" | "ADMIN" | "REVIEW" | "PAYMENT" | "COMMUNITY";
+  category:
+    "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "PLAN" | "OPPORTUNITY";
   title: string;
   message: string;
   data?: Record<string, unknown>;
@@ -16,12 +17,7 @@ export interface Notification {
 
 export interface NotificationFilters {
   category?:
-    | "SOCIAL"
-    | "BOOKING"
-    | "ADMIN"
-    | "REVIEW"
-    | "PAYMENT"
-    | "COMMUNITY";
+    "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "PLAN" | "OPPORTUNITY";
   isRead?: boolean;
 }
 
@@ -49,6 +45,8 @@ export interface NotificationChannelPreferences {
   bookingCancellations?: boolean;
   reviews?: boolean;
   payments?: boolean;
+  /** Weekly digest for a child whose federation ranking has been linked. */
+  rankingUpdates?: boolean;
   admin?: boolean;
   marketing?: boolean;
 }
@@ -71,7 +69,7 @@ export const notificationApi = {
   getNotifications: async (
     page: number = 1,
     limit: number = 20,
-    filters?: NotificationFilters,
+    filters?: NotificationFilters
   ): Promise<NotificationResponse> => {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -95,12 +93,7 @@ export const notificationApi = {
    */
   getUnreadCount: async (
     category?:
-      | "SOCIAL"
-      | "BOOKING"
-      | "ADMIN"
-      | "REVIEW"
-      | "PAYMENT"
-      | "COMMUNITY",
+      "SOCIAL" | "BOOKING" | "Admin" | "REVIEW" | "PAYMENT" | "COMMUNITY" | "PLAN" | "OPPORTUNITY"
   ): Promise<UnreadCountResponse> => {
     const params = category ? `?category=${category}` : "";
     const response = await axios.get(`/notifications/unread-count${params}`);
@@ -110,9 +103,7 @@ export const notificationApi = {
   /**
    * Mark a notification as read
    */
-  markAsRead: async (
-    notificationId: string,
-  ): Promise<{ success: boolean; data: Notification }> => {
+  markAsRead: async (notificationId: string): Promise<{ success: boolean; data: Notification }> => {
     const response = await axios.patch(`/notifications/${notificationId}/read`);
     return response.data;
   },
@@ -128,9 +119,7 @@ export const notificationApi = {
   /**
    * Delete a notification
    */
-  deleteNotification: async (
-    notificationId: string,
-  ): Promise<{ success: boolean }> => {
+  deleteNotification: async (notificationId: string): Promise<{ success: boolean }> => {
     const response = await axios.delete(`/notifications/${notificationId}`);
     return response.data;
   },
@@ -147,12 +136,9 @@ export const notificationApi = {
    * Update notification preferences
    */
   updatePreferences: async (
-    preferences: NotificationPreferences,
+    preferences: NotificationPreferences
   ): Promise<NotificationPreferencesResponse> => {
-    const response = await axios.patch(
-      "/notifications/preferences",
-      preferences,
-    );
+    const response = await axios.patch("/notifications/preferences", preferences);
     return response.data;
   },
 };

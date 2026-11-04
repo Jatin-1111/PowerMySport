@@ -2,6 +2,8 @@ import { User } from "../models/User";
 import { Venue } from "../models/Venue";
 import VenueInquiry, { IVenueInquiry } from "../models/VenueInquiry";
 import { sendCredentialsEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("venueInquiry");
 
 interface CreateInquiryPayload {
   venueName: string;
@@ -18,9 +20,7 @@ interface ReviewInquiryPayload {
   reviewedBy: string;
 }
 
-export const createVenueInquiry = async (
-  data: CreateInquiryPayload,
-): Promise<IVenueInquiry> => {
+export const createVenueInquiry = async (data: CreateInquiryPayload): Promise<IVenueInquiry> => {
   // Check if inquiry already exists for this phone
   const existingInquiry = await VenueInquiry.findOne({
     phone: data.phone,
@@ -29,7 +29,7 @@ export const createVenueInquiry = async (
 
   if (existingInquiry) {
     throw new Error(
-      "An inquiry with this phone number is already pending review. Please wait for our team to contact you.",
+      "An inquiry with this phone number is already pending review. Please wait for our team to contact you."
     );
   }
 
@@ -38,22 +38,18 @@ export const createVenueInquiry = async (
   return inquiry;
 };
 
-export const getAllInquiries = async (
-  status?: string,
-): Promise<IVenueInquiry[]> => {
+export const getAllInquiries = async (status?: string): Promise<IVenueInquiry[]> => {
   const filter = status ? { status } : {};
   return await VenueInquiry.find(filter).sort({ createdAt: -1 });
 };
 
-export const getInquiryById = async (
-  inquiryId: string,
-): Promise<IVenueInquiry | null> => {
+export const getInquiryById = async (inquiryId: string): Promise<IVenueInquiry | null> => {
   return await VenueInquiry.findById(inquiryId);
 };
 
 export const reviewInquiry = async (
   inquiryId: string,
-  reviewData: ReviewInquiryPayload,
+  reviewData: ReviewInquiryPayload
 ): Promise<{
   inquiry: IVenueInquiry;
   credentials?: { email: string; password: string };
@@ -100,7 +96,7 @@ export const reviewInquiry = async (
       email: generatedEmail,
       phone: inquiry.phone,
       password: tempPassword, // Pass plain password, User model will hash it
-      role: "VENUE_LISTER",
+      role: "VenueLister",
       venueListerProfile: {
         businessDetails: {
           name: inquiry.ownerName,
@@ -143,7 +139,7 @@ export const reviewInquiry = async (
         loginUrl: `${process.env.FRONTEND_URL || "http://localhost:3000"}/login`,
       });
     } catch (error) {
-      console.error("Failed to send credentials email:", error);
+      log.error("Failed to send credentials email:", error);
       // Continue execution, don't fail the approval
     }
 

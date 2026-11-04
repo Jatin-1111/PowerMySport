@@ -1,31 +1,28 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { Award, Trophy, Users } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { communityService } from "@/modules/community/services/community";
-import { CommunityPost } from "@/modules/community/types";
+import { CommunityLeaderboardResponse, CommunityPost } from "@/modules/community/types";
 import { isCommunityEligibleRole } from "@/lib/auth/roles";
 import { redirectToMainLogin } from "@/lib/auth/redirect";
 import { toast } from "@/lib/toast";
+import { CommunityPageHeader } from "@/modules/community/components/CommunityPageHeader";
+import { ContributorModal } from "@/modules/community/components/contributors/ContributorModal";
+import { LeaderboardItem } from "@/modules/community/components/contributors/types";
 
-type LeaderboardItem = {
-  id: string;
-  name: string;
-  posts: number;
-  answersProxy: number;
-  upvotes: number;
-  score: number;
-};
+const LEADERBOARD_SIZE = 15;
 
 export default function ContributorsPage() {
   return (
     <Suspense
       fallback={
         <div className="community-page-shell">
-          <div className="community-content-wrap rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-6">
-            <p className="text-sm text-slate-500">Loading contributors...</p>
+          <div
+            aria-busy="true"
+            aria-label="Loading contributors"
+            className="community-content-wrap"
+          >
+            <div className="bg-ink/10 h-48 animate-pulse rounded-2xl" />
           </div>
         </div>
       }
@@ -36,9 +33,14 @@ export default function ContributorsPage() {
 }
 
 function ContributorsPageContent() {
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [leaderboard, setLeaderboard] = useState<CommunityLeaderboardResponse | null>(null);
+  const [threadState, setThreadState] = useState<{
+    forId: string;
+    items: CommunityPost[];
+  } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [selectedContributorId, setSelectedContributorId] = useState<string | null>(null);
   const [myReputation, setMyReputation] = useState<{
     totalPoints: number;
     questionCount: number;
@@ -55,20 +57,17 @@ function ContributorsPageContent() {
           redirectToMainLogin();
           return;
         }
+        setCurrentUserId(session.id);
 
-        const [rep, list] = await Promise.all([
+        const [rep, board] = await Promise.all([
           communityService.getMyReputation(),
-          communityService.listPosts(1, 120, { sort: "TOP" }),
+          communityService.listLeaderboard(LEADERBOARD_SIZE),
         ]);
 
         setMyReputation(rep);
-        setPosts(list.items || []);
+        setLeaderboard(board);
       } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed to load contributors",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to load contributors");
       } finally {
         setIsLoading(false);
       }
@@ -77,216 +76,198 @@ function ContributorsPageContent() {
     void load();
   }, []);
 
-  const leaderboard = useMemo(() => {
-    const byAuthor = new Map<string, LeaderboardItem>();
+  const rows = useMemo<LeaderboardItem[]>(() => leaderboard?.items ?? [], [leaderboard]);
 
-    for (const post of posts) {
-      const existing = byAuthor.get(post.author.id) || {
-        id: post.author.id,
-        name: post.author.displayName,
-        posts: 0,
-        answersProxy: 0,
-        upvotes: 0,
-        score: 0,
-      };
+  const myEntry = leaderboard?.me ?? null;
 
-      existing.posts += 1;
-      existing.answersProxy += post.answerCount;
-      existing.upvotes += post.upvoteCount;
-      existing.score =
-        existing.posts * 2 + existing.answersProxy * 3 + existing.upvotes * 2;
-      byAuthor.set(post.author.id, existing);
+  // "You" pinned first with your real rank, then the top of the board. Ranks
+  // come from the server now, so a pinned #204 stays #204 instead of being
+  // renumbered against whatever subset the page happened to load.
+  const displayRows = useMemo(() => {
+    const others = rows.filter((item) => item.id !== myEntry?.id);
+    const slotsForOthers = myEntry ? LEADERBOARD_SIZE - 1 : LEADERBOARD_SIZE;
+    const rest = others.slice(0, Math.max(0, slotsForOthers));
+    return myEntry ? [myEntry, ...rest] : rest;
+  }, [rows, myEntry]);
+
+  const selectedContributor = useMemo(
+    () => displayRows.find((item) => item.id === selectedContributorId) || null,
+    [displayRows, selectedContributorId]
+  );
+
+  // Fetched per contributor rather than sliced out of a bulk post prefetch —
+  // the server filters by author and leaves out anything they posted
+  // anonymously.
+  //
+  // The result is tagged with the contributor it belongs to so both "which
+  // threads" and "still loading" are derived rather than held in their own
+  // state: nothing is set synchronously in the effect body, and a slow response
+  // for a previously-opened contributor cannot paint into the current one.
+  useEffect(() => {
+    if (!selectedContributorId) {
+      return;
     }
 
-    return [...byAuthor.values()]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20);
-  }, [posts]);
+    let cancelled = false;
+    void communityService
+      .listPosts(1, 12, { sort: "TOP", authorId: selectedContributorId })
+      .then((list) => {
+        if (!cancelled) {
+          setThreadState({
+            forId: selectedContributorId,
+            items: list.items || [],
+          });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setThreadState({ forId: selectedContributorId, items: [] });
+        }
+      });
 
-  const selectedAuthorId = searchParams.get("author") || "";
-  const selectedAuthor = useMemo(
-    () => leaderboard.find((item) => item.id === selectedAuthorId) || null,
-    [leaderboard, selectedAuthorId],
-  );
-  const selectedAuthorThreads = useMemo(
-    () =>
-      posts.filter((post) => post.author.id === selectedAuthorId).slice(0, 12),
-    [posts, selectedAuthorId],
-  );
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedContributorId]);
+
+  const threads =
+    threadState && threadState.forId === selectedContributorId ? threadState.items : [];
+  const isLoadingThreads =
+    Boolean(selectedContributorId) && threadState?.forId !== selectedContributorId;
 
   return (
     <div className="community-page-shell">
-      <div className="community-content-wrap space-y-4">
-        <section className="community-card">
-          <div className="flex items-center gap-2">
-            <Trophy size={18} className="text-amber-600" />
-            <h1 className="community-section-title">Contributor Leaderboard</h1>
-          </div>
-          <p className="community-section-copy">
-            Recognizing players and coaches who share high-value community
-            knowledge.
-          </p>
+      <div className="community-content-wrap">
+        <CommunityPageHeader
+          title="Contributor leaderboard"
+          subtitle="Parents who share knowledge other parents can use."
+          badge="Leaderboard"
+        />
 
-          {myReputation && (
-            <div className="mt-4 grid gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-amber-700">
-                  Your Points
-                </p>
-                <p className="text-lg font-bold text-slate-900">
-                  {myReputation.totalPoints}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-amber-700">
-                  Questions
-                </p>
-                <p className="text-lg font-bold text-slate-900">
-                  {myReputation.questionCount}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-amber-700">
-                  Answers
-                </p>
-                <p className="text-lg font-bold text-slate-900">
-                  {myReputation.answerCount}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-wide text-amber-700">
-                  Upvotes
-                </p>
-                <p className="text-lg font-bold text-slate-900">
-                  {myReputation.receivedUpvotes}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {isLoading ? (
-            <p className="mt-6 text-sm text-slate-500">
-              Loading leaderboard...
-            </p>
-          ) : leaderboard.length === 0 ? (
-            <p className="mt-6 text-sm text-slate-500">
-              No contributor data yet.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-2">
-              {leaderboard.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(248,250,252,0.96),rgba(255,255,255,0.98))] px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <Link
-                        href={`/contributors?author=${encodeURIComponent(item.id)}`}
-                        className="text-sm font-semibold text-slate-900 hover:text-power-orange"
-                      >
-                        {item.name}
-                      </Link>
-                      <p className="text-xs text-slate-500">
-                        {item.posts} posts • {item.answersProxy} answers •{" "}
-                        {item.upvotes} upvotes
-                      </p>
-                    </div>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
-                    <Award size={12} />
-                    {item.score} pts
-                  </span>
+        {myReputation && (
+          <section aria-labelledby="my-contribution" className="mt-12">
+            <h2 id="my-contribution" className="font-editorial text-ink text-3xl font-light">
+              Your contribution
+            </h2>
+            <dl className="border-hairline mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
+              {[
+                { label: "Points", value: myReputation.totalPoints },
+                { label: "Questions", value: myReputation.questionCount },
+                { label: "Answers", value: myReputation.answerCount },
+                { label: "Upvotes received", value: myReputation.receivedUpvotes },
+              ].map((stat) => (
+                <div key={stat.label} className="border-hairline border-b py-6 pr-4">
+                  <dt className="text-ink-muted text-sm">{stat.label}</dt>
+                  <dd className="font-editorial text-ink mt-1 text-5xl font-light tabular-nums">
+                    {stat.value}
+                  </dd>
                 </div>
               ))}
-            </div>
-          )}
-        </section>
-
-        {selectedAuthor && (
-          <section className="community-card">
-            <h2 className="text-lg font-semibold text-slate-900">
-              Contributor Profile: {selectedAuthor.name}
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Post and answer history for this contributor.
-            </p>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Posts
-                </p>
-                <p className="text-lg font-semibold text-slate-900">
-                  {selectedAuthor.posts}
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Answers
-                </p>
-                <p className="text-lg font-semibold text-slate-900">
-                  {selectedAuthor.answersProxy}
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Upvotes
-                </p>
-                <p className="text-lg font-semibold text-slate-900">
-                  {selectedAuthor.upvotes}
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                  Score
-                </p>
-                <p className="text-lg font-semibold text-slate-900">
-                  {selectedAuthor.score}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {selectedAuthorThreads.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  No thread history available.
-                </p>
-              ) : (
-                selectedAuthorThreads.map((post) => (
-                  <Link
-                    key={post.id}
-                    href={`/q/${post.id}`}
-                    className="block rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 shadow-xs transition hover:bg-slate-100"
-                  >
-                    <p className="text-sm font-semibold text-slate-900">
-                      {post.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {post.answerCount} answers • {post.upvoteCount} upvotes
-                    </p>
-                  </Link>
-                ))
-              )}
-            </div>
+            </dl>
           </section>
         )}
 
-        <section className="community-card">
-          <div className="flex items-center gap-2">
-            <Users size={18} className="text-power-orange" />
-            <h2 className="text-lg font-semibold text-slate-900">
-              Role Highlights
-            </h2>
-          </div>
-          <p className="mt-1 text-sm text-slate-600">
-            Coaches and players with sustained answer quality gain more
-            visibility across community spaces.
-          </p>
+        <section aria-labelledby="top-contributors" className="mt-14">
+          <h2 id="top-contributors" className="font-editorial text-ink text-3xl font-light">
+            Top contributors
+          </h2>
+
+          {isLoading ? (
+            <div
+              aria-busy="true"
+              aria-label="Loading leaderboard"
+              className="border-hairline mt-4 border-t"
+            >
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="border-hairline border-b py-5">
+                  <div className="bg-ink/10 h-5 w-1/2 animate-pulse rounded-sm" />
+                </div>
+              ))}
+            </div>
+          ) : displayRows.length === 0 ? (
+            <div className="bg-paper-deep mt-4 rounded-2xl px-6 py-14 text-center">
+              <p className="font-editorial text-ink text-3xl font-light">No contributors yet.</p>
+              <p className="text-ink-body mx-auto mt-3 max-w-[44ch] text-base leading-relaxed">
+                Ask or answer a question and you will show up here.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <div className="border-hairline text-ink-muted grid min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 border-b border-t px-3 py-3 text-sm">
+                <span>Place</span>
+                <span>Contributor</span>
+                <span className="text-right">Posts</span>
+                <span className="text-right">Answers</span>
+                <span className="text-right">Upvotes</span>
+                <span className="text-right">Points</span>
+              </div>
+
+              <ul>
+                {displayRows.map((item) => {
+                  const isMe = item.id === currentUserId;
+                  return (
+                    <li
+                      key={`${item.rank}-${item.id || item.name}`}
+                      className="border-hairline border-b"
+                    >
+                      <button
+                        type="button"
+                        disabled={!item.id}
+                        onClick={() => item.id && setSelectedContributorId(item.id)}
+                        className={`hover:bg-paper-deep/60 grid min-h-14 w-full min-w-[560px] grid-cols-[3.5rem_1fr_5rem_5rem_5rem_5.5rem] items-center gap-2 px-3 py-3 text-left transition-colors duration-200 disabled:cursor-default ${
+                          isMe ? "bg-wash/60" : ""
+                        }`}
+                      >
+                        <span className="font-editorial text-ink text-2xl font-light tabular-nums">
+                          {item.rank}
+                        </span>
+                        <span className="flex min-w-0 items-center gap-3">
+                          <span className="bg-paper-deep text-ink-muted flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl text-sm font-semibold">
+                            {item.photoUrl ? (
+                              <img
+                                src={item.photoUrl}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              item.name.charAt(0).toUpperCase()
+                            )}
+                          </span>
+                          <span className="text-ink truncate text-base font-semibold">
+                            {item.name}
+                          </span>
+                          {isMe && <span className="text-ink-body shrink-0 text-sm">(you)</span>}
+                        </span>
+                        <span className="text-ink-body text-right text-base tabular-nums">
+                          {item.posts}
+                        </span>
+                        <span className="text-ink-body text-right text-base tabular-nums">
+                          {item.answers}
+                        </span>
+                        <span className="text-ink-body text-right text-base tabular-nums">
+                          {item.upvotes}
+                        </span>
+                        <span className="text-ink text-right text-base font-semibold tabular-nums">
+                          {item.score}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-ink-muted mt-4 text-sm">
+                Parents with consistently useful answers get more visibility across the community.
+              </p>
+            </div>
+          )}
         </section>
+
+        <ContributorModal
+          contributor={selectedContributor}
+          threads={threads}
+          isLoadingThreads={isLoadingThreads}
+          onClose={() => setSelectedContributorId(null)}
+        />
       </div>
     </div>
   );

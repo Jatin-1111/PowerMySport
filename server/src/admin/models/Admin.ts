@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import { ALL_PERMISSIONS, ADMIN_ROLES } from "../../constants/adminPermissions";
+import { invalidateAdminAuth } from "../../utils/adminAuthCache";
 
 export interface IAdmin extends Document {
   name: string;
@@ -28,10 +29,7 @@ const AdminSchema: Schema = new Schema(
       required: [true, "Email is required"],
       unique: true,
       lowercase: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please provide a valid email",
-      ],
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"],
     },
     password: {
       type: String,
@@ -71,7 +69,7 @@ const AdminSchema: Schema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Hash password before saving
@@ -81,7 +79,7 @@ AdminSchema.pre<IAdmin>("save", async function () {
   }
 
   try {
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
   } catch (error) {
     throw error instanceof Error ? error : new Error("Password hashing failed");
@@ -89,13 +87,22 @@ AdminSchema.pre<IAdmin>("save", async function () {
 });
 
 // Method to compare passwords
-AdminSchema.methods.comparePassword = async function (
-  password: string,
-): Promise<boolean> {
+AdminSchema.methods.comparePassword = async function (password: string): Promise<boolean> {
   return bcrypt.compare(password, this.password);
 };
 
 // Index for faster queries
 AdminSchema.index({ isActive: 1 });
+
+// A change to an admin's role, permissions or active flag must not wait out the
+// in-process auth cache (utils/adminAuthCache.ts). Query writes carry no single
+// id, and admin writes are rare, so any of them clears the whole cache.
+AdminSchema.post("save", () => invalidateAdminAuth());
+AdminSchema.post("findOneAndUpdate", () => invalidateAdminAuth());
+AdminSchema.post("findOneAndDelete", () => invalidateAdminAuth());
+AdminSchema.post("updateOne", () => invalidateAdminAuth());
+AdminSchema.post("updateMany", () => invalidateAdminAuth());
+AdminSchema.post("deleteOne", { document: true, query: true }, () => invalidateAdminAuth());
+AdminSchema.post("deleteMany", () => invalidateAdminAuth());
 
 export default mongoose.model<IAdmin>("Admin", AdminSchema);

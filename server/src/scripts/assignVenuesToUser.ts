@@ -14,9 +14,7 @@ async function assignVenuesToUser() {
     const userId = process.argv[2];
 
     if (!userId) {
-      console.log(
-        "\nUsage: npx ts-node src/scripts/assignVenuesToUser.ts <userId>",
-      );
+      console.log("\nUsage: npx ts-node src/scripts/assignVenuesToUser.ts <userId>");
       console.log("\nTo find your userId:");
       console.log("1. Login to your app");
       console.log("2. Open browser console");
@@ -43,7 +41,7 @@ async function assignVenuesToUser() {
           ownerId: ownerObjectId,
           approvalStatus: "APPROVED",
         },
-      },
+      }
     );
 
     console.log(`✅ Updated ${result.modifiedCount} venues`);

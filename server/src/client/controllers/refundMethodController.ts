@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import { User, UserDocument } from "../models/User";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 type RefundMethodType = "ORIGINAL_CARD" | "BANK_ACCOUNT" | "STORE_CREDIT";
 
@@ -15,9 +17,7 @@ interface RefundMethodRecord {
   updatedAt?: Date;
 }
 
-const normalizeMethods = (
-  methods: RefundMethodRecord[] = [],
-): RefundMethodRecord[] => {
+const normalizeMethods = (methods: RefundMethodRecord[] = []): RefundMethodRecord[] => {
   if (methods.length === 0) {
     return methods;
   }
@@ -32,7 +32,7 @@ const normalizeMethods = (
 
 const toMethodRecord = (
   payload: Record<string, unknown>,
-  existing?: RefundMethodRecord,
+  existing?: RefundMethodRecord
 ): RefundMethodRecord => {
   const now = new Date();
   const type =
@@ -100,178 +100,121 @@ const validateRefundMethod = (body: Record<string, unknown>): string | null => {
 
 const getUserId = (req: Request): string | undefined => req.user?.id;
 
-export const listRefundMethods = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const listRefundMethods = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = getUserId(req);
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const user = await User.findById(userId).select("refundMethods").lean();
     res.json({ success: true, data: user?.refundMethods || [] });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to load refund methods" });
   }
-};
+);
 
-export const addRefundMethod = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const userId = getUserId(req);
-    if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
-    }
-
-    const validationError = validateRefundMethod(
-      req.body as Record<string, unknown>,
-    );
-    if (validationError) {
-      res.status(400).json({ success: false, message: validationError });
-      return;
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
-    }
-
-    const methods = normalizeMethods(
-      (user.refundMethods || []) as RefundMethodRecord[],
-    );
-    const nextMethod = toMethodRecord(req.body as Record<string, unknown>);
-    nextMethod.isDefault = methods.length === 0;
-
-    user.refundMethods = [...methods, nextMethod] as NonNullable<
-      UserDocument["refundMethods"]
-    >;
-    await user.save();
-
-    res.status(201).json({ success: true, data: user.refundMethods || [] });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to add refund method" });
+export const addRefundMethod = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const userId = getUserId(req);
+  if (!userId) {
+    throw new AppError("Unauthorized", 401);
   }
-};
 
-export const updateRefundMethod = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+  const validationError = validateRefundMethod(req.body as Record<string, unknown>);
+  if (validationError) {
+    throw new AppError(validationError, 400);
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  const methods = normalizeMethods((user.refundMethods || []) as RefundMethodRecord[]);
+  const nextMethod = toMethodRecord(req.body as Record<string, unknown>);
+  nextMethod.isDefault = methods.length === 0;
+
+  user.refundMethods = [...methods, nextMethod] as NonNullable<UserDocument["refundMethods"]>;
+  await user.save();
+
+  res.status(201).json({ success: true, data: user.refundMethods || [] });
+});
+
+export const updateRefundMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = getUserId(req);
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
-    const validationError = validateRefundMethod(
-      req.body as Record<string, unknown>,
-    );
+    const validationError = validateRefundMethod(req.body as Record<string, unknown>);
     if (validationError) {
-      res.status(400).json({ success: false, message: validationError });
-      return;
+      throw new AppError(validationError, 400);
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
+      throw new AppError("User not found", 404);
     }
 
-    const existing = (user.refundMethods || []).find(
-      (method) => method.id === methodId,
-    );
+    const existing = (user.refundMethods || []).find((method) => method.id === methodId);
     if (!existing) {
-      res
-        .status(404)
-        .json({ success: false, message: "Refund method not found" });
-      return;
+      throw new AppError("Refund method not found", 404);
     }
 
     const updated = toMethodRecord(
       req.body as Record<string, unknown>,
-      existing as RefundMethodRecord,
+      existing as RefundMethodRecord
     );
     updated.isDefault = existing.isDefault ?? false;
 
     user.refundMethods = (user.refundMethods || []).map((method) =>
-      method.id === methodId ? updated : method,
+      method.id === methodId ? updated : method
     ) as NonNullable<UserDocument["refundMethods"]>;
     await user.save();
 
     res.json({ success: true, data: user.refundMethods || [] });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to update refund method" });
   }
-};
+);
 
-export const deleteRefundMethod = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const deleteRefundMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = getUserId(req);
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     user.refundMethods = (user.refundMethods || []).filter(
-      (method) => method.id !== methodId,
+      (method) => method.id !== methodId
     ) as NonNullable<UserDocument["refundMethods"]>;
     user.refundMethods = normalizeMethods(
-      (user.refundMethods || []) as RefundMethodRecord[],
+      (user.refundMethods || []) as RefundMethodRecord[]
     ) as NonNullable<UserDocument["refundMethods"]>;
     await user.save();
 
     res.json({ success: true, data: user.refundMethods || [] });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to delete refund method" });
   }
-};
+);
 
-export const setDefaultRefundMethod = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const setDefaultRefundMethod = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = getUserId(req);
     const { methodId } = req.params;
 
     if (!userId) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const user = await User.findById(userId);
     if (!user) {
-      res.status(404).json({ success: false, message: "User not found" });
-      return;
+      throw new AppError("User not found", 404);
     }
 
     user.refundMethods = (user.refundMethods || []).map((method) => ({
@@ -281,9 +224,5 @@ export const setDefaultRefundMethod = async (
     await user.save();
 
     res.json({ success: true, data: user.refundMethods || [] });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to set default refund method" });
   }
-};
+);

@@ -1,5 +1,5 @@
-﻿import { ApiResponse } from "@/types";
-import axiosInstance from "@/lib/api/axios";
+﻿import axiosInstance from "@/lib/api/axios";
+import { ApiResponse } from "@/types";
 
 export interface VenueInquiryData {
   venueName: string;
@@ -25,9 +25,7 @@ export const venueInquiryApi = {
   },
 
   // Review endpoints
-  getAllInquiries: async (
-    status?: string,
-  ): Promise<ApiResponse<VenueInquiry[]>> => {
+  getAllInquiries: async (status?: string): Promise<ApiResponse<VenueInquiry[]>> => {
     const params = status ? `?status=${status}` : "";
     const response = await axiosInstance.get(`/venue-inquiries${params}`);
     return response.data;
@@ -40,12 +38,9 @@ export const venueInquiryApi = {
 
   reviewInquiry: async (
     id: string,
-    data: { status: "APPROVED" | "REJECTED"; reviewNotes?: string },
+    data: { status: "APPROVED" | "REJECTED"; reviewNotes?: string }
   ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.put(
-      `/venue-inquiries/${id}/review`,
-      data,
-    );
+    const response = await axiosInstance.put(`/venue-inquiries/${id}/review`, data);
     return response.data;
   },
 

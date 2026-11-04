@@ -16,8 +16,7 @@ export interface PushSubscriptionResponse {
   message?: string;
 }
 
-let cachedVapidPublicKey: string | null =
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null;
+let cachedVapidPublicKey: string | null = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || null;
 
 /**
  * Convert VAPID key from base64 to Uint8Array
@@ -130,17 +129,14 @@ export const pushNotificationService = {
       }
 
       // Register service worker
-      const registration =
-        await pushNotificationService.registerServiceWorker();
+      const registration = await pushNotificationService.registerServiceWorker();
 
       const vapidPublicKey = await pushNotificationService.getVapidPublicKey();
 
       // Subscribe to push
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(
-          vapidPublicKey,
-        ) as BufferSource,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
       });
 
       // Convert to plain object
@@ -157,7 +153,7 @@ export const pushNotificationService = {
       // Send subscription to backend
       const response = await axios.post<PushSubscriptionResponse>(
         "/notifications/push/subscribe",
-        pushSubscription,
+        pushSubscription
       );
 
       return response.data.data as PushSubscription;
@@ -232,7 +228,7 @@ export const pushNotificationService = {
   getSubscriptions: async (): Promise<PushSubscription[]> => {
     try {
       const response = await axios.get<PushSubscriptionResponse>(
-        "/notifications/push/subscriptions",
+        "/notifications/push/subscriptions"
       );
       return response.data.data as PushSubscription[];
     } catch (error) {

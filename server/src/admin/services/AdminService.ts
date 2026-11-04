@@ -1,14 +1,14 @@
+import bcrypt from "bcryptjs";
 import Admin, { IAdmin } from "../models/Admin";
 import {
   ADMIN_ROLES,
   getRolePermissions,
   ALL_PERMISSIONS,
   ROLE_TEMPLATES,
+  PERMISSION_MODULES,
+  PERMISSION_LABELS,
 } from "../../constants/adminPermissions";
-import {
-  normalizePermissions,
-  areValidPermissions,
-} from "../../utils/permissions";
+import { normalizePermissions, areValidPermissions } from "../../utils/permissions";
 import { sendAdminTemporaryCredentialsEmail } from "../../utils/email";
 import { generateToken } from "../../utils/jwt";
 import { randomInt } from "crypto";
@@ -32,8 +32,7 @@ interface ChangeAdminPasswordPayload {
   newPassword: string;
 }
 
-const TEMP_PASSWORD_CHARS =
-  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@$!%*?&";
+const TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@$!%*?&";
 
 const generateTemporaryPassword = (length: number = 12): string => {
   let password = "";
@@ -49,22 +48,17 @@ const normalizeUrl = (value: string): string => value.replace(/\/+$/, "");
 
 const deriveAdminBaseUrlFromFrontend = (frontendUrl: string): string | null => {
   try {
-    const valueWithProtocol = frontendUrl.includes("://")
-      ? frontendUrl
-      : `https://${frontendUrl}`;
+    const valueWithProtocol = frontendUrl.includes("://") ? frontendUrl : `https://${frontendUrl}`;
     const parsed = new URL(valueWithProtocol);
     const hostname = parsed.hostname.replace(/^www\./, "");
-    const adminHostname = hostname.startsWith("admin.")
-      ? hostname
-      : `admin.${hostname}`;
+    const adminHostname = hostname.startsWith("admin.") ? hostname : `admin.${hostname}`;
 
     const protocol =
       parsed.protocol === "http:" && process.env.NODE_ENV === "production"
         ? "https:"
         : parsed.protocol;
 
-    const hasCustomPort =
-      parsed.port && parsed.port !== "80" && parsed.port !== "443";
+    const hasCustomPort = parsed.port && parsed.port !== "80" && parsed.port !== "443";
     const port = hasCustomPort ? `:${parsed.port}` : "";
 
     return `${protocol}//${adminHostname}${port}`;
@@ -73,17 +67,18 @@ const deriveAdminBaseUrlFromFrontend = (frontendUrl: string): string | null => {
   }
 };
 
-const resolveAdminLoginUrl = (): string => {
+/** Base admin app origin (no path) — reused by any admin-linking email, not just login. */
+export const resolveAdminAppUrl = (): string => {
   const explicitLoginUrl = process.env.ADMIN_LOGIN_URL?.trim();
   if (explicitLoginUrl) {
-    return explicitLoginUrl;
+    return normalizeUrl(explicitLoginUrl.replace(/\/admin\/login$/, ""));
   }
 
   const frontendUrl = process.env.FRONTEND_URL?.trim();
   if (frontendUrl) {
     const derivedAdminBaseUrl = deriveAdminBaseUrlFromFrontend(frontendUrl);
     if (derivedAdminBaseUrl) {
-      return `${normalizeUrl(derivedAdminBaseUrl)}/admin/login`;
+      return normalizeUrl(derivedAdminBaseUrl);
     }
   }
 
@@ -93,22 +88,19 @@ const resolveAdminLoginUrl = (): string => {
     process.env.ADMIN_APP_URL?.trim();
 
   if (adminBaseUrl) {
-    const normalized = normalizeUrl(adminBaseUrl);
-    return normalized.endsWith("/admin/login")
-      ? normalized
-      : `${normalized}/admin/login`;
+    return normalizeUrl(adminBaseUrl.replace(/\/admin\/login$/, ""));
   }
 
-  return "http://localhost:3001/admin/login";
+  return "http://localhost:3001";
 };
+
+const resolveAdminLoginUrl = (): string => `${resolveAdminAppUrl()}/admin/login`;
 
 export const loginAdmin = async (data: LoginPayload) => {
   const { email, password } = data;
 
   // Find admin with password field
-  const admin = await Admin.findOne({ email, isActive: true }).select(
-    "+password",
-  );
+  const admin = await Admin.findOne({ email, isActive: true }).select("+password");
 
   if (!admin) {
     throw new Error("Invalid credentials");
@@ -120,9 +112,12 @@ export const loginAdmin = async (data: LoginPayload) => {
     throw new Error("Invalid credentials");
   }
 
-  // Update last login
+  // Update last login via a targeted write, not a full-document .save() —
+  // a full save re-validates every field (including permissions), which
+  // would block login entirely for any admin carrying legacy/invalid
+  // permission strings, for a change that has nothing to do with permissions.
   admin.lastLogin = new Date();
-  await admin.save();
+  await Admin.updateOne({ _id: admin._id }, { $set: { lastLogin: admin.lastLogin } });
 
   // Generate token
   const token = generateToken({
@@ -141,9 +136,7 @@ export const loginAdmin = async (data: LoginPayload) => {
   };
 };
 
-export const createAdmin = async (
-  data: CreateAdminPayload,
-): Promise<IAdmin> => {
+export const createAdmin = async (data: CreateAdminPayload): Promise<IAdmin> => {
   // Check if admin already exists
   const existingAdmin = await Admin.findOne({ email: data.email });
   if (existingAdmin) {
@@ -153,9 +146,7 @@ export const createAdmin = async (
   // Validate role
   const validRoles = Object.values(ADMIN_ROLES);
   const role =
-    data.role && validRoles.includes(data.role as any)
-      ? data.role
-      : ADMIN_ROLES.SUPPORT_ADMIN;
+    data.role && validRoles.includes(data.role as any) ? data.role : ADMIN_ROLES.SUPPORT_ADMIN;
 
   // Determine permissions
   let permissions: string[];
@@ -196,16 +187,14 @@ export const createAdmin = async (
     throw new Error(
       error instanceof Error
         ? `Failed to send temporary credentials email: ${error.message}`
-        : "Failed to send temporary credentials email",
+        : "Failed to send temporary credentials email"
     );
   }
 
   return admin;
 };
 
-export const changeAdminPassword = async (
-  payload: ChangeAdminPasswordPayload,
-): Promise<IAdmin> => {
+export const changeAdminPassword = async (payload: ChangeAdminPasswordPayload): Promise<IAdmin> => {
   const { adminId, currentPassword, newPassword } = payload;
 
   const admin = await Admin.findById(adminId).select("+password");
@@ -218,24 +207,62 @@ export const changeAdminPassword = async (
     throw new Error("Current password is incorrect");
   }
 
-  admin.password = newPassword;
-  admin.mustChangePassword = false;
-  await admin.save();
+  // Hash manually and write via a targeted update rather than .save() — a
+  // full-document save re-validates every field (including permissions),
+  // which would block a password change for any admin carrying legacy/
+  // invalid permission strings, for a change unrelated to permissions.
+  // findByIdAndUpdate skips the pre("save") hashing hook, so it's replicated
+  // here explicitly with the same cost factor the model's hook uses.
+  const salt = await bcrypt.genSalt(12);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  return admin;
+  const updatedAdmin = await Admin.findByIdAndUpdate(
+    adminId,
+    { $set: { password: hashedPassword, mustChangePassword: false } },
+    { new: true }
+  );
+
+  if (!updatedAdmin) {
+    throw new Error("Admin not found");
+  }
+
+  return updatedAdmin;
 };
 
 export const getAdminById = async (adminId: string): Promise<IAdmin | null> => {
   return await Admin.findById(adminId);
 };
 
-export const getAllAdmins = async (): Promise<IAdmin[]> => {
-  return await Admin.find({ isActive: true });
+export const getAllAdmins = async () => {
+  return await Admin.find().sort({ createdAt: -1 }).lean();
+};
+
+/**
+ * Active admins who can act on `permission` — either because their role
+ * template grants it, or because it was added to their ad-hoc `permissions`
+ * array. Used to target notifications at "whoever can review X" rather than
+ * a single hardcoded recipient.
+ */
+export const getAdminsWithPermission = async (
+  permission: string
+): Promise<Array<{ email: string; name: string }>> => {
+  const rolesWithPermission = Object.values(ADMIN_ROLES).filter((role) =>
+    getRolePermissions(role).includes(permission)
+  );
+
+  const admins = await Admin.find({
+    isActive: true,
+    $or: [{ role: { $in: rolesWithPermission } }, { permissions: permission }],
+  })
+    .select("email name")
+    .lean();
+
+  return admins.map((a) => ({ email: a.email, name: a.name }));
 };
 
 export const updateAdmin = async (
   adminId: string,
-  updates: Partial<IAdmin>,
+  updates: Partial<IAdmin>
 ): Promise<IAdmin | null> => {
   // Don't allow password updates through this method
   delete updates.password;
@@ -246,14 +273,23 @@ export const updateAdmin = async (
   });
 };
 
-export const deactivateAdmin = async (adminId: string): Promise<void> => {
-  const admin = await Admin.findById(adminId);
+export const setAdminActiveStatus = async (adminId: string, isActive: boolean): Promise<IAdmin> => {
+  // findByIdAndUpdate + runValidators only validates the fields being set
+  // (just isActive here), unlike a full document .save() which re-validates
+  // every field — including permissions, where legacy admin documents can
+  // carry now-removed permission strings that would otherwise block this
+  // unrelated status change.
+  const admin = await Admin.findByIdAndUpdate(
+    adminId,
+    { isActive },
+    { new: true, runValidators: true }
+  );
+
   if (!admin) {
     throw new Error("Admin not found");
   }
 
-  admin.isActive = false;
-  await admin.save();
+  return admin;
 };
 
 /**
@@ -261,7 +297,7 @@ export const deactivateAdmin = async (adminId: string): Promise<void> => {
  */
 export const updateAdminPermissions = async (
   adminId: string,
-  permissions: string[],
+  permissions: string[]
 ): Promise<IAdmin> => {
   // Validate permissions
   if (!areValidPermissions(permissions, ALL_PERMISSIONS)) {
@@ -282,10 +318,7 @@ export const updateAdminPermissions = async (
 /**
  * Update admin role and reset permissions to role template
  */
-export const updateAdminRole = async (
-  adminId: string,
-  role: string,
-): Promise<IAdmin> => {
+export const updateAdminRole = async (adminId: string, role: string): Promise<IAdmin> => {
   // Validate role
   const validRoles = Object.values(ADMIN_ROLES);
   if (!validRoles.includes(role as any)) {
@@ -309,4 +342,20 @@ export const updateAdminRole = async (
  */
 export const getRoleTemplatesData = () => {
   return Object.values(ROLE_TEMPLATES);
+};
+
+/**
+ * Every grantable permission, grouped by module, with its display label.
+ * The admin app renders its permission picker from this, so a permission
+ * added here shows up there without a second hand-kept copy.
+ */
+export const getPermissionCatalogData = () => {
+  return Object.entries(PERMISSION_MODULES).map(([key, module]) => ({
+    key,
+    name: module.name,
+    permissions: module.permissions.map((permission) => ({
+      key: permission,
+      label: PERMISSION_LABELS[permission] ?? permission,
+    })),
+  }));
 };

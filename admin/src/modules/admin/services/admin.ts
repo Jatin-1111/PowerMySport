@@ -1,12 +1,10 @@
 import axiosInstance from "@/lib/api/axios";
 import {
   ApiResponse,
-  CoachPlan,
   CoachVerificationDocument,
-  CoachSubscriptionOverrideRequestRecord,
-  CoachSubscriptionRecord,
   Coach,
   CoachVerificationStatus,
+  PermissionModule,
   RoleTemplate,
 } from "@/types";
 
@@ -25,6 +23,58 @@ type OpeningHours = {
   saturday: OpeningHoursDay;
   sunday: OpeningHoursDay;
 };
+
+// ─── Federation/Tournament Data Sources ─────────────────────────────────────
+
+export type DataSourceTargetType = "FEDERATION" | "CURATED_TOURNAMENT" | "TOURNAMENT_CALENDAR";
+export type DataSourceKind = "PDF" | "LINK";
+export type DataSourceStatus =
+  "PENDING_EXTRACTION" | "EXTRACTION_FAILED" | "PENDING_REVIEW" | "APPROVED" | "REJECTED";
+
+export interface DataSourceUploadUrlResponse {
+  uploadUrl: string;
+  downloadUrl: string;
+  fileName: string;
+  key: string;
+}
+
+export interface DataSourceTargetOption {
+  slug: string;
+  name: string;
+}
+
+export interface AdminCalendarFreshnessRow {
+  sportSlug: string;
+  sportName: string;
+  lastCheckedAt: string | null;
+}
+
+export interface AdminDataSourceSubmission {
+  _id: string;
+  targetType: DataSourceTargetType;
+  sportSlug: string;
+  federationSlug?: string;
+  tournamentSlug?: string;
+  sourceKind: DataSourceKind;
+  sourceUrl?: string;
+  s3Key?: string;
+  fileName?: string;
+  originUrl?: string;
+  status: DataSourceStatus;
+  extractedData?: unknown;
+  citations?: Record<string, string>;
+  extractionError?: string;
+  extractionWarnings?: string[];
+  extractionModel?: string;
+  extractedAt?: string;
+  reviewNotes?: string;
+  reviewedBy?: { _id: string; name?: string; email?: string } | null;
+  reviewedAt?: string;
+  submittedBy?: { _id: string; name?: string; email?: string } | null;
+  currentLiveData?: unknown;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface AcademyAdminQueueRecord {
   id: string;
@@ -82,12 +132,8 @@ export interface AcademyAdminReviewDetails extends AcademyAdminQueueRecord {
   };
   venueIds?: Array<string | { _id?: string; id?: string; name?: string }>;
   coachIds?: Array<string | { _id?: string; id?: string; name?: string }>;
-  subscriptionPlans?: Array<
-    string | { _id?: string; id?: string; name?: string }
-  >;
-  sessionPackages?: Array<
-    string | { _id?: string; id?: string; name?: string }
-  >;
+  subscriptionPlans?: Array<string | { _id?: string; id?: string; name?: string }>;
+  sessionPackages?: Array<string | { _id?: string; id?: string; name?: string }>;
   rating?: number;
   reviewCount?: number;
   onboardingStep?: number;
@@ -101,12 +147,22 @@ interface AcademyPendingQueueResponse {
   totalPages: number;
 }
 
+export interface AdminAuditLogEntry {
+  id: string;
+  admin: { id: string; name?: string; email: string } | null;
+  action: string;
+  targetType: string;
+  targetId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface Admin {
   id: string;
   _id?: string;
   name: string;
   email: string;
-  role: string; // Changed from "SUPER_ADMIN" | "ADMIN" to string for new role system
+  role: string; // Changed from "SUPER_ADMIN" | "Admin" to string for new role system
   permissions: string[];
   isActive: boolean;
   mustChangePassword?: boolean;
@@ -116,11 +172,25 @@ export interface Admin {
 export interface ModerationReview {
   _id: string;
   bookingId: string;
-  targetType: "VENUE" | "COACH";
+  userId: string | { _id?: string; id?: string; name?: string; email?: string };
+  targetType: "VENUE" | "Coach";
+  targetId: string | { _id?: string; id?: string; name?: string };
   rating: number;
   review?: string;
   moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
   reportCount: number;
+  moderationNotes?: string;
+  createdAt: string;
+}
+
+export interface ModerationExperience {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: { id: string; name: string; email: string };
+  subject: { kind: string; name: string } | null;
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
   moderationNotes?: string;
   createdAt: string;
 }
@@ -130,7 +200,7 @@ export interface UserSafetyRecord {
   name: string;
   email: string;
   phone: string;
-  role: "PLAYER" | "COACH" | "VENUE_LISTER";
+  role: "Player" | "Coach" | "VenueLister";
   isActive: boolean;
   suspensionReason?: string;
   suspendedAt?: string;
@@ -141,14 +211,18 @@ export interface UserSafetyRecord {
 
 export interface CommunityReportRecord {
   id: string;
-  reporterUserId: string;
+  reporterUserId: { id: string; name: string; email: string };
   targetType: "MESSAGE" | "GROUP" | "POST" | "ANSWER";
   targetId: string;
+  targetPreview: string;
+  targetDeleted: boolean;
+  /** Message text as it was when reported; null for older reports and non-message targets. */
+  reportedContent?: string | null;
   reason: string;
   details?: string;
   status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
   resolutionNote?: string;
-  reviewedBy?: string | null;
+  reviewedBy?: { id: string; name: string } | null;
   reviewedAt?: string | null;
   createdAt: string;
 }
@@ -178,6 +252,8 @@ export interface PromoCodeStats {
   uniqueUsers: number;
   recentUsages: Array<{
     userId: string;
+    userName: string;
+    userEmail: string;
     discountApplied: number;
     usedAt: string;
   }>;
@@ -199,12 +275,7 @@ export interface SupportTicketRecord {
   requesterName?: string;
   requesterEmail?: string;
   requesterPhone?: string;
-  requesterType?:
-    | "player"
-    | "venue_owner"
-    | "coach"
-    | "academy_owner"
-    | "other";
+  requesterType?: "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   assignedAdminId?: {
     _id: string;
     name: string;
@@ -230,24 +301,39 @@ export interface AdminPhonePeRefundStatus {
   transactions: AdminPhonePeRefundTransaction[];
 }
 
+/** One entry in a booking's append-only lifecycle log. */
+export interface BookingEvent {
+  _id: string;
+  subjectType: "BOOKING" | "EXPERT_SESSION";
+  subjectId: string;
+  providerType: "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
+  providerId?: string;
+  type: string;
+  fromStatus?: string;
+  toStatus?: string;
+  actorType: "USER" | "PROVIDER" | "ADMIN" | "SYSTEM" | "GATEWAY";
+  /** Populated to a user object server-side when the actor is a real account. */
+  actorUserId?: { _id: string; name?: string; email?: string; role?: string } | string;
+  channel: "CLIENT_WEB" | "PROVIDER_WEB" | "ADMIN_PANEL" | "CRON" | "WEBHOOK" | "SYSTEM";
+  /** PAISE, matching the server. Divide by 100 to display rupees. */
+  amountPaise?: number;
+  summary?: string;
+  metadata?: Record<string, unknown>;
+  occurredAt: string;
+  createdAt: string;
+}
+
 export interface PayoutSummary {
   vendorId: string;
-  vendorRole: "VENUE_LISTER" | "COACH";
+  // "CoachSession" is a recurring-coaching payout, earned per delivered class
+  // and settled per occurrence — its ids are occurrence ids, not booking ids.
+  vendorRole: "VenueLister" | "Coach" | "Expert" | "CoachSession";
   totalPendingAmount: number;
   bookingIds: string[];
   vendorName: string;
   vendorEmail: string;
   vendorPhone: string;
   payoutMethod: any | null;
-}
-
-interface PaginationResult<T> {
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    totalPages: number;
-  };
 }
 
 const normalizeAdmin = (admin: Partial<Admin> | null | undefined): Admin => {
@@ -293,10 +379,7 @@ export const adminApi = {
     return response.data;
   },
 
-  updateProfile: async (data: {
-    name?: string;
-    email?: string;
-  }): Promise<ApiResponse<Admin>> => {
+  updateProfile: async (data: { name?: string; email?: string }): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put("/admin/profile", data);
     if (response.data?.data) {
       response.data.data = normalizeAdmin(response.data.data);
@@ -331,10 +414,18 @@ export const adminApi = {
   getAllAdmins: async (): Promise<ApiResponse<Admin[]>> => {
     const response = await axiosInstance.get("/admin/list");
     if (Array.isArray(response.data?.data)) {
-      response.data.data = response.data.data.map((admin: Admin) =>
-        normalizeAdmin(admin),
-      );
+      response.data.data = response.data.data.map((admin: Admin) => normalizeAdmin(admin));
     }
+    return response.data;
+  },
+
+  getAuditLogs: async (params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<AdminAuditLogEntry[]>> => {
+    const response = await axiosInstance.get("/admin/audit-logs", {
+      params,
+    });
     return response.data;
   },
 
@@ -343,9 +434,14 @@ export const adminApi = {
     return response.data;
   },
 
+  getPermissionCatalog: async (): Promise<ApiResponse<PermissionModule[]>> => {
+    const response = await axiosInstance.get("/admin/permission-catalog");
+    return response.data;
+  },
+
   updateAdminPermissions: async (
     adminId: string,
-    permissions: string[],
+    permissions: string[]
   ): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put(`/admin/${adminId}/permissions`, {
       permissions,
@@ -356,12 +452,29 @@ export const adminApi = {
     return response.data;
   },
 
-  updateAdminRole: async (
-    adminId: string,
-    role: string,
-  ): Promise<ApiResponse<Admin>> => {
+  updateAdminRole: async (adminId: string, role: string): Promise<ApiResponse<Admin>> => {
     const response = await axiosInstance.put(`/admin/${adminId}/role`, {
       role,
+    });
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
+  updateAdminProfile: async (adminId: string, name: string): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.patch(`/admin/${adminId}/profile`, {
+      name,
+    });
+    if (response.data?.data) {
+      response.data.data = normalizeAdmin(response.data.data);
+    }
+    return response.data;
+  },
+
+  updateAdminStatus: async (adminId: string, isActive: boolean): Promise<ApiResponse<Admin>> => {
+    const response = await axiosInstance.patch(`/admin/${adminId}/status`, {
+      isActive,
     });
     if (response.data?.data) {
       response.data.data = normalizeAdmin(response.data.data);
@@ -379,9 +492,7 @@ export const adminApi = {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/admin/coaches/verification?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/coaches/verification?${query.toString()}`);
     return response.data;
   },
 
@@ -398,166 +509,36 @@ export const adminApi = {
     if (params?.limit) query.append("limit", params.limit.toString());
 
     const response = await axiosInstance.get(
-      `/admin/coaches${query.toString() ? `?${query.toString()}` : ""}`,
+      `/admin/coaches${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
 
-  getCoachVerificationById: async (
-    coachId: string,
-  ): Promise<ApiResponse<Coach>> => {
+  getCoachVerificationById: async (coachId: string): Promise<ApiResponse<Coach>> => {
     const response = await axiosInstance.get(`/admin/coaches/${coachId}`);
     return response.data;
   },
 
-  approveCoachVerification: async (
-    coachId: string,
-  ): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/verify`,
-    );
+  approveCoachVerification: async (coachId: string): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/verify`);
     return response.data;
   },
 
-  rejectCoachVerification: async (
-    coachId: string,
-    reason: string,
-  ): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/reject`,
-      { reason },
-    );
+  rejectCoachVerification: async (coachId: string, reason: string): Promise<ApiResponse<Coach>> => {
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/reject`, { reason });
     return response.data;
   },
 
   markCoachVerificationForReview: async (
     coachId: string,
-    notes?: string,
+    notes?: string
   ): Promise<ApiResponse<Coach>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/mark-review`,
-      { notes },
-    );
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/mark-review`, { notes });
     return response.data;
   },
 
-  notifyCoachVerification: async (
-    coachId: string,
-  ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.post(
-      `/admin/coaches/${coachId}/notify`,
-    );
-    return response.data;
-  },
-
-  listCoachPlans: async (params?: {
-    isActive?: boolean;
-  }): Promise<ApiResponse<{ plans: CoachPlan[] }>> => {
-    const query = new URLSearchParams();
-    if (typeof params?.isActive === "boolean") {
-      query.append("isActive", String(params.isActive));
-    }
-
-    const response = await axiosInstance.get(
-      `/admin/coach-plans${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  createCoachPlan: async (payload: {
-    code: string;
-    name: string;
-    description?: string;
-    pricing: {
-      monthly?: number;
-      yearly?: number;
-    };
-    features?: string[];
-    isActive?: boolean;
-    supportsOverrides?: boolean;
-  }): Promise<ApiResponse<{ plan: CoachPlan }>> => {
-    const response = await axiosInstance.post("/admin/coach-plans", payload);
-    return response.data;
-  },
-
-  updateCoachPlan: async (
-    planId: string,
-    payload: Partial<{
-      name: string;
-      description: string;
-      pricing: {
-        monthly?: number;
-        yearly?: number;
-      };
-      features: string[];
-      isActive: boolean;
-      supportsOverrides: boolean;
-    }>,
-  ): Promise<ApiResponse<{ plan: CoachPlan }>> => {
-    const response = await axiosInstance.patch(
-      `/admin/coach-plans/${planId}`,
-      payload,
-    );
-    return response.data;
-  },
-
-  listCoachSubscriptions: async (params?: {
-    status?: string;
-    planId?: string;
-    page?: number;
-    limit?: number;
-  }): Promise<
-    ApiResponse<{
-      subscriptions: CoachSubscriptionRecord[];
-      pagination: PaginationResult<CoachSubscriptionRecord>["pagination"];
-    }>
-  > => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.planId) query.append("planId", params.planId);
-    if (params?.page) query.append("page", String(params.page));
-    if (params?.limit) query.append("limit", String(params.limit));
-
-    const response = await axiosInstance.get(
-      `/admin/coach-subscriptions${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  listCoachSubscriptionOverrides: async (params?: {
-    status?: "PENDING" | "APPROVED" | "REJECTED";
-    page?: number;
-    limit?: number;
-  }): Promise<
-    ApiResponse<{
-      requests: CoachSubscriptionOverrideRequestRecord[];
-      pagination: PaginationResult<CoachSubscriptionOverrideRequestRecord>["pagination"];
-    }>
-  > => {
-    const query = new URLSearchParams();
-    if (params?.status) query.append("status", params.status);
-    if (params?.page) query.append("page", String(params.page));
-    if (params?.limit) query.append("limit", String(params.limit));
-
-    const response = await axiosInstance.get(
-      `/admin/coach-subscription-overrides${query.toString() ? `?${query.toString()}` : ""}`,
-    );
-    return response.data;
-  },
-
-  reviewCoachSubscriptionOverride: async (
-    requestId: string,
-    payload: {
-      status: "APPROVED" | "REJECTED";
-      reviewNote?: string;
-    },
-  ): Promise<
-    ApiResponse<{ request: CoachSubscriptionOverrideRequestRecord }>
-  > => {
-    const response = await axiosInstance.patch(
-      `/admin/coach-subscription-overrides/${requestId}/review`,
-      payload,
-    );
+  notifyCoachVerification: async (coachId: string): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.post(`/admin/coaches/${coachId}/notify`);
     return response.data;
   },
 
@@ -566,21 +547,25 @@ export const adminApi = {
     data: {
       refundType: "FULL" | "PARTIAL";
       reason: string;
-    },
+    }
   ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.post(
-      `/admin/refunds/${bookingId}`,
-      data,
-    );
+    const response = await axiosInstance.post(`/admin/refunds/${bookingId}`, data);
     return response.data;
   },
 
   getPhonePeRefundStatus: async (
-    bookingId: string,
+    bookingId: string
   ): Promise<ApiResponse<AdminPhonePeRefundStatus>> => {
-    const response = await axiosInstance.get(
-      `/admin/refunds/${bookingId}/status`,
-    );
+    const response = await axiosInstance.get(`/admin/refunds/${bookingId}/status`);
+    return response.data;
+  },
+
+  /**
+   * Append-only lifecycle timeline. Resolves across both bookings and expert
+   * sessions, so the same call works for either kind of id.
+   */
+  getBookingTimeline: async (subjectId: string): Promise<ApiResponse<BookingEvent[]>> => {
+    const response = await axiosInstance.get(`/admin/bookings/${subjectId}/timeline`);
     return response.data;
   },
 
@@ -590,12 +575,9 @@ export const adminApi = {
       disputeType: "NO_SHOW" | "POOR_QUALITY" | "PAYMENT_ISSUE" | "OTHER";
       resolution: "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND";
       evidence?: string;
-    },
+    }
   ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.post(
-      `/admin/disputes/${bookingId}`,
-      data,
-    );
+    const response = await axiosInstance.post(`/admin/disputes/${bookingId}`, data);
     return response.data;
   },
 
@@ -606,15 +588,27 @@ export const adminApi = {
   getPendingRefundBookings: async (params?: {
     page?: number;
     limit?: number;
-  }): Promise<ApiResponse<unknown[]> & { stats?: { pendingCount: number; completedCount: number; failedCount: number; totalAmount: number } }> => {
+  }): Promise<
+    ApiResponse<unknown[]> & {
+      stats?: {
+        pendingCount: number;
+        completedCount: number;
+        failedCount: number;
+        totalAmount: number;
+      };
+    }
+  > => {
     const query = new URLSearchParams();
     query.append("refundStatus", "PENDING");
     if (params?.page) query.append("page", String(params.page));
     if (params?.limit) query.append("limit", String(params.limit));
 
-    const response = await axiosInstance.get(
-      `/admin/refunds?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/refunds?${query.toString()}`);
+    return response.data;
+  },
+
+  getFailedRefundBookings: async (): Promise<ApiResponse<unknown[]>> => {
+    const response = await axiosInstance.get(`/admin/refunds?refundStatus=REJECTED&limit=100`);
     return response.data;
   },
 
@@ -626,9 +620,7 @@ export const adminApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/reviews/moderation/queue?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/reviews/moderation/queue?${params.toString()}`);
     return response.data;
   },
 
@@ -637,17 +629,39 @@ export const adminApi = {
     data: {
       action: "APPROVE" | "REMOVE" | "HIDE";
       moderationNotes?: string;
-    },
+    }
   ): Promise<ApiResponse<ModerationReview>> => {
-    const response = await axiosInstance.patch(
-      `/reviews/${reviewId}/moderate`,
-      data,
+    const response = await axiosInstance.patch(`/reviews/${reviewId}/moderate`, data);
+    return response.data;
+  },
+
+  getExperienceModerationQueue: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ModerationExperience[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(
+      `/admin/experiences/moderation/queue?${params.toString()}`
     );
     return response.data;
   },
 
+  moderateExperience: async (
+    experienceId: string,
+    data: {
+      action: "APPROVE" | "FLAG" | "REMOVE";
+      moderationNotes?: string;
+    }
+  ): Promise<ApiResponse<ModerationExperience>> => {
+    const response = await axiosInstance.patch(`/admin/experiences/${experienceId}/moderate`, data);
+    return response.data;
+  },
+
   getUserSafetyList: async (params?: {
-    role?: "PLAYER" | "COACH" | "VENUE_LISTER";
+    role?: "Player" | "Coach" | "VenueLister";
     status?: "ACTIVE" | "SUSPENDED";
     page?: number;
     limit?: number;
@@ -658,9 +672,7 @@ export const adminApi = {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/admin/users/safety?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/users/safety?${query.toString()}`);
     return response.data;
   },
 
@@ -669,12 +681,9 @@ export const adminApi = {
     data: {
       action: "SUSPEND" | "REACTIVATE" | "DEACTIVATE";
       reason?: string;
-    },
+    }
   ): Promise<ApiResponse<UserSafetyRecord>> => {
-    const response = await axiosInstance.patch(
-      `/admin/users/${userId}/safety`,
-      data,
-    );
+    const response = await axiosInstance.patch(`/admin/users/${userId}/safety`, data);
     return response.data;
   },
 
@@ -687,9 +696,7 @@ export const adminApi = {
     if (params?.status) query.append("status", params.status);
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
-    const response = await axiosInstance.get(
-      `/admin/community/reports?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/admin/community/reports?${query.toString()}`);
     return response.data;
   },
 
@@ -698,14 +705,18 @@ export const adminApi = {
     payload: {
       status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
       resolutionNote?: string;
-    },
-  ): Promise<
-    ApiResponse<{ id: string; status: string; reviewedAt: string }>
-  > => {
-    const response = await axiosInstance.patch(
-      `/admin/community/reports/${reportId}`,
-      payload,
-    );
+    }
+  ): Promise<ApiResponse<{ id: string; status: string; reviewedAt: string }>> => {
+    const response = await axiosInstance.patch(`/admin/community/reports/${reportId}`, payload);
+    return response.data;
+  },
+
+  bulkReviewCommunityReports: async (payload: {
+    reportIds: string[];
+    status: "UNDER_REVIEW" | "RESOLVED" | "REJECTED";
+    resolutionNote?: string;
+  }): Promise<ApiResponse<{ modifiedCount: number }>> => {
+    const response = await axiosInstance.patch(`/admin/community/reports/bulk-review`, payload);
     return response.data;
   },
 
@@ -721,9 +732,7 @@ export const adminApi = {
     if (params?.page) query.append("page", params.page.toString());
     if (params?.limit) query.append("limit", params.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/support-tickets/admin?${query.toString()}`,
-    );
+    const response = await axiosInstance.get(`/support-tickets/admin?${query.toString()}`);
     return response.data;
   },
 
@@ -734,12 +743,9 @@ export const adminApi = {
       priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
       assignedAdminId?: string | null;
       note?: string;
-    },
+    }
   ): Promise<ApiResponse<SupportTicketRecord>> => {
-    const response = await axiosInstance.patch(
-      `/support-tickets/admin/${ticketId}`,
-      data,
-    );
+    const response = await axiosInstance.patch(`/support-tickets/admin/${ticketId}`, data);
     return response.data;
   },
 
@@ -765,21 +771,13 @@ export const adminApi = {
     return response.data;
   },
 
-  deactivatePromoCode: async (
-    codeId: string,
-  ): Promise<ApiResponse<PromoCodeRecord>> => {
-    const response = await axiosInstance.patch(
-      `/admin/promo-codes/${codeId}/deactivate`,
-    );
+  deactivatePromoCode: async (codeId: string): Promise<ApiResponse<PromoCodeRecord>> => {
+    const response = await axiosInstance.patch(`/admin/promo-codes/${codeId}/deactivate`);
     return response.data;
   },
 
-  getPromoCodeStats: async (
-    codeId: string,
-  ): Promise<ApiResponse<PromoCodeStats>> => {
-    const response = await axiosInstance.get(
-      `/admin/promo-codes/${codeId}/stats`,
-    );
+  getPromoCodeStats: async (codeId: string): Promise<ApiResponse<PromoCodeStats>> => {
+    const response = await axiosInstance.get(`/admin/promo-codes/${codeId}/stats`);
     return response.data;
   },
 
@@ -832,7 +830,7 @@ export const adminApi = {
       coverPhotoUrl?: string;
       coverPhotoKey?: string;
       convertExistingUser?: boolean;
-    },
+    }
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.put(`/admin/venues/${venueId}`, data);
     return response.data;
@@ -871,12 +869,7 @@ export const adminApi = {
     venueId?: string;
     profilePhotoUrl?: string;
     profilePhotoKey?: string;
-    verificationStatus?:
-      | "UNVERIFIED"
-      | "PENDING"
-      | "REVIEW"
-      | "VERIFIED"
-      | "REJECTED";
+    verificationStatus?: "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
     convertExistingUser?: boolean;
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/coaches/create", data);
@@ -885,7 +878,7 @@ export const adminApi = {
 
   getCoachPhotoUploadUrl: async (
     fileName: string,
-    contentType: string,
+    contentType: string
   ): Promise<
     ApiResponse<{
       uploadUrl: string;
@@ -893,13 +886,10 @@ export const adminApi = {
       key: string;
     }>
   > => {
-    const response = await axiosInstance.post(
-      "/admin/coaches/photo-upload-url",
-      {
-        fileName,
-        contentType,
-      },
-    );
+    const response = await axiosInstance.post("/admin/coaches/photo-upload-url", {
+      fileName,
+      contentType,
+    });
     return response.data;
   },
 
@@ -910,7 +900,7 @@ export const adminApi = {
       contentType: string;
       documentType?: string;
       purpose?: "DOCUMENT" | "VENUE_IMAGE";
-    },
+    }
   ): Promise<
     ApiResponse<{
       uploadUrl: string;
@@ -921,14 +911,14 @@ export const adminApi = {
   > => {
     const response = await axiosInstance.post(
       `/admin/coaches/${coachId}/verification/upload-url`,
-      payload,
+      payload
     );
     return response.data;
   },
 
   updateCoach: async (
     coachId: string,
-    data: Record<string, unknown>,
+    data: Record<string, unknown>
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.put(`/admin/coaches/${coachId}`, data);
     return response.data;
@@ -936,11 +926,11 @@ export const adminApi = {
 
   submitCoachVerificationAdmin: async (
     coachId: string,
-    payload: { documents?: CoachVerificationDocument[] },
+    payload: { documents?: CoachVerificationDocument[] }
   ): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post(
       `/admin/coaches/${coachId}/verification/submit`,
-      payload,
+      payload
     );
     return response.data;
   },
@@ -956,59 +946,42 @@ export const adminApi = {
     if (params?.filter) query.append("filter", params.filter);
 
     const response = await axiosInstance.get(
-      `/academies/admin/pending${query.toString() ? `?${query.toString()}` : ""}`,
+      `/academies/admin/pending${query.toString() ? `?${query.toString()}` : ""}`
     );
     return response.data;
   },
 
   getAcademyReviewDetails: async (
-    academyId: string,
+    academyId: string
   ): Promise<ApiResponse<AcademyAdminReviewDetails>> => {
-    const response = await axiosInstance.get(
-      `/academies/admin/${academyId}/review`,
-    );
+    const response = await axiosInstance.get(`/academies/admin/${academyId}/review`);
     return response.data;
   },
 
   approveAcademy: async (academyId: string): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/approve`,
-    );
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/approve`);
     return response.data;
   },
 
   rejectAcademy: async (
     academyId: string,
-    rejectionReason: string,
+    rejectionReason: string
   ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/reject`,
-      {
-        rejectionReason,
-      },
-    );
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/reject`, {
+      rejectionReason,
+    });
     return response.data;
   },
 
-  markAcademyKycVerified: async (
-    academyId: string,
-  ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/kyc-verify`,
-    );
+  markAcademyKycVerified: async (academyId: string): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/kyc-verify`);
     return response.data;
   },
 
-  suspendAcademy: async (
-    academyId: string,
-    reason?: string,
-  ): Promise<ApiResponse<unknown>> => {
-    const response = await axiosInstance.put(
-      `/academies/admin/${academyId}/suspend`,
-      {
-        reason,
-      },
-    );
+  suspendAcademy: async (academyId: string, reason?: string): Promise<ApiResponse<unknown>> => {
+    const response = await axiosInstance.put(`/academies/admin/${academyId}/suspend`, {
+      reason,
+    });
     return response.data;
   },
 
@@ -1019,10 +992,356 @@ export const adminApi = {
 
   markPayoutsAsPaid: async (data: {
     vendorId: string;
-    vendorRole: "VENUE_LISTER" | "COACH";
+    // "CoachSession" is a recurring-coaching payout, earned per delivered class
+    // and settled per occurrence — its ids are occurrence ids, not booking ids.
+    vendorRole: "VenueLister" | "Coach" | "Expert" | "CoachSession";
     bookingIds: string[];
   }): Promise<ApiResponse<unknown>> => {
     const response = await axiosInstance.post("/admin/payouts/mark-paid", data);
     return response.data;
   },
+
+  getDisputes: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axiosInstance.get("/admin/disputes");
+    return response.data;
+  },
+
+  getWebhookErrors: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axiosInstance.get("/admin/webhook-errors");
+    return response.data;
+  },
+
+  retryWebhookError: async (key: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.post(`/admin/webhook-errors/${key}/retry`);
+    return response.data;
+  },
+
+  reconcileOrder: async (type: string, orderId: string): Promise<ApiResponse<any>> => {
+    const response = await axiosInstance.post(`/admin/reconcile/${type}/${orderId}`);
+    return response.data;
+  },
+
+  // ─── Federation/Tournament Data Sources ───────────────────────────────────
+
+  getDataSourceUploadUrl: async (
+    fileName: string,
+    contentType: string,
+    sportSlug: string
+  ): Promise<ApiResponse<DataSourceUploadUrlResponse>> => {
+    const response = await axiosInstance.post("/admin/data-sources/upload-url", {
+      fileName,
+      contentType,
+      sportSlug,
+    });
+    return response.data;
+  },
+
+  listDataSourceTargets: async (
+    targetType: DataSourceTargetType,
+    sportSlug: string
+  ): Promise<ApiResponse<DataSourceTargetOption[]>> => {
+    const query = new URLSearchParams({ targetType, sportSlug });
+    const response = await axiosInstance.get(`/admin/data-sources/targets?${query.toString()}`);
+    return response.data;
+  },
+
+  getCalendarFreshness: async (): Promise<ApiResponse<AdminCalendarFreshnessRow[]>> => {
+    const response = await axiosInstance.get("/admin/data-sources/calendar-freshness");
+    return response.data;
+  },
+
+  listDataSources: async (params?: {
+    status?: DataSourceStatus;
+    targetType?: DataSourceTargetType;
+    sportSlug?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<AdminDataSourceSubmission[]>> => {
+    const query = new URLSearchParams();
+    if (params?.status) query.append("status", params.status);
+    if (params?.targetType) query.append("targetType", params.targetType);
+    if (params?.sportSlug) query.append("sportSlug", params.sportSlug);
+    if (params?.page) query.append("page", String(params.page));
+    if (params?.limit) query.append("limit", String(params.limit));
+    const response = await axiosInstance.get(
+      `/admin/data-sources${query.toString() ? `?${query.toString()}` : ""}`
+    );
+    return response.data;
+  },
+
+  getDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.get(`/admin/data-sources/${id}`);
+    return response.data;
+  },
+
+  createDataSource: async (payload: {
+    targetType: DataSourceTargetType;
+    sportSlug: string;
+    federationSlug?: string;
+    tournamentSlug?: string;
+    sourceKind: "PDF" | "LINK";
+    sourceUrl?: string;
+    s3Key?: string;
+    fileName?: string;
+    originUrl?: string;
+  }): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post("/admin/data-sources", payload);
+    return response.data;
+  },
+
+  updateDataSource: async (
+    id: string,
+    extractedData: unknown
+  ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.patch(`/admin/data-sources/${id}`, { extractedData });
+    return response.data;
+  },
+
+  reExtractDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/re-extract`);
+    return response.data;
+  },
+
+  /**
+   * Follows each calendar entry's per-tournament link to pull in its fact
+   * sheet, acceptance lists and host details. Separate from re-extract because
+   * it fans out to as many as 150 page fetches — slow enough that it must not
+   * ride along with every extraction.
+   */
+  enrichDataSourceDetails: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/enrich-details`);
+    return response.data;
+  },
+
+  approveDataSource: async (id: string): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/approve`);
+    return response.data;
+  },
+
+  rejectDataSource: async (
+    id: string,
+    reason: string
+  ): Promise<ApiResponse<AdminDataSourceSubmission>> => {
+    const response = await axiosInstance.post(`/admin/data-sources/${id}/reject`, { reason });
+    return response.data;
+  },
+
+  // ─── Pathway CMS ──────────────────────────────────────────────────────────
+  //
+  // Guide-level and stage-level writes are separate calls on purpose: the editor
+  // saves the one stage being worked on, so a validation failure in stage 4
+  // cannot cost the author their edits to stages 1–3. Every write that touches
+  // the stage list answers with the whole updated guide, so the client never has
+  // to guess what the server ended up storing.
+
+  listPathwayGuides: async (): Promise<ApiResponse<AdminPathwayGuideRow[]>> => {
+    const response = await axiosInstance.get("/admin/pathway-guides");
+    return response.data;
+  },
+
+  getPathwayGuide: async (id: string): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.get(`/admin/pathway-guides/${id}`);
+    return response.data;
+  },
+
+  createPathwayGuide: async (payload: {
+    sport: { slug: string; name: string };
+    intro?: AdminPathwayIntro;
+    sportIntro?: string[];
+  }): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.post("/admin/pathway-guides", payload);
+    return response.data;
+  },
+
+  /**
+   * Who can be attached as a pathway's contributor.
+   *
+   * Only people who are currently bookable come back — the public reader drops
+   * the link for anyone who isn't, so offering them here would store a pointer
+   * that silently renders as nothing.
+   */
+  searchPathwayContributors: async (
+    type: PathwayContributorType,
+    q: string
+  ): Promise<ApiResponse<AdminContributorMatch[]>> => {
+    const query = new URLSearchParams({ type, q });
+    const response = await axiosInstance.get(
+      `/admin/pathway-guides/contributors?${query.toString()}`
+    );
+    return response.data;
+  },
+
+  updatePathwayGuide: async (
+    id: string,
+    payload: {
+      intro?: AdminPathwayIntro;
+      sportIntro?: string[];
+      reviewedOn?: string;
+      contributor?: AdminPathwayContributor;
+    }
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.put(`/admin/pathway-guides/${id}`, payload);
+    return response.data;
+  },
+
+  deletePathwayGuide: async (id: string): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.delete(`/admin/pathway-guides/${id}`);
+    return response.data;
+  },
+
+  setPathwayGuideStatus: async (
+    id: string,
+    status: "draft" | "published"
+  ): Promise<ApiResponse<{ status: string; publishedAt: string | null }>> => {
+    const response = await axiosInstance.post(`/admin/pathway-guides/${id}/status`, {
+      status,
+    });
+    return response.data;
+  },
+
+  addPathwayStage: async (
+    id: string,
+    stage: AdminPathwayStage
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.post(`/admin/pathway-guides/${id}/stages`, stage);
+    return response.data;
+  },
+
+  updatePathwayStage: async (
+    id: string,
+    stageKey: string,
+    stage: AdminPathwayStage
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.put(
+      `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`,
+      stage
+    );
+    return response.data;
+  },
+
+  deletePathwayStage: async (
+    id: string,
+    stageKey: string
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.delete(
+      `/admin/pathway-guides/${id}/stages/${encodeURIComponent(stageKey)}`
+    );
+    return response.data;
+  },
+
+  reorderPathwayStages: async (
+    id: string,
+    keys: string[]
+  ): Promise<ApiResponse<AdminPathwayGuide>> => {
+    const response = await axiosInstance.put(`/admin/pathway-guides/${id}/stages/order`, {
+      keys,
+    });
+    return response.data;
+  },
 };
+
+// ─── Pathway CMS types ───────────────────────────────────────────────────────
+//
+// Mirrors `server/src/shared/validation/pathwayGuideFormat.ts`. The server is
+// the authority — it re-validates everything sent here — so these exist to make
+// the editor type-safe, not to enforce anything.
+
+export interface AdminPathwayIntro {
+  eyebrow?: string;
+  headline?: string;
+  description?: string;
+}
+
+export interface AdminPathwayAction {
+  label: string;
+  href?: string;
+}
+
+/** Bucket 2. `answer` absent = listed but not yet written. */
+export interface AdminPathwayQuestion {
+  question: string;
+  answer?: string;
+}
+
+/** Buckets 3 and 4 share this shape. */
+export interface AdminPathwayPoint {
+  title: string;
+  detail?: string;
+}
+
+/** Bucket 5. `when` is the left column: "Not started", or "Step 1". */
+export interface AdminPathwayNextStep {
+  when: string;
+  action: string;
+}
+
+export interface AdminPathwayStage {
+  key: string;
+  name: string;
+  ageRange: string;
+  coreQuestion: string;
+  overview: string;
+  questions: AdminPathwayQuestion[];
+  signals: AdminPathwayPoint[];
+  decisions: AdminPathwayPoint[];
+  nextStepLead?: string;
+  nextSteps: AdminPathwayNextStep[];
+  primaryAction?: AdminPathwayAction;
+  helpLinks: AdminPathwayAction[];
+}
+
+/** As stored: the stage plus its position in the pathway. */
+export interface AdminPathwayStageStored extends AdminPathwayStage {
+  order: number;
+}
+
+export type PathwayContributorType = "coach" | "expert";
+
+/** A search hit in the byline picker. */
+export interface AdminContributorMatch {
+  type: PathwayContributorType;
+  id: string;
+  name: string;
+  sports: string[];
+}
+
+/**
+ * The byline. `name` and `organisation` are stored on the guide so the credit
+ * survives the linked account changing; `profile` is the optional pointer that
+ * supplies the photo and the booking button while that person is bookable.
+ */
+export interface AdminPathwayContributor {
+  name: string;
+  organisation?: string;
+  url?: string;
+  blurb?: string;
+  profile?: { type: PathwayContributorType; id: string };
+}
+
+export interface AdminPathwayGuide {
+  _id: string;
+  sportSlug: string;
+  sportName: string;
+  status: "draft" | "published";
+  formatVersion: number;
+  intro: AdminPathwayIntro;
+  sportIntro: string[];
+  stages: AdminPathwayStageStored[];
+  reviewedOn?: string;
+  contributor?: AdminPathwayContributor | null;
+  publishedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** The list view — no stage bodies. */
+export interface AdminPathwayGuideRow {
+  _id: string;
+  sportSlug: string;
+  sportName: string;
+  status: "draft" | "published";
+  stageCount: number;
+  reviewedOn: string | null;
+  publishedAt: string | null;
+  updatedAt: string;
+}

@@ -10,11 +10,15 @@ export type NotificationType =
   | "BOOKING_CANCELLED"
   | "BOOKING_STATUS_UPDATED"
   | "BOOKING_REMINDER"
+  | "SESSION_LINK_REQUIRED"
+  | "SESSION_MOM_ADDED"
+  | "SESSION_MOM_REMINDER"
   | "INVITATION_EXPIRY"
   | "PAYMENT_FAILED"
   | "PAYMENT_CONFIRMED"
   | "PAYMENT_REFUND"
   | "PAYMENT_SPLIT_RECEIVED"
+  | "PAYOUT_PROCESSED"
   | "REVIEW_POSTED"
   | "REVIEW_RESPONSE"
   | "REVIEW_REMINDER"
@@ -30,15 +34,32 @@ export type NotificationType =
   | "ACADEMY_REJECTED"
   | "DISPUTE_FILED"
   | "DISPUTE_RESOLVED"
-  | "MESSAGE_RECEIVED";
+  | "MESSAGE_RECEIVED"
+  | "PLAN_CHECKIN"
+  | "EXPERIENCE_NUDGE"
+  | "RANKING_DIGEST"
+  | "OPPORTUNITY_ALERT";
 
+/**
+ * "RANKING" is its own category rather than being folded into an existing one.
+ * The categories drive how the notification centre groups things, and a ranking
+ * update is not social, not a booking and not administrative — filing it under
+ * any of those would put a child's standing in a list a parent scrolls past.
+ *
+ * "PLAN" is the same call for plan check-ins ("how did the trial go?"). They
+ * rode in BOOKING by default and showed up under a "Booking" badge for a nudge
+ * that has nothing to do with a booking.
+ */
 export type NotificationCategory =
   | "SOCIAL"
   | "BOOKING"
-  | "ADMIN"
+  | "Admin"
   | "REVIEW"
   | "PAYMENT"
-  | "COMMUNITY";
+  | "COMMUNITY"
+  | "RANKING"
+  | "PLAN"
+  | "OPPORTUNITY";
 
 export interface INotification extends Document {
   userId: mongoose.Types.ObjectId;
@@ -57,16 +78,11 @@ export interface INotification extends Document {
 // Query helpers interface
 interface NotificationQueryHelpers {
   active(
-    this: mongoose.Query<any, any, NotificationQueryHelpers>,
+    this: mongoose.Query<any, any, NotificationQueryHelpers>
   ): mongoose.Query<any, any, NotificationQueryHelpers>;
 }
 
-const notificationSchema = new Schema<
-  INotification,
-  {},
-  {},
-  NotificationQueryHelpers
->(
+const notificationSchema = new Schema<INotification, {}, {}, NotificationQueryHelpers>(
   {
     userId: {
       type: Schema.Types.ObjectId,
@@ -107,12 +123,26 @@ const notificationSchema = new Schema<
         "DISPUTE_FILED",
         "DISPUTE_RESOLVED",
         "MESSAGE_RECEIVED",
+        "PLAN_CHECKIN",
+        "EXPERIENCE_NUDGE",
+        "RANKING_DIGEST",
+        "OPPORTUNITY_ALERT",
       ],
       required: true,
     },
     category: {
       type: String,
-      enum: ["SOCIAL", "BOOKING", "ADMIN", "REVIEW", "PAYMENT", "COMMUNITY"],
+      enum: [
+        "SOCIAL",
+        "BOOKING",
+        "Admin",
+        "REVIEW",
+        "PAYMENT",
+        "COMMUNITY",
+        "RANKING",
+        "PLAN",
+        "OPPORTUNITY",
+      ],
       required: true,
       index: true,
     },
@@ -151,7 +181,7 @@ const notificationSchema = new Schema<
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Compound indexes for efficient queries
@@ -162,13 +192,12 @@ notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL in
 
 // Soft delete query helper
 notificationSchema.query.active = function (
-  this: mongoose.Query<any, any, NotificationQueryHelpers>,
+  this: mongoose.Query<any, any, NotificationQueryHelpers>
 ) {
   return this.where({ deletedAt: null });
 };
 
 const Notification: Model<INotification> =
-  mongoose.models.Notification ||
-  mongoose.model<INotification>("Notification", notificationSchema);
+  mongoose.models.Notification || mongoose.model<INotification>("Notification", notificationSchema);
 
 export default Notification;

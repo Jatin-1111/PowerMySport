@@ -12,6 +12,7 @@ import SportsMultiSelect from "@/modules/sports/components/SportsMultiSelect";
 import CertificationsMultiSelect from "@/modules/shared/components/CertificationsMultiSelect";
 import CoachPhotoUpload from "@/modules/admin/components/CoachPhotoUpload";
 import { geoApi, GeoSuggestion } from "@/modules/geo/services/geo";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
 
 const SERVICE_MODES = [
   { value: "OWN_VENUE", label: "Own Venue" },
@@ -36,12 +37,7 @@ interface CoachFormData {
   serviceRadiusKm: number | "";
   travelBufferTime: number | "";
   venueId: string;
-  verificationStatus:
-    | "UNVERIFIED"
-    | "PENDING"
-    | "REVIEW"
-    | "VERIFIED"
-    | "REJECTED";
+  verificationStatus: "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
   profilePhotoUrl: string;
   profilePhotoKey: string;
 }
@@ -74,6 +70,7 @@ const getApiConflictPayload = (error: unknown) => {
 };
 
 export function AddCoachForm() {
+  const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -104,9 +101,7 @@ export function AddCoachForm() {
   });
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target as HTMLInputElement;
     const numFields = ["serviceRadiusKm", "travelBufferTime", "hourlyRate"];
@@ -128,10 +123,9 @@ export function AddCoachForm() {
 
   useEffect(() => {
     setAddressQuery(
-      typeof formData.latitude === "number" &&
-        typeof formData.longitude === "number"
+      typeof formData.latitude === "number" && typeof formData.longitude === "number"
         ? `${formData.latitude}, ${formData.longitude}`
-        : "",
+        : ""
     );
   }, [formData.latitude, formData.longitude]);
 
@@ -249,20 +243,16 @@ export function AddCoachForm() {
     }
 
     // Validate sport pricing
-    const invalidSport = formData.sports.find(
-      (sport) => (formData.sportPricing[sport] || 0) <= 0,
-    );
+    const invalidSport = formData.sports.find((sport) => (formData.sportPricing[sport] || 0) <= 0);
     if (invalidSport) {
       newErrors.sportPricing = `Please enter valid price for ${invalidSport}`;
     }
 
     if (
-      (formData.serviceMode === "FREELANCE" ||
-        formData.serviceMode === "HYBRID") &&
+      (formData.serviceMode === "FREELANCE" || formData.serviceMode === "HYBRID") &&
       (formData.latitude === "" || formData.longitude === "")
     ) {
-      newErrors.baseLocation =
-        "Base location is required for freelance/hybrid coaches";
+      newErrors.baseLocation = "Base location is required for freelance/hybrid coaches";
     }
 
     if (formData.serviceRadiusKm === "") {
@@ -297,18 +287,11 @@ export function AddCoachForm() {
         ...(formData.serviceMode !== "OWN_VENUE" && {
           baseLocation: {
             type: "Point",
-            coordinates: [
-              Number(formData.longitude),
-              Number(formData.latitude),
-            ],
+            coordinates: [Number(formData.longitude), Number(formData.latitude)],
           },
         }),
-        serviceRadiusKm: formData.serviceRadiusKm
-          ? Number(formData.serviceRadiusKm)
-          : undefined,
-        travelBufferTime: formData.travelBufferTime
-          ? Number(formData.travelBufferTime)
-          : undefined,
+        serviceRadiusKm: formData.serviceRadiusKm ? Number(formData.serviceRadiusKm) : undefined,
+        travelBufferTime: formData.travelBufferTime ? Number(formData.travelBufferTime) : undefined,
         ...(formData.venueId && { venueId: formData.venueId }),
         verificationStatus: formData.verificationStatus,
         ...(formData.profilePhotoUrl && {
@@ -337,10 +320,13 @@ export function AddCoachForm() {
         const { status, data } = getApiConflictPayload(error);
 
         if (status === 409 && data?.requiresConversion) {
-          const shouldConvert = window.confirm(
-            data.message ||
+          const shouldConvert = await confirm({
+            title: "Convert the existing account?",
+            description:
+              data.message ||
               "An account already exists. Convert it to a coach account to continue?",
-          );
+            confirmLabel: "Convert to coach",
+          });
 
           if (shouldConvert) {
             const retryResponse = await attemptCreate(true);
@@ -358,14 +344,10 @@ export function AddCoachForm() {
           return;
         }
 
-        toast.error(
-          error instanceof Error ? error.message : "Failed to create coach",
-        );
+        toast.error(error instanceof Error ? error.message : "Failed to create coach");
       }
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create coach",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create coach");
     } finally {
       setLoading(false);
     }
@@ -376,131 +358,111 @@ export function AddCoachForm() {
 
   return (
     <Card className="max-w-4xl">
+      {confirmDialog}
       <form onSubmit={handleSubmit} className="space-y-6 p-6">
-        <OnboardingSectionCard
-          title="Basic Information"
-          subtitle="Name, contact and bio"
-        >
+        <OnboardingSectionCard title="Basic Information" subtitle="Name, contact and bio">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                First Name *
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">First Name *</label>
               <input
                 type="text"
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.firstName
-                    ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                    : "border-slate-300 focus:ring-power-orange/40"
+                    ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter first name"
                 disabled={loading}
               />
-              {errors.firstName && (
-                <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
-              )}
+              {errors.firstName && <p className="mt-1 text-xs text-red-500">{errors.firstName}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Last Name *
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Last Name *</label>
               <input
                 type="text"
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.lastName
-                    ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                    : "border-slate-300 focus:ring-power-orange/40"
+                    ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter last name"
                 disabled={loading}
               />
-              {errors.lastName && (
-                <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
-              )}
+              {errors.lastName && <p className="mt-1 text-xs text-red-500">{errors.lastName}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Email *
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Email *</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.email
-                    ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                    : "border-slate-300 focus:ring-power-orange/40"
+                    ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter email"
                 disabled={loading}
               />
-              {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-              )}
+              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Phone *
-              </label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Phone *</label>
               <input
                 type="tel"
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.phone
-                    ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                    : "border-slate-300 focus:ring-power-orange/40"
+                    ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter phone number"
                 disabled={loading}
               />
-              {errors.phone && (
-                <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
-              )}
+              {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Mobile Number
-            </label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Mobile Number</label>
             <input
               type="tel"
               name="mobileNumber"
               value={formData.mobileNumber}
               onChange={handleInputChange}
               maxLength={20}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+              className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.mobileNumber
-                  ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                  : "border-slate-300 focus:ring-power-orange/40"
+                  ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="e.g., 9876543210"
               disabled={loading}
             />
             {errors.mobileNumber && (
-              <p className="text-red-500 text-xs mt-1">{errors.mobileNumber}</p>
+              <p className="mt-1 text-xs text-red-500">{errors.mobileNumber}</p>
             )}
-            <p className="text-xs text-slate-600 mt-1">
+            <p className="mt-1 text-xs text-slate-600">
               10+ digits, supports +91 prefix and spacing
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               Bio (20-2000 characters)
             </label>
             <textarea
@@ -509,26 +471,20 @@ export function AddCoachForm() {
               onChange={handleInputChange}
               rows={3}
               maxLength={2000}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+              className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                 errors.bio
-                  ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                  : "border-slate-300 focus:ring-power-orange/40"
+                  ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                  : "focus:ring-power-orange-solid/25 border-slate-300"
               }`}
               placeholder="Enter coach bio"
               disabled={loading}
             />
-            {errors.bio && (
-              <p className="text-red-500 text-xs mt-1">{errors.bio}</p>
-            )}
-            <p className="text-xs text-slate-600 mt-1">
-              {formData.bio.length}/2000 characters
-            </p>
+            {errors.bio && <p className="mt-1 text-xs text-red-500">{errors.bio}</p>}
+            <p className="mt-1 text-xs text-slate-600">{formData.bio.length}/2000 characters</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Profile Photo
-            </label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Profile Photo</label>
             <CoachPhotoUpload
               onPhotoReady={handleProfilePhotoReady}
               currentPhotoUrl={formData.profilePhotoUrl}
@@ -548,23 +504,17 @@ export function AddCoachForm() {
             disabled={loading}
             required
           />
-          {errors.sports && (
-            <p className="text-red-500 text-xs mt-1">{errors.sports}</p>
-          )}
+          {errors.sports && <p className="mt-1 text-xs text-red-500">{errors.sports}</p>}
 
           {formData.sports.length > 0 && (
-            <div className="space-y-3 bg-slate-50 p-4 rounded-lg mt-4">
-              <h4 className="font-medium text-slate-900">
-                Sport-Specific Pricing
-              </h4>
+            <div className="mt-4 space-y-3 rounded-lg bg-slate-50 p-4">
+              <h4 className="font-medium text-slate-900">Sport-Specific Pricing</h4>
               {formData.sports.map((sport) => (
                 <div
                   key={sport}
                   className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4"
                 >
-                  <label className="text-sm font-medium text-slate-700 sm:w-32">
-                    {sport}
-                  </label>
+                  <label className="text-sm font-medium text-slate-700 sm:w-32">{sport}</label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-slate-600">₹</span>
                     <input
@@ -573,11 +523,11 @@ export function AddCoachForm() {
                       onChange={(e) =>
                         handleSportPriceChange(
                           sport,
-                          e.target.value === "" ? 0 : Number(e.target.value),
+                          e.target.value === "" ? 0 : Number(e.target.value)
                         )
                       }
                       min="1"
-                      className="w-24 px-2 py-1 border border-slate-300 rounded text-sm focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+                      className="focus:ring-power-orange-solid/25 w-24 rounded border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2"
                       placeholder="Rate"
                       disabled={loading}
                     />
@@ -586,19 +536,14 @@ export function AddCoachForm() {
                 </div>
               ))}
               {errors.sportPricing && (
-                <p className="text-red-500 text-xs mt-2">
-                  {errors.sportPricing}
-                </p>
+                <p className="mt-2 text-xs text-red-500">{errors.sportPricing}</p>
               )}
             </div>
           )}
         </OnboardingSectionCard>
 
         {/* Certifications */}
-        <OnboardingSectionCard
-          title="Certifications"
-          subtitle="Optional coaching credentials"
-        >
+        <OnboardingSectionCard title="Certifications" subtitle="Optional coaching credentials">
           <CertificationsMultiSelect
             value={formData.certifications}
             onChange={(c) => setFormData((p) => ({ ...p, certifications: c }))}
@@ -609,43 +554,36 @@ export function AddCoachForm() {
         {/* Pricing */}
         <OnboardingSectionCard title="Pricing" subtitle="Hourly rate">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Hourly Rate *
-            </label>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Hourly Rate *</label>
             <div className="flex items-center gap-2">
-              <span className="text-slate-600 font-medium">₹</span>
+              <span className="font-medium text-slate-600">₹</span>
               <input
                 type="number"
                 name="hourlyRate"
                 value={formData.hourlyRate}
                 onChange={handleInputChange}
                 min="1"
-                className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                className={`flex-1 rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                   errors.hourlyRate
-                    ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                    : "border-slate-300 focus:ring-power-orange/40"
+                    ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                    : "focus:ring-power-orange-solid/25 border-slate-300"
                 }`}
                 placeholder="Enter hourly rate"
                 disabled={loading}
               />
               <span className="text-slate-600">/hour</span>
             </div>
-            {errors.hourlyRate && (
-              <p className="text-red-500 text-xs mt-1">{errors.hourlyRate}</p>
-            )}
+            {errors.hourlyRate && <p className="mt-1 text-xs text-red-500">{errors.hourlyRate}</p>}
           </div>
         </OnboardingSectionCard>
 
         {/* Service Mode */}
-        <OnboardingSectionCard
-          title="Service Mode"
-          subtitle="How the coach provides services"
-        >
+        <OnboardingSectionCard title="Service Mode" subtitle="How the coach provides services">
           <div className="space-y-2">
             {SERVICE_MODES.map((mode) => (
               <label
                 key={mode.value}
-                className="flex items-center gap-2 cursor-pointer p-3 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+                className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 p-3 transition-colors hover:bg-slate-50"
               >
                 <input
                   type="radio"
@@ -654,11 +592,9 @@ export function AddCoachForm() {
                   checked={formData.serviceMode === mode.value}
                   onChange={handleInputChange}
                   disabled={loading}
-                  className="w-4 h-4 cursor-pointer"
+                  className="h-4 w-4 cursor-pointer"
                 />
-                <span className="text-sm font-medium text-slate-700">
-                  {mode.label}
-                </span>
+                <span className="text-sm font-medium text-slate-700">{mode.label}</span>
               </label>
             ))}
           </div>
@@ -670,31 +606,29 @@ export function AddCoachForm() {
               className="mt-4"
             >
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="mb-2 block text-sm font-medium text-slate-700">
                   Search Address *
                 </label>
                 <input
                   type="text"
                   value={addressQuery}
                   onChange={(e) => setAddressQuery(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                  className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                     errors.baseLocation
-                      ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                      : "border-slate-300 focus:ring-power-orange/40"
+                      ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                      : "focus:ring-power-orange-solid/25 border-slate-300"
                   }`}
                   placeholder="Start typing address and pick suggestion"
                   disabled={loading}
                 />
 
-                {isSearching && (
-                  <p className="text-sm text-slate-500 mt-1">Searching...</p>
-                )}
+                {isSearching && <p className="mt-1 text-sm text-slate-500">Searching...</p>}
                 {suggestions.length > 0 && (
-                  <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-md">
+                  <ul className="mt-2 max-h-40 overflow-auto rounded-md border bg-white shadow-sm">
                     {suggestions.map((s) => (
                       <li
                         key={s.label}
-                        className="px-3 py-2 cursor-pointer hover:bg-slate-50 border-b last:border-b-0"
+                        className="cursor-pointer border-b px-3 py-2 last:border-b-0 hover:bg-slate-50"
                         onClick={() => handleSelectSuggestion(s)}
                       >
                         {s.label}
@@ -703,36 +637,29 @@ export function AddCoachForm() {
                   </ul>
                 )}
                 {errors.baseLocation && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.baseLocation}
-                  </p>
+                  <p className="mt-1 text-xs text-red-500">{errors.baseLocation}</p>
                 )}
               </div>
 
-              {typeof formData.latitude === "number" &&
-                typeof formData.longitude === "number" && (
-                  <div className="mt-3 flex flex-col gap-2 rounded-lg border border-green-300 bg-green-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <div className="text-sm text-slate-800 font-medium">
-                        {addressQuery}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Coordinates saved
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={clearLocation}
-                      className="text-sm text-slate-600 hover:text-red-600 transition-colors"
-                    >
-                      Clear
-                    </button>
+              {typeof formData.latitude === "number" && typeof formData.longitude === "number" && (
+                <div className="mt-3 flex flex-col gap-2 rounded-lg border border-green-300 bg-green-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-slate-800">{addressQuery}</div>
+                    <div className="text-xs text-slate-500">Coordinates saved</div>
                   </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={clearLocation}
+                    className="text-sm text-slate-600 transition-colors hover:text-red-600"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
 
               <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     Service Radius (km)
                   </label>
                   <input
@@ -741,22 +668,20 @@ export function AddCoachForm() {
                     value={formData.serviceRadiusKm}
                     onChange={handleInputChange}
                     min="1"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors ${
+                    className={`w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-2 ${
                       errors.serviceRadiusKm
-                        ? "border-red-500 focus:ring-red-500/40 bg-red-50"
-                        : "border-slate-300 focus:ring-power-orange/40"
+                        ? "border-red-500 bg-red-50 focus:ring-red-500/40"
+                        : "focus:ring-power-orange-solid/25 border-slate-300"
                     }`}
                     placeholder="e.g., 10"
                     disabled={loading}
                   />
                   {errors.serviceRadiusKm && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.serviceRadiusKm}
-                    </p>
+                    <p className="mt-1 text-xs text-red-500">{errors.serviceRadiusKm}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-slate-700">
                     Travel Buffer Time (minutes)
                   </label>
                   <input
@@ -765,7 +690,7 @@ export function AddCoachForm() {
                     value={formData.travelBufferTime}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+                    className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                     placeholder="e.g., 30"
                     disabled={loading}
                   />
@@ -775,11 +700,11 @@ export function AddCoachForm() {
           )}
 
           {formData.serviceMode === "OWN_VENUE" && (
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-slate-700 mb-3">
+            <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <p className="mb-3 text-sm text-slate-700">
                 Coach has own venue - venue details can be added separately
               </p>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-slate-700">
                 Venue ID (Optional)
               </label>
               <input
@@ -787,7 +712,7 @@ export function AddCoachForm() {
                 name="venueId"
                 value={formData.venueId}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+                className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
                 placeholder="Enter venue ID (if applicable)"
                 disabled={loading}
               />
@@ -798,14 +723,14 @@ export function AddCoachForm() {
         {/* Status */}
         <OnboardingSectionCard title="Status" subtitle="Verification status">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-slate-700">
               Verification Status
             </label>
             <select
               name="verificationStatus"
               value={formData.verificationStatus}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-power-orange/40 focus:outline-none"
+              className="focus:ring-power-orange-solid/25 w-full rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2"
               disabled={loading}
             >
               <option value="VERIFIED">Verified</option>
@@ -822,7 +747,7 @@ export function AddCoachForm() {
           <Button
             type="submit"
             disabled={loading}
-            className="flex items-center justify-center gap-2 bg-power-orange px-6 text-white hover:bg-orange-600 disabled:bg-slate-300 sm:w-auto"
+            className="bg-power-orange-solid flex items-center justify-center gap-2 px-6 text-white hover:bg-orange-800 disabled:bg-slate-300 sm:w-auto"
           >
             {loading ? (
               <>

@@ -4,6 +4,9 @@ import { s3Service } from "../services/S3Service";
 import { ConciergeRequest } from "../models/ConciergeRequest";
 import { sendEmail } from "../../utils/email";
 import { User } from "../../client/models/User";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+import { isOwnConciergeKey } from "../utils/conciergeKeys";
 
 const escHtml = (str: unknown): string =>
   String(str ?? "")
@@ -13,34 +16,22 @@ const escHtml = (str: unknown): string =>
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#x27;");
 
-export const getPresignedUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getPresignedUploadUrl = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { fileName, contentType, documentType } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     if (!fileName || !contentType || !documentType) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
+      throw new AppError("Missing required fields", 400);
     }
 
-    const ALLOWED_CONTENT_TYPES = [
-      "application/pdf",
-      "image/jpeg",
-      "image/png",
-    ];
+    const ALLOWED_CONTENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
     if (!ALLOWED_CONTENT_TYPES.includes(contentType)) {
-      res.status(400).json({
-        error: "Invalid file type. Only PDF, JPG, and PNG are allowed.",
-      });
-      return;
+      throw new AppError("Invalid file type. Only PDF, JPG, and PNG are allowed.", 400);
     }
 
     const ALLOWED_DOCUMENT_TYPES = [
@@ -54,39 +45,28 @@ export const getPresignedUploadUrl = async (
       "OTHER",
     ];
     if (!ALLOWED_DOCUMENT_TYPES.includes(documentType)) {
-      res.status(400).json({ error: "Invalid document type." });
-      return;
+      throw new AppError("Invalid document type.", 400);
     }
 
-    const safeFileName = path
-      .basename(fileName)
-      .replace(/[^a-zA-Z0-9._\-]/g, "_");
+    const safeFileName = path.basename(fileName).replace(/[^a-zA-Z0-9._\-]/g, "_");
 
-    const { uploadUrl, downloadUrl, key } =
-      await s3Service.generateConciergeDocumentUploadUrl(
-        safeFileName,
-        contentType,
-        userId.toString(),
-        documentType,
-      );
+    const { uploadUrl, downloadUrl, key } = await s3Service.generateConciergeDocumentUploadUrl(
+      safeFileName,
+      contentType,
+      userId.toString(),
+      documentType
+    );
 
     res.status(200).json({ uploadUrl, downloadUrl, key });
-  } catch (error) {
-    console.error("Error generating presigned URL:", error);
-    res.status(500).json({ error: "Failed to generate upload URL" });
   }
-};
+);
 
-export const submitConciergeRequest = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const submitConciergeRequest = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const {
@@ -101,20 +81,21 @@ export const submitConciergeRequest = async (
       documents,
     } = req.body;
 
-    if (
-      !sportSlug ||
-      !documents ||
-      !Array.isArray(documents)
-    ) {
-      res.status(400).json({ error: "Missing required fields" });
-      return;
+    if (!sportSlug || !documents || !Array.isArray(documents)) {
+      throw new AppError("Missing required fields", 400);
     }
 
     if (documents.length > 10) {
-      res
-        .status(400)
-        .json({ error: "Maximum 10 documents allowed per request." });
-      return;
+      throw new AppError("Maximum 10 documents allowed per request.", 400);
+    }
+
+    // Only keys issued to this user by getPresignedUploadUrl may be stored: the
+    // account-deletion cascade later deletes every stored key from the documents bucket.
+    const ownerId = userId.toString();
+    for (const doc of documents) {
+      if (!isOwnConciergeKey(ownerId, doc?.s3Key)) {
+        throw new AppError("Invalid document reference.", 400);
+      }
     }
 
     const request = new ConciergeRequest({
@@ -137,10 +118,7 @@ export const submitConciergeRequest = async (
 
     // Format documents list for email
     const docsListHtml = documents
-      .map(
-        (doc) =>
-          `<li><strong>${escHtml(doc.documentName)}:</strong> uploaded to S3</li>`,
-      )
+      .map((doc) => `<li><strong>${escHtml(doc.documentName)}:</strong> uploaded to S3</li>`)
       .join("");
 
     // Format item label
@@ -170,40 +148,24 @@ export const submitConciergeRequest = async (
       `,
     });
 
-    res
-      .status(201)
-      .json({ message: "Concierge request submitted successfully", request });
-  } catch (error) {
-    console.error("Error submitting concierge request:", error);
-    res.status(500).json({ error: "Failed to submit request" });
+    res.status(201).json({ message: "Concierge request submitted successfully", request });
   }
-};
+);
 
-export const getUserConciergeRequests = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getUserConciergeRequests = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({ error: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.min(
-      50,
-      Math.max(1, parseInt(req.query.limit as string) || 20),
-    );
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
     const skip = (page - 1) * limit;
 
     const [requests, total] = await Promise.all([
-      ConciergeRequest.find({ userId })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      ConciergeRequest.find({ userId }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
       ConciergeRequest.countDocuments({ userId }),
     ]);
 
@@ -216,8 +178,5 @@ export const getUserConciergeRequests = async (
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    console.error("Error fetching concierge requests:", error);
-    res.status(500).json({ error: "Failed to fetch requests" });
   }
-};
+);

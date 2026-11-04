@@ -65,7 +65,7 @@ const VenueInquirySchema: Schema = new Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Index for faster queries
@@ -73,7 +73,4 @@ VenueInquirySchema.index({ phone: 1 });
 VenueInquirySchema.index({ status: 1 });
 VenueInquirySchema.index({ createdAt: -1 });
 
-export default mongoose.model<IVenueInquiry>(
-  "VenueInquiry",
-  VenueInquirySchema,
-);
+export default mongoose.model<IVenueInquiry>("VenueInquiry", VenueInquirySchema);

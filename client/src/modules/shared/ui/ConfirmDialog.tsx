@@ -1,7 +1,7 @@
-import React from "react";
-import { Modal } from "./Modal";
-import { Button } from "./Button";
 import { AlertTriangle } from "lucide-react";
+import React from "react";
+import { Button } from "./Button";
+import { Modal } from "./Modal";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -36,7 +36,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   const iconColors = {
     danger: "text-red-600",
     warning: "text-orange-600",
-    info: "text-blue-600",
+    info: "text-indigo-600",
   };
 
   const confirmVariant = variant === "danger" ? "danger" : "primary";
@@ -47,18 +47,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         <div className={`mb-4 ${iconColors[variant]}`}>
           <AlertTriangle size={48} />
         </div>
-        <p className="text-slate-700 mb-6">{message}</p>
+        <p className="mb-6 text-slate-700">{message}</p>
       </div>
 
-      <div className="flex gap-3 justify-end mt-4">
+      <div className="mt-4 flex justify-end gap-3">
         <Button onClick={onClose} variant="outline" disabled={loading}>
           {cancelLabel}
         </Button>
-        <Button
-          onClick={handleConfirm}
-          variant={confirmVariant}
-          loading={loading}
-        >
+        <Button onClick={handleConfirm} variant={confirmVariant} loading={loading}>
           {confirmLabel}
         </Button>
       </div>

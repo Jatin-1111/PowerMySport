@@ -10,8 +10,12 @@ import {
   updateVenueDetails,
 } from "../controllers/venueController";
 import { authMiddleware, venueListerMiddleware } from "../../middleware/auth";
-import { getVenueEarningsHandler, getVenueAnalyticsHandler } from "../controllers/venueAnalyticsController";
+import {
+  getVenueEarningsHandler,
+  getVenueAnalyticsHandler,
+} from "../controllers/venueAnalyticsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
+import { cacheControl } from "../../middleware/cacheControl";
 import { venueImageUploadSchema, venueSchema } from "../../middleware/schemas";
 import { validateRequest } from "../../middleware/validation";
 
@@ -22,17 +26,18 @@ router.post(
   authMiddleware,
   venueListerMiddleware,
   validateRequest(venueSchema),
-  createNewVenue,
+  createNewVenue
 );
 
-// Get all venues
-router.get("/", cacheResponse(60), searchVenues);
+// Get all venues. public: response never reads req.user or embeds any
+// per-viewer field.
+router.get("/", cacheControl(60, "public"), cacheResponse(60), searchVenues);
 
 // Discovery endpoint (public) - returns venues AND coaches
-router.get("/discover", cacheResponse(60), discoverNearby);
+router.get("/discover", cacheControl(60, "public"), cacheResponse(60), discoverNearby);
 
 // Legacy search endpoint (public)
-router.get("/search", cacheResponse(60), searchVenues);
+router.get("/search", cacheControl(60, "public"), cacheResponse(60), searchVenues);
 
 router.get("/earnings", authMiddleware, venueListerMiddleware, getVenueEarningsHandler);
 router.get("/analytics", authMiddleware, venueListerMiddleware, getVenueAnalyticsHandler);
@@ -42,20 +47,13 @@ router.post(
   authMiddleware,
   venueListerMiddleware,
   validateRequest(venueImageUploadSchema),
-  getVenueImageUploadUrls,
+  getVenueImageUploadUrls
 );
-router.get("/:venueId", getVenue);
-router.put(
-  "/:venueId",
-  authMiddleware,
-  venueListerMiddleware,
-  updateVenueDetails,
-);
-router.delete(
-  "/:venueId",
-  authMiddleware,
-  venueListerMiddleware,
-  deleteVenueById,
-);
+// Public venue detail — same 60s Redis cache already used for search/discover,
+// applied here too since this is the highest-traffic read (every venue page
+// view) and previously had no caching at all. public: never reads req.user.
+router.get("/:venueId", cacheControl(60, "public"), cacheResponse(60), getVenue);
+router.put("/:venueId", authMiddleware, venueListerMiddleware, updateVenueDetails);
+router.delete("/:venueId", authMiddleware, venueListerMiddleware, deleteVenueById);
 
 export default router;

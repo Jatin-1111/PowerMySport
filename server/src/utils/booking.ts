@@ -9,7 +9,7 @@ export const doTimesOverlap = (
   start1: string,
   end1: string,
   start2: string,
-  end2: string,
+  end2: string
 ): boolean => {
   const timeToMinutes = (time: string): number => {
     const parts = time.split(":");
@@ -53,7 +53,7 @@ export const generateDynamicSlots = (
 
   while (currentHour < endHour) {
     slots.push(`${String(currentHour).padStart(2, "0")}:${String(currentMinute).padStart(2, "0")}`);
-    
+
     currentMinute += intervalMinutes;
     if (currentMinute >= 60) {
       currentHour += Math.floor(currentMinute / 60);

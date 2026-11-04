@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Copy, RotateCcw, Pencil, Trash2 } from "lucide-react";
+import { Copy, RotateCcw, Pencil, Trash2, Smile, Pin, BookmarkCheck } from "lucide-react";
 import type { ConversationMessage } from "@/modules/community/types";
 import { isWithinMessageEditWindow } from "../../utils/chatUtils";
 
@@ -11,6 +11,7 @@ type MobileMessageActionsProps = {
   onRetry: (message: ConversationMessage) => void;
   onEdit: (message: ConversationMessage) => void;
   onDelete: (message: ConversationMessage) => void;
+  onMarkUnread?: (message: ConversationMessage) => void;
 };
 
 export function MobileMessageActions({
@@ -21,6 +22,7 @@ export function MobileMessageActions({
   onRetry,
   onEdit,
   onDelete,
+  onMarkUnread,
 }: MobileMessageActionsProps) {
   return (
     <motion.div
@@ -28,7 +30,7 @@ export function MobileMessageActions({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-[60] flex items-end bg-slate-900/40 backdrop-blur-sm p-0 sm:hidden"
+      className="fixed inset-0 z-[60] flex items-end bg-slate-900/40 p-0 sm:hidden"
       onClick={onClose}
     >
       <motion.div
@@ -36,24 +38,36 @@ export function MobileMessageActions({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="w-full rounded-t-[32px] border-t border-white/60 bg-white/80 backdrop-blur-2xl px-5 pb-8 pt-4 shadow-[0_-8px_40px_rgba(0,0,0,0.12)] supports-[backdrop-filter]:bg-white/70"
+        className="w-full rounded-t-[32px] border-t border-white/60 bg-white px-5 pb-8 pt-4 supports-[backdrop-filter]:bg-white"
         onClick={(event) => event.stopPropagation()}
       >
         {/* Drag handle */}
         <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-slate-300/80 shadow-inner" />
-        
-        <p className="text-[13px] font-bold uppercase tracking-widest text-slate-400 mb-1">
-          Message Options
-        </p>
+
+        <p className="mb-1 text-sm font-semibold text-slate-400">Message Options</p>
 
         <div className="mt-4 space-y-3">
+          {/* React */}
+          {!message.isDeleted && (
+            <button
+              onClick={onClose}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                <Smile size={18} strokeWidth={2.5} />
+              </div>
+              React
+            </button>
+          )}
+
+          {/* Copy */}
           {!message.isDeleted && (
             <button
               onClick={() => {
                 onCopy(message);
                 onClose();
               }}
-              className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 transition hover:bg-white active:scale-[0.98]"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                 <Copy size={18} strokeWidth={2.5} />
@@ -62,59 +76,90 @@ export function MobileMessageActions({
             </button>
           )}
 
-          {message.senderId === profileUserId &&
-            message.messageStatus === "FAILED" && (
-              <button
-                onClick={() => {
-                  onRetry(message);
-                  onClose();
-                }}
-                className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98]"
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-power-orange">
-                  <RotateCcw size={18} strokeWidth={2.5} />
-                </div>
-                Retry sending
-              </button>
-            )}
+          {/* Pin */}
+          {!message.isDeleted && (
+            <button
+              onClick={onClose}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="bg-paper-deep text-ink flex h-9 w-9 items-center justify-center rounded-md">
+                <Pin size={18} strokeWidth={2.5} />
+              </div>
+              Pin message
+            </button>
+          )}
 
+          {/* Mark as unread */}
+          {message.senderId !== profileUserId && !message.isDeleted && (
+            <button
+              onClick={() => {
+                onMarkUnread?.(message);
+                onClose();
+              }}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-green-100 text-green-600">
+                <BookmarkCheck size={18} strokeWidth={2.5} />
+              </div>
+              Mark as unread
+            </button>
+          )}
+
+          {/* Retry */}
+          {message.senderId === profileUserId && message.messageStatus === "FAILED" && (
+            <button
+              onClick={() => {
+                onRetry(message);
+                onClose();
+              }}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 transition hover:bg-white active:scale-[0.98]"
+            >
+              <div className="text-power-orange-solid bg-wash flex h-9 w-9 items-center justify-center rounded-full">
+                <RotateCcw size={18} strokeWidth={2.5} />
+              </div>
+              Retry sending
+            </button>
+          )}
+
+          {/* Edit & Delete */}
           {message.senderId === profileUserId &&
             !message.isDeleted &&
             message.messageStatus !== "FAILED" && (
-              <>
-                <button
-                  onClick={() => {
-                    onEdit(message);
-                    onClose();
-                  }}
-                  disabled={!isWithinMessageEditWindow(message.createdAt)}
-                  className="flex w-full items-center gap-3.5 rounded-2xl bg-white/60 px-5 py-3.5 text-[15px] font-600 text-slate-800 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-white active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
-                    <Pencil size={18} strokeWidth={2.5} />
-                  </div>
-                  Edit message
-                </button>
-                <button
-                  onClick={() => {
-                    onDelete(message);
-                    onClose();
-                  }}
-                  disabled={!isWithinMessageEditWindow(message.createdAt)}
-                  className="flex w-full items-center gap-3.5 rounded-2xl bg-red-50/80 px-5 py-3.5 text-[15px] font-600 text-red-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8),0_2px_4px_rgba(0,0,0,0.02)] transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100/80 text-red-600">
-                    <Trash2 size={18} strokeWidth={2.5} />
-                  </div>
-                  Delete message
-                </button>
-              </>
+              <button
+                onClick={() => {
+                  onEdit(message);
+                  onClose();
+                }}
+                disabled={!isWithinMessageEditWindow(message.createdAt)}
+                className="flex w-full items-center gap-3.5 rounded-2xl bg-white px-5 py-3.5 text-[15px] font-semibold text-slate-800 transition hover:bg-white active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                  <Pencil size={18} strokeWidth={2.5} />
+                </div>
+                Edit message
+              </button>
             )}
+
+          {/* Delete */}
+          {!message.isDeleted && (
+            <button
+              onClick={() => {
+                onDelete(message);
+                onClose();
+              }}
+              className="flex w-full items-center gap-3.5 rounded-2xl bg-red-50/80 px-5 py-3.5 text-[15px] font-semibold text-red-600 transition hover:bg-red-50 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100/80 text-red-600">
+                <Trash2 size={18} strokeWidth={2.5} />
+              </div>
+              Delete message
+            </button>
+          )}
         </div>
 
         <button
           onClick={onClose}
-          className="mt-5 w-full rounded-2xl bg-slate-200/60 px-4 py-4 text-[15px] font-bold text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]"
+          className="mt-5 w-full rounded-2xl bg-slate-200/60 px-4 py-4 text-[15px] font-semibold text-slate-700 transition hover:bg-slate-200 active:scale-[0.98]"
         >
           Cancel
         </button>

@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 import { communityService } from "../services/community";
 import { Copy, Check, Share2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { motion, useReducedMotion } from "framer-motion";
 
 interface GroupInviteLinkProps {
   groupId: string;
@@ -21,10 +20,9 @@ const isValidInviteCode = (value: unknown): value is string => {
 };
 
 export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
-  const prefersReducedMotion = useReducedMotion();
   const canUseNativeShare = useMemo(
     () => typeof window !== "undefined" && "share" in navigator,
-    [],
+    []
   );
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -42,17 +40,15 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
       try {
         await navigator.clipboard.writeText(inviteLink);
         setCopied(true);
-        toast.success("Invite link copied to clipboard");
+        toast.success("Invite link copied");
         setTimeout(() => setCopied(false), 2000);
         return true;
       } catch {
-        toast.error(
-          "Invite link generated, but automatic copy was blocked. Use the Copy Link button.",
-        );
+        toast.error("We could not copy the link. Select it and copy it by hand.");
         return false;
       }
     },
-    [buildInviteLink],
+    [buildInviteLink]
   );
 
   const loadInviteCode = useCallback(async () => {
@@ -68,7 +64,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
       void copyInviteLink(data.inviteCode);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to load invite code";
+        error instanceof Error ? error.message : "We could not create the invite link";
       setError(message);
       toast.error(message);
     } finally {
@@ -90,7 +86,7 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
 
     const inviteLink = buildInviteLink(inviteCode);
     const title = `Join ${groupName} on PowerMySport Community`;
-    const text = `Join the "${groupName}" community group!`;
+    const text = `Join the "${groupName}" community group.`;
 
     if (canUseNativeShare) {
       try {
@@ -105,93 +101,63 @@ export function GroupInviteLink({ groupId, groupName }: GroupInviteLinkProps) {
     } else {
       await copyInviteLink(inviteCode);
     }
-  }, [
-    buildInviteLink,
-    canUseNativeShare,
-    copyInviteLink,
-    groupName,
-    inviteCode,
-    loadInviteCode,
-  ]);
+  }, [buildInviteLink, canUseNativeShare, copyInviteLink, groupName, inviteCode, loadInviteCode]);
+
+  const link =
+    "text-ink decoration-ink/30 hover:decoration-ink inline-flex min-h-11 items-center gap-2 text-base font-semibold underline underline-offset-4 transition-colors duration-200";
 
   return (
-    <motion.div
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
-      className="rounded-3xl border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur"
-    >
-      <div className="flex items-center gap-2">
-        <Share2 size={16} className="text-slate-600" />
-        <h3 className="text-base font-semibold tracking-tight">
-          Invite Members
-        </h3>
-      </div>
-      <p className="mt-1 text-sm leading-6 text-slate-500">
-        Share this link to invite others to join the group
+    <section aria-labelledby="invite-title" className="bg-paper-deep rounded-2xl p-6">
+      <h3 id="invite-title" className="font-editorial text-ink text-2xl font-normal">
+        Invite members
+      </h3>
+      <p className="text-ink-body mt-1 text-base leading-relaxed">
+        Anyone with this link can join the group.
       </p>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50/80 p-3">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
+        <p
+          role="alert"
+          className="mt-4 rounded-md border border-red-700/30 bg-red-50 px-4 py-3 text-base text-red-800"
+        >
+          {error}
+        </p>
       )}
 
       {!inviteCode && !error && (
         <button
+          type="button"
           onClick={() => void loadInviteCode()}
           disabled={isLoading}
-          className="mt-4 w-full rounded-lg border border-border bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+          className="btn-motion border-ink text-ink hover:bg-ink mt-4 inline-flex min-h-11 items-center rounded-md border px-5 text-base font-semibold hover:text-white disabled:opacity-60"
         >
-          {isLoading ? "Loading..." : "Generate Invite Link"}
+          {isLoading ? "Creating link" : "Create invite link"}
         </button>
       )}
 
       {inviteCode && (
-        <div className="mt-4 space-y-3">
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-            <code className="flex-1 break-all text-xs text-slate-600 sm:text-sm">
-              {buildInviteLink(inviteCode)}
-            </code>
-            <button
-              onClick={() => void copyToClipboard()}
-              className="shrink-0 rounded-lg border border-slate-200 bg-white p-2 text-slate-600 transition hover:bg-slate-50"
-              title={copied ? "Copied!" : "Copy invite link"}
-            >
+        <div className="mt-4">
+          <code className="text-ink-body block break-all rounded-md border border-[#d9d3c8] bg-white px-4 py-3 text-sm">
+            {buildInviteLink(inviteCode)}
+          </code>
+          <div className="mt-3 flex flex-wrap items-center gap-x-6">
+            <button type="button" onClick={() => void copyToClipboard()} className={link}>
               {copied ? (
-                <Check size={16} className="text-turf-green" />
+                <Check size={16} strokeWidth={1.5} aria-hidden="true" />
               ) : (
-                <Copy size={16} />
+                <Copy size={16} strokeWidth={1.5} aria-hidden="true" />
               )}
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button
-              onClick={() => void copyToClipboard()}
-              className="flex-1 rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
-            >
-              <Copy size={14} className="mr-2 inline" />
-              Copy Link
+              {copied ? "Copied" : "Copy link"}
             </button>
             {canUseNativeShare && (
-              <button
-                onClick={() => void openShareDialog()}
-                className="flex-1 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
-              >
-                <Share2 size={14} className="mr-2 inline" />
+              <button type="button" onClick={() => void openShareDialog()} className={link}>
+                <Share2 size={16} strokeWidth={1.5} aria-hidden="true" />
                 Share
               </button>
             )}
           </div>
-
-          <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3">
-            <p className="text-xs text-blue-700">
-              ℹ️ Share this link with anyone to let them join the group
-            </p>
-          </div>
         </div>
       )}
-    </motion.div>
+    </section>
   );
 }

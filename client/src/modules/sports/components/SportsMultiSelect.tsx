@@ -1,16 +1,18 @@
 "use client";
 
-import { sportsApi, Sport } from "@/modules/sports/services/sports";
-import { Button } from "@/modules/shared/ui/Button";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronDown, X, Loader, Plus, AlertCircle } from "lucide-react";
+import { Sport, sportsApi } from "@/modules/sports/services/sports";
 import Fuse from "fuse.js";
+import { FIELD_INPUT } from "@/modules/shared/components/settings/ProfileSection";
+import { Check, ChevronDown, Loader2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface SportsMultiSelectProps {
   value: string[];
   onChange: (sports: string[]) => void;
   disabled?: boolean;
   required?: boolean;
+  /** When provided, only these sport names (case-insensitive) are selectable. */
+  allowedSports?: string[];
 }
 
 export default function SportsMultiSelect({
@@ -18,25 +20,22 @@ export default function SportsMultiSelect({
   onChange,
   disabled = false,
   required = false,
+  allowedSports,
 }: SportsMultiSelectProps) {
   const [allSports, setAllSports] = useState<Sport[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredSports, setFilteredSports] = useState<Sport[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [customSportInput, setCustomSportInput] = useState("");
-  const [isVerifyingCustom, setIsVerifyingCustom] = useState(false);
-  const [customSportError, setCustomSportError] = useState("");
   const [fuse, setFuse] = useState<Fuse<Sport> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -64,7 +63,12 @@ export default function SportsMultiSelect({
     const fetchSports = async () => {
       try {
         setIsLoading(true);
-        const sports = await sportsApi.getAllSports();
+        const fetched = await sportsApi.getAllSports();
+        const sports = allowedSports
+          ? fetched.filter((s) =>
+              allowedSports.some((allowed) => allowed.toLowerCase() === s.name.toLowerCase())
+            )
+          : fetched;
         setAllSports(sports);
         setFilteredSports(sports);
 
@@ -82,13 +86,14 @@ export default function SportsMultiSelect({
     };
 
     fetchSports();
+    // allowedSports is expected to be a stable reference (module-level constant)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle search with fuzzy matching
   const handleSearch = useCallback(
     (query: string) => {
       setSearchQuery(query);
-      setCustomSportError("");
 
       if (!query.trim()) {
         setFilteredSports(allSports);
@@ -100,213 +105,173 @@ export default function SportsMultiSelect({
         setFilteredSports(results.map((result) => result.item));
       }
     },
-    [fuse, allSports],
+    [fuse, allSports]
   );
+
+  // Stored sport names are not always cased like the catalogue ("tennis" vs
+  // "Tennis"), so every comparison ignores case.
+  const isChosen = (name: string) => value.some((v) => v.toLowerCase() === name.toLowerCase());
 
   // Handle sport selection
   const handleSelectSport = (sport: string) => {
-    if (!value.includes(sport)) {
+    if (!isChosen(sport)) {
       onChange([...value, sport]);
     }
     setSearchQuery("");
     setIsOpen(true); // Keep dropdown open for multiple selections
+    // The picked option becomes disabled, which would silently drop focus —
+    // hand it back to the search box so keyboard flow continues.
+    inputRef.current?.focus();
+  };
+
+  // Move focus between the search input and the (non-disabled) options
+  const focusOption = (from: number, dir: 1 | -1) => {
+    const opts = optionRefs.current;
+    for (let i = from + dir; i >= 0 && i < opts.length; i += dir) {
+      // isConnected guards against stale refs left over after the filtered
+      // list shrank
+      if (opts[i] && opts[i]!.isConnected && !opts[i]!.disabled) {
+        opts[i]!.focus();
+        return;
+      }
+    }
+    if (dir === -1) inputRef.current?.focus();
   };
 
   // Handle sport removal
   const handleRemoveSport = (sport: string) => {
-    onChange(value.filter((s) => s !== sport));
+    onChange(value.filter((s) => s.toLowerCase() !== sport.toLowerCase()));
   };
 
-  // Handle custom sport verification and addition
-  const handleAddCustomSport = async () => {
-    if (!customSportInput.trim()) {
-      setCustomSportError("Please enter a sport name");
-      return;
-    }
-
-    setIsVerifyingCustom(true);
-    setCustomSportError("");
-
-    try {
-      // Step 1: Verify the sport using Gemini
-      const verification = await sportsApi.verifySport(customSportInput.trim());
-
-      if (!verification.isValid) {
-        setCustomSportError(
-          `Invalid sport: ${verification.message}. Please try another.`,
-        );
-        setIsVerifyingCustom(false);
-        return;
-      }
-
-      // Step 2: Add the custom sport
-      const newSport = await sportsApi.addCustomSport(customSportInput.trim());
-
-      if (newSport) {
-        // Add to local sports list
-        setAllSports((prev) => [...prev, newSport]);
-
-        // Re-initialize fuse
-        const updatedSports = [...allSports, newSport];
-        const fuseInstance = new Fuse(updatedSports, {
-          keys: ["name"],
-          threshold: 0.3,
-        });
-        setFuse(fuseInstance);
-
-        // Add to selected sports
-        handleSelectSport(newSport.name);
-        setCustomSportInput("");
-      }
-    } catch (error) {
-      setCustomSportError("Failed to add sport. Please try again.");
-      console.error("Error adding custom sport:", error);
-    } finally {
-      setIsVerifyingCustom(false);
-    }
-  };
-
-  // Get selected sport objects
-  const selectedSportObjects = allSports.filter((sport) =>
-    value.includes(sport.name),
-  );
+  // One chip per stored value, named as the catalogue names it when it is known.
+  const chips = value.map((stored) => ({
+    stored,
+    label:
+      allSports.find((sport) => sport.name.toLowerCase() === stored.toLowerCase())?.name ?? stored,
+  }));
 
   return (
     <div className="w-full" ref={containerRef}>
-      {/* Selected Sports Display */}
-      <div className="mb-3 flex flex-wrap gap-2">
-        {selectedSportObjects.map((sport) => (
-          <div
-            key={sport.name}
-            className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700"
-          >
-            {sport.name}
-            <button
-              type="button"
-              onClick={() => handleRemoveSport(sport.name)}
-              disabled={disabled}
-              className="text-blue-500 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+      {/* Selected sports */}
+      {chips.length > 0 && (
+        <ul className="mb-3 flex flex-wrap gap-2" aria-label="Selected sports">
+          {chips.map((chip) => (
+            <li
+              key={chip.stored}
+              className="border-hairline bg-paper-deep text-ink flex min-h-11 items-center gap-1 rounded-md border pl-3 text-sm font-medium"
             >
-              <X size={16} />
-            </button>
-          </div>
-        ))}
-      </div>
+              {chip.label}
+              <button
+                type="button"
+                onClick={() => handleRemoveSport(chip.stored)}
+                disabled={disabled}
+                aria-label={`Remove ${chip.label}`}
+                className="text-ink-body hover:text-ink focus-visible:ring-ink inline-flex h-11 w-11 items-center justify-center rounded-md focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <X size={16} strokeWidth={1.5} aria-hidden="true" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      {/* Search Input */}
+      {/* Search input */}
       <div className="relative">
         <div className="relative">
           <input
+            ref={inputRef}
             type="text"
-            placeholder="Search or add sports..."
+            role="combobox"
+            aria-expanded={isOpen && !disabled}
+            aria-controls="sports-multiselect-listbox"
+            aria-autocomplete="list"
+            aria-label="Search or add sports"
+            placeholder="Search for a sport"
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             onFocus={() => setIsOpen(true)}
             onKeyDown={(e) => {
               if (e.key === "Escape") {
                 setIsOpen(false);
+              } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (!isOpen) setIsOpen(true);
+                focusOption(-1, 1);
+              } else if (e.key === "Enter") {
+                // Don't submit the surrounding form from the search box
+                e.preventDefault();
               }
             }}
             disabled={disabled || isLoading}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm placeholder-slate-500 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50"
+            className={`${FIELD_INPUT} pr-12 disabled:cursor-not-allowed disabled:opacity-60`}
           />
-          <ChevronDown
-            size={18}
-            className="absolute right-3 top-2.5 text-slate-400"
-          />
+          <button
+            type="button"
+            tabIndex={-1}
+            disabled={disabled || isLoading}
+            onClick={() => setIsOpen((prev) => !prev)}
+            className="text-ink-body hover:text-ink absolute right-0 top-0 inline-flex h-11 w-11 items-center justify-center rounded-md disabled:cursor-not-allowed"
+            aria-label={isOpen ? "Close sports list" : "Open sports list"}
+          >
+            <ChevronDown
+              size={18}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            />
+          </button>
         </div>
 
         {/* Dropdown */}
         {isOpen && !disabled && (
-          <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <div
+            id="sports-multiselect-listbox"
+            className="border-ink/25 bg-paper absolute left-0 right-0 top-full z-50 mt-1 max-h-64 overflow-y-auto rounded-md border"
+          >
             {isLoading ? (
-              <div className="flex items-center justify-center px-4 py-6">
-                <Loader size={20} className="animate-spin text-blue-500" />
+              <div className="flex items-center justify-center px-4 py-6" role="status">
+                <Loader2 size={20} strokeWidth={1.5} className="text-ink-body animate-spin" />
+                <span className="sr-only">Loading sports</span>
               </div>
+            ) : filteredSports.length > 0 ? (
+              filteredSports.map((sport, i) => {
+                const isSelected = isChosen(sport.name);
+                return (
+                  <button
+                    key={sport.name}
+                    type="button"
+                    ref={(el) => {
+                      optionRefs.current[i] = el;
+                    }}
+                    onClick={() => handleSelectSport(sport.name)}
+                    onKeyDown={(e) => {
+                      if (e.key === "ArrowDown") {
+                        e.preventDefault();
+                        focusOption(i, 1);
+                      } else if (e.key === "ArrowUp") {
+                        e.preventDefault();
+                        focusOption(i, -1);
+                      } else if (e.key === "Escape") {
+                        e.preventDefault();
+                        setIsOpen(false);
+                        inputRef.current?.focus();
+                      }
+                    }}
+                    disabled={isSelected}
+                    className="text-ink hover:bg-paper-deep focus-visible:bg-paper-deep focus-visible:ring-ink disabled:text-ink-body flex min-h-11 w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-inset disabled:cursor-default disabled:bg-transparent"
+                  >
+                    <span className={isSelected ? "font-medium" : ""}>{sport.name}</span>
+                    {isSelected && (
+                      <>
+                        <Check size={16} strokeWidth={1.5} aria-hidden="true" />
+                        <span className="sr-only">Selected</span>
+                      </>
+                    )}
+                  </button>
+                );
+              })
             ) : (
-              <>
-                {/* Sports List */}
-                {filteredSports.length > 0 && (
-                  <div>
-                    {filteredSports.map((sport) => {
-                      const isSelected = value.includes(sport.name);
-                      return (
-                        <button
-                          key={sport.name}
-                          type="button"
-                          onClick={() => handleSelectSport(sport.name)}
-                          disabled={isSelected}
-                          className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:cursor-default disabled:bg-blue-50 disabled:text-slate-600 focus:outline-none"
-                        >
-                          <div className="flex items-center gap-2">
-                            {isSelected && (
-                              <div className="h-4 w-4 rounded bg-blue-500" />
-                            )}
-                            <span className={isSelected ? "font-semibold" : ""}>
-                              {sport.name}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {filteredSports.length === 0 && (
-                  <div className="px-4 py-3 text-center text-sm text-slate-500">
-                    No sports found
-                  </div>
-                )}
-
-                {/* Custom Sport Input - Always visible */}
-                <div className="border-t border-slate-200 px-4 py-3">
-                  <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-slate-600">
-                    <Plus size={14} />
-                    Add Custom Sport
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="e.g., Parkour"
-                      value={customSportInput}
-                      onChange={(e) => {
-                        setCustomSportInput(e.target.value);
-                        setCustomSportError("");
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddCustomSport();
-                        }
-                      }}
-                      disabled={isVerifyingCustom}
-                      className="flex-1 rounded border border-slate-200 bg-white px-2 py-1 text-sm placeholder-slate-400 focus:border-blue-500 focus:outline-none disabled:bg-slate-50"
-                    />
-                    <Button
-                      type="button"
-                      onClick={handleAddCustomSport}
-                      disabled={isVerifyingCustom || !customSportInput.trim()}
-                      size="sm"
-                      variant="primary"
-                      className="sm:whitespace-nowrap"
-                    >
-                      {isVerifyingCustom ? (
-                        <Loader size={14} className="animate-spin" />
-                      ) : (
-                        "Add"
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Custom Sport Error */}
-                  {customSportError && (
-                    <div className="mt-2 flex items-start gap-2 rounded bg-red-50 p-2 text-xs text-red-600">
-                      <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                      <span>{customSportError}</span>
-                    </div>
-                  )}
-                </div>
-              </>
+              <p className="text-ink-body px-4 py-3 text-sm">No sports found</p>
             )}
           </div>
         )}
@@ -314,8 +279,8 @@ export default function SportsMultiSelect({
 
       {/* Error message for no sports selected if required */}
       {required && value.length === 0 && (
-        <p className="mt-1 text-xs text-red-500">
-          Please select at least one sport
+        <p role="alert" className="mt-1.5 text-sm text-red-800">
+          Choose at least one sport
         </p>
       )}
     </div>

@@ -1,5 +1,4 @@
 import { cn } from "@/utils/cn";
-import { motion } from "framer-motion";
 import React from "react";
 
 export interface CheckoutSummaryItem {
@@ -32,14 +31,12 @@ export function CheckoutSummary({
     <div
       className={cn(
         "overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm",
-        className,
+        className
       )}
     >
       {/* Header */}
       <div className="border-b border-slate-100 px-5 py-4 sm:px-6">
-        <h3 className="font-title text-base font-semibold text-slate-900 sm:text-lg">
-          {title}
-        </h3>
+        <h3 className="font-title text-base font-semibold text-slate-900 sm:text-lg">{title}</h3>
       </div>
 
       {/* Line items */}
@@ -50,26 +47,19 @@ export function CheckoutSummary({
               key={`${item.label}-${item.value}`}
               className={cn(
                 "flex items-start justify-between gap-4 text-sm",
-                item.strong && "rounded-lg bg-turf-green/8 px-2.5 py-2",
+                item.strong && "bg-turf-green/8 rounded-lg px-2.5 py-2"
               )}
             >
               <div>
-                <p
-                  className={cn(
-                    "text-slate-600",
-                    item.strong && "font-semibold text-turf-green",
-                  )}
-                >
+                <p className={cn("text-slate-600", item.strong && "text-turf-green font-semibold")}>
                   {item.label}
                 </p>
-                {item.hint && (
-                  <p className="text-xs text-slate-400">{item.hint}</p>
-                )}
+                {item.hint && <p className="text-xs text-slate-400">{item.hint}</p>}
               </div>
               <p
                 className={cn(
                   "shrink-0 font-medium text-slate-800",
-                  item.strong && "font-semibold text-turf-green",
+                  item.strong && "text-turf-green font-semibold"
                 )}
               >
                 {item.value}
@@ -79,14 +69,10 @@ export function CheckoutSummary({
         </div>
 
         {/* Total */}
-        <div className="mt-4 rounded-xl bg-gradient-to-r from-power-orange/8 to-amber-50/60 px-4 py-3">
+        <div className="bg-power-orange/8 mt-4 rounded-xl px-4 py-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-700">
-              {totalLabel}
-            </span>
-            <span className="text-2xl font-bold text-power-orange">
-              {totalValue}
-            </span>
+            <span className="text-sm font-semibold text-slate-700">{totalLabel}</span>
+            <span className="text-power-orange text-2xl font-bold">{totalValue}</span>
           </div>
           {note && <p className="mt-1 text-xs text-slate-400">{note}</p>}
         </div>

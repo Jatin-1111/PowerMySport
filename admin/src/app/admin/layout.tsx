@@ -1,22 +1,33 @@
 "use client";
 
 import { adminApi } from "@/modules/admin/services/admin";
+import { PendingCounts, statsApi } from "@/modules/analytics/services/stats";
+import { CommandPalette } from "@/modules/shared/ui/CommandPalette";
 import {
+  GraduationCap,
   BarChart2,
   Bell,
   BookOpen,
   Building2,
   Calendar,
   CheckCircle,
+  ChevronsLeft,
+  ChevronsRight,
+  Database,
   Gavel,
   LayoutDashboard,
   LifeBuoy,
+  LogOut,
   Landmark,
+  Map,
   Menu,
+  MessageCircle,
   MessageSquareWarning,
   Package,
   Plus,
   ReceiptText,
+  ScrollText,
+  Search,
   ShieldAlert,
   ShieldCheck,
   ShoppingBag,
@@ -26,16 +37,14 @@ import {
   UserCircle2,
   Users,
   Webhook,
+  Stethoscope,
   X,
+  FilePenLine,
+  ListChecks,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import React, { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 
 type StoredAdmin = {
   name?: string;
@@ -58,18 +67,34 @@ type NavGroup = {
 const isAdminRouteActive = (pathname: string, href: string) =>
   href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const NAV_BADGE_KEYS: Record<string, keyof PendingCounts> = {
+  "/admin/review-queue": "reviewQueue",
+  "/admin/academy-onboarding": "academyOnboarding",
+  "/admin/coach-verification": "coachVerification",
+  "/admin/venue-approval": "venueApprovals",
+  "/admin/community-reports": "communityReports",
+  "/admin/disputes": "disputes",
+  "/admin/support-tickets": "supportTickets",
+  "/admin/concierge-requests": "conciergeRequests",
+  "/admin/webhook-recovery": "webhookErrors",
+  "/admin/data-sources": "dataSourcesPending",
+};
+
+const getNavBadgeCount = (href: string, pendingCounts: PendingCounts | null): number => {
+  if (!pendingCounts) return 0;
+  const key = NAV_BADGE_KEYS[href];
+  return key ? pendingCounts[key] : 0;
+};
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
   const isLoginPage = pathname === "/admin/login";
   const isChangePasswordPage = pathname === "/admin/change-password";
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const [pendingAcademyCount, setPendingAcademyCount] = useState(0);
+  const [pendingCounts, setPendingCounts] = useState<PendingCounts | null>(null);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   const storedAdminRaw = useSyncExternalStore(
     (onStoreChange) => {
@@ -90,7 +115,7 @@ export default function AdminLayout({
 
       return localStorage.getItem("admin");
     },
-    () => null,
+    () => null
   );
 
   const storedAdmin = useMemo<StoredAdmin | null>(() => {
@@ -109,7 +134,7 @@ export default function AdminLayout({
   const isSuperAdmin =
     storedAdmin?.role === "SYSTEM_ADMIN" ||
     storedAdmin?.role === "SUPER_ADMIN" ||
-    storedAdmin?.role === "ADMIN";
+    storedAdmin?.role === "Admin";
   const mustChangePassword = storedAdmin?.mustChangePassword === true;
 
   const navGroups = useMemo<NavGroup[]>(() => {
@@ -124,12 +149,18 @@ export default function AdminLayout({
             label: "Notifications",
             icon: Bell,
           },
+          {
+            href: "/admin/whatsapp-pilot",
+            label: "WhatsApp Pilot",
+            icon: MessageCircle,
+          },
           { href: "/admin/profile", label: "Profile", icon: UserCircle2 },
         ],
       },
       {
         title: "People",
         items: [
+          { href: "/admin/review-queue", label: "Review Queue", icon: ListChecks },
           { href: "/admin/users", label: "Users", icon: Users },
           { href: "/admin/coaches", label: "Coaches", icon: Users },
           {
@@ -153,6 +184,8 @@ export default function AdminLayout({
             label: "Academy Onboarding",
             icon: CheckCircle,
           },
+          { href: "/admin/experts", label: "Experts", icon: ShieldCheck },
+          { href: "/admin/provider-changes", label: "Provider Changes", icon: FilePenLine },
         ],
       },
       {
@@ -180,18 +213,27 @@ export default function AdminLayout({
         ],
       },
       {
-        title: "Programs",
+        title: "Content",
         items: [
-          { href: "/admin/coach-plans", label: "Coach Plans", icon: Package },
           {
-            href: "/admin/coach-subscriptions",
-            label: "Coach Subscriptions",
-            icon: Calendar,
+            href: "/admin/pathways",
+            label: "Pathways",
+            icon: Map,
           },
           {
-            href: "/admin/coach-subscription-overrides",
-            label: "Override Reviews",
-            icon: ShieldAlert,
+            href: "/admin/opportunities",
+            label: "Admissions & Scholarships",
+            icon: GraduationCap,
+          },
+          {
+            href: "/admin/screenings",
+            label: "Screenings",
+            icon: Stethoscope,
+          },
+          {
+            href: "/admin/data-sources",
+            label: "Data Sources",
+            icon: Database,
           },
         ],
       },
@@ -230,12 +272,40 @@ export default function AdminLayout({
     if (isSuperAdmin) {
       groups.push({
         title: "System",
-        items: [{ href: "/admin/admins", label: "Admins", icon: ShieldCheck }],
+        items: [
+          { href: "/admin/admins", label: "Admins", icon: ShieldCheck },
+          { href: "/admin/audit-log", label: "Audit Log", icon: ScrollText },
+        ],
       });
     }
 
     return groups;
   }, [isSuperAdmin]);
+
+  const commandPaletteItems = useMemo(
+    () =>
+      navGroups.flatMap((group) =>
+        group.items.map((item) => ({
+          href: item.href,
+          label: item.label,
+          group: group.title,
+          icon: item.icon,
+        }))
+      ),
+    [navGroups]
+  );
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsCommandPaletteOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!isLoginPage) {
@@ -265,26 +335,22 @@ export default function AdminLayout({
   useEffect(() => {
     let isCancelled = false;
 
-    const loadAcademyCount = async () => {
+    const loadPendingCounts = async () => {
       try {
-        const response = await adminApi.getPendingAcademies({
-          page: 1,
-          limit: 1,
-          filter: "pending",
-        });
+        const response = await statsApi.getPendingCounts();
 
         if (!isCancelled && response.success && response.data) {
-          setPendingAcademyCount(response.data.total || 0);
+          setPendingCounts(response.data);
         }
       } catch {
         if (!isCancelled) {
-          setPendingAcademyCount(0);
+          setPendingCounts(null);
         }
       }
     };
 
     if (!isLoginPage && !isChangePasswordPage) {
-      void loadAcademyCount();
+      void loadPendingCounts();
     }
 
     return () => {
@@ -316,11 +382,30 @@ export default function AdminLayout({
     router.replace("/admin/login");
   };
 
+  // ── Desktop sidebar collapse ──
+  // Persisted, because it is a workspace preference: an admin who works on a
+  // laptop collapses it once and should not have to do it again on every page.
+  // Read after mount rather than during render — the server has no localStorage,
+  // and initialising from it would hydrate a rail against an expanded shell.
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    setIsSidebarCollapsed(localStorage.getItem("admin_sidebar_collapsed") === "1");
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem("admin_sidebar_collapsed", next ? "1" : "0");
+      return next;
+    });
+  };
+
   const [isMobile, setIsMobile] = useState(false);
   const isMounted = useSyncExternalStore(
     () => () => {},
     () => true,
-    () => false,
+    () => false
   );
 
   useEffect(() => {
@@ -333,35 +418,35 @@ export default function AdminLayout({
   }, []);
 
   return (
-    <div className="admin-shell min-h-screen bg-slate-50">
-      <div className="min-h-screen lg:flex">
+    <div className="admin-shell bg-background">
+      <a
+        href="#main-content"
+        className="focus:bg-deep-slate sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to content
+      </a>
+      <div className="min-h-dvh lg:flex">
         {!isLoginPage && !isChangePasswordPage && (
           <>
-            <div className="sticky top-0 z-30 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+            <div className="bg-deep-slate sticky top-0 z-30 border-b border-slate-800 px-4 py-3 text-white lg:hidden">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
-                    Admin Dashboard
-                  </p>
-                  <p className="text-sm font-semibold text-slate-900">
-                    PowerMySport
-                  </p>
+                  <p className="text-[11px] font-medium tracking-wide text-slate-400">Admin</p>
+                  <p className="text-sm font-semibold text-white">PowerMySport</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleLogout}
-                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100"
+                    className="rounded-lg border border-white/15 px-3 py-2 text-xs font-semibold text-slate-200 transition-colors hover:bg-white/10"
                   >
-                    Logout
+                    Log out
                   </button>
                   <button
                     type="button"
-                    aria-label={
-                      isMobileNavOpen ? "Close navigation" : "Open navigation"
-                    }
+                    aria-label={isMobileNavOpen ? "Close navigation" : "Open navigation"}
                     aria-expanded={isMobileNavOpen}
                     onClick={() => setIsMobileNavOpen((prev) => !prev)}
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50"
+                    className="inline-flex size-10 items-center justify-center rounded-lg border border-white/15 text-slate-200 transition-colors hover:bg-white/10"
                   >
                     {isMobileNavOpen ? <X size={18} /> : <Menu size={18} />}
                   </button>
@@ -374,12 +459,12 @@ export default function AdminLayout({
                 type="button"
                 aria-label="Close mobile navigation"
                 onClick={() => setIsMobileNavOpen(false)}
-                className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+                className="fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-[2px] lg:hidden"
               />
             )}
 
             {isMounted && isMobileNavOpen && (
-              <aside className="fixed right-0 top-0 z-40 h-screen w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
+              <aside className="fixed right-0 top-0 z-40 h-dvh w-[88vw] max-w-sm border-l border-slate-200 bg-white shadow-xl lg:hidden">
                 <div className="flex h-full flex-col">
                   <div className="border-b border-slate-200 p-4">
                     <div className="flex items-center justify-between gap-3">
@@ -387,56 +472,58 @@ export default function AdminLayout({
                         <p className="text-[11px] uppercase tracking-wide text-slate-500">
                           Navigation
                         </p>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {adminName}
-                        </p>
+                        <p className="text-sm font-semibold text-slate-900">{adminName}</p>
                       </div>
                       <button
                         type="button"
                         aria-label="Close navigation"
                         onClick={() => setIsMobileNavOpen(false)}
-                        className="rounded-lg border border-slate-300 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50"
+                        className="inline-flex size-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-700 transition-colors hover:bg-slate-50"
                       >
                         <X size={18} />
                       </button>
                     </div>
                   </div>
 
-                  <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+                  <nav
+                    aria-label="Admin sections"
+                    className="flex-1 space-y-5 overflow-y-auto px-4 py-4"
+                  >
                     {navGroups.map((group) => (
                       <div key={`mobile-group-${group.title}`}>
-                        <p className="mb-2 px-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                        <p className="mb-2 px-2 text-xs font-semibold tracking-wide text-slate-500">
                           {group.title}
                         </p>
                         <div className="space-y-1">
                           {group.items.map((item) => {
                             const Icon = item.icon;
-                            const isActive = isAdminRouteActive(
-                              pathname,
-                              item.href,
-                            );
+                            const isActive = isAdminRouteActive(pathname, item.href);
 
                             return (
                               <Link
                                 key={`mobile-${item.href}`}
                                 href={item.href}
                                 onClick={() => setIsMobileNavOpen(false)}
-                                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                                aria-current={isActive ? "page" : undefined}
+                                className={`relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
                                   isActive
-                                    ? "bg-power-orange text-white shadow-sm"
+                                    ? "bg-orange-50 text-orange-900"
                                     : "text-slate-700 hover:bg-slate-100"
                                 }`}
                               >
+                                {isActive && (
+                                  <span
+                                    aria-hidden
+                                    className="bg-power-orange-solid absolute inset-y-2 left-0 w-0.5 rounded-full"
+                                  />
+                                )}
                                 <Icon size={17} />
-                                <span className="text-sm font-semibold">
-                                  {item.label}
-                                </span>
-                                {item.href === "/admin/academy-onboarding" &&
-                                  pendingAcademyCount > 0 && (
-                                    <span className="ml-auto rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-bold">
-                                      {pendingAcademyCount}
-                                    </span>
-                                  )}
+                                <span className="text-sm font-medium">{item.label}</span>
+                                {getNavBadgeCount(item.href, pendingCounts) > 0 && (
+                                  <span className="bg-power-orange-solid ml-auto rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
+                                    {getNavBadgeCount(item.href, pendingCounts)}
+                                  </span>
+                                )}
                               </Link>
                             );
                           })}
@@ -448,9 +535,9 @@ export default function AdminLayout({
                   <div className="border-t border-slate-200 p-4">
                     <button
                       onClick={handleLogout}
-                      className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                      className="w-full rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
                     >
-                      Logout
+                      Log out
                     </button>
                   </div>
                 </div>
@@ -458,53 +545,160 @@ export default function AdminLayout({
             )}
 
             {isMounted && !isMobile && (
-              <aside className="fixed left-0 top-0 hidden h-screen w-72 flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-sm lg:flex">
-                <div className="p-6">
-                  <div className="rounded-2xl bg-linear-to-br from-slate-900 to-slate-800 p-5 text-white">
-                    <p className="text-xs uppercase tracking-wide text-slate-300">
-                      Admin Dashboard
-                    </p>
-                    <h1 className="mt-2 text-2xl font-bold text-white">
-                      PowerMySport
-                    </h1>
-                    <p className="mt-1 text-sm text-slate-200">{adminName}</p>
+              <aside
+                className={`bg-deep-slate fixed left-0 top-0 hidden h-dvh flex-col overflow-y-auto overflow-x-hidden border-r border-slate-800 text-slate-300 transition-[width] duration-200 [scrollbar-color:#334155_transparent] [scrollbar-width:thin] lg:flex ${
+                  isSidebarCollapsed ? "w-20" : "w-72"
+                }`}
+              >
+                {/* ── Brand ──
+                       Collapsed, the wordmark shrinks to the square mark so the
+                       rail still reads as PowerMySport rather than a bare strip of
+                       icons. */}
+                <div className={isSidebarCollapsed ? "px-3 pb-3 pt-5" : "px-5 pb-4 pt-6"}>
+                  <div
+                    className={`flex items-center gap-3 ${isSidebarCollapsed ? "justify-center" : ""}`}
+                  >
+                    <span
+                      className="bg-power-orange-solid flex size-10 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
+                      title={isSidebarCollapsed ? `PowerMySport · ${adminName}` : undefined}
+                    >
+                      PMS
+                    </span>
+                    {!isSidebarCollapsed && (
+                      <div className="min-w-0">
+                        <p className="text-base font-semibold leading-tight text-white">
+                          PowerMySport
+                        </p>
+                        <p className="truncate text-xs text-slate-400">{adminName}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <nav className="mt-2 space-y-5 px-4 pb-6">
+                {/* ── Collapse toggle ── */}
+                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-5 pb-2"}>
+                  <button
+                    type="button"
+                    onClick={toggleSidebar}
+                    aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    aria-expanded={!isSidebarCollapsed}
+                    title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    className={`flex min-h-10 w-full items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${
+                      isSidebarCollapsed ? "justify-center" : ""
+                    }`}
+                  >
+                    {isSidebarCollapsed ? (
+                      <ChevronsRight size={16} />
+                    ) : (
+                      <>
+                        <ChevronsLeft size={16} />
+                        <span className="flex-1 text-left">Collapse</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* ── Search ──
+                       Kept in the rail as an icon: with the labels gone it is the
+                       fastest way to reach a page by name, so hiding it would make
+                       collapsing cost more than it saves. */}
+                <div className={isSidebarCollapsed ? "px-3 pb-2" : "px-5 pb-2"}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCommandPaletteOpen(true)}
+                    title="Search pages (⌘K)"
+                    aria-label="Search pages"
+                    className={`flex min-h-10 w-full items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300 transition-colors hover:bg-white/10 hover:text-white ${
+                      isSidebarCollapsed ? "justify-center" : ""
+                    }`}
+                  >
+                    <Search size={15} />
+                    {!isSidebarCollapsed && (
+                      <>
+                        <span className="flex-1 text-left">Search pages</span>
+                        <kbd className="rounded border border-white/20 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                          ⌘K
+                        </kbd>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <nav
+                  aria-label="Admin sections"
+                  className={`mt-3 space-y-5 pb-6 ${isSidebarCollapsed ? "px-2" : "px-3"}`}
+                >
                   {navGroups.map((group) => (
                     <div key={group.title}>
-                      <p className="mb-2 px-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                        {group.title}
-                      </p>
-                      <div className="space-y-1">
+                      {/* Collapsed, the group heading becomes a rule. The grouping
+                          is still worth showing, but 11px of truncated text in an
+                          80px rail is not readable. */}
+                      {isSidebarCollapsed ? (
+                        <div aria-hidden className="mx-3 mb-2 border-t border-white/10" />
+                      ) : (
+                        <p className="mb-1.5 px-3 text-xs font-semibold tracking-wide text-slate-400">
+                          {group.title}
+                        </p>
+                      )}
+                      <div className="space-y-0.5">
                         {group.items.map((item) => {
                           const Icon = item.icon;
-                          const isActive = isAdminRouteActive(
-                            pathname,
-                            item.href,
-                          );
+                          const isActive = isAdminRouteActive(pathname, item.href);
+                          const badgeCount = getNavBadgeCount(item.href, pendingCounts);
 
                           return (
                             <Link
                               key={item.href}
                               href={item.href}
-                              className={`flex items-center gap-3 rounded-xl px-4 py-3 transition-colors ${
+                              // The label becomes the tooltip when it is not on
+                              // screen. A rail of unlabelled icons is otherwise a
+                              // memory test, and several of these icons repeat —
+                              // Users, Plus and CheckCircle each appear twice.
+                              title={
+                                isSidebarCollapsed
+                                  ? badgeCount > 0
+                                    ? `${item.label} (${badgeCount})`
+                                    : item.label
+                                  : undefined
+                              }
+                              aria-label={isSidebarCollapsed ? item.label : undefined}
+                              aria-current={isActive ? "page" : undefined}
+                              className={`relative flex min-h-10 items-center rounded-lg transition-colors ${
+                                isSidebarCollapsed
+                                  ? "justify-center px-0 py-2.5"
+                                  : "gap-3 px-3 py-2"
+                              } ${
                                 isActive
-                                  ? "bg-power-orange text-white shadow-sm"
-                                  : "text-slate-700 hover:bg-slate-100"
+                                  ? "bg-white/10 text-white"
+                                  : "text-slate-300 hover:bg-white/5 hover:text-white"
                               }`}
                             >
+                              {isActive && (
+                                <span
+                                  aria-hidden
+                                  className="bg-power-orange absolute inset-y-2 left-0 w-0.5 rounded-full"
+                                />
+                              )}
                               <Icon size={18} />
-                              <span className="text-sm font-semibold">
-                                {item.label}
-                              </span>
-                              {item.href === "/admin/academy-onboarding" &&
-                                pendingAcademyCount > 0 && (
-                                  <span className="ml-auto rounded-full bg-power-orange px-2 py-0.5 text-[11px] font-bold text-white">
-                                    {pendingAcademyCount}
-                                  </span>
-                                )}
+                              {isSidebarCollapsed ? (
+                                // A count would not fit, so it degrades to a dot
+                                // that says "something is waiting here".
+                                badgeCount > 0 && (
+                                  <span
+                                    aria-hidden
+                                    className="bg-power-orange absolute right-2 top-2 h-2 w-2 rounded-full"
+                                  />
+                                )
+                              ) : (
+                                <>
+                                  <span className="text-sm font-medium">{item.label}</span>
+                                  {badgeCount > 0 && (
+                                    <span className="bg-power-orange-solid ml-auto rounded-md px-2 py-0.5 text-[11px] font-semibold tabular-nums text-white">
+                                      {badgeCount}
+                                    </span>
+                                  )}
+                                </>
+                              )}
                             </Link>
                           );
                         })}
@@ -513,12 +707,19 @@ export default function AdminLayout({
                   ))}
                 </nav>
 
-                <div className="mt-auto border-t border-slate-200 p-6">
+                <div
+                  className={`mt-auto border-t border-white/10 ${
+                    isSidebarCollapsed ? "p-3" : "p-4"
+                  }`}
+                >
                   <button
                     onClick={handleLogout}
-                    className="w-full rounded-lg border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100"
+                    title={isSidebarCollapsed ? "Log out" : undefined}
+                    aria-label="Log out"
+                    className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-red-500/15 hover:text-red-200"
                   >
-                    Logout
+                    <LogOut size={16} />
+                    {!isSidebarCollapsed && "Log out"}
                   </button>
                 </div>
               </aside>
@@ -527,13 +728,31 @@ export default function AdminLayout({
         )}
 
         <main
-          className={`min-w-0 flex-1 ${!isLoginPage && !isChangePasswordPage ? "lg:ml-72" : ""}`}
+          id="main-content"
+          className={`min-w-0 flex-1 transition-[margin] duration-200 ${
+            isLoginPage || isChangePasswordPage ? "" : isSidebarCollapsed ? "lg:ml-20" : "lg:ml-72"
+          }`}
         >
-          <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
-            {children}
-          </div>
+          {isLoginPage || isChangePasswordPage ? (
+            // Auth screens own their full-height layout; the padded content
+            // container below would push them past 100dvh and make them scroll.
+            children
+          ) : (
+            <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-6 sm:py-8 lg:px-8">
+              {children}
+            </div>
+          )}
         </main>
       </div>
+
+      {!isLoginPage && !isChangePasswordPage && (
+        <CommandPalette
+          open={isCommandPaletteOpen}
+          items={commandPaletteItems}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          onNavigate={(href) => router.push(href)}
+        />
+      )}
     </div>
   );
 }

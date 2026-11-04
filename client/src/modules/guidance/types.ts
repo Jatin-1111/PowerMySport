@@ -1,0 +1,156 @@
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildGender,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
+import type { DependentQuiz } from "@/types";
+// ─── Guidance Module Types ────────────────────────────────────────────────────
+
+export type GuidanceFormState = {
+  child_age: number;
+  child_gender: "male" | "female";
+  current_fitness_level: "Low" | "Moderate" | "High";
+  personality_tags: string[];
+  primary_objective: "Recreational" | "Fitness" | "Compete" | "Elite";
+  weekly_time_commitment: number;
+  budget_tier: "Budget" | "Moderate" | "Premium";
+  parent_specific_question: string;
+  sport: string;
+  location: string;
+  /** Which plan shape to generate: "short" = week-by-week fix/prep plan,
+   *  "journey" = multi-phase roadmap, "auto" = AI picks from the question.
+   *  Absent = "journey" (legacy callers). */
+  plan_horizon?: "short" | "journey" | "auto";
+  /** Which dependent this submission is for — used to scope the plan check-in nudge. */
+  dependent_id?: string;
+  current_pathway_level?: number;
+  /** How long the child has already been playing this sport, in years (0 = brand new) */
+  years_playing?: number;
+  /** Optional short bio the parent writes about themselves */
+  parent_bio?: string;
+  /** Sports the parent follows, played, or is most interested in */
+  parent_sport_interest?: string[];
+  /** How long the parent has been involved or interested in sport, in years (0 = just starting) */
+  parent_involvement_years?: number;
+  // Wizard assessment signals — populated from child profile when available
+  wizard_build?: "lean" | "average" | "stocky";
+  wizard_height?: "short" | "average" | "tall";
+  wizard_energy_type?: "explosive" | "endurance";
+  wizard_motor_type?: "gross" | "fine";
+  wizard_visual_tracking?: "strong" | "moderate" | "weak";
+  wizard_team_individual?: number;
+  wizard_competitive_response?: "fired-up" | "calm" | "discouraged";
+  wizard_focus_style?: "bursts" | "sustained";
+  wizard_decision_style?: "react" | "strategic";
+  wizard_pressure_response?: "thrives" | "manages" | "avoids";
+  wizard_repetition_tolerance?: "high" | "low";
+  wizard_contact_comfort?: "loves" | "neutral" | "avoids";
+  wizard_environment?: "outdoor" | "indoor" | "no-preference";
+  wizard_water_comfort?: "comfortable" | "neutral" | "uncomfortable";
+  wizard_eyesight?: "sharp" | "corrected" | "limited";
+  wizard_agility?: "high" | "moderate" | "low";
+};
+
+export type BurnoutRisk = {
+  level: "low" | "medium" | "high";
+  message: string;
+  recommendations: string[];
+};
+
+export type GuidanceResponse = {
+  profileAnalysis: string;
+  idealCoachingStyle: string;
+  weeklyBlueprint: {
+    trainingHours: string;
+    freePlayHours: string;
+    restDays: string;
+  };
+  recommendedPlatformActions: string;
+  recommendedSports?: string[];
+  mentalSkillsRoadmap?: {
+    currentFocus: string;
+    skills: Array<{ skill: string; howToDevelop: string }>;
+  };
+  talentIdentifiers?: string[];
+  multiSportAdvisory?: string;
+  journeyPhases?: JourneyPhase[];
+  shortTermPlan?: ShortTermPlan;
+  goalAssessment?: GoalAssessment;
+  costBreakdown?: CostBreakdown;
+  burnoutRisk?: BurnoutRisk;
+};
+
+/** Structured drill — new submissions; older ones stored a single string. */
+export type PlanSession = {
+  name: string;
+  minutes?: number;
+  how: string;
+  doneRight?: string;
+};
+
+export type ShortTermPlan = {
+  durationWeeks: number;
+  weeks: Array<{
+    label: string;
+    focus: string;
+    sessions: Array<PlanSession | string>;
+  }>;
+  /** One concrete, observable test the parent runs at the end to know it worked */
+  successCheck: string;
+};
+
+export type JourneyPhase = {
+  title: string;
+  timeframe: string;
+  focus: string;
+  milestones: string[];
+  outcome: string;
+  estimatedCost?: string;
+  pathwayLevel?: number; // 1-5, ascending from entry tier to elite/global tier — actual tier names are sport-specific (see /roadmap)
+};
+
+export type GoalAssessment = {
+  statedGoal: string;
+  verdict: "On Track" | "Achievable" | "Ambitious" | "Long-Term";
+  rationale: string;
+  benchmark: string;
+};
+
+export type CostBreakdown = {
+  monthlyCoaching: string;
+  equipment: string;
+  tournaments: string;
+};
+
+export type GuidanceSubmission = {
+  id: string;
+  query: GuidanceFormState;
+  response: GuidanceResponse;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PlayerProfile = {
+  _id: string;
+  name: string;
+  age?: number;
+  dob?: string;
+  gender?: ChildGender;
+  sportsFocus: string[];
+  yearsPlaying?: number;
+  personalityTags?: string[];
+  location?: string;
+  /** The quiz answers, as the server stores them: one record, absent until the quiz is taken. */
+  quiz?: DependentQuiz;
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
+  /** Sports the parent shortlisted themselves in the assessment (max 3). */
+  consideringSports?: string[];
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: string;
+  /** The sport the parent committed to on the results page — a decision, not a score. */
+  chosenSport?: string;
+  chosenSportAt?: string;
+};

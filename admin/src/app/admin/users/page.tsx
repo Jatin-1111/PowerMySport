@@ -1,9 +1,11 @@
-﻿"use client";
+"use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import {
   CoachUserRow,
   CoachesAnalytics,
+  ExpertUserRow,
+  ParentUserRow,
   PlayerUserRow,
   PlayersAnalytics,
   statsApi,
@@ -12,10 +14,17 @@ import {
   VenueListerUserRow,
   VenueListersAnalytics,
 } from "@/modules/analytics/services/stats";
-import { Card } from "@/modules/shared/ui/Card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { AdminDataTable, AdminDataTableColumn } from "@/modules/shared/ui/AdminDataTable";
+import { EntityBadge } from "@/modules/shared/ui/EntityBadge";
+import { MetricStrip } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
+import { DetailDrawer, DetailRow, DetailSection } from "@/modules/shared/ui/DetailDrawer";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
+import { useCallback, useEffect, useMemo, useState, Suspense } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { io } from "socket.io-client";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -23,24 +32,48 @@ interface PaginationData {
   totalPages: number;
 }
 
-type SortBy = "joined_desc" | "joined_asc" | "name_asc" | "rating_desc";
-type UsersRow = PlayerUserRow | CoachUserRow | VenueListerUserRow;
+type UsersRow = PlayerUserRow | CoachUserRow | VenueListerUserRow | GenericUserRow;
+type SortColumn = "name" | "joined" | "lastActive" | "rating";
+type SortDirection = "asc" | "desc";
+
+// Generic row for roles without a dedicated API (Expert, Parent)
+interface GenericUserRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "EXPERT" | "Parent";
+  createdAt: string;
+  lastActiveAt: string;
+  isOnlineNow: boolean;
+}
 
 const TAB_LABELS: Record<UsersTabRole, string> = {
-  PLAYER: "Players",
-  COACH: "Coaches",
-  VENUE_LISTER: "Venue Owners",
+  EXPERT: "Experts",
+  Parent: "Parents",
+  Player: "Players",
+  Coach: "Coaches",
+  VenueLister: "Venue Owners",
 };
 
 const DEFAULT_SUMMARY: UsersRoleSummary = {
-  PLAYER: 0,
-  COACH: 0,
-  VENUE_LISTER: 0,
+  EXPERT: 0,
+  Parent: 0,
+  Player: 0,
+  Coach: 0,
+  VenueLister: 0,
 };
 
-const formatDateTime = (value: string): string => {
-  return new Date(value).toLocaleString();
-};
+const formatDateTime = (value?: string): string => (value ? new Date(value).toLocaleString() : "—");
+
+const formatDate = (value?: string): string =>
+  value
+    ? new Date(value).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "—";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 const SOCKET_URL = API_URL.replace(/\/api\/?$/, "");
@@ -51,18 +84,73 @@ interface PresenceUpdateEvent {
   lastActiveAt: string;
 }
 
+function OnlinePill({ online, lastActiveAt }: { online: boolean; lastActiveAt: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${
+        online
+          ? "bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-200"
+          : "bg-slate-100 text-slate-600"
+      }`}
+      title={`Last active: ${formatDateTime(lastActiveAt)}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${online ? "bg-emerald-500" : "bg-slate-400"}`} />
+      {online ? "Online" : formatDate(lastActiveAt)}
+    </span>
+  );
+}
+
 export default function AdminUsersPage() {
-  const [activeTab, setActiveTab] = useState<UsersTabRole>("PLAYER");
+  return (
+    <Suspense fallback={<SkeletonBlock rows={6} label="Loading users" />}>
+      <AdminUsersPageContent />
+    </Suspense>
+  );
+}
+
+function AdminUsersPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const tabParam = searchParams.get("tab") as UsersTabRole;
+  const activeTab: UsersTabRole =
+    tabParam === "EXPERT" ||
+    tabParam === "Parent" ||
+    tabParam === "Player" ||
+    tabParam === "Coach" ||
+    tabParam === "VenueLister"
+      ? tabParam
+      : "EXPERT";
+
+  const pageParam = Number(searchParams.get("page"));
+  const currentPage = !isNaN(pageParam) && pageParam > 0 ? pageParam : 1;
+
+  const updateQueryParams = (params: Record<string, string | number | null>) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === null || value === undefined) {
+        current.delete(key);
+      } else {
+        current.set(key, String(value));
+      }
+    });
+    const search = current.toString();
+    router.replace(`${pathname}${search ? `?${search}` : ""}`, {
+      scroll: false,
+    });
+  };
+
+  const setCurrentPage = (page: number) => updateQueryParams({ page });
+
   const [users, setUsers] = useState<UsersRow[]>([]);
   const [summary, setSummary] = useState<UsersRoleSummary>(DEFAULT_SUMMARY);
-  const [playersAnalytics, setPlayersAnalytics] =
-    useState<PlayersAnalytics | null>(null);
-  const [coachesAnalytics, setCoachesAnalytics] =
-    useState<CoachesAnalytics | null>(null);
-  const [venueListersAnalytics, setVenueListersAnalytics] =
-    useState<VenueListersAnalytics | null>(null);
+  const [playersAnalytics, setPlayersAnalytics] = useState<PlayersAnalytics | null>(null);
+  const [coachesAnalytics, setCoachesAnalytics] = useState<CoachesAnalytics | null>(null);
+  const [venueListersAnalytics, setVenueListersAnalytics] = useState<VenueListersAnalytics | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationData>({
     total: 0,
     page: 1,
@@ -70,15 +158,15 @@ export default function AdminUsersPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortBy>("joined_desc");
+  const [sortColumn, setSortColumn] = useState<SortColumn>("joined");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
+  const [selectedUser, setSelectedUser] = useState<UsersRow | null>(null);
   const PAGE_SIZE = 15;
 
   const fetchSummary = useCallback(async () => {
     try {
       const response = await statsApi.getUsersRoleSummary();
-      if (response.success && response.data) {
-        setSummary(response.data);
-      }
+      if (response.success && response.data) setSummary(response.data);
     } catch (summaryError) {
       console.error("Failed to fetch users summary:", summaryError);
     }
@@ -89,74 +177,78 @@ export default function AdminUsersPage() {
       setLoading(true);
       setError(null);
 
-      if (activeTab === "PLAYER") {
+      if (activeTab === "EXPERT") {
+        const usersResponse = await statsApi.getExpertUsers({
+          page: currentPage,
+          limit: PAGE_SIZE,
+        });
+        if (!usersResponse.success || !usersResponse.data) {
+          setError(usersResponse.message || "Failed to load experts.");
+          return;
+        }
+        setUsers(usersResponse.data as UsersRow[]);
+        if (usersResponse.pagination) setPagination(usersResponse.pagination);
+        return;
+      }
+
+      if (activeTab === "Parent") {
+        const usersResponse = await statsApi.getParentUsers({
+          page: currentPage,
+          limit: PAGE_SIZE,
+        });
+        if (!usersResponse.success || !usersResponse.data) {
+          setError(usersResponse.message || "Failed to load parents.");
+          return;
+        }
+        setUsers(usersResponse.data as UsersRow[]);
+        if (usersResponse.pagination) setPagination(usersResponse.pagination);
+        return;
+      }
+
+      if (activeTab === "Player") {
         const [usersResponse, analyticsResponse] = await Promise.all([
-          statsApi.getPlayersUsers({
-            page: currentPage,
-            limit: PAGE_SIZE,
-          }),
+          statsApi.getPlayersUsers({ page: currentPage, limit: PAGE_SIZE }),
           statsApi.getPlayersAnalytics(),
         ]);
-
         if (!usersResponse.success || !usersResponse.data) {
           setError(usersResponse.message || "Failed to load players.");
           return;
         }
-
         setUsers(usersResponse.data);
-        if (usersResponse.pagination) {
-          setPagination(usersResponse.pagination);
-        }
-        if (analyticsResponse.success && analyticsResponse.data) {
+        if (usersResponse.pagination) setPagination(usersResponse.pagination);
+        if (analyticsResponse.success && analyticsResponse.data)
           setPlayersAnalytics(analyticsResponse.data);
-        }
         return;
       }
 
-      if (activeTab === "COACH") {
+      if (activeTab === "Coach") {
         const [usersResponse, analyticsResponse] = await Promise.all([
-          statsApi.getCoachUsers({
-            page: currentPage,
-            limit: PAGE_SIZE,
-          }),
+          statsApi.getCoachUsers({ page: currentPage, limit: PAGE_SIZE }),
           statsApi.getCoachesAnalytics(),
         ]);
-
         if (!usersResponse.success || !usersResponse.data) {
           setError(usersResponse.message || "Failed to load coaches.");
           return;
         }
-
         setUsers(usersResponse.data);
-        if (usersResponse.pagination) {
-          setPagination(usersResponse.pagination);
-        }
-        if (analyticsResponse.success && analyticsResponse.data) {
+        if (usersResponse.pagination) setPagination(usersResponse.pagination);
+        if (analyticsResponse.success && analyticsResponse.data)
           setCoachesAnalytics(analyticsResponse.data);
-        }
         return;
       }
 
       const [usersResponse, analyticsResponse] = await Promise.all([
-        statsApi.getVenueListerUsers({
-          page: currentPage,
-          limit: PAGE_SIZE,
-        }),
+        statsApi.getVenueListerUsers({ page: currentPage, limit: PAGE_SIZE }),
         statsApi.getVenueListersAnalytics(),
       ]);
-
       if (!usersResponse.success || !usersResponse.data) {
         setError(usersResponse.message || "Failed to load venue owners.");
         return;
       }
-
       setUsers(usersResponse.data);
-      if (usersResponse.pagination) {
-        setPagination(usersResponse.pagination);
-      }
-      if (analyticsResponse.success && analyticsResponse.data) {
+      if (usersResponse.pagination) setPagination(usersResponse.pagination);
+      if (analyticsResponse.success && analyticsResponse.data)
         setVenueListersAnalytics(analyticsResponse.data);
-      }
     } catch (fetchError) {
       console.error("Failed to fetch users by role:", fetchError);
       setError("Failed to load users.");
@@ -166,10 +258,21 @@ export default function AdminUsersPage() {
   }, [activeTab, currentPage]);
 
   const switchTab = (tab: UsersTabRole): void => {
-    setActiveTab(tab);
-    setCurrentPage(1);
+    updateQueryParams({ tab, page: 1 });
     setSearchQuery("");
-    setSortBy("joined_desc");
+    setSortColumn("joined");
+    setSortDirection("desc");
+    setSelectedUser(null);
+  };
+
+  const onSortChange = (column: string) => {
+    const col = column as SortColumn;
+    if (sortColumn === col) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(col);
+      setSortDirection(col === "name" ? "asc" : "desc");
+    }
   };
 
   useEffect(() => {
@@ -181,14 +284,6 @@ export default function AdminUsersPage() {
   }, [fetchUsersByRole]);
 
   useEffect(() => {
-    if (!SOCKET_URL || SOCKET_URL.includes("localhost")) {
-      if (process.env.NODE_ENV === "production") {
-        console.error(
-          "[AdminUsers] NEXT_PUBLIC_API_URL is not set — presence socket will not connect in production.",
-        );
-      }
-    }
-
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
       reconnection: true,
@@ -196,501 +291,459 @@ export default function AdminUsersPage() {
       reconnectionDelayMax: 5000,
     });
 
-    socket.on("connect", () => {
-      console.log("[AdminUsers] Presence socket connected →", SOCKET_URL);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error(
-        "[AdminUsers] Presence socket connection error:",
-        err.message,
-        "| URL:",
-        SOCKET_URL,
-      );
-    });
-
     const onPresenceUpdate = (event: PresenceUpdateEvent): void => {
-      console.log("[AdminUsers] PRESENCE_UPDATE received:", event);
       if (!event?.userId) return;
-
       setUsers((previous) =>
-        previous.map((user) => {
-          if (user.id !== event.userId) {
-            return user;
-          }
-
-          return {
-            ...user,
-            isOnlineNow: event.isOnlineNow,
-            lastActiveAt: event.lastActiveAt,
-          };
-        }),
+        previous.map((user) =>
+          user.id === event.userId
+            ? {
+                ...user,
+                isOnlineNow: event.isOnlineNow,
+                lastActiveAt: event.lastActiveAt,
+              }
+            : user
+        )
       );
     };
 
     socket.on("PRESENCE_UPDATE", onPresenceUpdate);
-
     return () => {
       socket.off("PRESENCE_UPDATE", onPresenceUpdate);
       socket.disconnect();
     };
   }, []);
 
-  if (loading) {
-    return <div className="text-center py-12">Loading users...</div>;
-  }
+  const visibleUsers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = users.filter((user) => {
+      if (!query) return true;
+      return (
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        (user.phone || "").toLowerCase().includes(query)
+      );
+    });
 
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <AdminPageHeader
-          badge="Admin"
-          title="Users"
-          subtitle="View role-specific users, analytics, and health metrics."
-        />
-        <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
-            <button
-              onClick={fetchUsersByRole}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+    const factor = sortDirection === "asc" ? 1 : -1;
+    return [...filtered].sort((left, right) => {
+      if (sortColumn === "name") {
+        return factor * left.name.localeCompare(right.name);
+      }
+      if (sortColumn === "lastActive") {
+        return (
+          factor * (new Date(left.lastActiveAt).getTime() - new Date(right.lastActiveAt).getTime())
+        );
+      }
+      if (sortColumn === "rating" && left.role === "Coach" && right.role === "Coach") {
+        return factor * (left.rating - right.rating);
+      }
+      return factor * (new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
+    });
+  }, [users, searchQuery, sortColumn, sortDirection]);
+
+  const columns = useMemo<AdminDataTableColumn<UsersRow>[]>(() => {
+    const userCol: AdminDataTableColumn<UsersRow> = {
+      key: "name",
+      header: "User",
+      sortable: true,
+      render: (u) => <EntityBadge name={u.name} email={u.email} />,
+    };
+    const phoneCol: AdminDataTableColumn<UsersRow> = {
+      key: "phone",
+      header: "Phone",
+      render: (u) => <span className="whitespace-nowrap text-slate-600">{u.phone || "—"}</span>,
+    };
+    const joinedCol: AdminDataTableColumn<UsersRow> = {
+      key: "joined",
+      header: "Joined",
+      sortable: true,
+      render: (u) => (
+        <span className="whitespace-nowrap text-slate-600">{formatDate(u.createdAt)}</span>
+      ),
+    };
+    const activityCol: AdminDataTableColumn<UsersRow> = {
+      key: "lastActive",
+      header: "Activity",
+      sortable: true,
+      render: (u) => <OnlinePill online={u.isOnlineNow} lastActiveAt={u.lastActiveAt} />,
+    };
+
+    if (activeTab === "EXPERT") {
+      return [
+        userCol,
+        phoneCol,
+        {
+          key: "specialization",
+          header: "Specialization",
+          render: (u) =>
+            u.role === "EXPERT" ? (
+              <span className="text-slate-700">{(u as ExpertUserRow).specialization || "—"}</span>
+            ) : null,
+        },
+        {
+          key: "sessionCount",
+          header: "Sessions",
+          render: (u) =>
+            u.role === "EXPERT" ? (
+              <span className="text-slate-700">{(u as ExpertUserRow).sessionCount ?? "—"}</span>
+            ) : null,
+        },
+        joinedCol,
+        activityCol,
+      ];
+    }
+
+    if (activeTab === "Parent") {
+      return [
+        userCol,
+        phoneCol,
+        {
+          key: "dependents",
+          header: "Dependents",
+          render: (u) =>
+            u.role === "Parent" ? (
+              <span className="text-slate-700">{(u as ParentUserRow).dependentsCount}</span>
+            ) : null,
+        },
+        joinedCol,
+        activityCol,
+      ];
+    }
+
+    if (activeTab === "Player") {
+      return [
+        userCol,
+        phoneCol,
+        {
+          key: "sports",
+          header: "Sports",
+          render: (u) =>
+            u.role === "Player" ? <span className="text-slate-700">{u.sportsCount}</span> : null,
+        },
+        joinedCol,
+        activityCol,
+      ];
+    }
+
+    if (activeTab === "Coach") {
+      return [
+        userCol,
+        phoneCol,
+        {
+          key: "verification",
+          header: "Verification",
+          render: (u) =>
+            u.role === "Coach" ? <StatusBadge status={u.verificationStatus} /> : null,
+        },
+        {
+          key: "serviceMode",
+          header: "Service mode",
+          render: (u) =>
+            u.role === "Coach" ? (
+              <span className="text-slate-600">{u.serviceMode || "—"}</span>
+            ) : null,
+        },
+        {
+          key: "rating",
+          header: "Rating",
+          sortable: true,
+          render: (u) =>
+            u.role === "Coach" ? (
+              <span className="text-slate-700">
+                {u.rating.toFixed(1)} <span className="text-slate-500">({u.reviewCount})</span>
+              </span>
+            ) : null,
+        },
+        joinedCol,
+        activityCol,
+      ];
+    }
+
+    return [
+      userCol,
+      phoneCol,
+      {
+        key: "business",
+        header: "Business",
+        render: (u) =>
+          u.role === "VenueLister" ? (
+            <span className="text-slate-700">{u.businessName || "—"}</span>
+          ) : null,
+      },
+      {
+        key: "venues",
+        header: "Venues (approved / pending / total)",
+        render: (u) =>
+          u.role === "VenueLister" ? (
+            <span className="text-slate-700">
+              <span className="text-emerald-700">{u.approvedVenueCount}</span>
+              {" / "}
+              <span className="text-amber-700">{u.pendingVenueCount}</span>
+              {" / "}
+              {u.venueCount}
+            </span>
+          ) : null,
+      },
+      joinedCol,
+      activityCol,
+    ];
+  }, [activeTab]);
+
+  const exportColumns = useMemo(() => {
+    if (activeTab === "Player") {
+      return [
+        { header: "Name", value: (u: UsersRow) => u.name },
+        { header: "Email", value: (u: UsersRow) => u.email },
+        { header: "Phone", value: (u: UsersRow) => u.phone || "" },
+        {
+          header: "Sports Count",
+          value: (u: UsersRow) => (u.role === "Player" ? u.sportsCount : ""),
+        },
+        { header: "Created At", value: (u: UsersRow) => u.createdAt },
+        { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
+      ];
+    }
+    if (activeTab === "Coach") {
+      return [
+        { header: "Name", value: (u: UsersRow) => u.name },
+        { header: "Email", value: (u: UsersRow) => u.email },
+        { header: "Phone", value: (u: UsersRow) => u.phone || "" },
+        {
+          header: "Verification Status",
+          value: (u: UsersRow) => (u.role === "Coach" ? u.verificationStatus : ""),
+        },
+        {
+          header: "Service mode",
+          value: (u: UsersRow) => (u.role === "Coach" ? u.serviceMode || "" : ""),
+        },
+        {
+          header: "Rating",
+          value: (u: UsersRow) => (u.role === "Coach" ? u.rating : ""),
+        },
+        { header: "Created At", value: (u: UsersRow) => u.createdAt },
+        { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
+      ];
+    }
+    return [
+      { header: "Name", value: (u: UsersRow) => u.name },
+      { header: "Email", value: (u: UsersRow) => u.email },
+      { header: "Phone", value: (u: UsersRow) => u.phone || "" },
+      {
+        header: "Business Name",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.businessName || "" : ""),
+      },
+      {
+        header: "Total Venues",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.venueCount : ""),
+      },
+      {
+        header: "Approved venues",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.approvedVenueCount : ""),
+      },
+      {
+        header: "Pending venues",
+        value: (u: UsersRow) => (u.role === "VenueLister" ? u.pendingVenueCount : ""),
+      },
+      { header: "Created At", value: (u: UsersRow) => u.createdAt },
+      { header: "Last Active", value: (u: UsersRow) => u.lastActiveAt },
+    ];
+  }, [activeTab]);
+
+  const tabItems = (["EXPERT", "Parent", "Player", "Coach", "VenueLister"] as UsersTabRole[]).map(
+    (tab) => ({ id: tab, label: TAB_LABELS[tab], count: summary[tab] })
+  );
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
+        badge="People"
         title="Users"
-        subtitle="View role-specific users, analytics, and health metrics."
+        subtitle="Every account on the platform, by role. Open a row for full details."
       />
 
-      <div className="admin-tabs-scroll border-b border-slate-200">
-        {(["PLAYER", "COACH", "VENUE_LISTER"] as UsersTabRole[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => switchTab(tab)}
-            className={`px-3 py-2.5 font-semibold text-sm transition-colors border-b-2 sm:px-4 sm:py-3 ${
-              activeTab === tab
-                ? "border-power-orange text-power-orange"
-                : "border-transparent text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {TAB_LABELS[tab]}
-            <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-100 text-xs">
-              {summary[tab]}
-            </span>
-          </button>
-        ))}
-      </div>
+      <Tabs tabs={tabItems} value={activeTab} onChange={switchTab} label="User roles" />
 
-      {activeTab === "PLAYER" && playersAnalytics && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Total
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {playersAnalytics.totalPlayers}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              New This Month
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {playersAnalytics.newThisMonth}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Sports Profile
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {playersAnalytics.withSportsProfile}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              With Dependents
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {playersAnalytics.withDependents}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              New Accounts Last 24h
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {playersAnalytics.newAccountsLast24Hours}
-            </p>
-          </Card>
-        </div>
+      {error && <ErrorNotice message={error} onRetry={fetchUsersByRole} />}
+
+      {activeTab === "Player" && playersAnalytics && (
+        <MetricStrip
+          items={[
+            { label: "Total", value: String(playersAnalytics.totalPlayers) },
+            { label: "New this month", value: String(playersAnalytics.newThisMonth) },
+            { label: "With sports profile", value: String(playersAnalytics.withSportsProfile) },
+            { label: "With dependents", value: String(playersAnalytics.withDependents) },
+            { label: "New in last 24h", value: String(playersAnalytics.newAccountsLast24Hours) },
+          ]}
+        />
       )}
 
-      {activeTab === "COACH" && coachesAnalytics && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Total
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {coachesAnalytics.totalCoaches}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Verified
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {coachesAnalytics.verifiedCount}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Pending / Review
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {coachesAnalytics.pendingOrReviewCount}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Avg Rating
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {coachesAnalytics.avgRating.toFixed(2)}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              New Accounts Last 24h
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {coachesAnalytics.newAccountsLast24Hours}
-            </p>
-          </Card>
-        </div>
+      {activeTab === "Coach" && coachesAnalytics && (
+        <MetricStrip
+          items={[
+            { label: "Total", value: String(coachesAnalytics.totalCoaches) },
+            { label: "Verified", value: String(coachesAnalytics.verifiedCount) },
+            { label: "Pending or in review", value: String(coachesAnalytics.pendingOrReviewCount) },
+            { label: "Average rating", value: String(coachesAnalytics.avgRating.toFixed(2)) },
+            { label: "New in last 24h", value: String(coachesAnalytics.newAccountsLast24Hours) },
+          ]}
+        />
       )}
 
-      {activeTab === "VENUE_LISTER" && venueListersAnalytics && (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Total
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {venueListersAnalytics.totalVenueListers}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Owners With Venues
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {venueListersAnalytics.withAtLeastOneVenue}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Approved Venues
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {venueListersAnalytics.approvedVenuesCount}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              Pending Venues
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {venueListersAnalytics.pendingVenuesCount}
-            </p>
-          </Card>
-          <Card className="bg-white">
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              New Accounts Last 24h
-            </p>
-            <p className="text-2xl font-bold text-slate-900">
-              {venueListersAnalytics.newAccountsLast24Hours}
-            </p>
-          </Card>
-        </div>
+      {activeTab === "VenueLister" && venueListersAnalytics && (
+        <MetricStrip
+          items={[
+            { label: "Total", value: String(venueListersAnalytics.totalVenueListers) },
+            {
+              label: "Owners with venues",
+              value: String(venueListersAnalytics.withAtLeastOneVenue),
+            },
+            { label: "Approved venues", value: String(venueListersAnalytics.approvedVenuesCount) },
+            { label: "Pending venues", value: String(venueListersAnalytics.pendingVenuesCount) },
+            {
+              label: "New in last 24h",
+              value: String(venueListersAnalytics.newAccountsLast24Hours),
+            },
+          ]}
+        />
       )}
 
-      <Card className="bg-white">
-        <div className="grid gap-3 md:grid-cols-2">
-          <input
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search by name or email"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+      <AdminDataTable<UsersRow>
+        columns={columns}
+        rows={visibleUsers}
+        getRowKey={(u) => u.id}
+        loading={loading}
+        emptyMessage={
+          searchQuery
+            ? `No ${TAB_LABELS[activeTab].toLowerCase()} match your search`
+            : `No ${TAB_LABELS[activeTab].toLowerCase()} found`
+        }
+        onRowClick={(u) => setSelectedUser(u)}
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: "Search this page by name, email or phone",
+        }}
+        sort={{
+          column: sortColumn,
+          direction: sortDirection,
+          onChange: onSortChange,
+        }}
+        pagination={{
+          page: currentPage,
+          totalPages: pagination.totalPages,
+          total: pagination.total,
+          onPageChange: setCurrentPage,
+        }}
+        toolbarExtra={
+          <ExportCsvButton
+            filename={`${activeTab.toLowerCase()}-users.csv`}
+            rows={visibleUsers}
+            label="Export this page (CSV)"
+            columns={exportColumns}
           />
-          <select
-            value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as SortBy)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="joined_desc">Newest joined first</option>
-            <option value="joined_asc">Oldest joined first</option>
-            <option value="name_asc">Name (A-Z)</option>
-            {activeTab === "COACH" && (
-              <option value="rating_desc">Rating (High-Low)</option>
-            )}
-          </select>
-        </div>
-      </Card>
+        }
+      />
 
-      {(() => {
-        const filteredUsers = users.filter((user) => {
-          const query = searchQuery.trim().toLowerCase();
-          if (!query) return true;
-          return (
-            user.name.toLowerCase().includes(query) ||
-            user.email.toLowerCase().includes(query)
-          );
-        });
-
-        const visibleUsers = [...filteredUsers].sort((left, right) => {
-          if (sortBy === "name_asc") {
-            return left.name.localeCompare(right.name);
-          }
-
-          if (sortBy === "joined_asc") {
-            return (
-              new Date(left.createdAt).getTime() -
-              new Date(right.createdAt).getTime()
-            );
-          }
-
-          if (
-            sortBy === "rating_desc" &&
-            left.role === "COACH" &&
-            right.role === "COACH"
-          ) {
-            return right.rating - left.rating;
-          }
-
-          return (
-            new Date(right.createdAt).getTime() -
-            new Date(left.createdAt).getTime()
-          );
-        });
-
-        return (
+      <DetailDrawer
+        open={Boolean(selectedUser)}
+        onClose={() => setSelectedUser(null)}
+        title={selectedUser?.name || "User"}
+        subtitle={selectedUser?.email}
+        headerExtra={
+          selectedUser ? (
+            <OnlinePill
+              online={selectedUser.isOnlineNow}
+              lastActiveAt={selectedUser.lastActiveAt}
+            />
+          ) : null
+        }
+      >
+        {selectedUser && (
           <>
-            <Card className="p-0 bg-white overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-full">
-                  <thead className="bg-slate-100">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                        Email
-                      </th>
-                      {activeTab === "PLAYER" && (
-                        <>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Sports
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Dependents
-                          </th>
-                        </>
-                      )}
-                      {activeTab === "COACH" && (
-                        <>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Verification
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Service Mode
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Rating
-                          </th>
-                        </>
-                      )}
-                      {activeTab === "VENUE_LISTER" && (
-                        <>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Business
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Total Venues
-                          </th>
-                          <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                            Approved / Pending
-                          </th>
-                        </>
-                      )}
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                        Created At
-                      </th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-slate-900">
-                        Last Active
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {visibleUsers.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={
-                            activeTab === "PLAYER"
-                              ? 6
-                              : activeTab === "COACH"
-                                ? 7
-                                : 7
-                          }
-                          className="px-6 py-8 text-center text-slate-600"
-                        >
-                          {searchQuery
-                            ? `No ${TAB_LABELS[activeTab].toLowerCase()} match your search`
-                            : `No ${TAB_LABELS[activeTab].toLowerCase()} found`}
-                        </td>
-                      </tr>
-                    ) : (
-                      visibleUsers.map((user) => (
-                        <tr key={user.id} className="hover:bg-slate-50">
-                          <td className="px-6 py-4 text-slate-900 font-medium">
-                            {user.name}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {user.email}
-                          </td>
+            <DetailSection title="Account">
+              <DetailRow label="Role" value={TAB_LABELS[activeTab]} />
+              <DetailRow label="Email" value={selectedUser.email} />
+              <DetailRow label="Phone" value={selectedUser.phone || "—"} />
+              <DetailRow label="Joined" value={formatDateTime(selectedUser.createdAt)} />
+              <DetailRow label="Last active" value={formatDateTime(selectedUser.lastActiveAt)} />
+            </DetailSection>
 
-                          {user.role === "PLAYER" && (
-                            <>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.sportsCount}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.dependentsCount}
-                              </td>
-                            </>
-                          )}
+            {selectedUser.role === "EXPERT" && (
+              <DetailSection title="Expert profile">
+                <DetailRow
+                  label="Specialization"
+                  value={(selectedUser as ExpertUserRow).specialization || "—"}
+                />
+                <DetailRow
+                  label="Sessions"
+                  value={(selectedUser as ExpertUserRow).sessionCount ?? "—"}
+                />
+              </DetailSection>
+            )}
 
-                          {user.role === "COACH" && (
-                            <>
-                              <td className="px-6 py-4">
-                                <span className="px-2 py-1 bg-power-orange/10 text-power-orange text-xs rounded-full font-medium">
-                                  {user.verificationStatus}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.serviceMode || "-"}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.rating.toFixed(1)} ({user.reviewCount})
-                              </td>
-                            </>
-                          )}
+            {selectedUser.role === "Parent" && (
+              <DetailSection title="Parent profile">
+                <DetailRow
+                  label="Dependents"
+                  value={(selectedUser as ParentUserRow).dependentsCount}
+                />
+              </DetailSection>
+            )}
 
-                          {user.role === "VENUE_LISTER" && (
-                            <>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.businessName || "-"}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.venueCount}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-slate-600">
-                                {user.approvedVenueCount} /{" "}
-                                {user.pendingVenueCount}
-                              </td>
-                            </>
-                          )}
+            {selectedUser.role === "Player" && (
+              <DetailSection title="Player profile">
+                <DetailRow
+                  label="Has sports profile"
+                  value={selectedUser.hasSportsProfile ? "Yes" : "No"}
+                />
+                <DetailRow
+                  label="Sports"
+                  value={selectedUser.sports.length ? selectedUser.sports.join(", ") : "—"}
+                />
+              </DetailSection>
+            )}
 
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {formatDateTime(user.createdAt)}
-                          </td>
-                          <td className="px-6 py-4 text-sm">
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user.isOnlineNow
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}
-                              title={`Last active: ${formatDateTime(user.lastActiveAt)}`}
-                            >
-                              {user.isOnlineNow
-                                ? "Online now"
-                                : formatDateTime(user.lastActiveAt)}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+            {selectedUser.role === "Coach" && (
+              <DetailSection title="Coach profile">
+                <DetailRow
+                  label="Verification"
+                  value={<StatusBadge status={selectedUser.verificationStatus} />}
+                />
+                <DetailRow label="Service mode" value={selectedUser.serviceMode || "—"} />
+                <DetailRow
+                  label="Hourly rate"
+                  value={selectedUser.hourlyRate != null ? `₹${selectedUser.hourlyRate}` : "—"}
+                />
+                <DetailRow
+                  label="Rating"
+                  value={`${selectedUser.rating.toFixed(1)} (${selectedUser.reviewCount} reviews)`}
+                />
+                <DetailRow
+                  label="Sports"
+                  value={selectedUser.sports.length ? selectedUser.sports.join(", ") : "—"}
+                />
+                <DetailRow
+                  label="Profile complete"
+                  value={selectedUser.profileIncomplete ? "No" : "Yes"}
+                />
+              </DetailSection>
+            )}
 
-            {pagination.totalPages > 1 && (
-              <div className="flex flex-col gap-3 p-4 bg-white rounded-lg border border-slate-200 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-600 text-center sm:text-left">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
-                  {pagination.total} {TAB_LABELS[activeTab].toLowerCase()}
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-
-                  {Array.from(
-                    { length: pagination.totalPages },
-                    (_, i) => i + 1,
-                  )
-                    .slice(
-                      Math.max(0, currentPage - 2),
-                      Math.min(pagination.totalPages, currentPage + 1),
-                    )
-                    .map((page) => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-2 rounded-lg font-semibold transition-colors ${
-                          currentPage === page
-                            ? "bg-power-orange text-white"
-                            : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                  <button
-                    onClick={() =>
-                      setCurrentPage(
-                        Math.min(pagination.totalPages, currentPage + 1),
-                      )
-                    }
-                    disabled={currentPage === pagination.totalPages}
-                    className="p-2 rounded-lg border border-slate-300 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
+            {selectedUser.role === "VenueLister" && (
+              <DetailSection title="Venue owner profile">
+                <DetailRow label="Business" value={selectedUser.businessName || "—"} />
+                <DetailRow label="Total venues" value={selectedUser.venueCount} />
+                <DetailRow label="Approved venues" value={selectedUser.approvedVenueCount} />
+                <DetailRow label="Pending venues" value={selectedUser.pendingVenueCount} />
+                <DetailRow
+                  label="Can add more venues"
+                  value={selectedUser.canAddMoreVenues ? "Yes" : "No"}
+                />
+              </DetailSection>
             )}
           </>
-        );
-      })()}
+        )}
+      </DetailDrawer>
     </div>
   );
 }

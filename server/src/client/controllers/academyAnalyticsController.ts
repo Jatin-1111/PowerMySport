@@ -1,22 +1,45 @@
 import { Request, Response } from "express";
 import { getAcademyEarnings, getAcademyAnalytics } from "../services/AcademyAnalyticsService";
+import { getOwnAcademySummary, getOwnAcademyVenues } from "../services/AcademyOwnerService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
-export const getAcademyEarningsHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
+export const getAcademyEarningsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
     const data = await getAcademyEarnings(req.user.id);
     res.status(200).json({ success: true, message: "Academy earnings retrieved", data });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Failed to fetch academy earnings" });
   }
-};
+);
 
-export const getAcademyAnalyticsHandler = async (req: Request, res: Response): Promise<void> => {
-  try {
-    if (!req.user?.id) { res.status(401).json({ success: false, message: "Unauthorized" }); return; }
+export const getAcademyAnalyticsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
     const data = await getAcademyAnalytics(req.user.id);
     res.status(200).json({ success: true, message: "Academy analytics retrieved", data });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error instanceof Error ? error.message : "Failed to fetch academy analytics" });
   }
-};
+);
+
+export const getMyAcademyHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+    const data = await getOwnAcademySummary(req.user.id);
+    res.status(200).json({ success: true, message: "Academy retrieved", data });
+  }
+);
+
+export const getMyAcademyVenuesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+    const data = await getOwnAcademyVenues(req.user.id);
+    res.status(200).json({ success: true, message: "Academy venues retrieved", data });
+  }
+);

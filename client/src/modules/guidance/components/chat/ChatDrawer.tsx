@@ -1,0 +1,488 @@
+"use client";
+
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AlertCircle,
+  ChevronLeft,
+  Clock,
+  Loader2,
+  MessageCircle,
+  Plus,
+  Send,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import type { ChatMessage } from "../../hooks/useChatCore";
+import { timeAgo } from "../../utils/timeAgo";
+import { MessageBubble } from "./ChatMessageBubble";
+
+// ─── Generic chat drawer shell ────────────────────────────────────────────────
+// Presentational component shared by every AI chat entry point (guidance chat,
+// roadmap chat, ...). Each caller supplies its own hook state + header copy.
+
+export interface SessionSummary {
+  _id: string;
+  sportSlug: string;
+  title: string | null;
+  totalMessageCount: number;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface ChatDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  subtitle: string;
+  messages: ChatMessage[];
+  isInitializing: boolean;
+  isStreaming: boolean;
+  meta: { dailyRemaining: number; lifetimeRemaining: number };
+  error: string | null;
+  sendMessage: (text: string) => Promise<void>;
+  clearError: () => void;
+  quickReplies?: string[];
+  children?: React.ReactNode;
+  // Session history (optional — only wired up for roadmap chat)
+  sessions?: SessionSummary[];
+  isLoadingSessions?: boolean;
+  currentSessionId?: string | null;
+  onNewChat?: () => void;
+  onSelectSession?: (sessionId: string) => void;
+}
+
+export function ChatDrawer({
+  isOpen,
+  onClose,
+  title,
+  subtitle,
+  messages,
+  isInitializing,
+  isStreaming,
+  meta,
+  error,
+  sendMessage,
+  clearError,
+  quickReplies = [],
+  children,
+  sessions,
+  isLoadingSessions,
+  currentSessionId,
+  onNewChat,
+  onSelectSession,
+}: ChatDrawerProps) {
+  const [inputValue, setInputValue] = useState("");
+  const [showHistory, setShowHistory] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const wasStreamingRef = useRef(false);
+  const titleId = useId();
+  const hintId = useId();
+  const prefersReducedMotion = useReducedMotion();
+  const [liveAnnouncement, setLiveAnnouncement] = useState("");
+  const hasHistory = !!sessions;
+
+  // Notify the rest of the app (e.g. WhatsApp button) when the drawer opens/closes
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("chat-drawer-change", { detail: { isOpen } }));
+  }, [isOpen]);
+
+  // Scroll to bottom on new messages / stream updates
+  useEffect(() => {
+    if (isOpen) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isOpen]);
+
+  // Focus input when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [isOpen]);
+
+  // Remember what had focus before opening, and restore it on close
+  useEffect(() => {
+    if (isOpen) {
+      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    } else {
+      previouslyFocusedRef.current?.focus?.();
+    }
+  }, [isOpen]);
+
+  // Trap focus inside the drawer and close on Escape while open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+      const container = containerRef.current;
+      if (!container) return;
+      const focusable = Array.from(
+        container.querySelectorAll<HTMLElement>(
+          'button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Announce streaming state changes once (not per chunk) so screen readers
+  // aren't flooded with partial-text mutations.
+  useEffect(() => {
+    if (isStreaming) {
+      wasStreamingRef.current = true;
+      setLiveAnnouncement(`${title} is responding…`);
+    } else if (wasStreamingRef.current) {
+      wasStreamingRef.current = false;
+      setLiveAnnouncement(`${title} has responded`);
+    }
+  }, [isStreaming, title]);
+
+  const handleSend = useCallback(async () => {
+    const text = inputValue.trim();
+    if (!text || isStreaming) return;
+    setInputValue("");
+    await sendMessage(text);
+  }, [inputValue, isStreaming, sendMessage]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend]
+  );
+
+  const handleQuickReply = useCallback(
+    (text: string) => {
+      if (isStreaming) return;
+      sendMessage(text);
+    },
+    [isStreaming, sendMessage]
+  );
+
+  const rateLimitHit = meta.dailyRemaining === 0 || meta.lifetimeRemaining === 0;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop (mobile only) */}
+          <motion.div
+            key="chat-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px] lg:hidden"
+            onClick={onClose}
+            aria-hidden="true"
+          />
+
+          {/* Drawer */}
+          <motion.aside
+            ref={containerRef}
+            key="chat-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            initial={prefersReducedMotion ? { opacity: 0 } : { x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { x: "100%", opacity: 0 }}
+            transition={
+              prefersReducedMotion
+                ? { duration: 0.01 }
+                : { type: "spring", damping: 28, stiffness: 280 }
+            }
+            className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-200/80 bg-white shadow-[−8px_0_30px_-10px_rgba(15,23,42,0.15)] sm:max-w-[560px]"
+          >
+            {/* Screen-reader-only status announcements (streaming state, not per-chunk) */}
+            <div role="status" aria-live="polite" className="sr-only">
+              {liveAnnouncement}
+            </div>
+
+            {/* ── Header ── */}
+            <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3.5">
+              {showHistory ? (
+                <button
+                  onClick={() => setShowHistory(false)}
+                  aria-label="Back to chat"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              ) : (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-50 ring-1 ring-orange-100">
+                  <MessageCircle
+                    className="text-power-orange h-[18px] w-[18px]"
+                    aria-hidden="true"
+                  />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p id={titleId} className="truncate text-sm font-bold leading-tight text-slate-900">
+                  {showHistory ? "Chat History" : title}
+                </p>
+                <p className="truncate text-[11px] text-slate-400">
+                  {showHistory ? "All your past conversations" : subtitle}
+                </p>
+              </div>
+              {!showHistory && (
+                <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
+                  {meta.dailyRemaining}/30 today
+                </span>
+              )}
+              {hasHistory && !showHistory && (
+                <button
+                  onClick={() => setShowHistory(true)}
+                  aria-label="Chat history"
+                  title="History"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                id="chat-drawer-close"
+                aria-label="Close chat"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Header addon area for disclaimers/badges (hidden in history view) */}
+            {children && !showHistory && (
+              <div className="border-b border-slate-100 bg-slate-50 px-4 py-2">{children}</div>
+            )}
+
+            {/* ── History panel ── */}
+            {showHistory && (
+              <div className="flex flex-1 flex-col overflow-hidden">
+                {/* New chat button */}
+                <div className="border-b border-slate-100 p-3">
+                  <button
+                    onClick={() => {
+                      onNewChat?.();
+                      setShowHistory(false);
+                    }}
+                    className="text-power-orange flex w-full cursor-pointer items-center gap-2.5 rounded-xl border border-dashed border-orange-200 bg-orange-50 px-4 py-2.5 text-sm font-semibold transition hover:bg-orange-100"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    New Chat
+                  </button>
+                </div>
+
+                {/* Session list */}
+                <div className="flex-1 space-y-1 overflow-y-auto p-3">
+                  {isLoadingSessions ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="h-5 w-5 animate-spin text-slate-300" aria-hidden="true" />
+                      <span className="sr-only">Loading chat history…</span>
+                    </div>
+                  ) : !sessions || sessions.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
+                      <MessageCircle className="h-8 w-8 text-slate-200" aria-hidden="true" />
+                      <p className="text-sm text-slate-400">No past conversations yet</p>
+                    </div>
+                  ) : (
+                    sessions.map((s) => {
+                      const isActive = s._id === currentSessionId;
+                      return (
+                        <button
+                          key={s._id}
+                          onClick={() => {
+                            onSelectSession?.(s._id);
+                            setShowHistory(false);
+                          }}
+                          className={`w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
+                            isActive
+                              ? "border border-orange-200 bg-orange-50"
+                              : "border border-transparent hover:bg-slate-50"
+                          }`}
+                        >
+                          <p
+                            className={`truncate text-sm font-medium leading-snug ${isActive ? "text-power-orange" : "text-slate-800"}`}
+                          >
+                            {s.title ?? "New conversation"}
+                          </p>
+                          <p className="mt-0.5 text-[11px] text-slate-400">
+                            {s.totalMessageCount}{" "}
+                            {s.totalMessageCount === 1 ? "message" : "messages"} ·{" "}
+                            {timeAgo(s.updatedAt)}
+                          </p>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── Messages area ── */}
+            {!showHistory && (
+              <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+                {isInitializing ? (
+                  <div className="flex h-full items-center justify-center">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <Loader2
+                        className="text-power-orange h-6 w-6 animate-spin"
+                        aria-hidden="true"
+                      />
+                      <p className="text-sm text-slate-500" role="status">
+                        Loading your conversation…
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    <AnimatePresence initial={false}>
+                      {messages.map((msg, idx) => {
+                        const isLastAssistant =
+                          msg.role === "assistant" && idx === messages.length - 1;
+                        return (
+                          <MessageBubble
+                            key={idx}
+                            role={msg.role}
+                            content={msg.content}
+                            isStreaming={isLastAssistant && isStreaming}
+                          />
+                        );
+                      })}
+                    </AnimatePresence>
+
+                    {/* Error banner */}
+                    {error && (
+                      <motion.div
+                        initial={{ opacity: 0, y: prefersReducedMotion ? 0 : 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        role="alert"
+                        className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700"
+                      >
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                        <span className="flex-1 leading-snug">{error}</span>
+                        <button
+                          onClick={clearError}
+                          aria-label="Dismiss error"
+                          className="shrink-0 text-rose-400 hover:text-rose-600"
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </motion.div>
+                    )}
+
+                    <div ref={bottomRef} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Quick reply chips (shown before first user turn) ── */}
+            {!showHistory &&
+              !isInitializing &&
+              quickReplies.length > 0 &&
+              messages.filter((m) => m.role === "user").length === 0 &&
+              !rateLimitHit && (
+                <div className="border-t border-slate-100 px-4 py-3">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    Quick questions
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {quickReplies.map((chip) => (
+                      <button
+                        key={chip}
+                        onClick={() => handleQuickReply(chip)}
+                        disabled={isStreaming}
+                        className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-medium text-orange-700 transition hover:bg-orange-100 disabled:opacity-40"
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* ── Rate limit message ── */}
+            {!showHistory && rateLimitHit && !isInitializing && (
+              <div className="border-t border-amber-100 bg-amber-50 px-4 py-3" role="status">
+                <p className="text-center text-xs leading-snug text-amber-700">
+                  {meta.lifetimeRemaining === 0
+                    ? "You've explored this thoroughly! Come back with a fresh question soon."
+                    : "Daily message limit reached, come back tomorrow to continue the conversation."}
+                </p>
+              </div>
+            )}
+
+            {/* ── Input area ── */}
+            {!showHistory && !rateLimitHit && !isInitializing && (
+              <div className="border-t border-slate-100 bg-white p-4">
+                <div className="flex items-end gap-2">
+                  <textarea
+                    ref={inputRef}
+                    id="chat-input"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask your coach anything…"
+                    rows={1}
+                    disabled={isStreaming}
+                    aria-label="Chat message input"
+                    aria-describedby={hintId}
+                    className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm leading-relaxed text-slate-900 placeholder:text-slate-400 focus:border-orange-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-200/60 disabled:opacity-50"
+                    style={{ minHeight: "42px", maxHeight: "120px" }}
+                    onInput={(e) => {
+                      const el = e.currentTarget;
+                      el.style.height = "auto";
+                      el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+                    }}
+                  />
+                  <button
+                    onClick={handleSend}
+                    id="chat-send-btn"
+                    disabled={!inputValue.trim() || isStreaming}
+                    aria-label="Send message"
+                    className="bg-power-orange-solid flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_4px_14px_-4px_rgba(233,115,22,0.5)] transition hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:shadow-none"
+                  >
+                    {isStreaming ? (
+                      <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Send className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+                <p id={hintId} className="mt-1.5 text-center text-[10px] text-slate-400">
+                  Enter to send · Shift+Enter for new line
+                </p>
+              </div>
+            )}
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}

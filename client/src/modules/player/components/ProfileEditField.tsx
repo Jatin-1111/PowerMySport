@@ -23,16 +23,14 @@ export function ProfileEditField({
 }: ProfileEditFieldProps) {
   return (
     <div className={cn("space-y-1.5", className)}>
-      <label
-        htmlFor={htmlFor}
-        className="flex items-center gap-1.5 text-sm font-semibold text-slate-700"
-      >
-        {Icon && <Icon className="h-4 w-4 text-slate-400" />}
+      <label htmlFor={htmlFor} className="text-ink flex items-center gap-1.5 text-sm font-medium">
+        {Icon && <Icon className="text-ink-muted h-4 w-4" aria-hidden="true" />}
         {label}
-        {required && <span className="text-power-orange">*</span>}
+        {required && <span aria-hidden="true">*</span>}
+        {required && <span className="sr-only">(required)</span>}
       </label>
       {children}
-      {hint && <p className="text-xs text-slate-500">{hint}</p>}
+      {hint && <p className="text-ink-muted text-pretty text-sm">{hint}</p>}
     </div>
   );
 }

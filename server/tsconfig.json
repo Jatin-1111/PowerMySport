@@ -14,8 +14,13 @@
 
     // Other Outputs
     "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
+
+    // Incremental: the cache lives inside dist/ so wiping dist/ also wipes it
+    // (a stale cache next to a missing dist would make tsc emit nothing).
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,

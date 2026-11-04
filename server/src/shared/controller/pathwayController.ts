@@ -1,246 +1,212 @@
 import { Request, Response } from "express";
-import { pathwayService } from "../services/PathwayService";
-import { AthleteStory } from "../models/AthleteStory";
 
-/**
- * GET /api/pathways?sport=cricket&age=12&city=Mumbai
- * Returns the pathway for a sport. Generates + caches if not found.
- * If cached but stale, returns the cached version and triggers a background refresh.
- */
-export const getPathway = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { sport, age, city } = req.query;
+import { PathwayGuide } from "../models/PathwayGuide";
+import { Tournament } from "../models/Tournament";
+import { resolvePathwayContributor } from "../services/pathwayContributorService";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
-    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res.status(400).json({
-        success: false,
-        message: "Please provide a sport name (at least 2 characters).",
-      });
-      return;
-    }
+// ─── Pathways (public) ───────────────────────────────────────────────────────
+//
+// The read side of the pathway CMS, plus a neighbour that has always lived on
+// this router and depends on nothing here: the curated tournament list.
+//
+// Everything served here is identical for every reader of a sport — it holds no
+// personal data — so it is safely cacheable at the edge.
 
-    const rawAge = age && typeof age === "string" ? parseInt(age, 10) : NaN;
-    const childAge =
-      !isNaN(rawAge) && rawAge >= 4 && rawAge <= 25 ? rawAge : undefined;
-    const rawCity = city && typeof city === "string" ? city.trim() : "";
-    // Strip everything except letters, spaces, hyphens, commas and dots.
-    // Caps at 80 characters to prevent oversized injections.
-    const childCity =
-      rawCity
-        .replace(/[^a-zA-Z\u0900-\u097F\s,.\-]/g, "")
-        .slice(0, 80)
-        .trim() || undefined;
+const slugify = (value: string): string => value.trim().toLowerCase().replace(/\s+/g, "-");
 
-    const result = await pathwayService.getOrGeneratePathway(
-      sport.trim(),
-      childAge,
-      childCity,
-    );
+/** Only published guides are ever visible here — drafts stay in the CMS. */
+const PUBLISHED = { status: "published" as const };
 
-    if (result.source === "not_a_sport") {
-      res.status(404).json({
-        success: false,
-        message: result.message,
-      });
-      return;
-    }
+// ─── GET /api/pathways/guide?sport=tennis ────────────────────────────────────
+//
+// One guide per sport. This used to take a `?state=` overlay that won over the
+// national guide; removed Aug 2026 along with the rest of the state dimension.
+export const getPathwayGuide = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const sport = req.query.sport;
+  if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
+    throw new AppError("Please provide a sport (at least 2 characters).", 400);
+  }
+
+  const sportSlug = slugify(sport);
+
+  const guide = await PathwayGuide.findOne({
+    ...PUBLISHED,
+    sportSlug,
+  }).lean();
+
+  if (!guide) {
+    throw new AppError(`No published pathway for "${sport}" yet.`, 404);
+  }
+
+  // Resolved here rather than left to the browser. The pathway's whole job is to
+  // be readable and indexable without JavaScript, and the byline is the page's
+  // `author` in its structured data — a credit fetched client-side is a credit
+  // Google never sees. One extra lookup, only for a guide that has a contributor.
+  const contributor = await resolvePathwayContributor(guide.contributor);
+
+  res.json({
+    success: true,
+    data: {
+      sportSlug: guide.sportSlug,
+      sportName: guide.sportName,
+      formatVersion: guide.formatVersion,
+      intro: guide.intro ?? {},
+      sportIntro: guide.sportIntro ?? [],
+      reviewedOn: guide.reviewedOn ?? null,
+      contributor,
+      updatedAt: guide.updatedAt,
+      stages: [...(guide.stages ?? [])].sort((a, b) => a.order - b.order),
+    },
+  });
+});
+
+// ─── GET /api/pathways/guides ────────────────────────────────────────────────
+//
+// Which sports have a pathway a parent can actually read.
+//
+// The projection carries each stage's name and age range as well as its key. It
+// used to carry the key alone, and the picker counted them — which meant the
+// index could say "Tennis, 6 stages" and nothing more, so every visitor entered
+// at stage one no matter how old their child is.
+//
+// Adding two short strings per stage is what lets the picker point a parent at
+// the right stage, and it stays one request no matter how many sports are
+// published: fifty sports of six stages is on the order of fifteen kilobytes,
+// against fifty round-trips for the same information a document at a time.
+// Everything long — overviews, questions, answers — is still only in the
+// per-sport endpoint.
+export const listPublishedPathwayGuides = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    const docs = await PathwayGuide.find(PUBLISHED)
+      .select(
+        "sportSlug sportName stages.key stages.name stages.ageRange stages.coreQuestion stages.order updatedAt"
+      )
+      .sort({ sportName: 1 })
+      .lean();
 
     res.json({
       success: true,
-      source: result.source, // "db" | "generated"
-      isStale: result.isStale ?? false,
-      data: result.pathway,
-      warnings: result.warnings,
+      data: docs.map((doc) => {
+        // Sorted here, like the single-guide endpoint does. Mongo returns the
+        // stages in stored order, and the CMS reorders by rewriting `order`.
+        const stages = [...(doc.stages ?? [])].sort((a, b) => a.order - b.order);
+        return {
+          sportSlug: doc.sportSlug,
+          sportName: doc.sportName,
+          stageCount: stages.length,
+          stages: stages.map((stage) => ({
+            key: stage.key,
+            name: stage.name,
+            ageRange: stage.ageRange,
+            coreQuestion: stage.coreQuestion,
+          })),
+          updatedAt: doc.updatedAt,
+        };
+      }),
     });
-  } catch (error) {
-    console.error("Error fetching pathway:", error);
-    res.status(500).json({
-      success: false,
-      message: "An error occurred while generating the pathway.",
-    });
   }
-};
+);
 
-/**
- * GET /api/pathways/entities?sport=cricket&city=Mumbai
- * Returns just tournaments/scholarships/universities for a sport.
- * Triggers the scraper and waits for it if entities aren't cached yet.
- * Called in parallel with the skeleton request from the client.
- */
-export const getPathwayEntities = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { sport, city } = req.query;
-    if (!sport || typeof sport !== "string" || sport.trim().length < 2) {
-      res.status(400).json({ success: false, message: "Provide a sport name." });
-      return;
-    }
-    const rawCity = city && typeof city === "string" ? city.trim() : "";
-    const childCity = rawCity
-      .replace(/[^a-zA-Zऀ-ॿ\s,.\-]/g, "")
-      .slice(0, 80)
-      .trim() || undefined;
+// ─── GET /api/pathways/questions ─────────────────────────────────────────────
+//
+// Every answered parent question across every published pathway, flattened, for
+// the preview band on `/roadmap`.
+//
+// An aggregation rather than reading the guides and picking through them. The
+// index needs a handful of questions drawn from ALL published sports, and the
+// obvious implementation — fetch each guide, keep two, throw the rest away —
+// costs one request and one full document per sport. That is the thing this page
+// was just rebuilt to stop doing.
+//
+// The pipeline keeps only the question text — never the answer, which is the
+// long field and lives on the sport's own page.
+//
+// The per-sport cap bounds the PAYLOAD, not the mix. It is tempting to set it to
+// two or three to force variety, and that is the wrong lever: the caller
+// interleaves one question per sport at a time, so breadth is already
+// guaranteed, and a low cap only starves the band while few sports have their
+// answers written. Eight is high enough for one sport to fill the band on its
+// own today and still bounds a fifty-sport response to a few tens of kilobytes.
+const MAX_QUESTIONS_PER_SPORT = 8;
 
-    const entities = await pathwayService.getEntities(sport.trim(), childCity);
-    res.json({ success: true, data: entities });
-  } catch (error) {
-    console.error("Error fetching pathway entities:", error);
-    res.status(500).json({ success: false, message: "Failed to fetch entities." });
+export const listPathwayQuestions = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    const rows = await PathwayGuide.aggregate([
+      { $match: PUBLISHED },
+      { $unwind: "$stages" },
+      { $sort: { sportName: 1, "stages.order": 1 } },
+      { $unwind: "$stages.questions" },
+      // Unanswered questions are listed in the CMS before they are written. The
+      // band's promise is "open one and you land on the answer", so a question
+      // with nothing behind it must never reach it.
+      {
+        $match: {
+          "stages.questions.answer": { $exists: true, $nin: [null, ""] },
+        },
+      },
+      {
+        $group: {
+          _id: "$sportSlug",
+          sportName: { $first: "$sportName" },
+          questions: {
+            $push: {
+              question: "$stages.questions.question",
+              stageKey: "$stages.key",
+              stageName: "$stages.name",
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          sportSlug: "$_id",
+          sportName: 1,
+          questions: { $slice: ["$questions", MAX_QUESTIONS_PER_SPORT] },
+        },
+      },
+      { $sort: { sportName: 1 } },
+    ]);
+
+    res.json({ success: true, data: rows });
   }
-};
+);
 
-export const getPathwayStories = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { sport, level } = req.query;
-    if (!sport || typeof sport !== "string") {
-      res.status(400).json({ success: false, message: "Provide a sport parameter" });
-      return;
-    }
-    const query: any = { sportSlug: sport.toLowerCase() };
-    if (level && !isNaN(Number(level))) {
-      query.level = Number(level);
-    }
-    const stories = await AthleteStory.find(query).lean();
-    res.json({ success: true, data: stories });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to fetch stories" });
-  }
-};
-
-/**
- * GET /api/pathways/search?q=bad
- * Autocomplete: returns cached pathways matching the query.
- */
-export const searchPathways = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { q } = req.query;
-
-    if (!q || typeof q !== "string" || q.trim().length === 0) {
-      res.json({ success: true, data: [] });
-      return;
-    }
-
-    const results = await pathwayService.searchPathways(q.trim());
-    res.json({ success: true, data: results });
-  } catch (error) {
-    console.error("Error searching pathways:", error);
-    res.status(500).json({ success: false, message: "Search failed." });
-  }
-};
-
-/**
- * POST /api/pathways/refresh
- * Admin: manually force-refresh a specific pathway by cacheKey.
- * Body: { cacheKey: string }
- */
-export const refreshPathway = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { cacheKey } = req.body;
-
-    if (!cacheKey || typeof cacheKey !== "string") {
-      res.status(400).json({
-        success: false,
-        message: "cacheKey is required.",
-      });
-      return;
+// ─── GET /api/pathways/tournaments/:slug ─────────────────────────────────────
+export const getCuratedTournamentBySlug = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { slug } = req.params;
+    if (!slug) {
+      throw new AppError("Missing slug", 400);
     }
 
-    const refreshed = await pathwayService.refreshPathway(cacheKey.trim());
+    const slugStr = (Array.isArray(slug) ? slug[0] : slug) ?? "";
+    const tournament = await Tournament.findOne({
+      slug: slugStr.toLowerCase().trim(),
+      isCurated: true,
+    }).lean();
 
-    if (!refreshed) {
-      res.status(500).json({
-        success: false,
-        message: "Refresh failed — Gemini may be unavailable. Try again later.",
-      });
-      return;
+    if (!tournament) {
+      throw new AppError("Tournament not found", 404);
     }
 
-    res.json({ success: true, data: refreshed });
-  } catch (error) {
-    console.error("Error refreshing pathway:", error);
-    res.status(500).json({ success: false, message: "Refresh failed." });
+    res.json({ success: true, data: tournament });
   }
-};
+);
 
-/**
- * POST /api/pathways/refresh-stale
- * Admin: refresh all stale pathways (older than PATHWAY_STALE_DAYS env var, default 30).
- * Returns the count of pathways refreshed.
- * Runs sequentially to avoid hammering the Gemini API.
- */
-export const refreshStalePathways = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const staleCacheKeys = await pathwayService.getStalePathways();
-
-    if (staleCacheKeys.length === 0) {
-      res.json({
-        success: true,
-        refreshed: 0,
-        message: "No stale pathways found.",
-      });
-      return;
+// ─── GET /api/pathways/tournaments?sport=cricket ─────────────────────────────
+export const getCuratedTournaments = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { sport } = req.query;
+    const query: Record<string, unknown> = { isCurated: true };
+    if (sport && typeof sport === "string") {
+      query.sportSlug = slugify(sport);
     }
 
-    console.log(
-      `[PathwayController] Refreshing ${staleCacheKeys.length} stale pathways...`,
-    );
+    const tournaments = await Tournament.find(query).sort({ sportSlug: 1, prestige: 1 }).lean();
 
-    // Return immediately and run refresh in background
-    res.json({
-      success: true,
-      refreshed: staleCacheKeys.length,
-      message: `Refreshing ${staleCacheKeys.length} stale pathway(s) in the background.`,
-      cacheKeys: staleCacheKeys,
-    });
-
-    // Background sequential refresh (after response sent)
-    (async () => {
-      let count = 0;
-      for (const cacheKey of staleCacheKeys) {
-        await pathwayService.refreshPathway(cacheKey);
-        count++;
-        // Stagger to avoid Gemini rate limiting
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-      console.log(
-        `[PathwayController] ✅ Background stale refresh complete: ${count}/${staleCacheKeys.length} done.`,
-      );
-    })().catch((err) =>
-      console.error("[PathwayController] Background refresh error:", err),
-    );
-  } catch (error) {
-    console.error("Error refreshing stale pathways:", error);
-    res.status(500).json({ success: false, message: "Stale refresh failed." });
+    res.json({ success: true, data: tournaments });
   }
-};
-
-/**
- * GET /api/pathways/stats
- * Admin: returns aggregate stats about the pathway collection.
- */
-export const getPathwayStats = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const stats = await pathwayService.getStats();
-    res.json({ success: true, data: stats });
-  } catch (error) {
-    console.error("Error fetching pathway stats:", error);
-    res.status(500).json({ success: false, message: "Stats fetch failed." });
-  }
-};
+);

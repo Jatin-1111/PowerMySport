@@ -35,14 +35,12 @@ const debug = async () => {
     const generalImageKeys = (uiet as any).generalImageKeys || [];
     const sportImageKeys = (uiet as any).sportImageKeys || {};
 
+    console.log(`  images array: ${Array.isArray(images) ? images.length : 0} items`);
     console.log(
-      `  images array: ${Array.isArray(images) ? images.length : 0} items`,
+      `  generalImages: ${Array.isArray(generalImages) ? generalImages.length : 0} items`
     );
     console.log(
-      `  generalImages: ${Array.isArray(generalImages) ? generalImages.length : 0} items`,
-    );
-    console.log(
-      `  generalImageKeys: ${Array.isArray(generalImageKeys) ? generalImageKeys.length : 0} items`,
+      `  generalImageKeys: ${Array.isArray(generalImageKeys) ? generalImageKeys.length : 0} items`
     );
 
     console.log();

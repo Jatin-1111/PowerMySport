@@ -1,9 +1,4 @@
 import api from "@/lib/api/client";
-import { clearRequestCache, withRequestCache } from "@/lib/api/requestCache";
-
-const FRIEND_COUNTS_TTL_MS = 5000;
-const FRIEND_LIST_TTL_MS = 10000;
-const FRIEND_USER_SEARCH_TTL_MS = 10000;
 
 export interface Friend {
   id: string;
@@ -61,11 +56,6 @@ export const friendService = {
    */
   async sendFriendRequest(recipientId: string): Promise<any> {
     const response = await api.post("/friends/request", { recipientId });
-    clearRequestCache([
-      "friends:pending-count",
-      "friends:pending:",
-      "friends:search-users:",
-    ]);
     return response.data;
   },
 
@@ -74,12 +64,6 @@ export const friendService = {
    */
   async acceptFriendRequest(requestId: string): Promise<any> {
     const response = await api.post(`/friends/accept/${requestId}`);
-    clearRequestCache([
-      "friends:pending-count",
-      "friends:pending:",
-      "friends:list:",
-      "friends:search-users:",
-    ]);
     return response.data;
   },
 
@@ -88,11 +72,6 @@ export const friendService = {
    */
   async declineFriendRequest(requestId: string): Promise<any> {
     const response = await api.post(`/friends/decline/${requestId}`);
-    clearRequestCache([
-      "friends:pending-count",
-      "friends:pending:",
-      "friends:search-users:",
-    ]);
     return response.data;
   },
 
@@ -101,7 +80,6 @@ export const friendService = {
    */
   async removeFriend(friendId: string): Promise<void> {
     await api.delete(`/friends/${friendId}`);
-    clearRequestCache(["friends:list:", "friends:search-users:"]);
   },
 
   /**
@@ -109,7 +87,6 @@ export const friendService = {
    */
   async blockUser(userId: string): Promise<any> {
     const response = await api.post("/friends/block", { userId });
-    clearRequestCache(["friends:list:", "friends:search-users:"]);
     return response.data;
   },
 
@@ -123,38 +100,21 @@ export const friendService = {
   /**
    * Get all friends (paginated)
    */
-  async getFriends(
-    page: number = 1,
-    limit: number = 20,
-  ): Promise<FriendsResponse> {
-    return withRequestCache(
-      `friends:list:${page}:${limit}`,
-      async () => {
-        const response = await api.get("/friends", {
-          params: { page, limit },
-        });
-        return response.data.data;
-      },
-      FRIEND_LIST_TTL_MS,
-    );
+  async getFriends(page: number = 1, limit: number = 20): Promise<FriendsResponse> {
+    const response = await api.get("/friends", {
+      params: { page, limit },
+    });
+    return response.data.data;
   },
 
   /**
    * Get pending friend requests (sent or received)
    */
-  async getPendingRequests(
-    type: "SENT" | "RECEIVED" = "RECEIVED",
-  ): Promise<FriendRequest[]> {
-    return withRequestCache(
-      `friends:pending:${type}`,
-      async () => {
-        const response = await api.get("/friends/requests", {
-          params: { type },
-        });
-        return response.data.data;
-      },
-      FRIEND_COUNTS_TTL_MS,
-    );
+  async getPendingRequests(type: "SENT" | "RECEIVED" = "RECEIVED"): Promise<FriendRequest[]> {
+    const response = await api.get("/friends/requests", {
+      params: { type },
+    });
+    return response.data.data;
   },
 
   /**
@@ -172,24 +132,18 @@ export const friendService = {
    */
   async searchUsers(
     query: string,
-    options?: { signal?: AbortSignal },
+    options?: { signal?: AbortSignal }
   ): Promise<SearchUserResult[]> {
     const normalizedQuery = query.trim().toLowerCase();
     if (normalizedQuery.length < 2) {
       return [];
     }
 
-    return withRequestCache(
-      `friends:search-users:${encodeURIComponent(normalizedQuery)}`,
-      async () => {
-        const response = await api.get("/friends/search-users", {
-          params: { q: normalizedQuery },
-          signal: options?.signal,
-        });
-        return response.data.data;
-      },
-      FRIEND_USER_SEARCH_TTL_MS,
-    );
+    const response = await api.get("/friends/search-users", {
+      params: { q: normalizedQuery },
+      signal: options?.signal,
+    });
+    return response.data.data;
   },
 
   /**
@@ -204,13 +158,7 @@ export const friendService = {
    * Get count of pending friend requests (received)
    */
   async getPendingRequestsCount(): Promise<{ count: number }> {
-    return withRequestCache(
-      "friends:pending-count",
-      async () => {
-        const response = await api.get("/friends/requests/pending-count");
-        return response.data.data;
-      },
-      FRIEND_COUNTS_TTL_MS,
-    );
+    const response = await api.get("/friends/requests/pending-count");
+    return response.data.data;
   },
 };

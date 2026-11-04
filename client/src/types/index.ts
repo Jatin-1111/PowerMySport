@@ -2,31 +2,41 @@
 // USER & AUTH TYPES
 // ============================================
 export interface IPlayerProfile {
-  sports?: string[];
+  sportsFocus?: string[];
+  yearsPlaying?: number;
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+  primaryObjective?: "Recreational" | "Fitness" | "Compete";
   weeklyTimeCommitment?: number;
   budgetTier?: "Budget" | "Moderate" | "Premium";
+  location?: string;
 }
 
-export type UserRole =
-  | "PLAYER"
-  | "VENUE_LISTER"
-  | "COACH"
-  | "ACADEMY_OWNER"
-  | "ADMIN";
-export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-export type BookingStatus =
-  | "PENDING_INVITES"
-  | "PENDING_CONFIRMATION"
-  | "CONFIRMED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "NO_SHOW"
-  | "CANCELLED";
+// UserRole, BookingStatus, PaymentUserType, PaymentStatus and
+// VenueListerProfile now live in @powermysport/shared-types — this file
+// previously had its own independent copy of each, which had drifted from
+// both the server model and admin's copy (missing "VENUE_ONBOARDING" on
+// UserRole, missing "Expert" on PaymentUserType, and — the reverse direction
+// — this file required businessDetails/payoutInfo on VenueListerProfile
+// while admin correctly treated them as optional). See that package for the
+// merge notes.
+import type {
+  ChildAmbition,
+  ChildBudgetRange,
+  ChildExperienceLevel,
+  ChildGender,
+  ChildTrainingType,
+  ChildWeeklyHours,
+} from "@powermysport/shared-types";
+import type {
+  UserRole,
+  BookingStatus,
+  PaymentUserType,
+  PaymentStatus,
+  VenueListerProfile,
+} from "@powermysport/shared-types";
+export type { UserRole, BookingStatus, PaymentUserType, PaymentStatus, VenueListerProfile };
 
-export type PaymentUserType = "PLAYER" | "VENUE_LISTER" | "COACH";
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
+export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
 
 export interface IPayment {
   userId: string;
@@ -36,49 +46,90 @@ export interface IPayment {
   paidAt?: string;
 }
 
-// Aligned with backend IVenueListerProfile type
-export interface VenueListerProfile {
-  businessDetails: {
-    name: string;
-    gstNumber?: string;
-    address: string;
-  };
-  payoutInfo: {
-    accountNumber: string;
-    ifsc: string;
-    bankName: string;
-  };
-  canAddMoreVenues?: boolean;
+/**
+ * What a parent told the sport-matching quiz about their child. These are the quiz's
+ * inputs, not facts about the child, so the server keeps them together in one `quiz`
+ * record that a retake overwrites; see `Player.quiz` on the server.
+ */
+export interface DependentQuiz {
+  heightCm?: number;
+  weightKg?: number;
+  energyType?: "explosive" | "endurance";
+  motorType?: "gross" | "fine";
+  visualTracking?: "strong" | "moderate" | "weak";
+  eyesight?: "sharp" | "corrected" | "limited";
+  agility?: "high" | "moderate" | "low";
+  teamIndividual?: number; // 1-5
+  competitiveResponse?: "fired-up" | "calm" | "discouraged";
+  focusStyle?: "bursts" | "sustained";
+  decisionStyle?: "react" | "strategic";
+  pressureResponse?: "thrives" | "manages" | "avoids";
+  repetitionTolerance?: "high" | "low";
+  contactComfort?: "loves" | "neutral" | "avoids";
+  environment?: "outdoor" | "indoor" | "no-preference";
+  waterComfort?: "comfortable" | "neutral" | "uncomfortable";
 }
 
+/**
+ * A child's profile, exactly as the server returns it from `GET /auth/profile` and
+ * accepts on `POST` and `PUT /auth/dependents`. There is no other shape: screens read
+ * these fields, forms edit them, and the API takes them back, so nothing converts
+ * between representations. (This replaces a grouped client shape and the four
+ * functions that translated it to and from the server's.)
+ */
 export interface Dependent {
   _id?: string;
   name: string;
   dob: string; // ISO date string
   age?: number;
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
-  sports?: string[];
+  location?: string; // Indian state
+
+  /** What they play, and how they got there. `chosenSport` is the one committed
+   * decision, set by either the quiz or "I already know my sport". */
+  sportsFocus?: string[];
+  /** Shortlisted during the quiz (max 3): a candidate, not a decision. */
+  consideringSports?: string[];
+  sportMatches?: Array<{ sport: string; fitLabel: string; score: number }>;
+  wizardCompletedAt?: string;
+  chosenSport?: string;
+  chosenSportAt?: string;
+
+  /** What it takes to actually do the sport. */
+  budgetRange?: ChildBudgetRange;
+  ambition?: ChildAmbition;
+  weeklyHoursCategory?: ChildWeeklyHours;
+  trainingType?: ChildTrainingType;
+
+  /** Where they stand in the sport now. */
+  yearsPlaying?: number;
+  experienceLevel?: ChildExperienceLevel;
+  currentStandingTier?: number; // 1-5
+
   personalityTags?: string[];
-  primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
-  weeklyTimeCommitment?: number;
-  budgetTier?: "Budget" | "Moderate" | "Premium";
+
+  /** The quiz answers; absent until the quiz is taken. */
+  quiz?: DependentQuiz;
 }
 
-export interface User {
+// UserShippingAddress now lives in @powermysport/shared-types (identical
+// field-for-field to this app's previous copy, so this is a pure alias).
+export type { UserShippingAddress } from "@powermysport/shared-types";
+import type { User as SharedUser } from "@powermysport/shared-types";
+
+/**
+ * client's `id`/`dependents`/`playerProfile` were always required/typed here
+ * (the shared type keeps `dependents` loose, and its `playerProfile` mirrors
+ * the server's simple `{sports}` shape — NOT this app's richer assessment
+ * profile, which is a different concept that happens to share a name).
+ */
+export interface User extends Omit<SharedUser, "id" | "dependents" | "playerProfile"> {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  isIdentityPublic?: boolean;
-  dob?: string;
-  role: UserRole;
-  userType?: "Parent" | "Recreational" | "Coach" | "VenueLister" | "Admin" | "Academy";
-  photoUrl?: string;
-  photoS3Key?: string; // S3 key for profile picture
-  playerProfile?: IPlayerProfile;
-  venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
+  playerProfile?: IPlayerProfile;
+  /** False when the parent has not yet agreed to the current Parental Consent policy. */
+  parentalConsentCurrent?: boolean;
 }
 
 export interface AuthResponse {
@@ -87,6 +138,8 @@ export interface AuthResponse {
   data?: {
     token: string;
     user: User;
+    /** True when this login cancelled a pending self-deletion (grace period). */
+    deletionCancelled?: boolean;
   };
 }
 
@@ -117,54 +170,18 @@ export interface IOwnVenueDetails {
   openingHours?: string;
 }
 
-export type CoachVerificationStatus =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "REVIEW"
-  | "VERIFIED"
-  | "REJECTED";
+export type CoachVerificationStatus = "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
-export type CoachPlanBillingCycle = "MONTHLY" | "YEARLY";
-export type CoachSubscriptionPackageFrequency =
-  | "MONTHLY"
-  | "QUARTERLY"
-  | "YEARLY";
-export type CoachSubscriptionStatus =
-  | "ACTIVE"
-  | "PAST_DUE"
-  | "CANCELLED"
-  | "EXPIRED";
-export type CoachSubscriptionOverrideStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "REJECTED";
-
-export interface CoachPlan {
-  id?: string;
-  _id?: string;
-  code: string;
-  name: string;
-  description?: string;
-  pricing: {
-    monthly?: number;
-    yearly?: number;
-  };
-  features: string[];
-  isActive: boolean;
-  supportsOverrides: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+export type CoachSubscriptionPackageFrequency = "MONTHLY" | "QUARTERLY" | "YEARLY";
+export type CoachSubscriptionStatus = "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
 
 export interface CoachSubscription {
   id?: string;
   _id?: string;
   coachId: string;
   userId: string;
-  planId: string | CoachPlan;
   packageId?: string | CoachSubscriptionPackage | null;
   status: CoachSubscriptionStatus;
-  billingCycle: CoachPlanBillingCycle;
   currentPeriodStart: string;
   currentPeriodEnd: string;
   nextBillingDate: string;
@@ -172,22 +189,6 @@ export interface CoachSubscription {
   gracePeriodEndsAt?: string | null;
   cancelledAt?: string | null;
   cancellationReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CoachSubscriptionOverrideRequest {
-  id?: string;
-  _id?: string;
-  coachId: string;
-  userId: string;
-  currentPlanId?: string | CoachPlan | null;
-  requestedPlanId?: string | CoachPlan | null;
-  note: string;
-  status: CoachSubscriptionOverrideStatus;
-  reviewedBy?: string | null;
-  reviewedAt?: string | null;
-  reviewNote?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -220,13 +221,7 @@ export interface CoachSubscriptionPackageCreateInput {
 }
 
 export interface CoachVerificationDocument {
-  type:
-    | "CERTIFICATION"
-    | "ID_PROOF"
-    | "ADDRESS_PROOF"
-    | "BACKGROUND_CHECK"
-    | "INSURANCE"
-    | "OTHER";
+  type: "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
   url: string;
   s3Key?: string;
   fileName: string;
@@ -244,6 +239,8 @@ export interface CoachUserRef {
 export interface Coach {
   _id?: string;
   id: string;
+  /** What our team reviewed, as plain labels. Never the documents. */
+  checks?: string[];
   userId: string | CoachUserRef;
   photoUrl?: string;
   profileImage?: string;
@@ -272,6 +269,8 @@ export interface Coach {
   isVerified?: boolean;
   rating: number;
   reviewCount: number;
+  /** GST number — optional; not every individual coach is GST-registered. */
+  gstNumber?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -307,6 +306,13 @@ export interface Venue {
   allowExternalCoaches: boolean;
   rating?: number;
   reviewCount?: number;
+  /** GST number — optional; not every venue lister is GST-registered. */
+  gstNumber?: string;
+  /** Where our review of the venue stands. Missing on venues saved before reviews existed. */
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+  lifecycle?: "DRAFT" | "SUBMITTED" | "NEEDS_INFO" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  rejectionReason?: string;
+  reviewNotes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -321,7 +327,7 @@ export type ParticipantStatus = "INVITED" | "ACCEPTED" | "DECLINED";
 
 export interface BookingPayment {
   userId: string;
-  userType: "VENUE_LISTER" | "COACH" | "PLAYER";
+  userType: "VenueLister" | "Coach" | "Academy" | "Player";
   amount: number;
   status: "PENDING" | "PAID" | "FAILED";
   paidAt?: string;
@@ -335,41 +341,69 @@ export interface BookingParticipant {
   respondedAt?: string;
 }
 
-export interface Booking {
+export interface AcademyRef {
   id: string;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  gstNumber?: string;
+}
+
+/**
+ * The expert fields a booking carries for display. Deliberately narrow: the full
+ * Expert profile holds tax identifiers the bookings API does not return.
+ */
+export interface BookingExpertRef {
+  id: string;
+  _id?: string;
+  name?: string;
+  photoUrl?: string;
+  city?: string;
+  sessionMode?: "ONLINE" | "IN_PERSON" | "BOTH";
+  timezone?: string;
+  rating?: number;
+  reviewCount?: number;
+}
+
+/** Which kind of provider a booking is against. */
+export type BookingProviderType = "VENUE" | "COACH" | "ACADEMY" | "EXPERT";
+
+// Booking now lives in @powermysport/shared-types. It previously had a
+// narrower inline `expert` object here (missing the gateway-id and
+// reminder-timestamp fields the server model actually has) and no
+// `delivery` field at all — both come along for free below since the
+// shared type is a superset; nothing that read fewer fields breaks.
+import type { Booking as SharedBooking } from "@powermysport/shared-types";
+
+export interface Booking extends Omit<
+  SharedBooking,
+  | "userId"
+  | "venueId"
+  | "coachId"
+  | "academyId"
+  | "expertId"
+  | "bookingType"
+  | "organizerId"
+  | "paymentType"
+  | "createdAt"
+  | "updatedAt"
+> {
   userId: string | User;
   venueId?: string | Venue; // Can be populated
   venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
   coach?: Coach; // Populated coach data
+  academyId?: string | AcademyRef; // Can be populated
+  /** Set for providerType EXPERT. Populated by the bookings API. */
+  expertId?: string | BookingExpertRef;
   sport: string; // Required in backend
-  date: string;
-  startTime: string;
-  endTime: string;
-  totalAmount: number;
-  serviceFee?: number;
-  taxAmount?: number;
-  discountAmount?: number;
-  promoCode?: string;
-  payments?: Array<{
-    userId: string;
-    userType: PaymentUserType;
-    amount: number;
-    status: PaymentStatus;
-    paidAt?: string;
-  }>;
-  status: BookingStatus;
-  expiresAt?: string; // Optional - only set for PENDING_PAYMENT bookings
-  checkInCode?: string;
-  participantName?: string;
-  participantId?: string;
-  participantAge?: number;
-  // Group booking fields - all have defaults so always present
-  bookingType: BookingType; // Default: "INDIVIDUAL"
-  organizerId: string; // Required (userId for single bookings)
-  participants?: BookingParticipant[];
-  paymentType: PaymentType; // Default: "SINGLE"
-  splitMethod?: SplitMethod;
+  // Group booking fields — all have defaults so always present, unlike the
+  // shared type's optional-for-safety versions.
+  bookingType: BookingType;
+  organizerId: string;
+  paymentType: PaymentType;
   createdAt: string;
   updatedAt: string;
 }
@@ -420,21 +454,7 @@ export interface IPayoutMethod {
 // ============================================
 // API RESPONSE TYPES
 // ============================================
-export interface PaginationMetadata {
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-  pagination?: {
-    // Allow nested pagination or top-level
-    [key: string]: PaginationMetadata | undefined;
-  } & PaginationMetadata; // Or just top-level
-}
+export type { PaginationMetadata, ApiResponse } from "@powermysport/shared-types";
 
 export interface Availability {
   availableSlots: string[];
@@ -443,6 +463,7 @@ export interface Availability {
     endTime: string;
   }>;
   alternateSlots?: string[];
+  allSlots?: string[];
 }
 
 export interface DiscoveryResponse {
@@ -462,7 +483,7 @@ export interface ReviewItem {
   id?: string;
   bookingId: string;
   userId: string | ReviewUser;
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "Coach";
   targetId: string;
   rating: number;
   review?: string;

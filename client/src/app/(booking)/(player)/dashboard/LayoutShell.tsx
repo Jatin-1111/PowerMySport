@@ -1,0 +1,230 @@
+"use client";
+
+import { BottomNavItem } from "@/modules/shared/components/BottomNav";
+import { useNotifications } from "@/hooks/useNotifications";
+import { getCommunityAppUrl } from "@/lib/community/url";
+import { useRoleGuard } from "@/modules/auth/hooks/useRoleGuard";
+import { authApi } from "@/modules/auth/services/auth";
+import { useAuthStore } from "@/modules/auth/store/authStore";
+import {
+  DashboardNavItem,
+  DashboardShell,
+} from "@/modules/shared/components/dashboard/DashboardShell";
+import { RouteGateScreen } from "@/modules/shared/components/RouteGateScreen";
+import {
+  Bell,
+  BellRing,
+  Bookmark,
+  CalendarCheck,
+  CalendarRange,
+  ConciergeBell,
+  CreditCard,
+  Home,
+  LayoutDashboard,
+  LifeBuoy,
+  Mail,
+  MapPin,
+  Settings,
+  User,
+  UserPlus,
+  Users,
+  Wallet,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import React from "react";
+
+/**
+ * This tree had no guard at all: a signed-out visitor to /dashboard was served
+ * the whole player console.
+ *
+ * The guard lives in this outer component so that the chrome below — and in
+ * particular its `useNotifications` fetching — is never mounted for a visitor
+ * who is not allowed to be here. That is not just tidiness: those requests 401
+ * while signed out, and the axios interceptor responds by assigning
+ * `window.location.href = "/login"`, a full navigation that overwrites this
+ * guard's `router.replace("/login?redirect=…")` and drops the return path.
+ */
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const guard = useRoleGuard();
+
+  if (guard !== "allowed") {
+    return <RouteGateScreen />;
+  }
+
+  return <PlayerDashboardChrome>{children}</PlayerDashboardChrome>;
+}
+
+function PlayerDashboardChrome({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
+  const { counts } = useNotifications();
+  const communityUrl = getCommunityAppUrl();
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      logout();
+      router.push("/");
+    }
+  };
+
+  const navItems = [
+    {
+      href: "/",
+      label: "Home",
+      icon: Home,
+      section: "Overview",
+    },
+    {
+      href: "/dashboard",
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      section: "Overview",
+    },
+    // Community sits above Activity: the sections render in array order, and
+    // the people-shaped items are the ones the dashboard now leads with.
+    {
+      href: "/dashboard/friends",
+      label: "Friends",
+      icon: UserPlus,
+      badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
+      section: "Community",
+    },
+    {
+      href: "/dashboard/invitations",
+      label: "Invitations",
+      icon: Mail,
+      badge: counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+      section: "Community",
+    },
+    {
+      href: "/dashboard/notifications",
+      label: "Notifications",
+      icon: Bell,
+      badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
+      section: "Community",
+    },
+    {
+      href: "/dashboard/saved",
+      label: "Saved",
+      icon: Bookmark,
+      section: "Community",
+    },
+    {
+      // Last in the section on purpose: the in-app items above are destinations
+      // within this app, and this one leaves it for the community app.
+      href: communityUrl,
+      label: "Community",
+      icon: Users,
+      external: true,
+      section: "Community",
+    },
+    {
+      href: "/dashboard/my-bookings",
+      label: "My Bookings",
+      icon: CalendarCheck,
+      section: "Activity",
+    },
+    {
+      // A class is not a booking: it belongs to a programme with its own
+      // schedule and ledger, which is why it is a page of its own.
+      href: "/dashboard/my-classes",
+      label: "My Classes",
+      icon: CalendarRange,
+      section: "Activity",
+    },
+    {
+      href: "/dashboard/concierge-requests",
+      label: "Concierge Requests",
+      icon: ConciergeBell,
+      section: "Activity",
+    },
+    {
+      href: "/dashboard/subscriptions",
+      label: "My Subscriptions",
+      icon: CreditCard,
+      section: "Activity",
+    },
+    {
+      href: "/dashboard/reminder-preferences",
+      label: "Reminders",
+      icon: BellRing,
+      section: "Activity",
+    },
+    {
+      href: "/dashboard/support",
+      label: "Support Tickets",
+      icon: LifeBuoy,
+      section: "Account",
+    },
+    {
+      href: "/dashboard/wallet",
+      label: "My Wallet",
+      icon: Wallet,
+      section: "Account",
+    },
+    {
+      href: "/dashboard/my-profile",
+      label: "Profile",
+      icon: User,
+      section: "Account",
+    },
+    {
+      href: "/dashboard/settings",
+      label: "Settings",
+      icon: Settings,
+      section: "Account",
+    },
+  ] satisfies DashboardNavItem[];
+
+  const bottomNavItems: BottomNavItem[] = [
+    {
+      href: "/dashboard",
+      label: "Home",
+      icon: Home,
+    },
+    {
+      href: "/booking",
+      label: "Booking",
+      icon: MapPin,
+    },
+    {
+      href: "/dashboard/friends",
+      label: "Friends",
+      icon: UserPlus,
+      badge: counts.friendRequests > 0 ? counts.friendRequests : undefined,
+    },
+    {
+      href: "/dashboard/invitations",
+      label: "Invites",
+      icon: Mail,
+      badge: counts.bookingInvitations > 0 ? counts.bookingInvitations : undefined,
+    },
+    {
+      href: "/dashboard/my-profile",
+      label: "Profile",
+      icon: User,
+    },
+    {
+      href: "/dashboard/notifications",
+      label: "Alerts",
+      icon: Bell,
+      badge: counts.inAppUnread > 0 ? counts.inAppUnread : undefined,
+    },
+  ];
+
+  return (
+    <DashboardShell
+      dashboardLabel={user?.role === "Parent" ? "Parent Dashboard" : "Player Dashboard"}
+      userName={user?.name}
+      navItems={navItems}
+      bottomNavItems={bottomNavItems}
+      onLogout={handleLogout}
+    >
+      {children}
+    </DashboardShell>
+  );
+}

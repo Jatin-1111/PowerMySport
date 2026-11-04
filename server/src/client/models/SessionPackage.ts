@@ -54,7 +54,7 @@ const sessionPackageSchema = new Schema<SessionPackageDocument>(
       default: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 // Create indexes for common queries
@@ -64,9 +64,6 @@ sessionPackageSchema.index({ sport: 1 });
 
 const SessionPackage =
   mongoose.models.SessionPackage ||
-  mongoose.model<SessionPackageDocument>(
-    "SessionPackage",
-    sessionPackageSchema,
-  );
+  mongoose.model<SessionPackageDocument>("SessionPackage", sessionPackageSchema);
 
 export default SessionPackage;

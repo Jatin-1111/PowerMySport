@@ -20,10 +20,21 @@ import {
 import { sendVerificationCode } from "../../shared/services/EmailVerificationService";
 import { getPaginationParams } from "../../utils/pagination";
 import { ADMIN_ROLES } from "../../constants/adminPermissions";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
 
 // Helper to check if role is an admin role
 const isAdminRole = (role: string): boolean => {
   return Object.values(ADMIN_ROLES).includes(role as any);
+};
+
+// Same rule as VenueOnboardingService.updateVenueDetails: once a venue is approved
+// it is live, and further edits go through the venue dashboard (with admin review),
+// not through the onboarding token issued at step 1.
+const assertNotApproved = (approvalStatus: string | undefined): void => {
+  if (approvalStatus === "APPROVED") {
+    throw new AppError("This venue is approved. Edit it from the venue dashboard.", 409);
+  }
 };
 
 /**
@@ -41,72 +52,50 @@ const isAdminRole = (role: string): boolean => {
  * POST /api/venues/onboarding/step1
  * Body: { ownerName, ownerEmail, ownerPhone }
  */
-export const createVenueStep1 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    // No authentication required - public endpoint
-    const venue = await startVenueOnboarding(req.body);
+export const createVenueStep1 = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  // No authentication required - public endpoint
+  const venue = await startVenueOnboarding(req.body);
 
-    // Send verification email
-    const { ownerName, ownerEmail } = req.body;
-    const emailResult = await sendVerificationCode(ownerEmail, ownerName);
+  // Send verification email
+  const { ownerName, ownerEmail } = req.body;
+  const emailResult = await sendVerificationCode(ownerEmail, ownerName);
 
-    if (!emailResult.success) {
-      res.status(400).json({
-        success: false,
-        message: emailResult.message || "Failed to send verification email",
-      });
-      return;
-    }
-
-    const onboardingToken = generateToken({
-      id: venue._id.toString(),
-      email: venue.ownerEmail,
-      role: "VENUE_ONBOARDING",
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Venue contact info saved. Verification code sent to email.",
-      data: {
-        venueId: venue._id,
-        ownerName: venue.ownerName,
-        ownerEmail: venue.ownerEmail,
-        approvalStatus: venue.approvalStatus,
-        nextStep: "Verify your email (check your inbox for the code)",
-        token: onboardingToken,
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create venue",
-    });
+  if (!emailResult.success) {
+    throw new AppError(emailResult.message || "Failed to send verification email", 400);
   }
-};
+
+  const onboardingToken = generateToken({
+    id: venue._id.toString(),
+    email: venue.ownerEmail,
+    role: "VENUE_ONBOARDING",
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Venue contact info saved. Verification code sent to email.",
+    data: {
+      venueId: venue._id,
+      ownerName: venue.ownerName,
+      ownerEmail: venue.ownerEmail,
+      approvalStatus: venue.approvalStatus,
+      nextStep: "Verify your email (check your inbox for the code)",
+      token: onboardingToken,
+    },
+  });
+});
 
 /**
  * STEP 2: Update venue details
  * POST /api/venues/onboarding/step2
  * Body: { venueId, name, address, location, sports, pricePerHour, amenities, etc. }
  */
-export const updateVenueDetailsStep2 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const updateVenueDetailsStep2 = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     // No authentication required - public endpoint
     const { venueId } = req.body;
 
     if (!venueId) {
-      res.status(400).json({
-        success: false,
-        message: "Venue ID is required",
-      });
-      return;
+      throw new AppError("Venue ID is required", 400);
     }
 
     const venue = await updateVenueDetails(req.body);
@@ -122,16 +111,8 @@ export const updateVenueDetailsStep2 = async (
         nextStep: "Add images (5-20) and required documents",
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to update venue details",
-    });
   }
-};
+);
 
 /**
  * STEP 3A: Get presigned URLs for image upload (WAS Step 2A)
@@ -143,29 +124,18 @@ export const updateVenueDetailsStep2 = async (
  *   sports: string[] (selected sports from Step 2)
  * }
  */
-export const getImageUploadUrls = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getImageUploadUrls = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { venueId, sports } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     if (!sports || !Array.isArray(sports) || sports.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Sports array is required",
-      });
-      return;
+      throw new AppError("Sports array is required", 400);
     }
 
     const uploadUrls = await getImageUploadPresignedUrls(venueId, sports);
@@ -184,79 +154,44 @@ export const getImageUploadUrls = async (
         uploadUrls,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate upload URLs",
-    });
   }
-};
+);
 
 /**
  * Get presigned URL for coach profile photo upload
  * POST /api/venues/onboarding/coach-photo-upload-url
  * Body: { venueId, fileName, contentType }
  */
-export const getCoachPhotoUploadUrl = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getCoachPhotoUploadUrl = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { venueId, fileName, contentType } = req.body;
 
     if (!venueId || !fileName || !contentType) {
-      res.status(400).json({
-        success: false,
-        message: "venueId, fileName, and contentType are required",
-      });
-      return;
+      throw new AppError("venueId, fileName, and contentType are required", 400);
     }
 
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(contentType)) {
-      res.status(400).json({
-        success: false,
-        message: `Invalid content type. Allowed: ${allowedTypes.join(", ")}`,
-      });
-      return;
+      throw new AppError(`Invalid content type. Allowed: ${allowedTypes.join(", ")}`, 400);
     }
 
     // Verify venue exists
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     // Generate presigned URL using S3Service
     const s3Service = new S3Service();
-    const uploadData = await s3Service.generateCoachPhotoUploadUrl(
-      fileName,
-      contentType,
-      venueId,
-    );
+    const uploadData = await s3Service.generateCoachPhotoUploadUrl(fileName, contentType, venueId);
 
     res.status(200).json({
       success: true,
       message: "Coach photo upload URL generated",
       data: uploadData,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate coach photo upload URL",
-    });
   }
-};
+);
 
 /**
  * STEP 2B: Confirm images and set cover photo
@@ -269,22 +204,16 @@ export const getCoachPhotoUploadUrl = async (
  *   coverPhotoUrl: string
  * }
  */
-export const confirmImagesStep2 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const confirmImagesStep2 = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { venueId } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
+    assertNotApproved(venue.approvalStatus);
 
     const updatedVenue = await confirmVenueImages(req.body);
 
@@ -298,14 +227,8 @@ export const confirmImagesStep2 = async (
         nextStep: "Upload required documents",
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm images",
-    });
   }
-};
+);
 
 /**
  * STEP 3A: Get presigned URLs for document upload
@@ -320,21 +243,14 @@ export const confirmImagesStep2 = async (
  *   ]
  * }
  */
-export const getDocumentUploadUrls = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getDocumentUploadUrls = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { venueId, documents } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     const uploadUrls = await getDocumentUploadPresignedUrls(venueId, documents);
@@ -349,16 +265,8 @@ export const getDocumentUploadUrls = async (
         uploadUrls,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to generate document upload URLs",
-    });
   }
-};
+);
 
 /**
  * STEP 3B: Finalize onboarding with documents
@@ -373,21 +281,14 @@ export const getDocumentUploadUrls = async (
  *   ]
  * }
  */
-export const finalizeOnboardingStep3 = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const finalizeOnboardingStep3 = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const { venueId } = req.body;
 
     // Verify venue exists (no auth required - public onboarding)
     const venue = await Venue.findById(venueId);
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     const updatedVenue = await finalizeVenueOnboarding(req.body);
@@ -404,38 +305,32 @@ export const finalizeOnboardingStep3 = async (
         nextStep: "Wait for admin approval",
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to finalize onboarding",
-    });
   }
-};
+);
 
 /**
  * Cancel/Delete venue onboarding (for incomplete venues)
  * DELETE /api/venues/onboarding/:venueId
  */
-export const deleteVenueOnboardingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const deleteVenueOnboardingHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
-    // For onboarding cancellation, we allow deletion without auth
-    // (user just needs to know the venueId)
-    const venue = await Venue.findByIdAndDelete(venueId);
+    // Onboarding cancellation is for venues that are still being onboarded. The
+    // onboarding token must not be able to delete a live, admin-approved venue.
+    const existing = await Venue.findById(venueId).select("approvalStatus");
+    if (!existing) {
+      throw new AppError("Venue not found", 404);
+    }
+    assertNotApproved(existing.approvalStatus);
+
+    const venue = await Venue.findOneAndDelete({
+      _id: venueId,
+      approvalStatus: { $ne: "APPROVED" },
+    });
 
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     // Delete associated S3 files
@@ -452,38 +347,20 @@ export const deleteVenueOnboardingHandler = async (
       success: true,
       message: "Venue onboarding cancelled and deleted",
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to delete venue",
-    });
   }
-};
+);
 
 /**
  * ADMIN: List pending venues
  * GET /api/admin/venues/pending?page=1&limit=20&status=PENDING
  */
-export const listPendingVenues = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const listPendingVenues = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const status = (req.query.status as string) || undefined;
 
     const result = await getPendingVenues(page, limit, status as any);
@@ -493,43 +370,24 @@ export const listPendingVenues = async (
       message: "Pending venues retrieved",
       data: result,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch pending venues",
-    });
   }
-};
+);
 
 /**
  * ADMIN: Get venue onboarding details for review
  * GET /api/admin/venues/onboarding/:venueId
  */
-export const getVenueOnboardingDetailsForAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getVenueOnboardingDetailsForAdmin = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
     const venue = await getVenueOnboardingDetails(venueId);
 
     if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
+      throw new AppError("Venue not found", 404);
     }
 
     res.status(200).json({
@@ -537,32 +395,17 @@ export const getVenueOnboardingDetailsForAdmin = async (
       message: "Venue details retrieved",
       data: venue,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch venue details",
-    });
   }
-};
+);
 
 /**
  * ADMIN: Approve venue
  * POST /api/admin/venues/onboarding/:venueId/approve
  */
-export const approveVenueHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const approveVenueHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
@@ -577,14 +420,8 @@ export const approveVenueHandler = async (
         approvalStatus: venue?.approvalStatus,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to approve venue",
-    });
   }
-};
+);
 
 /**
  * ADMIN: Reject venue
@@ -593,28 +430,17 @@ export const approveVenueHandler = async (
  * Request body:
  * { reason: string }
  */
-export const rejectVenueHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const rejectVenueHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
     const { reason } = req.body;
 
     if (!reason || reason.trim().length < 5) {
-      res.status(400).json({
-        success: false,
-        message: "Rejection reason must be at least 5 characters",
-      });
-      return;
+      throw new AppError("Rejection reason must be at least 5 characters", 400);
     }
 
     const venue = await rejectVenue(venueId, reason);
@@ -629,14 +455,8 @@ export const rejectVenueHandler = async (
         rejectionReason: venue?.rejectionReason,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reject venue",
-    });
   }
-};
+);
 
 /**
  * ADMIN: Mark venue for review
@@ -645,17 +465,10 @@ export const rejectVenueHandler = async (
  * Request body:
  * { notes?: string }
  */
-export const markVenueForReviewHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const markVenueForReviewHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
     const venueId = (req.params as Record<string, unknown>).venueId as string;
@@ -673,73 +486,47 @@ export const markVenueForReviewHandler = async (
         reviewNotes: venue?.reviewNotes,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to mark venue for review",
-    });
   }
-};
+);
 
 /**
  * STEP 5: Add in-house coaches to venue
  * POST /api/venues/onboarding/step5/coaches
  * Body: { venueId, coaches }
  */
-export const addVenueCoaches = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { venueId, coaches } = req.body;
+export const addVenueCoaches = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const { venueId, coaches } = req.body;
 
-    if (!venueId) {
-      res.status(400).json({
-        success: false,
-        message: "Venue ID is required",
-      });
-      return;
-    }
-
-    // Venue is already imported at the top
-
-    // Update venue with coaches
-    const venue = await Venue.findByIdAndUpdate(
-      venueId,
-      {
-        hasCoaches: coaches && coaches.length > 0,
-        venueCoaches: coaches || [],
-      },
-      { new: true, runValidators: true },
-    );
-
-    if (!venue) {
-      res.status(404).json({
-        success: false,
-        message: "Venue not found",
-      });
-      return;
-    }
-
-    res.status(200).json({
-      success: true,
-      message: "Venue coaches saved successfully",
-      data: {
-        venueId: venue._id,
-        hasCoaches: venue.hasCoaches,
-        coachCount: venue.venueCoaches?.length || 0,
-        approvalStatus: venue.approvalStatus,
-        nextStep: "Onboarding completed! Awaiting admin approval.",
-      },
-    });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to save coaches",
-    });
+  if (!venueId) {
+    throw new AppError("Venue ID is required", 400);
   }
-};
+
+  // Update venue with coaches. Once approved, edits go through the venue dashboard,
+  // so the update only matches a venue that is not approved yet.
+  const venue = await Venue.findOneAndUpdate(
+    { _id: venueId, approvalStatus: { $ne: "APPROVED" } },
+    {
+      hasCoaches: coaches && coaches.length > 0,
+      venueCoaches: coaches || [],
+    },
+    { new: true, runValidators: true }
+  );
+
+  if (!venue) {
+    const existing = await Venue.findById(venueId).select("approvalStatus");
+    if (existing) assertNotApproved(existing.approvalStatus);
+    throw new AppError("Venue not found", 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Venue coaches saved successfully",
+    data: {
+      venueId: venue._id,
+      hasCoaches: venue.hasCoaches,
+      coachCount: venue.venueCoaches?.length || 0,
+      approvalStatus: venue.approvalStatus,
+      nextStep: "Onboarding completed! Awaiting admin approval.",
+    },
+  });
+});

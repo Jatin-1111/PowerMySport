@@ -1,17 +1,35 @@
-﻿// ============================================
+// ============================================
 // USER & AUTH TYPES
 // ============================================
-export type UserRole = "PLAYER" | "VENUE_LISTER" | "COACH" | "ADMIN";
+// UserRole, BookingStatus, PaymentUserType, PaymentStatus, VenueListerProfile
+// and the base User shape now live in @powermysport/shared-types — this file
+// previously had its own independent copy of each, which had drifted from
+// both the server model and client's copy (missing "VENUE_ONBOARDING" on
+// UserRole, missing "Expert"/"Player" on PaymentUserType, missing most
+// moderation/address fields on User entirely). See that package for the
+// merge notes.
+import type {
+  UserRole,
+  BookingStatus,
+  PaymentUserType,
+  PaymentStatus,
+  VenueListerProfile,
+  User as SharedUser,
+} from "@powermysport/shared-types";
+import type { ChildGender } from "@powermysport/shared-types";
+export type { UserRole, BookingStatus, PaymentUserType, PaymentStatus, VenueListerProfile };
 
 // Admin role types
 export type AdminRole =
-  | "SUPPORT_ADMIN"
-  | "OPERATIONS_ADMIN"
-  | "FINANCE_ADMIN"
-  | "ANALYTICS_ADMIN"
-  | "SYSTEM_ADMIN";
+  "SUPPORT_ADMIN" | "OPERATIONS_ADMIN" | "FINANCE_ADMIN" | "ANALYTICS_ADMIN" | "SYSTEM_ADMIN";
 
 export type Permission = string; // e.g., "users:view", "venues:manage"
+
+export interface PermissionModule {
+  key: string;
+  name: string;
+  permissions: { key: string; label: string }[];
+}
 
 export interface RoleTemplate {
   role: string;
@@ -21,15 +39,6 @@ export interface RoleTemplate {
 }
 
 export type ServiceMode = "OWN_VENUE" | "FREELANCE" | "HYBRID";
-export type BookingStatus =
-  | "CONFIRMED"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "NO_SHOW"
-  | "CANCELLED";
-
-export type PaymentUserType = "VENUE_LISTER" | "COACH";
-export type PaymentStatus = "PENDING" | "PAID" | "FAILED";
 
 export interface IPayment {
   userId: string;
@@ -39,39 +48,20 @@ export interface IPayment {
   paidAt?: string;
 }
 
-export interface VenueListerProfile {
-  businessDetails?: {
-    name?: string;
-    gstNumber?: string;
-    address?: string;
-  };
-  payoutInfo?: {
-    accountNumber?: string;
-    ifsc?: string;
-    bankName?: string;
-  };
-  canAddMoreVenues?: boolean;
-}
-
 export interface Dependent {
   _id?: string;
   name: string;
   dob: string; // ISO date string
-  gender?: "MALE" | "FEMALE" | "OTHER";
+  gender?: ChildGender;
   relation?: string;
   sports?: string[];
 }
 
-export interface User {
+/** admin always has `id` (never optional here) and `dependents` is a real
+ *  typed array in this app (the shared type keeps it loose — see that
+ *  package's note on why). */
+export interface User extends Omit<SharedUser, "id" | "dependents"> {
   id: string;
-  name: string;
-  email: string;
-  phone: string;
-  dob?: string;
-  role: UserRole;
-  photoUrl?: string;
-  photoS3Key?: string; // S3 key for profile picture
-  venueListerProfile?: VenueListerProfile;
   dependents?: Dependent[];
 }
 
@@ -111,21 +101,10 @@ export interface IOwnVenueDetails {
   openingHours?: string;
 }
 
-export type CoachVerificationStatus =
-  | "UNVERIFIED"
-  | "PENDING"
-  | "REVIEW"
-  | "VERIFIED"
-  | "REJECTED";
+export type CoachVerificationStatus = "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
 
 export interface CoachVerificationDocument {
-  type:
-    | "CERTIFICATION"
-    | "ID_PROOF"
-    | "ADDRESS_PROOF"
-    | "BACKGROUND_CHECK"
-    | "INSURANCE"
-    | "OTHER";
+  type: "CERTIFICATION" | "ID_PROOF" | "ADDRESS_PROOF" | "BACKGROUND_CHECK" | "INSURANCE" | "OTHER";
   url: string;
   s3Key?: string;
   fileName: string;
@@ -168,113 +147,6 @@ export interface Coach {
   updatedAt: string;
 }
 
-export type CoachPlanBillingCycle = "MONTHLY" | "YEARLY";
-export type CoachSubscriptionStatus =
-  | "ACTIVE"
-  | "PAST_DUE"
-  | "CANCELLED"
-  | "EXPIRED";
-
-export interface CoachPlan {
-  id?: string;
-  _id?: string;
-  code: string;
-  name: string;
-  description?: string;
-  pricing: {
-    monthly?: number;
-    yearly?: number;
-  };
-  features: string[];
-  isActive: boolean;
-  supportsOverrides: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CoachSubscriptionRecord {
-  id?: string;
-  _id?: string;
-  coachId:
-    | string
-    | {
-        _id?: string;
-        id?: string;
-        userId?: string;
-        sports?: string[];
-        verificationStatus?: CoachVerificationStatus;
-      };
-  userId: string;
-  planId:
-    | string
-    | {
-        _id?: string;
-        id?: string;
-        code?: string;
-        name?: string;
-        pricing?: {
-          monthly?: number;
-          yearly?: number;
-        };
-      };
-  status: CoachSubscriptionStatus;
-  billingCycle: CoachPlanBillingCycle;
-  currentPeriodStart: string;
-  currentPeriodEnd: string;
-  nextBillingDate: string;
-  autoRenew: boolean;
-  gracePeriodEndsAt?: string | null;
-  cancelledAt?: string | null;
-  cancellationReason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type CoachSubscriptionOverrideStatus =
-  | "PENDING"
-  | "APPROVED"
-  | "REJECTED";
-
-export interface CoachSubscriptionOverrideRequestRecord {
-  id?: string;
-  _id?: string;
-  coachId:
-    | string
-    | {
-        _id?: string;
-        id?: string;
-        userId?: string;
-        sports?: string[];
-        verificationStatus?: CoachVerificationStatus;
-      };
-  userId: string;
-  currentPlanId?:
-    | string
-    | {
-        _id?: string;
-        id?: string;
-        code?: string;
-        name?: string;
-      }
-    | null;
-  requestedPlanId?:
-    | string
-    | {
-        _id?: string;
-        id?: string;
-        code?: string;
-        name?: string;
-      }
-    | null;
-  note: string;
-  status: CoachSubscriptionOverrideStatus;
-  reviewedBy?: string | null;
-  reviewedAt?: string | null;
-  reviewNote?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
 // ============================================
 // VENUE TYPES
 // ============================================
@@ -300,6 +172,8 @@ export interface Venue {
   coverPhotoUrl?: string;
   coverPhotoKey?: string; // S3 key for cover photo (regenerate URL as needed)
   allowExternalCoaches: boolean;
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+  rejectionReason?: string;
   rating?: number;
   reviewCount?: number;
   createdAt: string;
@@ -309,32 +183,27 @@ export interface Venue {
 // ============================================
 // BOOKING TYPES
 // ============================================
-export interface Booking {
-  id: string;
-  userId: string;
+// Everything on the canonical Booking (group-booking fields, expert/delivery
+// details, the full cancellation/completion lifecycle) now lives in
+// @powermysport/shared-types — this app previously had none of that typed
+// at all, not even as optional. The populated-reference fields below
+// (venue/coach/*Name) are an admin-only convenience the API layer adds on
+// top, so they stay here rather than in the shared shape.
+import type { Booking as SharedBooking } from "@powermysport/shared-types";
+
+export interface Booking extends Omit<
+  SharedBooking,
+  "venueId" | "coachId" | "createdAt" | "updatedAt"
+> {
   playerName?: string;
   venueId?: string | Venue; // Can be populated
   venueName?: string;
   venue?: Venue; // Populated venue data
   coachId?: string | Coach; // Can be populated
   coach?: Coach; // Populated coach data
-  sport?: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  totalAmount: number;
-  serviceFee?: number;
-  taxAmount?: number;
-  payments?: Array<{
-    userId: string;
-    userType: PaymentUserType;
-    amount: number;
-    status: PaymentStatus;
-    paidAt?: string;
-  }>;
-  status: BookingStatus;
-  expiresAt?: string; // Optional - only set for PENDING_PAYMENT bookings
-  checkInCode?: string;
+  coachName?: string;
+  academyName?: string;
+  expertName?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -342,21 +211,7 @@ export interface Booking {
 // ============================================
 // API RESPONSE TYPES
 // ============================================
-export interface PaginationMetadata {
-  total: number;
-  page: number;
-  totalPages: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data?: T;
-  pagination?: {
-    // Allow nested pagination or top-level
-    [key: string]: PaginationMetadata | undefined;
-  } & PaginationMetadata; // Or just top-level
-}
+export type { PaginationMetadata, ApiResponse } from "@powermysport/shared-types";
 
 export interface Availability {
   availableSlots: string[];

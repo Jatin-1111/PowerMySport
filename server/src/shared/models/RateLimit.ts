@@ -20,7 +20,7 @@ const rateLimitSchema = new Schema<RateLimitDocument>(
     type: {
       type: String,
       required: true,
-      enum: ["EMAIL_VERIFICATION", "LOGIN", "API"],
+      enum: ["EMAIL_VERIFICATION", "WHATSAPP_OTP", "LOGIN", "API"],
     },
     count: {
       type: Number,
@@ -34,22 +34,13 @@ const rateLimitSchema = new Schema<RateLimitDocument>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Compound unique index for key + type
-rateLimitSchema.index(
-  { key: 1, type: 1 },
-  { unique: true, name: "unique_rate_limit" },
-);
+rateLimitSchema.index({ key: 1, type: 1 }, { unique: true, name: "unique_rate_limit" });
 
 // TTL index to auto-delete after reset time
-rateLimitSchema.index(
-  { resetAt: 1 },
-  { expireAfterSeconds: 0, name: "rate_limit_ttl" },
-);
+rateLimitSchema.index({ resetAt: 1 }, { expireAfterSeconds: 0, name: "rate_limit_ttl" });
 
-export const RateLimit = mongoose.model<RateLimitDocument>(
-  "RateLimit",
-  rateLimitSchema,
-);
+export const RateLimit = mongoose.model<RateLimitDocument>("RateLimit", rateLimitSchema);

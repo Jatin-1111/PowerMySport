@@ -1,5 +1,28 @@
 node_modules
-package-lock.json
 .next
 _*.ps1
 .turbo
+packages/*/dist
+
+# Environment files — never commit real secrets
+.env
+.env.*
+!.env.example
+.claude
+
+CLAUDE.md
+PROJECT_CONTEXT.md
+
+*.txt
+
+asset
+logs
+docs
+# One-off migration audit reports (see server/src/migrations/20_*, 21_*)
+migration-*.json
+migration-reports/
+
+# local DB dump (contains production data)
+pms-dump.gz
+
+claude outputs

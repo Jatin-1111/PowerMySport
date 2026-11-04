@@ -21,17 +21,13 @@ export function CheckoutSection({
     <Card
       className={cn(
         "overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 p-5 shadow-sm backdrop-blur-sm sm:p-6",
-        className,
+        className
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-title text-lg font-semibold text-slate-900 sm:text-xl">
-            {title}
-          </h2>
-          {description && (
-            <p className="mt-1 text-sm text-slate-600">{description}</p>
-          )}
+          <h2 className="font-title text-lg font-semibold text-slate-900 sm:text-xl">{title}</h2>
+          {description && <p className="mt-1 text-sm text-slate-600">{description}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>

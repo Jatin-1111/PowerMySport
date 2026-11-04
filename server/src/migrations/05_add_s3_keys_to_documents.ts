@@ -57,9 +57,7 @@ export const addS3KeysToDocuments = async () => {
             if (s3Key) {
               (doc as any).s3Key = s3Key;
               venueModified = true;
-              console.log(
-                `   ✓ Added s3Key for document ${doc.fileName}: ${s3Key}`,
-              );
+              console.log(`   ✓ Added s3Key for document ${doc.fileName}: ${s3Key}`);
             } else {
               console.warn(`   ⚠️  Could not extract s3Key from: ${doc.url}`);
             }
@@ -78,9 +76,7 @@ export const addS3KeysToDocuments = async () => {
             if (s3Key) {
               imageKeys.push(s3Key);
             } else {
-              console.warn(
-                `   ⚠️  Could not extract s3Key from image: ${imageUrl}`,
-              );
+              console.warn(`   ⚠️  Could not extract s3Key from image: ${imageUrl}`);
             }
           }
           if (imageKeys.length > 0) {
@@ -98,9 +94,7 @@ export const addS3KeysToDocuments = async () => {
             venueModified = true;
             console.log(`   ✓ Added cover photo s3Key: ${s3Key}`);
           } else {
-            console.warn(
-              `   ⚠️  Could not extract s3Key from cover photo: ${venue.coverPhotoUrl}`,
-            );
+            console.warn(`   ⚠️  Could not extract s3Key from cover photo: ${venue.coverPhotoUrl}`);
           }
         }
 

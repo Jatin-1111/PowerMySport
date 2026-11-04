@@ -26,8 +26,8 @@ export function ProfileFormSelect({
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
         className={cn(
-          "h-10 w-full appearance-none rounded-md border border-input bg-white px-3 py-2 pr-10 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-power-orange focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-          className,
+          "border-input ring-offset-background focus-visible:ring-power-orange h-10 w-full appearance-none rounded-md border bg-white px-3 py-2 pr-10 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
         )}
       >
         {options.map((option) => (

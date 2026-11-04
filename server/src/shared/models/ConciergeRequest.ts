@@ -24,7 +24,10 @@ const ConciergeRequestSchema = new Schema<IConciergeRequest>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     sportSlug: { type: String, required: true },
-    itemType: { type: String, enum: ["tournament", "scholarship", "university"] },
+    itemType: {
+      type: String,
+      enum: ["tournament", "scholarship", "university"],
+    },
     itemId: { type: String },
     itemName: { type: String },
     tournamentId: { type: String },
@@ -46,6 +49,11 @@ const ConciergeRequestSchema = new Schema<IConciergeRequest>(
   },
   { timestamps: true }
 );
+
+// getAllConciergeRequests (admin) sorts {createdAt:-1} unfiltered;
+// getPendingCounts filters {status:"pending"}. No index served either before.
+ConciergeRequestSchema.index({ status: 1, createdAt: -1 });
+ConciergeRequestSchema.index({ createdAt: -1 });
 
 export const ConciergeRequest = mongoose.model<IConciergeRequest>(
   "ConciergeRequest",

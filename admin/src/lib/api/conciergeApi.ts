@@ -30,21 +30,22 @@ export interface ConciergeRequest {
 
 export const conciergeApi = {
   getAllRequests: async () => {
-    const res = await axiosInstance.get<{ success: boolean; requests: ConciergeRequest[] }>(
-      "/admin/concierge-requests",
-    );
+    const res = await axiosInstance.get<{
+      success: boolean;
+      requests: ConciergeRequest[];
+    }>("/admin/concierge-requests");
     return res.data.requests;
   },
 
   updateStatus: async (
     id: string,
     status: "pending" | "processing" | "completed" | "rejected",
-    adminNotes?: string,
+    adminNotes?: string
   ) => {
-    const res = await axiosInstance.patch<{ success: boolean; request: ConciergeRequest }>(
-      `/admin/concierge-requests/${id}/status`,
-      { status, adminNotes },
-    );
+    const res = await axiosInstance.patch<{
+      success: boolean;
+      request: ConciergeRequest;
+    }>(`/admin/concierge-requests/${id}/status`, { status, adminNotes });
     return res.data.request;
   },
 
@@ -53,7 +54,7 @@ export const conciergeApi = {
       `/admin/concierge-requests/${requestId}/document`,
       {
         params: { key: s3Key },
-      },
+      }
     );
     return res.data.url;
   },

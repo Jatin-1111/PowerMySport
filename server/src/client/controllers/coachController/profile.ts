@@ -1,0 +1,326 @@
+import { Request, Response } from "express";
+import {
+  COACH_PUBLIC_SELECT,
+  createCoach,
+  deleteCoach,
+  getCoachById,
+  getCoachByUserId,
+  summarizeChecks,
+  updateCoach,
+} from "../../services/CoachService";
+import { transformDocument } from "../../../middleware/responseTransform";
+import { log } from "./shared";
+import { asyncHandler } from "../../../middleware/asyncHandler";
+import { AppError } from "../../../utils/AppError";
+import { Coach } from "../../models/Coach";
+import {
+  pendingChangesUpdate,
+  reconcileClaimChanges,
+} from "../../../shared/services/pendingChanges";
+
+/** Fields a coach may change on their own profile via PUT /api/coaches/:coachId. */
+const COACH_SELF_EDITABLE_FIELDS = [
+  "bio",
+  "certifications",
+  "sports",
+  "hourlyRate",
+  "sportPricing",
+  "serviceMode",
+  "ownVenueDetails",
+  "baseLocation",
+  "serviceRadiusKm",
+  "travelBufferTime",
+  "availability",
+  "availabilityBySport",
+  "gstNumber",
+] as const;
+
+/**
+ * Create a new coach profile
+ * POST /api/coaches
+ */
+export const createNewCoach = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  if (!req.user?.id) {
+    throw new AppError("Unauthorized", 401);
+  }
+
+  // Only accounts that signed up as a Coach may create a coach profile; any other
+  // role (Parent, Player, ...) holding a Coach document would be treated as a coach
+  // by every route that looks the caller up by Coach.findOne({ userId }).
+  if (req.user.role !== "Coach") {
+    throw new AppError("Only coach accounts can create a coach profile", 403);
+  }
+
+  // Validate required fields
+  const { bio, certifications, sports, hourlyRate, serviceMode } = req.body;
+
+  if (!serviceMode) {
+    throw new AppError("Service mode is required", 400);
+  }
+
+  if (!sports || !Array.isArray(sports) || sports.length === 0) {
+    throw new AppError("At least one sport is required", 400);
+  }
+
+  // Check if user already has a coach profile
+  const existingCoach = await getCoachByUserId(req.user.id);
+  if (existingCoach) {
+    throw new AppError("Coach profile already exists for this user", 400);
+  }
+
+  const {
+    certifications: certBody,
+    sports: sportsBody,
+    sportPricing,
+    serviceMode: serviceModeBody,
+    ownVenueDetails,
+    baseLocation,
+    serviceRadiusKm,
+    travelBufferTime,
+    availability,
+    availabilityBySport,
+  } = req.body;
+
+  const coach = await createCoach({
+    userId: req.user.id,
+    bio,
+    certifications: certBody,
+    sports: sportsBody,
+    hourlyRate,
+    sportPricing,
+    serviceMode: serviceModeBody,
+    ownVenueDetails,
+    baseLocation,
+    serviceRadiusKm,
+    travelBufferTime,
+    availability,
+    availabilityBySport,
+  });
+
+  log.info("Created coach:", {
+    id: coach.id,
+    serviceMode: coach.serviceMode,
+  });
+
+  // Convert to JSON and transform _id to id
+  const coachData = transformDocument(coach.toJSON());
+
+  log.info("Coach JSON response:", {
+    id: coachData.id,
+    serviceMode: coachData.serviceMode,
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Coach profile created successfully",
+    data: coachData,
+  });
+});
+
+/**
+ * Get coach profile by ID
+ * GET /api/coaches/:coachId
+ */
+export const getCoach = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const coachId = (req.params as Record<string, unknown>).coachId as string;
+
+  // Public, unauthenticated endpoint — only the fields an actual coach
+  // card renders. This used to populate the entire User document
+  // (including email/phone) into every response here.
+  // `photoS3Key` is not rendered — it is what `refreshCoachMediaUrls` needs to
+  // re-sign `photoUrl`. Stored photo URLs are presigned with a 7-day expiry, so
+  // without the key here the refresh silently no-ops and this endpoint serves a
+  // URL that 403s ("Request has expired") for any photo uploaded over a week
+  // ago. The coach LISTING already selects it; this one did not.
+  //
+  // The field allowlist matters as much as the user projection: this route is
+  // cached publicly for 60s, and the Coach schema decrypts payout details on
+  // serialization, so an unprojected read serves bank/UPI details to anyone.
+  const coach = await getCoachById(coachId, {
+    populateUserFields: "name photoUrl photoS3Key",
+    select: COACH_PUBLIC_SELECT,
+  });
+
+  if (!coach) {
+    throw new AppError("Coach not found", 404);
+  }
+
+  const isPubliclyVisible = coach.isVerified || coach.verificationStatus === "VERIFIED";
+
+  if (!isPubliclyVisible) {
+    throw new AppError("Coach not found", 404);
+  }
+
+  // Convert to JSON and transform _id to id
+  const coachData = transformDocument(coach.toJSON());
+
+  // What was checked, from the document types only (never the files).
+  const reviewed = await Coach.findById(coachId)
+    .select("verificationDocuments.type")
+    .lean<{ verificationDocuments?: { type?: string }[] }>();
+  (coachData as Record<string, unknown>).checks = summarizeChecks(reviewed?.verificationDocuments);
+
+  res.status(200).json({
+    success: true,
+    message: "Coach retrieved successfully",
+    data: coachData,
+  });
+});
+
+/**
+ * Get current user's coach profile
+ * GET /api/coaches/my-profile
+ */
+export const getMyCoachProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    if (!req.user?.id) {
+      throw new AppError("Unauthorized", 401);
+    }
+
+    // Self-view — matches the known-good field set already used elsewhere
+    // in this service for a coach's own profile.
+    const coach = await getCoachByUserId(req.user.id, {
+      populateUserFields: "name photoUrl email",
+    });
+
+    if (!coach) {
+      throw new AppError("Coach profile not found", 404);
+    }
+
+    // Convert to JSON and transform _id to id
+    const coachData = transformDocument(coach.toJSON());
+
+    log.info("getMyCoachProfile returning:", {
+      id: coachData.id,
+      serviceMode: coachData.serviceMode,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Coach profile retrieved successfully",
+      data: coachData,
+    });
+  }
+);
+
+/**
+ * Update coach profile
+ * PUT /api/coaches/:coachId
+ */
+export const updateCoachProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+
+    // Validate coachId is provided and is a valid MongoDB ObjectId
+    if (!coachId || coachId === "undefined") {
+      throw new AppError("Invalid coach ID provided", 400);
+    }
+
+    // Verify ownership
+    const existingCoach = await getCoachById(coachId);
+    if (!existingCoach) {
+      throw new AppError("Coach not found", 404);
+    }
+
+    // Handle both populated userId (object) and unpopulated userId (ObjectId)
+    const userId = existingCoach.userId as any;
+    const coachUserId =
+      typeof userId === "object" && userId !== null
+        ? userId._id?.toString() || userId.id
+        : userId.toString();
+
+    if (coachUserId !== req.user?.id) {
+      throw new AppError("You can only update your own coach profile", 403);
+    }
+
+    // Handle ownVenueDetails validation and preservation
+    // `updateCoach` assigns every key it is given, so the owner route must pass
+    // only profile fields. Verification, rating, subscription and payout state
+    // are set by the verification flow, the review system and their own routes.
+    const updates: Record<string, unknown> & { ownVenueDetails?: any } = {};
+    for (const field of COACH_SELF_EDITABLE_FIELDS) {
+      if (req.body?.[field] !== undefined) updates[field] = req.body[field];
+    }
+    const newServiceMode = updates.serviceMode || existingCoach.serviceMode;
+
+    // Handle service mode specific logic
+    if (newServiceMode === "OWN_VENUE" || newServiceMode === "HYBRID") {
+      // For OWN_VENUE/HYBRID modes: preserve existing ownVenueDetails if not providing new ones
+      if (!updates.ownVenueDetails && existingCoach.ownVenueDetails) {
+        updates.ownVenueDetails = existingCoach.ownVenueDetails;
+      }
+      // If no ownVenueDetails provided, that's ok - they can add them later
+    } else if (newServiceMode === "FREELANCE") {
+      // For FREELANCE mode: clear ownVenueDetails if switching from OWN_VENUE/HYBRID
+      if (existingCoach.serviceMode !== "FREELANCE" && !updates.ownVenueDetails) {
+        updates.ownVenueDetails = undefined;
+      }
+    }
+
+    // After verification the claim fields (sports, certifications) are what an
+    // admin reviewed: an edit to one is held for review and the approved value
+    // stays live.
+    let heldForReview = false;
+    let toApply: Record<string, unknown> = updates;
+    if (existingCoach.verificationStatus === "VERIFIED") {
+      const { rest, pending, changed } = reconcileClaimChanges(
+        "coach",
+        { sports: existingCoach.sports, certifications: existingCoach.certifications },
+        existingCoach.pendingChanges?.fields,
+        updates
+      );
+      toApply = rest;
+      if (changed) {
+        await Coach.updateOne({ _id: coachId }, pendingChangesUpdate(pending));
+      }
+      heldForReview = Boolean(pending);
+    }
+
+    const coach = await updateCoach(coachId, toApply);
+
+    // Convert to JSON and transform _id to id
+    const coachData = transformDocument(coach?.toJSON());
+
+    res.status(200).json({
+      success: true,
+      message: heldForReview
+        ? "Profile updated. Your sports and certifications changes are waiting for review; the verified values stay live until then."
+        : "Coach profile updated successfully",
+      data: coachData,
+    });
+  }
+);
+
+/**
+ * Delete coach profile
+ * DELETE /api/coaches/:coachId
+ */
+export const deleteCoachProfile = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const coachId = (req.params as Record<string, unknown>).coachId as string;
+
+    // Verify ownership
+    const existingCoach = await getCoachById(coachId);
+    if (!existingCoach) {
+      throw new AppError("Coach not found", 404);
+    }
+
+    // Handle both populated userId (object) and unpopulated userId (ObjectId)
+    const userId = existingCoach.userId as any;
+    const coachUserId =
+      typeof userId === "object" && userId !== null
+        ? userId._id?.toString() || userId.id
+        : userId.toString();
+
+    if (coachUserId !== req.user?.id) {
+      throw new AppError("You can only delete your own coach profile", 403);
+    }
+
+    await deleteCoach(coachId);
+
+    res.status(200).json({
+      success: true,
+      message: "Coach profile deleted successfully",
+    });
+  }
+);

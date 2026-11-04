@@ -34,7 +34,7 @@ const runPaymentFlowTest = async () => {
       email: `venue_owner_paytest_${Date.now()}@example.com`,
       password: "hashedpassword",
       phone: `12${Date.now().toString().slice(-8)}`,
-      role: "VENUE_LISTER",
+      role: "VenueLister",
       name: "Venue Owner",
     } as any);
 
@@ -42,7 +42,7 @@ const runPaymentFlowTest = async () => {
       email: `coach_paytest_${Date.now()}@example.com`,
       password: "hashedpassword",
       phone: `34${Date.now().toString().slice(-8)}`,
-      role: "COACH",
+      role: "Coach",
       name: "Pro Coach",
     } as any);
 
@@ -50,10 +50,10 @@ const runPaymentFlowTest = async () => {
       email: `player_paytest_${Date.now()}@example.com`,
       password: "hashedpassword",
       phone: `56${Date.now().toString().slice(-8)}`,
-      role: "PLAYER",
+      role: "Player",
       name: "Active Player",
     } as any);
-    
+
     venueOwnerId = venueOwner._id;
     coachUserId = coachUser._id;
     playerId = player._id;
@@ -91,20 +91,20 @@ const runPaymentFlowTest = async () => {
       certifications: [],
       verificationStatus: "VERIFIED",
       serviceMode: "FREELANCE",
-      availability: [0,1,2,3,4,5,6].map(day => ({
+      availability: [0, 1, 2, 3, 4, 5, 6].map((day) => ({
         dayOfWeek: day,
         startTime: "00:00",
-        endTime: "23:59"
+        endTime: "23:59",
       })),
     } as any);
 
     // 2. Initiate Booking
     console.log("\n🧪 Test: Booking Payment Splits Initialization");
-    
+
     // Choose a future date for the booking
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     const payload: InitiateBookingPayload = {
       userId: player._id.toString(),
       venueId: venue._id.toString(),
@@ -116,7 +116,7 @@ const runPaymentFlowTest = async () => {
     };
 
     const { booking: initialBooking } = await initiateBooking(payload);
-    
+
     // Verify payments array
     const booking = await Booking.findById(initialBooking._id);
     if (!booking) {
@@ -124,39 +124,41 @@ const runPaymentFlowTest = async () => {
     }
 
     if (!booking.payments || booking.payments.length === 0) {
-      console.log("❌ Failed: Booking payments array is empty. Expected splits for Venue and Coach.");
+      console.log(
+        "❌ Failed: Booking payments array is empty. Expected splits for Venue and Coach."
+      );
       testFailed = true;
     } else {
       console.log("✅ Passed: Booking payments array is populated.");
-      const venuePayment = booking.payments.find(p => p.userType === "VENUE_LISTER");
-      const coachPayment = booking.payments.find(p => p.userType === "COACH");
-      
+      const venuePayment = booking.payments.find((p) => p.userType === "VenueLister");
+      const coachPayment = booking.payments.find((p) => p.userType === "Coach");
+
       if (!venuePayment || venuePayment.status !== "PENDING") {
-         console.log("❌ Failed: Venue payment split is missing or not PENDING.");
-         testFailed = true;
+        console.log("❌ Failed: Venue payment split is missing or not PENDING.");
+        testFailed = true;
       }
       if (!coachPayment || coachPayment.status !== "PENDING") {
-         console.log("❌ Failed: Coach payment split is missing or not PENDING.");
-         testFailed = true;
+        console.log("❌ Failed: Coach payment split is missing or not PENDING.");
+        testFailed = true;
       }
     }
 
     // 3. Simulate completion and auto-release
     console.log("\n🧪 Test: Release Completed Booking Payments (Auto-Payout)");
-    
+
     if (testFailed) {
       console.log("⚠️ Skipping auto-release test due to earlier failure.");
     } else {
       // Simulate that the session is completed and was updated > 24 hours ago
       const pastDate = new Date(Date.now() - 48 * 60 * 60 * 1000); // 48 hours ago
-      
+
       await Booking.updateOne(
         { _id: booking._id },
-        { 
-          $set: { 
-            status: "COMPLETED", 
-            updatedAt: pastDate 
-          }
+        {
+          $set: {
+            status: "COMPLETED",
+            updatedAt: pastDate,
+          },
         },
         { timestamps: false }
       );
@@ -165,8 +167,8 @@ const runPaymentFlowTest = async () => {
       await releaseCompletedBookingPayments();
 
       const updatedBooking = await Booking.findById(booking._id);
-      const allPaid = updatedBooking?.payments.every(p => p.status === "PAID");
-      
+      const allPaid = updatedBooking?.payments.every((p) => p.status === "PAID");
+
       if (allPaid) {
         console.log("✅ Passed: All payments were marked as PAID by the auto-release job.");
       } else {
@@ -174,18 +176,15 @@ const runPaymentFlowTest = async () => {
         testFailed = true;
       }
     }
-
   } catch (error: any) {
     console.log(`❌ Unexpected error during testing: ${error.message}`);
     testFailed = true;
   } finally {
     // Cleanup
     console.log("\n🧹 Cleaning up test data...");
-    await User.deleteMany({ _id: { $in: [
-      venueOwnerId, 
-      coachUserId, 
-      playerId
-    ]}});
+    await User.deleteMany({
+      _id: { $in: [venueOwnerId, coachUserId, playerId] },
+    });
     await Venue.deleteMany({ name: "Payment Flow Test Venue" });
     await Coach.deleteMany({ hourlyRate: 50, sports: "Tennis" }); // Rough cleanup for coach
     // Booking will be cleaned up implicitly if user references are deleted, but let's be explicit
@@ -194,9 +193,9 @@ const runPaymentFlowTest = async () => {
     if (testVenue) {
       await Booking.deleteMany({ venueId: testVenue._id });
     }
-    
+
     await mongoose.connection.close();
-    
+
     console.log("\n" + "=".repeat(60));
     if (testFailed) {
       console.log("❌ Test Suite Failed.");

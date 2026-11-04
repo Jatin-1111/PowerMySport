@@ -1,7 +1,148 @@
 import type { NextConfig } from "next";
 import path from "path";
 
+/**
+ * Duplicate tournament editions, as permanent redirects.
+ *
+ * The same event was ingested twice under a long and a short name (see server
+ * migration 41), so it holds two indexed URLs that split its ranking signals.
+ * `mergedInto` names the survivor; these turn that into a real 308.
+ *
+ * Built here rather than with `permanentRedirect()` in the page on purpose: a
+ * redirect thrown from a Server Component arrives after the response is
+ * committed, so Next degrades it to `<meta http-equiv="refresh">` on a 200,
+ * which Google treats as a much weaker signal than an HTTP redirect. The page
+ * keeps its own redirect as a fallback for rows merged since the last build.
+ *
+ * Never throws: a redirect list that fails the build is worse than one missing
+ * its dynamic half, matching how app/sitemap.ts treats the same API.
+ */
+async function mergedEditionRedirects() {
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  try {
+    const res = await fetch(`${apiBase}/tournament-editions?merged=true`);
+    if (!res.ok) return [];
+    const body = await res.json();
+    if (!body?.success || !Array.isArray(body.data)) return [];
+    return (body.data as { slug?: string; mergedInto?: string }[])
+      .filter((r) => r.slug && r.mergedInto && r.slug !== r.mergedInto)
+      .map((r) => ({
+        source: `/tournaments/${r.slug}`,
+        destination: `/tournaments/${r.mergedInto}`,
+        permanent: true,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Hosts that must never be indexed: the UAT deployment.
+ *
+ * UAT is a public URL running the same build as production, so it answers
+ * "index, follow", its robots.txt allows everything, and its robots.txt and
+ * sitemaps name the production host. Canonicals point at production, which
+ * limits the harm, but nothing told a crawler to leave the host alone.
+ *
+ * Keyed on the request host with an explicit allow-list of hosts to noindex,
+ * never "everything that is not production": a mistake in this list can leave
+ * UAT indexable, but it cannot noindex production, which is the failure that
+ * costs. `NOINDEX_HOSTS` (comma separated) adds hosts such as a preview domain
+ * without a code change.
+ */
+const NOINDEX_HOSTS = [
+  "client-uat.powermysport.com",
+  ...(process.env.NOINDEX_HOSTS ?? "")
+    .split(",")
+    .map((host) => host.trim())
+    .filter(Boolean),
+];
+
 const nextConfig: NextConfig = {
+  async headers() {
+    return NOINDEX_HOSTS.map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host" as const, value: host }],
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    }));
+  },
+  async redirects() {
+    return [
+      ...(await mergedEditionRedirects()),
+      {
+        source: "/find-sport",
+        destination: "/assessment",
+        permanent: true,
+      },
+      // Tournament detail pages are gone — both the nested form and the flat
+      // /tournaments/[slug] one. The nested URLs carry their federation slug, so
+      // they keep their equity by landing on that federation's page (which has a
+      // Tournaments tab). Flat /tournaments/[slug] URLs carry nothing we can map
+      // to a destination, so they 404 rather than be funnelled somewhere
+      // irrelevant — see the note on 410 in the handover.
+      {
+        source: "/federations/:slug/:tournamentSlug",
+        destination: "/federations/:slug",
+        permanent: true,
+      },
+      // Rankings moved under a sport segment so a second federation does not
+      // have to inherit tennis-shaped URLs. These are indexed pages, so the old
+      // paths 301 rather than 404.
+      //
+      // ORDER MATTERS. `/rankings/players/12345` and `/rankings/boys/u-14` are
+      // both two segments, so the player rule has to be declared first or the
+      // category rule swallows it and sends players to a nonsense URL.
+      {
+        source: "/rankings/players/:regNo",
+        destination: "/rankings/tennis/players/:regNo",
+        permanent: true,
+      },
+      {
+        source: "/rankings/:category(boys|girls|men|women)/:subcategory",
+        destination: "/rankings/tennis/:category/:subcategory",
+        permanent: true,
+      },
+      // The standalone venue/coach/academy listings are gone — /booking is the
+      // one discovery surface, with a tab for each. These three were "launching
+      // soon" waitlist pages and are indexed, so they redirect rather than 404.
+      //
+      // Deliberately exact paths: the DETAIL routes underneath them
+      // (/venues/[venueId], /coaches/[coachId], /academies/[slug]) are live and
+      // are what the booking tabs link to. A `:path*` here would break booking.
+      {
+        source: "/venues",
+        destination: "/booking?tab=venues",
+        permanent: true,
+      },
+      {
+        source: "/coaches",
+        destination: "/booking?tab=coaches",
+        permanent: true,
+      },
+      {
+        source: "/academies",
+        destination: "/booking?tab=academies",
+        permanent: true,
+      },
+      // Same story for the expert directory, collapsed into the Experts tab.
+      // `/experts/[expertId]` and `/experts/sessions` underneath stay live and
+      // are what that tab links to, so this stays an exact path too.
+      {
+        source: "/experts",
+        destination: "/booking?tab=experts",
+        permanent: true,
+      },
+      // Community shipped, so its "coming soon" waitlist page is gone. It was
+      // indexed and sitemap-listed, so it redirects into the community app
+      // rather than 404ing. `/community` is a rewrite (see below) — redirects
+      // run first, so this resolves to the redirect, then the rewrite.
+      {
+        source: "/community-waitlist",
+        destination: "/community",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       // Base community route
@@ -24,11 +165,23 @@ const nextConfig: NextConfig = {
   },
   /* config options here */
   reactCompiler: true,
+  // @powermysport/shared-types ships raw .ts with no build step — Next
+  // doesn't compile workspace packages by default, so this is required.
+  transpilePackages: ["@powermysport/shared-types", "@powermysport/rich-text"],
   turbopack: {
     root: path.join(process.cwd(), ".."),
   },
+  experimental: {
+    // Next already auto-optimizes a default list of packages; naming these
+    // explicitly is a cheap guarantee for the two icon/date libs this app
+    // imports from broadly (lucide-react, date-fns) rather than relying on
+    // whatever happens to be in that default list for this Next version.
+    optimizePackageImports: ["lucide-react", "date-fns"],
+  },
   images: {
     dangerouslyAllowLocalIP: true,
+    // The default is 75 only. Large photographs (the homepage hero) ask for 90.
+    qualities: [75, 90],
     remotePatterns: [
       {
         protocol: "https",
@@ -37,6 +190,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media.istockphoto.com",
       },
       {
         protocol: "https",

@@ -7,9 +7,7 @@ type VenueImageSource = Pick<Venue, "images" | "coverPhotoUrl"> & {
 
 type ImageSourceType = "structured" | "legacy" | "cover-only" | "none";
 
-const getRecordValues = (
-  value?: Record<string, string[]> | Map<string, string[]>,
-): string[][] => {
+const getRecordValues = (value?: Record<string, string[]> | Map<string, string[]>): string[][] => {
   if (!value) return [];
 
   if (value instanceof Map) {
@@ -34,11 +32,7 @@ const extractObjectKey = (value?: string): string => {
   }
 };
 
-const pushUnique = (
-  images: string[],
-  seenKeys: Set<string>,
-  value?: string,
-) => {
+const pushUnique = (images: string[], seenKeys: Set<string>, value?: string) => {
   if (!value) return;
 
   const next = value.trim();
@@ -53,19 +47,17 @@ const pushUnique = (
 };
 
 const getStructuredImages = (venue: VenueImageSource): string[] => {
-  const flattenedGeneral = Array.isArray(venue.generalImages)
-    ? venue.generalImages
-    : [];
+  const flattenedGeneral = Array.isArray(venue.generalImages) ? venue.generalImages : [];
 
-  const flattenedSports = getRecordValues(venue.sportImages).flatMap(
-    (sportImages) => (Array.isArray(sportImages) ? sportImages : []),
+  const flattenedSports = getRecordValues(venue.sportImages).flatMap((sportImages) =>
+    Array.isArray(sportImages) ? sportImages : []
   );
 
   return [...flattenedGeneral, ...flattenedSports];
 };
 
 export const getVenueImageAudit = (
-  venue: VenueImageSource,
+  venue: VenueImageSource
 ): { source: ImageSourceType; images: string[] } => {
   const images: string[] = [];
   const seenKeys = new Set<string>();
@@ -98,16 +90,11 @@ export const getVenueImageUrls = (venue: VenueImageSource): string[] => {
   return getVenueImageAudit(venue).images;
 };
 
-export const getVenueSportImageUrls = (
-  venue: VenueImageSource,
-  sport?: string,
-): string[] => {
+export const getVenueSportImageUrls = (venue: VenueImageSource, sport?: string): string[] => {
   if (!sport) return [];
 
   const sportImages =
-    venue.sportImages instanceof Map
-      ? venue.sportImages.get(sport)
-      : venue.sportImages?.[sport];
+    venue.sportImages instanceof Map ? venue.sportImages.get(sport) : venue.sportImages?.[sport];
   if (!Array.isArray(sportImages) || sportImages.length === 0) {
     return [];
   }

@@ -1,15 +1,20 @@
 import mongoose from "mongoose";
 import { Venue, VenueDocument } from "../models/Venue";
 import { IGeoLocation } from "../../types/index";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
+import { log as __rootLog } from "../../utils/logger";
+import { AppError } from "../../utils/AppError";
+import { pendingChangesUpdate, reconcileClaimChanges } from "../../shared/services/pendingChanges";
+const log = __rootLog.child("venue");
+
+// Matches the GST_REGEX used in ExpertsService.ts / Venue's own schema validator.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
-const calculateDistanceKm = (
-  from: [number, number],
-  to: [number, number],
-): number => {
+const calculateDistanceKm = (from: [number, number], to: [number, number]): number => {
   const [fromLng, fromLat] = from;
   const [toLng, toLat] = to;
 
@@ -29,8 +34,7 @@ const calculateDistanceKm = (
 
 const getVenueDisplayPrice = (venue: any): number => {
   const fallback =
-    typeof venue?.pricePerHour === "number" &&
-    Number.isFinite(venue.pricePerHour)
+    typeof venue?.pricePerHour === "number" && Number.isFinite(venue.pricePerHour)
       ? venue.pricePerHour
       : 0;
 
@@ -43,8 +47,7 @@ const getVenueDisplayPrice = (venue: any): number => {
       : Object.values(pricing as Record<string, unknown>);
 
   const validValues = values.filter(
-    (value): value is number =>
-      typeof value === "number" && Number.isFinite(value) && value >= 0,
+    (value): value is number => typeof value === "number" && Number.isFinite(value) && value >= 0
   );
 
   if (validValues.length === 0) return fallback;
@@ -123,20 +126,17 @@ export interface CreateVenuePayload {
   images?: string[];
   allowExternalCoaches?: boolean;
   approvalStatus?: string;
+  gstNumber?: string;
 }
 
-export const createVenue = async (
-  payload: CreateVenuePayload,
-): Promise<VenueDocument> => {
+export const createVenue = async (payload: CreateVenuePayload): Promise<VenueDocument> => {
   // Ensure ownerId is properly converted to ObjectId
   const venueData: any = {
     ...payload,
-    ownerId: payload.ownerId
-      ? new mongoose.Types.ObjectId(payload.ownerId)
-      : undefined,
+    ownerId: payload.ownerId ? new mongoose.Types.ObjectId(payload.ownerId) : undefined,
   };
 
-  console.log("Creating venue with data:", {
+  log.info("Creating venue with data:", {
     name: venueData.name,
     ownerId: venueData.ownerId,
     ownerIdType: typeof venueData.ownerId,
@@ -147,7 +147,7 @@ export const createVenue = async (
   const venue = new Venue(venueData);
   await venue.save();
 
-  console.log("Venue saved:", {
+  log.info("Venue saved:", {
     id: venue._id,
     name: venue.name,
     ownerId: venue.ownerId,
@@ -157,10 +157,30 @@ export const createVenue = async (
   return venue;
 };
 
+/**
+ * Fields that never belong in a public venue response. `payoutMethods` and
+ * `documents` are bank details and verification files (the schema's
+ * `toJSON({getters:true})` decrypts the former on serialization); the owner
+ * contact fields and moderation notes are the lister's private data and the
+ * admin team's working notes. Admin callers opt out via `forAdmin`.
+ */
+const VENUE_PUBLIC_EXCLUDE =
+  "-payoutMethods -documents -ownerEmail -ownerPhone -emailVerified -reviewNotes -rejectionReason -pendingChanges -lifecycle";
+
 export const getVenueById = async (
   id: string,
+  options?: { forAdmin?: boolean }
 ): Promise<VenueDocument | null> => {
-  const venue = await Venue.findById(id).populate("ownerId");
+  // The public detail route is cached for 60s and unauthenticated: it must not
+  // populate the owner (the whole User document used to ride along: email,
+  // phone, dob, addresses, push subscriptions, refund bank details) and must
+  // not serve payout or verification fields. The admin venue page needs the
+  // owner's contact details, so it gets them through its own permissioned
+  // route, with only the three fields it renders.
+  const query = options?.forAdmin
+    ? Venue.findById(id).populate("ownerId", "name email phone")
+    : Venue.findById(id).select(VENUE_PUBLIC_EXCLUDE);
+  const venue = await query;
   if (venue) {
     // For venue detail reads, only image URLs are needed.
     // Avoid refreshing document URLs here because it adds expensive S3 calls.
@@ -172,7 +192,7 @@ export const getVenueById = async (
 export const getVenuesByOwner = async (
   ownerId: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -180,10 +200,11 @@ export const getVenuesByOwner = async (
   totalPages: number;
 }> => {
   // Convert string to ObjectId for proper comparison
+  // Venue.ownerId is a Schema.Types.ObjectId — every document stores it as
+  // an ObjectId, so matching the raw string form too was always a no-op
+  // that just defeated a simple indexed equality match.
   const ownerObjectId = new mongoose.Types.ObjectId(ownerId);
-  const query = {
-    $or: [{ ownerId: ownerObjectId }, { ownerId }],
-  };
+  const query = { ownerId: ownerObjectId };
 
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
@@ -201,7 +222,7 @@ export const findVenuesNearby = async (
   radiusMeters: number = 5000,
   sport?: string,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -230,15 +251,30 @@ export const findVenuesNearby = async (
       {
         $facet: {
           metadata: [{ $count: "total" }],
+          // No $lookup to `users` here — its output (`ownerInfo`) was never
+          // consumed: Venue.hydrate() below only keeps fields defined on the
+          // Venue schema, so the join ran on every geo-search request for a
+          // discarded result.
+          //
+          // payoutMethods/documents excluded — same reasoning as
+          // getAllVenues' sibling public list above: nothing in a geo-search
+          // response needs bank details or verification files, and
+          // payoutMethods specifically pays a decrypt-getter cost per field
+          // on every serialization once hydrated below.
           data: [
             { $skip: skip },
             { $limit: limit },
             {
-              $lookup: {
-                from: "users",
-                localField: "ownerId",
-                foreignField: "_id",
-                as: "ownerInfo",
+              $project: {
+                payoutMethods: 0,
+                documents: 0,
+                ownerEmail: 0,
+                ownerPhone: 0,
+                emailVerified: 0,
+                reviewNotes: 0,
+                rejectionReason: 0,
+                pendingChanges: 0,
+                lifecycle: 0,
               },
             },
           ],
@@ -257,7 +293,7 @@ export const findVenuesNearby = async (
         const doc = Venue.hydrate(v);
         await doc.refreshAllUrls();
         return doc;
-      }),
+      })
     );
 
     return {
@@ -268,7 +304,7 @@ export const findVenuesNearby = async (
     };
   } catch (error) {
     throw new Error(
-      `Failed to find venues: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to find venues: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
@@ -277,9 +313,11 @@ export const getAllVenues = async (
   filters?: {
     sports?: string[];
     approvalStatus?: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+    search?: string;
   },
   page: number = 1,
   limit: number = 20,
+  options?: { forAdmin?: boolean }
 ): Promise<{
   venues: VenueDocument[];
   total: number;
@@ -296,13 +334,33 @@ export const getAllVenues = async (
     query.approvalStatus = filters.approvalStatus;
   }
 
+  if (filters?.search) {
+    // One search box for name, address (which carries the city) or sport.
+    const regex = { $regex: buildSafeSearchRegexSource(filters.search), $options: "i" };
+    query.$or = [{ name: regex }, { address: regex }, { sports: regex }];
+  }
+
   const skip = (page - 1) * limit;
   const total = await Venue.countDocuments(query);
+  // No .populate("ownerId") — both call sites are public search/discovery
+  // (approvalStatus: "APPROVED"), matching findVenuesNearby's sibling geo
+  // path, which never populated owner info either. Nothing in either
+  // response consumes owner fields.
+  //
+  // payoutMethods/documents excluded — a public search response has no
+  // business shipping bank details or verification files, and payoutMethods
+  // specifically runs a decrypt getter per field on every serialization
+  // (see Venue.ts's toJSON/toObject getters:true), which was pure wasted
+  // CPU on data nothing renders.
+  //
+  // The admin Venues page shares this function and does render the rejection
+  // reason, so `forAdmin` keeps those fields; the public callers (search,
+  // discovery) drop the owner contact fields and moderation notes as well.
   const venues = await Venue.find(query)
+    .select(options?.forAdmin ? "-payoutMethods -documents" : VENUE_PUBLIC_EXCLUDE)
     .sort({ rating: -1, reviewCount: -1, _id: 1 })
     .skip(skip)
-    .limit(limit)
-    .populate("ownerId");
+    .limit(limit);
 
   // Refresh URLs for all venues
   await Promise.all(venues.map((v) => v.refreshAllUrls()));
@@ -315,15 +373,115 @@ export const getAllVenues = async (
   };
 };
 
-export const updateVenue = async (
-  id: string,
-  payload: Partial<CreateVenuePayload>,
-): Promise<VenueDocument | null> => {
-  return Venue.findByIdAndUpdate(id, payload, { new: true });
+// Fields a venue owner must never be able to set via a self-service update —
+// these control ownership, verification/approval state, and platform economics.
+const VENUE_PROTECTED_FIELDS = [
+  "_id",
+  "ownerId",
+  "approvalStatus",
+  "isVerified",
+  "isActive",
+  "commissionRate",
+  "rating",
+  "reviewCount",
+] as const;
+
+const collectVenueStorageKeys = (source: unknown): string[] => {
+  if (!source || typeof source !== "object") return [];
+  const record = source as Record<string, unknown>;
+  const keys: unknown[] = [];
+  if (Array.isArray(record.documents)) {
+    for (const doc of record.documents) keys.push((doc as { s3Key?: unknown } | null)?.s3Key);
+  }
+  for (const field of ["imageKeys", "generalImageKeys"] as const) {
+    if (Array.isArray(record[field])) keys.push(...(record[field] as unknown[]));
+  }
+  const sportKeys = record.sportImageKeys;
+  const sportLists =
+    sportKeys instanceof Map
+      ? Array.from(sportKeys.values())
+      : sportKeys && typeof sportKeys === "object"
+        ? Object.values(sportKeys as Record<string, unknown>)
+        : [];
+  for (const list of sportLists) {
+    if (Array.isArray(list)) keys.push(...list);
+  }
+  keys.push(record.coverPhotoKey);
+  return keys.filter((key): key is string => typeof key === "string" && key !== "");
 };
 
-export const deleteVenue = async (
+/**
+ * A lister may only reference storage keys that belong to their own venue
+ * (`venues/<venueId>/...`) or that are already stored on it. Otherwise a stored
+ * foreign key would later be signed into a download URL for another provider's
+ * object (the server signs every stored document and image key).
+ */
+const assertSubmittedStorageKeysAreOwned = async (
   id: string,
+  ownerId: string,
+  submittedPayload: Record<string, unknown>
+): Promise<void> => {
+  const submitted = collectVenueStorageKeys(submittedPayload);
+  if (submitted.length === 0) return;
+  const stored = await Venue.findOne({ _id: id, ownerId })
+    .select("documents.s3Key imageKeys generalImageKeys sportImageKeys coverPhotoKey")
+    .lean();
+  const known = new Set(collectVenueStorageKeys(stored));
+  const prefix = `venues/${id}/`;
+  for (const key of submitted) {
+    if (known.has(key)) continue;
+    if (!key.startsWith(prefix) || key.split("/").some((part) => part === ".." || part === ".")) {
+      throw new AppError("Invalid image or document reference.", 400);
+    }
+  }
+};
+
+export const updateVenue = async (
+  id: string,
+  ownerId: string,
+  payload: Partial<CreateVenuePayload>
 ): Promise<VenueDocument | null> => {
-  return Venue.findByIdAndDelete(id);
+  // Strip protected fields so they cannot be mass-assigned, and scope the
+  // update to the owner so a lister can only edit their OWN venue (IDOR).
+  const sanitized: Record<string, unknown> = { ...payload };
+  for (const field of VENUE_PROTECTED_FIELDS) {
+    delete sanitized[field];
+  }
+  if (sanitized.gstNumber != null && String(sanitized.gstNumber).trim() !== "") {
+    const gst = String(sanitized.gstNumber).trim().toUpperCase();
+    if (!GST_REGEX.test(gst)) {
+      throw new Error("Invalid GST number format");
+    }
+    sanitized.gstNumber = gst;
+  } else if (sanitized.gstNumber != null) {
+    sanitized.gstNumber = "";
+  }
+
+  // After approval the claim fields (name, address, location) are what an admin
+  // reviewed: an edit to one is held for review and the approved value stays live.
+  const venue = await Venue.findOne({ _id: id, ownerId }).select(
+    "approvalStatus name address location pendingChanges"
+  );
+  if (!venue) return null;
+  await assertSubmittedStorageKeysAreOwned(id, ownerId, sanitized);
+  if (venue.approvalStatus !== "APPROVED") {
+    return Venue.findOneAndUpdate({ _id: id, ownerId }, sanitized, { new: true });
+  }
+
+  const { rest, pending, changed } = reconcileClaimChanges(
+    "venue",
+    venue.toObject() as unknown as Record<string, unknown>,
+    venue.pendingChanges?.fields,
+    sanitized
+  );
+  const op: Record<string, unknown> = { ...(changed ? pendingChangesUpdate(pending) : {}) };
+  if (Object.keys(rest).length) {
+    op.$set = { ...((op.$set as Record<string, unknown>) || {}), ...rest };
+  }
+  if (Object.keys(op).length === 0) return Venue.findById(id);
+  return Venue.findOneAndUpdate({ _id: id, ownerId }, op, { new: true });
+};
+
+export const deleteVenue = async (id: string, ownerId: string): Promise<VenueDocument | null> => {
+  return Venue.findOneAndDelete({ _id: id, ownerId });
 };

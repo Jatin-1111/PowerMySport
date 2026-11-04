@@ -8,6 +8,8 @@ import {
   getDocumentUploadUrlsHandler,
   confirmDocumentsHandler,
   submitAcademyHandler,
+  sendAcademyEmailCodeHandler,
+  verifyAcademyEmailHandler,
   listApprovedAcademiesHandler,
   getAcademyProfileHandler,
   listPendingAcademiesHandler,
@@ -19,9 +21,21 @@ import {
   createSubscriptionPlanHandler,
   createSessionPackageHandler,
 } from "../../client/controllers/academyOnboardingController";
-import { authMiddleware, adminMiddleware } from "../../middleware/auth";
-import { getAcademyEarningsHandler, getAcademyAnalyticsHandler } from "../../client/controllers/academyAnalyticsController";
+import {
+  authMiddleware,
+  adminMiddleware,
+  optionalAuthMiddleware,
+  requirePermission,
+} from "../../middleware/auth";
+import { requireAcademyOnboardingAccess } from "../../middleware/academyOnboardingAccess";
+import {
+  getAcademyEarningsHandler,
+  getAcademyAnalyticsHandler,
+  getMyAcademyHandler,
+  getMyAcademyVenuesHandler,
+} from "../../client/controllers/academyAnalyticsController";
 import { validateRequest } from "../../middleware/validation";
+import { academyStartRateLimiter, sendVerificationRateLimiter } from "../../middleware/rateLimit";
 import {
   academyOnboardingStep1Schema,
   academyOnboardingStep2Schema,
@@ -34,15 +48,15 @@ import {
 
 const router = Router();
 
+// Every /onboarding/:academyId/* call is gated: the creator's onboarding token,
+// the linked owner account, or an admin. `start` is the only open onboarding
+// route, since it is where the token is issued. `optionalAuthMiddleware` only
+// fills `req.user` when a valid session exists; it never rejects.
+const onboardingAccess = [optionalAuthMiddleware, requireAcademyOnboardingAccess];
+
 // Middleware to validate step-specific requests
-const validateAcademyStep = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const stepNumber = parseInt(
-    (req.params as Record<string, unknown>).stepNumber as string,
-  );
+const validateAcademyStep = (req: Request, res: Response, next: NextFunction) => {
+  const stepNumber = parseInt((req.params as Record<string, unknown>).stepNumber as string);
 
   const stepSchemas: Record<number, any> = {
     2: academyOnboardingStep2Schema,
@@ -92,15 +106,16 @@ const validateAcademyStep = (
  */
 router.post(
   "/onboarding/start",
+  academyStartRateLimiter,
   validateRequest(academyOnboardingStep1Schema),
-  startAcademyOnboardingHandler,
+  startAcademyOnboardingHandler
 );
 
 /**
  * GET: Academy onboarding progress
  * GET /api/academies/onboarding/:academyId/progress
  */
-router.get("/onboarding/:academyId/progress", getAcademyProgressHandler);
+router.get("/onboarding/:academyId/progress", ...onboardingAccess, getAcademyProgressHandler);
 
 /**
  * PUT: Save any step (2-7)
@@ -108,8 +123,9 @@ router.get("/onboarding/:academyId/progress", getAcademyProgressHandler);
  */
 router.put(
   "/onboarding/:academyId/step/:stepNumber",
+  ...onboardingAccess,
   validateAcademyStep,
-  saveAcademyStepHandler,
+  saveAcademyStepHandler
 );
 
 /**
@@ -118,14 +134,15 @@ router.put(
  */
 router.post(
   "/onboarding/:academyId/image-upload-urls",
-  getImageUploadUrlsHandler,
+  ...onboardingAccess,
+  getImageUploadUrlsHandler
 );
 
 /**
  * POST: Confirm images uploaded
  * POST /api/academies/onboarding/:academyId/confirm-images
  */
-router.post("/onboarding/:academyId/confirm-images", confirmImagesHandler);
+router.post("/onboarding/:academyId/confirm-images", ...onboardingAccess, confirmImagesHandler);
 
 /**
  * POST: Get document upload presigned URLs
@@ -133,7 +150,8 @@ router.post("/onboarding/:academyId/confirm-images", confirmImagesHandler);
  */
 router.post(
   "/onboarding/:academyId/document-upload-urls",
-  getDocumentUploadUrlsHandler,
+  ...onboardingAccess,
+  getDocumentUploadUrlsHandler
 );
 
 /**
@@ -142,20 +160,37 @@ router.post(
  */
 router.post(
   "/onboarding/:academyId/confirm-documents",
-  confirmDocumentsHandler,
+  ...onboardingAccess,
+  confirmDocumentsHandler
 );
 
 /**
  * POST: Submit academy for approval
  * POST /api/academies/onboarding/:academyId/submit
  */
-router.post("/onboarding/:academyId/submit", submitAcademyHandler);
+router.post(
+  "/onboarding/:academyId/send-verification",
+  sendVerificationRateLimiter,
+  ...onboardingAccess,
+  sendAcademyEmailCodeHandler
+);
+
+router.post("/onboarding/:academyId/verify-email", ...onboardingAccess, verifyAcademyEmailHandler);
+
+router.post("/onboarding/:academyId/submit", ...onboardingAccess, submitAcademyHandler);
 
 /**
  * GET: List all approved academies (public discovery)
  * GET /api/academies?city=Mumbai&sport=Basketball&page=1&limit=20
  */
 router.get("/", listApprovedAcademiesHandler);
+
+/**
+ * GET: The signed-in owner's own academy and where it stands in review.
+ * GET /api/academies/my
+ * Declared before `/:slug`, which would otherwise read "my" as a slug.
+ */
+router.get("/my", authMiddleware, getMyAcademyHandler);
 
 /**
  * GET: Single academy profile
@@ -177,7 +212,8 @@ router.get(
   "/admin/pending",
   authMiddleware,
   adminMiddleware,
-  listPendingAcademiesHandler,
+  requirePermission("academies:view"),
+  listPendingAcademiesHandler
 );
 
 /**
@@ -188,7 +224,8 @@ router.get(
   "/admin/:academyId/review",
   authMiddleware,
   adminMiddleware,
-  getAcademyReviewDetailsHandler,
+  requirePermission("academies:view"),
+  getAcademyReviewDetailsHandler
 );
 
 /**
@@ -199,7 +236,8 @@ router.put(
   "/admin/:academyId/approve",
   authMiddleware,
   adminMiddleware,
-  approveAcademyHandler,
+  requirePermission("academies:manage"),
+  approveAcademyHandler
 );
 
 /**
@@ -211,7 +249,8 @@ router.put(
   "/admin/:academyId/reject",
   authMiddleware,
   adminMiddleware,
-  rejectAcademyHandler,
+  requirePermission("academies:manage"),
+  rejectAcademyHandler
 );
 
 /**
@@ -222,7 +261,8 @@ router.put(
   "/admin/:academyId/kyc-verify",
   authMiddleware,
   adminMiddleware,
-  markKycVerifiedHandler,
+  requirePermission("academies:manage"),
+  markKycVerifiedHandler
 );
 
 /**
@@ -234,7 +274,8 @@ router.put(
   "/admin/:academyId/suspend",
   authMiddleware,
   adminMiddleware,
-  suspendAcademyHandler,
+  requirePermission("academies:manage"),
+  suspendAcademyHandler
 );
 
 /**
@@ -246,27 +287,32 @@ router.put(
 /**
  * POST: Create subscription plan
  * POST /api/academies/:academyId/subscriptions
- * Requires: authMiddleware (owner verification)
+ * Requires: a session AND ownership of the academy (the linked owner account, its
+ * onboarding token, or an admin). A session alone is not enough: academy ids are
+ * public, so without the ownership gate any account could add plans to any academy.
  */
 router.post(
   "/:academyId/subscriptions",
   authMiddleware,
-  createSubscriptionPlanHandler,
+  requireAcademyOnboardingAccess,
+  createSubscriptionPlanHandler
 );
 
 /**
  * POST: Create session package
  * POST /api/academies/:academyId/packages
- * Requires: authMiddleware (owner verification)
+ * Requires: a session AND ownership of the academy (see above).
  */
 router.post(
   "/:academyId/packages",
   authMiddleware,
-  createSessionPackageHandler,
+  requireAcademyOnboardingAccess,
+  createSessionPackageHandler
 );
 
 // Academy owner analytics (authenticated, not admin)
 router.get("/my/earnings", authMiddleware, getAcademyEarningsHandler);
 router.get("/my/analytics", authMiddleware, getAcademyAnalyticsHandler);
+router.get("/my/venues", authMiddleware, getMyAcademyVenuesHandler);
 
 export default router;

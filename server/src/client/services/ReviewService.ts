@@ -1,12 +1,17 @@
+import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { Coach } from "../models/Coach";
 import { Review, ReviewDocument } from "../models/Review";
 import { Venue } from "../models/Venue";
+import { User } from "../models/User";
+import { sendReviewReceivedEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("review");
 
 export interface CreateReviewPayload {
   bookingId: string;
   userId: string;
-  targetType: "VENUE" | "COACH";
+  targetType: "VENUE" | "Coach";
   rating: number;
   review?: string;
 }
@@ -17,9 +22,7 @@ export interface CreateReviewPayload {
  * Only allows reviews for COMPLETED bookings
  * Updates venue and coach average ratings
  */
-export const createReview = async (
-  payload: CreateReviewPayload,
-): Promise<ReviewDocument> => {
+export const createReview = async (payload: CreateReviewPayload): Promise<ReviewDocument> => {
   // Verify booking exists and is completed
   const booking = await Booking.findById(payload.bookingId);
 
@@ -42,7 +45,7 @@ export const createReview = async (
       throw new Error("This booking has no venue to review");
     }
     targetId = booking.venueId;
-  } else if (payload.targetType === "COACH") {
+  } else if (payload.targetType === "Coach") {
     if (!booking.coachId) {
       throw new Error("This booking has no coach to review");
     }
@@ -59,9 +62,7 @@ export const createReview = async (
   });
 
   if (existingReview) {
-    throw new Error(
-      `You have already reviewed this ${payload.targetType.toLowerCase()}`,
-    );
+    throw new Error(`You have already reviewed this ${payload.targetType.toLowerCase()}`);
   }
 
   // Validate rating
@@ -84,62 +85,94 @@ export const createReview = async (
 
   // Update venue or coach rating
   if (payload.targetType === "VENUE") {
-    await updateVenueRating(targetId.toString());
-  } else if (payload.targetType === "COACH") {
-    await updateCoachRating(targetId.toString());
+    await recomputeVenueRating(targetId.toString());
+  } else if (payload.targetType === "Coach") {
+    await recomputeCoachRating(targetId.toString());
   }
+
+  // Notify the provider of the new review (fire-and-forget).
+  void (async () => {
+    try {
+      const reviewer = await User.findById(payload.userId).select("name").lean();
+      let providerEmail: string | undefined;
+      let providerName: string | undefined;
+      if (payload.targetType === "VENUE") {
+        const venue = await Venue.findById(targetId).populate("ownerId", "name email").lean();
+        const owner = venue?.ownerId as unknown as {
+          name?: string;
+          email?: string;
+        } | null;
+        providerEmail = owner?.email;
+        providerName = owner?.name;
+      } else {
+        const coach = await Coach.findById(targetId).populate("userId", "name email").lean();
+        const coachUser = coach?.userId as unknown as {
+          name?: string;
+          email?: string;
+        } | null;
+        providerEmail = coachUser?.email;
+        providerName = coachUser?.name;
+      }
+      if (providerEmail) {
+        await sendReviewReceivedEmail({
+          name: providerName,
+          email: providerEmail,
+          rating: payload.rating,
+          review: payload.review,
+          reviewerName: reviewer?.name,
+          targetType: payload.targetType,
+        });
+      }
+    } catch (emailError) {
+      log.error("Failed to send review email:", emailError);
+    }
+  })();
 
   return review;
 };
 
 /**
- * Update venue's average rating and review count
+ * A review counts toward a provider's rating only while the public can see it.
+ * The public lists already filter on these two fields (see getVenueReviews);
+ * the headline rating did not, so a removed one-star review kept dragging a
+ * coach or venue down and the star count and the list disagreed.
  */
-const updateVenueRating = async (venueId: string): Promise<void> => {
-  const stats = await Review.aggregate([
-    { $match: { targetType: "VENUE", targetId: venueId as any } },
-    {
-      $group: {
-        _id: null,
-        avgRating: { $avg: "$rating" },
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-
-  if (stats.length > 0) {
-    await Venue.findByIdAndUpdate(venueId, {
-      rating: Math.round(stats[0].avgRating * 10) / 10, // Round to 1 decimal
-      reviewCount: stats[0].count,
-    });
-  }
+const COUNTS_TOWARD_RATING = {
+  isHidden: { $ne: true },
+  moderationStatus: { $ne: "REMOVED" },
 };
 
 /**
- * Update coach's average rating and review count
+ * Average rating and review count from the reviews the public can see. Zero
+ * when none are left, so hiding the last review does not leave the old rating
+ * standing.
  */
-const updateCoachRating = async (coachId: string): Promise<void> => {
-  if (!coachId) {
-    return;
-  }
-
-  const stats = await Review.aggregate([
-    { $match: { targetType: "COACH", targetId: coachId as any } },
+const visibleRatingStats = async (
+  targetType: "VENUE" | "Coach",
+  targetId: string
+): Promise<{ rating: number; reviewCount: number }> => {
+  const [stats] = await Review.aggregate([
     {
-      $group: {
-        _id: null,
-        avgRating: { $avg: "$rating" },
-        count: { $sum: 1 },
+      $match: {
+        targetType,
+        targetId: new mongoose.Types.ObjectId(targetId),
+        ...COUNTS_TOWARD_RATING,
       },
     },
+    { $group: { _id: null, averageRating: { $avg: "$rating" }, reviewCount: { $sum: 1 } } },
   ]);
+  return { rating: stats?.averageRating || 0, reviewCount: stats?.reviewCount || 0 };
+};
 
-  if (stats.length > 0) {
-    await Coach.findByIdAndUpdate(coachId, {
-      rating: Math.round(stats[0].avgRating * 10) / 10,
-      reviewCount: stats[0].count,
-    });
-  }
+/** Update a venue's average rating and review count. */
+export const recomputeVenueRating = async (venueId: string): Promise<void> => {
+  await Venue.findByIdAndUpdate(venueId, await visibleRatingStats("VENUE", venueId));
+};
+
+/** Update a coach's average rating and review count. */
+export const recomputeCoachRating = async (coachId: string): Promise<void> => {
+  if (!coachId) return;
+  await Coach.findByIdAndUpdate(coachId, await visibleRatingStats("Coach", coachId));
 };
 
 /**
@@ -148,7 +181,7 @@ const updateCoachRating = async (coachId: string): Promise<void> => {
 export const getVenueReviews = async (
   venueId: string,
   page: number = 1,
-  limit: number = 10,
+  limit: number = 10
 ): Promise<{
   reviews: ReviewDocument[];
   total: number;
@@ -185,7 +218,7 @@ export const getVenueReviews = async (
 export const getCoachReviews = async (
   coachId: string,
   page: number = 1,
-  limit: number = 10,
+  limit: number = 10
 ): Promise<{
   reviews: ReviewDocument[];
   total: number;
@@ -195,7 +228,7 @@ export const getCoachReviews = async (
   const skip = (page - 1) * limit;
 
   const query = {
-    targetType: "COACH" as const,
+    targetType: "Coach" as const,
     targetId: coachId,
     isHidden: false,
     moderationStatus: { $ne: "REMOVED" },
@@ -219,14 +252,8 @@ export const getCoachReviews = async (
 /**
  * Mark review as helpful
  */
-export const markReviewHelpful = async (
-  reviewId: string,
-): Promise<ReviewDocument | null> => {
-  return Review.findByIdAndUpdate(
-    reviewId,
-    { $inc: { helpfulCount: 1 } },
-    { new: true },
-  );
+export const markReviewHelpful = async (reviewId: string): Promise<ReviewDocument | null> => {
+  return Review.findByIdAndUpdate(reviewId, { $inc: { helpfulCount: 1 } }, { new: true });
 };
 
 /**
@@ -235,7 +262,7 @@ export const markReviewHelpful = async (
 export const reportReview = async (
   reviewId: string,
   userId: string,
-  reason: string,
+  reason: string
 ): Promise<ReviewDocument | null> => {
   const review = await Review.findById(reviewId);
 
@@ -244,9 +271,7 @@ export const reportReview = async (
   }
 
   // Check if user already reported this review
-  const alreadyReported = review.reports?.some(
-    (report) => report.userId.toString() === userId,
-  );
+  const alreadyReported = review.reports?.some((report) => report.userId.toString() === userId);
 
   if (alreadyReported) {
     throw new Error("You have already reported this review");
@@ -266,11 +291,10 @@ export const reportReview = async (
       },
       // Auto-flag if 3+ reports
       $set: {
-        moderationStatus:
-          review.reportCount + 1 >= 3 ? "FLAGGED" : review.moderationStatus,
+        moderationStatus: review.reportCount + 1 >= 3 ? "FLAGGED" : review.moderationStatus,
       },
     },
-    { new: true },
+    { new: true }
   );
 
   return updatedReview;
@@ -281,7 +305,7 @@ export const reportReview = async (
  */
 export const getFlaggedReviews = async (
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   reviews: ReviewDocument[];
   total: number;
@@ -289,19 +313,19 @@ export const getFlaggedReviews = async (
   totalPages: number;
 }> => {
   const skip = (page - 1) * limit;
+  const query = { moderationStatus: { $in: ["FLAGGED", "PENDING"] } };
 
-  const total = await Review.countDocuments({
-    moderationStatus: { $in: ["FLAGGED", "PENDING"] },
-  });
-
-  const reviews = await Review.find({
-    moderationStatus: { $in: ["FLAGGED", "PENDING"] },
-  })
-    .populate("userId", "name email")
-    .populate("targetId", "name")
-    .sort({ reportCount: -1, createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
+  // Independent reads — no data dependency between the count and the page.
+  const [total, reviews] = await Promise.all([
+    Review.countDocuments(query),
+    Review.find(query)
+      .populate("userId", "name email")
+      .populate("targetId", "name")
+      .sort({ reportCount: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+  ]);
 
   return {
     reviews,
@@ -317,7 +341,7 @@ export const getFlaggedReviews = async (
 export const moderateReview = async (
   reviewId: string,
   action: "APPROVE" | "REMOVE" | "HIDE",
-  moderationNotes?: string,
+  moderationNotes?: string
 ): Promise<ReviewDocument | null> => {
   const update: any = {
     moderationNotes,
@@ -333,5 +357,15 @@ export const moderateReview = async (
     update.isHidden = true;
   }
 
-  return Review.findByIdAndUpdate(reviewId, update, { new: true });
+  const moderated = await Review.findByIdAndUpdate(reviewId, update, { new: true });
+
+  // Hiding, removing or restoring a review changes what the provider's rating
+  // is made of, so the headline rating has to follow.
+  if (moderated) {
+    const targetId = String(moderated.targetId);
+    if (moderated.targetType === "VENUE") await recomputeVenueRating(targetId);
+    else if (moderated.targetType === "Coach") await recomputeCoachRating(targetId);
+  }
+
+  return moderated;
 };

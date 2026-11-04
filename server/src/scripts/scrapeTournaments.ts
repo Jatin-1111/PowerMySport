@@ -6,7 +6,7 @@ async function scrapeTournaments() {
     realDataScraperService.scrapeTournamentsForSport({
       sportSlug: sport.slug,
       sportName: sport.name,
-    }),
+    })
   );
 }
 

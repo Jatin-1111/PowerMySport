@@ -1,4 +1,4 @@
-import "dotenv/config";
+import "./config/env";
 import http from "http";
 import { Server } from "socket.io";
 import { createAdapter } from "@socket.io/redis-adapter";
@@ -6,31 +6,37 @@ import app from "./app";
 import { createRedisPubSub } from "./config/redis";
 import { connectDB } from "./config/database";
 import { setupCommunitySocket } from "./community/sockets/communitySocket";
-import {
-  setupFriendSocket,
-  setFriendSocketInstance,
-} from "./client/sockets/friendSocket";
-import {
-  setupNotificationSocket,
-  setupPresenceSocket,
-} from "./client/sockets/notificationSocket";
-import {
-  setupBookingSocket,
-  setBookingSocketInstance,
-} from "./client/sockets/bookingSocket";
+import { setupFriendSocket, setFriendSocketInstance } from "./client/sockets/friendSocket";
+import { setupNotificationSocket, setupPresenceSocket } from "./client/sockets/notificationSocket";
+import { setupBookingSocket, setBookingSocketInstance } from "./client/sockets/bookingSocket";
+import { setupInfraSocket } from "./admin/sockets/infraSocket";
 import { setNotificationSocketInstance } from "./client/services/NotificationService";
 import { setCommunityRealtimeSocketInstance } from "./community/services/CommunityRealtimeService";
 import { startExpirationJob } from "./utils/timer";
 import { initializeReminderScheduler } from "./utils/reminderScheduler";
+import { initializeExperienceNudgeScheduler } from "./utils/experienceNudgeScheduler";
 import { startOutboxWorker } from "./shared/services/OutboxService";
 import { initializeScraperScheduler } from "./utils/scraperScheduler";
+import { initializeAitaRankingScheduler } from "./utils/aitaRankingScheduler";
+import { initializeAitaCalendarScheduler } from "./utils/aitaCalendarScheduler";
+import { initializeAitaAcceptanceScheduler } from "./utils/aitaAcceptanceScheduler";
+import { initializeRankingDigestScheduler } from "./utils/rankingDigestScheduler";
+import { initializeOpportunityWatchScheduler } from "./utils/opportunityWatchScheduler";
+import { initializeOpportunityDigestScheduler } from "./utils/opportunityDigestScheduler";
+import { initializeOpportunityAlertScheduler } from "./utils/opportunityAlertScheduler";
+import { initializePingPilotHealthScheduler } from "./utils/pingPilotHealthScheduler";
+import { initializeOpportunityDiscoveryScheduler } from "./utils/opportunityDiscoveryScheduler";
 import { initializeScheduledJobs } from "./utils/scheduledJobs";
+import { startLogDigest, stopLogDigest } from "./utils/logDigest";
+import { bootFact, bootReady, bootWarn } from "./utils/boot";
+import { log as __rootLog } from "./utils/logger";
+import { bookingMessageRoute } from "./shared/services/WhatsAppNotificationService";
+const log = __rootLog.child("server");
 const PORT = process.env.PORT || 5000;
 
 let stopOutboxWorker: (() => void) | null = null;
 
-const normalizeOrigin = (origin: string): string =>
-  origin.trim().replace(/\/$/, "").toLowerCase();
+const normalizeOrigin = (origin: string): string => origin.trim().replace(/\/$/, "").toLowerCase();
 
 const configuredOrigins = [
   process.env.FRONTEND_URLS,
@@ -38,6 +44,7 @@ const configuredOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://powermysport.com",
+  "https://client-uat.powermysport.com",
   "https://www.powermysport.com",
   "https://admin.powermysport.com",
   "https://community.powermysport.com",
@@ -60,9 +67,7 @@ const isOriginAllowed = (origin: string): boolean => {
     return true;
   }
 
-  return allowedOriginPatterns.some((pattern) =>
-    pattern.test(normalizedOrigin),
-  );
+  return allowedOriginPatterns.some((pattern) => pattern.test(normalizedOrigin));
 };
 
 // Start server function
@@ -99,12 +104,10 @@ const startServer = async () => {
       io.adapter(createAdapter(pub, sub));
       redisPub = pub;
       redisSub = sub;
-      console.log(
-        "🔴 Redis adapter attached to Socket.IO (multi-instance mode)",
-      );
+      bootFact("redis", "socket.io adapter attached");
     } catch {
-      console.warn(
-        "⚠️  Redis unavailable — running in single-instance mode (start Redis to enable horizontal scaling)",
+      bootWarn(
+        "Redis unavailable — single-instance mode (start Redis to enable horizontal scaling)"
       );
       // Stop ioredis retry loop — without this it floods the logs with
       // connection errors indefinitely even though we've fallen back to
@@ -127,17 +130,25 @@ const startServer = async () => {
     setupNotificationSocket(io);
     setupPresenceSocket(io);
     setupBookingSocket(io);
+    setupInfraSocket(io);
     setFriendSocketInstance(io);
     setNotificationSocketInstance(io);
     setCommunityRealtimeSocketInstance(io);
     setBookingSocketInstance(io);
 
-    console.log("🔧 Socket.IO namespaces configured:");
-    console.log("   - /community (requires community profile)");
-    console.log("   - /friends (basic auth)");
-    console.log("   - /presence (user presence tracking)");
-    console.log("   - /notifications (real-time monitoring)");
-    console.log("   - /bookings (booking slot locks)");
+    bootFact("sockets", "/community /friends /presence /notifications /bookings");
+    {
+      // What the booking messages will do, so the first log line answers "are the
+      // WhatsApp settings on this server?" without a booking being made.
+      const route = bookingMessageRoute();
+      if (route === "off") {
+        bootWarn(
+          "WhatsApp booking messages are OFF: set WHATSAPP_TEMPLATES=on with WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID, or N8N_BOOKING_WEBHOOK_URL and PMS_SERVER_WEBHOOK_SECRET"
+        );
+      } else {
+        bootFact("whatsapp", `booking messages via ${route}`);
+      }
+    }
 
     let server: http.Server | null = null;
     let attempts = 5;
@@ -152,10 +163,7 @@ const startServer = async () => {
       io.attach(server);
 
       server.on("listening", () => {
-        console.log(`\n✅ Server is running on http://localhost:${port}`);
-        console.log(`💬 Community socket ready`);
-        console.log(`👥 Friend socket ready`);
-        console.log(`📝 API Documentation:`);
+        bootFact("http", `http://localhost:${port}`);
 
         // Guard: only start background jobs once, even if retried ports.
         if (!jobsStarted) {
@@ -163,32 +171,80 @@ const startServer = async () => {
 
           // Scheduled cleanup jobs (moved from app.ts to here so they only
           // run after the server is confirmed listening).
+          // Periodic terminal digest (dev by default, opt-in via LOG_DIGEST_MS).
+          startLogDigest();
+
           initializeScheduledJobs();
 
           // Start booking expiration job
           startExpirationJob();
-          console.log(`⏰ Booking expiration job started`);
 
           // Start reminder scheduler
           initializeReminderScheduler();
-          console.log(`🔔 Booking reminder scheduler started\n`);
+
+          // Daily sweep: "share your experience?" nudges for recently-
+          // completed venue/academy/coach bookings and expert sessions.
+          initializeExperienceNudgeScheduler();
 
           // Start outbox worker to handle message notification delivery and retries
           stopOutboxWorker = startOutboxWorker();
-          console.log("📨 Outbox worker started");
+          bootFact("jobs", "outbox");
+
+          // Weekly Lane-B scrapers + every-2-days Lane-A tournament calendar
+          // extraction. (Was imported but never invoked before — the weekly
+          // scraper cron had silently never been running.)
+          initializeScraperScheduler();
+
+          // Hourly tripwire + Thursday sweep for the AITA ranking mirror.
+          initializeAitaRankingScheduler();
+
+          // Tuesday and Friday sweep of AITA's tournament calendar. Runs on the
+          // deployed server only (NODE_ENV=production), or locally when
+          // AITA_CALENDAR_CRON=on, because it writes to the one database.
+          initializeAitaCalendarScheduler();
+
+          // Wednesday and Saturday capture of who got into finished events (ranks
+          // and sizes only). Deployed server only, or AITA_ACCEPTANCE_CRON=on.
+          initializeAitaAcceptanceScheduler();
+
+          // Daily check for a published list nobody has been told about yet,
+          // for parents who have linked a child's ranking.
+          initializeRankingDigestScheduler();
+
+          // Weekly check of every source an admission or scholarship entry
+          // depends on; flags changes and unreadable sources for editors.
+          initializeOpportunityWatchScheduler();
+
+          // Monthly AI web search for schemes we do not cover yet; leads only.
+          initializeOpportunityDiscoveryScheduler();
+
+          // Weekly email of windows opening or closing and entries due a check.
+          // Deployed server only, or OPPORTUNITY_DIGEST_CRON=on.
+          initializeOpportunityDigestScheduler();
+
+          // Daily alerts to parents about windows they follow opening or closing.
+          // Deployed server only, or OPPORTUNITY_ALERTS_CRON=on.
+          initializeOpportunityAlertScheduler();
+
+          // Keep-alive ping to the ping-pilott backend every 5 minutes.
+          // Deployed server only, or PING_PILOT_HEALTH_CRON=on.
+          initializePingPilotHealthScheduler();
+
+          // Everything above has registered its boot facts; print the block.
+          bootReady();
         }
       });
 
       server.on("error", (err: any) => {
         if (err && err.code === "EADDRINUSE" && attempts > 0) {
-          console.warn(`Port ${port} in use, trying ${port + 1}...`);
+          log.warn(`Port ${port} in use, trying ${port + 1}...`);
           attempts -= 1;
           // Close this server before trying the next port.
           server?.close(() => setTimeout(() => startListening(port + 1), 100));
           return;
         }
 
-        console.error("❌ Failed to start server:", err);
+        log.error("Failed to start server:", err);
         process.exit(1);
       });
 
@@ -197,34 +253,35 @@ const startServer = async () => {
 
     // Graceful shutdown
     const shutdown = async () => {
-      console.log("\n🛑 Shutting down server...");
+      log.info("Shutting down server...");
+      stopLogDigest();
       try {
         if (server) {
           server.close(() => {
-            console.log("🛑 HTTP server closed");
+            log.info("HTTP server closed");
             try {
               stopOutboxWorker?.();
-              console.log("📨 Outbox worker stopped");
+              log.info("Outbox worker stopped");
             } catch (err) {
-              console.error("Failed stopping outbox worker:", err);
+              log.error("Failed stopping outbox worker:", err);
             }
           });
         } else {
           try {
             stopOutboxWorker?.();
-            console.log("📨 Outbox worker stopped");
+            log.info("Outbox worker stopped");
           } catch (err) {
-            console.error("Failed stopping outbox worker:", err);
+            log.error("Failed stopping outbox worker:", err);
           }
         }
 
         // Disconnect Redis pub/sub clients cleanly (only if Redis was available)
         if (redisPub && redisSub) {
           await Promise.allSettled([redisPub.quit(), redisSub.quit()]);
-          console.log("🔴 Redis pub/sub disconnected");
+          log.info("Redis pub/sub disconnected");
         }
       } catch (err) {
-        console.error("Error during shutdown:", err);
+        log.error("Error during shutdown:", err);
       }
     };
 
@@ -233,12 +290,12 @@ const startServer = async () => {
 
     process.on("SIGTERM", shutdown);
   } catch (error) {
-    console.error("❌ Failed to start server:", error);
+    log.error("Failed to start server:", error);
     process.exit(1);
   }
 };
 
-// Start the server
+// Start
 startServer();
 
 export default app;

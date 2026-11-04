@@ -1,14 +1,22 @@
-﻿"use client";
+"use client";
 
 import { AnimatePresence } from "framer-motion";
 import { CommunityMemberProfileModal } from "@/modules/community/components/CommunityMemberProfileModal";
 import { MobileMessageActions } from "@/modules/community/components/chat/MobileMessageActions";
 import { ReportModal } from "@/modules/community/components/chat/ReportModal";
+import { ChatAddModal } from "./ChatAddModal";
+import { BlockedUsersModal } from "./BlockedUsersModal";
+import { DeleteMessageModal } from "@/modules/community/components/chat/DeleteMessageModal";
+import ConnectRequestModal from "@/modules/community/components/ConnectRequestModal";
+import { useSearchParams } from "next/navigation";
 import type { CommunityPageViewModel } from "@/modules/community/hooks/useCommunityPage";
 
 type Props = { page: CommunityPageViewModel };
 
 export default function CommunityPageModals({ page }: Props) {
+  const searchParams = useSearchParams();
+  const urlDirectoryView = searchParams.get("directory")?.toUpperCase();
+  const directoryView = urlDirectoryView === "GROUPS" ? "GROUPS" : "CONTACTS";
   const {
     isMemberProfileOpen,
     isLoadingMemberProfile,
@@ -27,12 +35,23 @@ export default function CommunityPageModals({ page }: Props) {
     setReportModal,
     isSubmittingReport,
     handleSubmitReportWrapper,
+    showAddChatModal,
+    setShowAddChatModal,
+    showBlockedUsersModal,
+    setShowBlockedUsersModal,
+    blockedUsersList,
+    isLoadingBlockedUsers,
+    handleUnblockUserById,
+    messageToDelete,
+    setMessageToDelete,
+    confirmDeleteMessage,
+    isMutatingMessageId,
   } = page;
 
   return (
     <>
       <CommunityMemberProfileModal
-        isOpen={isMemberProfileOpen}
+        isOpen={isMemberProfileOpen && !page.selectedConversation}
         isLoading={isLoadingMemberProfile}
         error={memberProfileError}
         profile={selectedMemberProfile}
@@ -50,6 +69,11 @@ export default function CommunityPageModals({ page }: Props) {
             onRetry={retryFailedMessage}
             onEdit={handleBeginEditMessage}
             onDelete={handleDeleteMessage}
+            onMarkUnread={() => {
+              if (mobileActionMessage.conversationId) {
+                page.handleMarkConversationAsUnread(mobileActionMessage.conversationId);
+              }
+            }}
           />
         )}
       </AnimatePresence>
@@ -65,6 +89,33 @@ export default function CommunityPageModals({ page }: Props) {
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {messageToDelete && (
+          <DeleteMessageModal
+            isDeleting={isMutatingMessageId === messageToDelete.id}
+            onClose={() => setMessageToDelete(null)}
+            onConfirm={confirmDeleteMessage}
+          />
+        )}
+      </AnimatePresence>
+
+      <ChatAddModal
+        isOpen={showAddChatModal}
+        onClose={() => setShowAddChatModal(false)}
+        mode={directoryView}
+        page={page}
+      />
+
+      <ConnectRequestModal request={page.connectRequest} />
+
+      <BlockedUsersModal
+        isOpen={showBlockedUsersModal}
+        onClose={() => setShowBlockedUsersModal(false)}
+        blockedUsers={blockedUsersList}
+        isLoading={isLoadingBlockedUsers}
+        onUnblock={handleUnblockUserById}
+      />
     </>
   );
 }

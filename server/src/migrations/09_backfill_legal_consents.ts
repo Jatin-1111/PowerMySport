@@ -38,7 +38,7 @@ export async function up(): Promise<void> {
             },
           },
         },
-      },
+      }
     );
 
     const missingTermsResult = await User.updateMany(
@@ -50,7 +50,7 @@ export async function up(): Promise<void> {
             version: LEGACY_UNVERIFIED_VERSION,
           },
         },
-      },
+      }
     );
 
     const missingPrivacyResult = await User.updateMany(
@@ -62,18 +62,14 @@ export async function up(): Promise<void> {
             version: LEGACY_UNVERIFIED_VERSION,
           },
         },
-      },
+      }
     );
 
     console.log("Migration completed successfully:");
+    console.log(`- Added legalConsents object to ${missingObjectResult.modifiedCount} users`);
+    console.log(`- Backfilled missing terms consent for ${missingTermsResult.modifiedCount} users`);
     console.log(
-      `- Added legalConsents object to ${missingObjectResult.modifiedCount} users`,
-    );
-    console.log(
-      `- Backfilled missing terms consent for ${missingTermsResult.modifiedCount} users`,
-    );
-    console.log(
-      `- Backfilled missing privacy consent for ${missingPrivacyResult.modifiedCount} users`,
+      `- Backfilled missing privacy consent for ${missingPrivacyResult.modifiedCount} users`
     );
   } catch (error) {
     console.error("Migration failed:", error);
@@ -102,11 +98,11 @@ export async function down(): Promise<void> {
         $unset: {
           legalConsents: "",
         },
-      },
+      }
     );
 
     console.log(
-      `Rollback completed: Removed backfilled legal consents from ${result.modifiedCount} users`,
+      `Rollback completed: Removed backfilled legal consents from ${result.modifiedCount} users`
     );
   } catch (error) {
     console.error("Rollback failed:", error);

@@ -1,21 +1,27 @@
+import { Footer } from "@/components/layout/Footer";
+import { Navigation } from "@/components/layout/Navigation";
 import React from "react";
-import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Sports Venue Booking | Book Turf & Courts Online",
-  description:
-    "Find and book the best sports venues near you. PowerMySport is the premium venue booking platform sports players use to book turf, courts, and fields instantly.",
-  openGraph: {
-    title: "Sports Venue Booking | Book Turf & Courts Online",
-    description:
-      "Find and book the best sports venues near you. Book turf, courts, and fields instantly.",
-  },
-};
-
-export default function VenuesLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return <>{children}</>;
+/**
+ * Chrome for `/venues/[venueId]`.
+ *
+ * `/venues` itself is gone — it was a "launching soon" waitlist, and /booking's
+ * Venues tab is the real discovery surface — so this segment now has no page of
+ * its own and the bare path 308s in next.config.
+ *
+ * Deliberately no `metadata` export. The old one described that waitlist and
+ * carried `canonical: "/venues"`, which the detail route inherited: every venue
+ * profile told Google it was a duplicate of a page that no longer exists. The
+ * detail layout sets its own noindex title, and the root sets no canonical, so
+ * there is nothing left to inherit wrongly.
+ */
+export default function VenuesLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Navigation sticky />
+      <div className="h-16" aria-hidden />
+      <main className="flex-1">{children}</main>
+      <Footer />
+    </div>
+  );
 }

@@ -1,6 +1,12 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { SupportTicket } from "../models/SupportTicket";
+import { User } from "../models/User";
+import { sendSupportTicketReceivedEmail, sendSupportTicketStatusEmail } from "../../utils/email";
+import { log as __rootLog } from "../../utils/logger";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+const log = __rootLog.child("supportTicket");
 
 const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
   const page = Math.max(1, Number(pageRaw) || 1);
@@ -10,48 +16,29 @@ const parsePagination = (pageRaw: unknown, limitRaw: unknown) => {
   return { page, limit, skip };
 };
 
-export const createSupportTicket = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const createSupportTicket = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     await createTicketFromRequest(req, res, {
       requireAuth: true,
       authorId: req.user.id,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create ticket",
-    });
   }
-};
+);
 
-export const createPublicSupportTicket = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const createPublicSupportTicket = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     await createTicketFromRequest(req, res, { requireAuth: false });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create ticket",
-    });
   }
-};
+);
 
 const createTicketFromRequest = async (
   req: Request,
   res: Response,
-  options: { requireAuth: boolean; authorId?: string },
+  options: { requireAuth: boolean; authorId?: string }
 ): Promise<void> => {
   const {
     subject,
@@ -72,38 +59,37 @@ const createTicketFromRequest = async (
     requesterName?: string;
     requesterEmail?: string;
     requesterPhone?: string;
-    requesterType?:
-      | "player"
-      | "venue_owner"
-      | "coach"
-      | "academy_owner"
-      | "other";
+    requesterType?: "player" | "venue_owner" | "coach" | "academy_owner" | "other";
   } = req.body;
 
   if (!subject?.trim() || !description?.trim()) {
-    res.status(400).json({
-      success: false,
-      message: "subject and description are required",
-    });
-    return;
+    throw new AppError("subject and description are required", 400);
   }
 
   if (!options.requireAuth) {
     if (!requesterName?.trim() || !requesterEmail?.trim()) {
-      res.status(400).json({
-        success: false,
-        message: "name and email are required",
-      });
-      return;
+      throw new AppError("name and email are required", 400);
     }
+    // The public form is open to anyone and emails a receipt to the address given,
+    // so bound what it accepts: a real-looking address and short free text.
+    if (
+      requesterEmail.trim().length > 254 ||
+      !/^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/.test(requesterEmail.trim())
+    ) {
+      throw new AppError("Please enter a valid email address", 400);
+    }
+    if (requesterName.trim().length > 100) {
+      throw new AppError("Name must be 100 characters or fewer", 400);
+    }
+  }
+  if (subject.trim().length > 200 || description.trim().length > 5000) {
+    throw new AppError("subject or description is too long", 400);
   }
 
   const notes = initialNote?.trim()
     ? [
         {
-          authorType: options.requireAuth
-            ? ("USER" as const)
-            : ("ADMIN" as const),
+          authorType: options.requireAuth ? ("USER" as const) : ("Admin" as const),
           authorId: options.authorId
             ? new mongoose.Types.ObjectId(options.authorId)
             : new mongoose.Types.ObjectId(),
@@ -118,22 +104,53 @@ const createTicketFromRequest = async (
       ? { userId: new mongoose.Types.ObjectId(options.authorId) }
       : {}),
     ...(requesterName?.trim() ? { requesterName: requesterName.trim() } : {}),
-    ...(requesterEmail?.trim()
-      ? { requesterEmail: requesterEmail.trim().toLowerCase() }
-      : {}),
-    ...(requesterPhone?.trim()
-      ? { requesterPhone: requesterPhone.trim() }
-      : {}),
+    ...(requesterEmail?.trim() ? { requesterEmail: requesterEmail.trim().toLowerCase() } : {}),
+    ...(requesterPhone?.trim() ? { requesterPhone: requesterPhone.trim() } : {}),
     ...(requesterType ? { requesterType } : {}),
     subject: subject.trim(),
     description: description.trim(),
     category: category || "OTHER",
     priority: priority || "MEDIUM",
     notes,
-    ...(options.authorId
-      ? { lastUpdatedBy: new mongoose.Types.ObjectId(options.authorId) }
-      : {}),
+    ...(options.authorId ? { lastUpdatedBy: new mongoose.Types.ObjectId(options.authorId) } : {}),
   });
+
+  // Acknowledge the ticket by email (fire-and-forget). Prefer the explicit
+  // requester email; fall back to the authenticated user's account email.
+  void (async () => {
+    try {
+      let toEmail = ticket.requesterEmail;
+      let toName = ticket.requesterName;
+      if (options.requireAuth && ticket.userId) {
+        // A signed-in user's receipt goes to THEIR account address. The request body
+        // must not be able to point it at somebody else's mailbox.
+        const owner = await User.findById(ticket.userId).select("name email").lean();
+        toEmail = owner?.email;
+        toName = owner?.name || toName;
+      } else if (toEmail) {
+        // Anonymous submissions: one automatic receipt per address per hour, so the
+        // form cannot be used to repeatedly mail a third party.
+        const recentReceipts = await SupportTicket.countDocuments({
+          requesterEmail: toEmail,
+          userId: { $exists: false },
+          createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) },
+          _id: { $ne: ticket._id },
+        });
+        if (recentReceipts > 0) toEmail = undefined;
+      }
+      if (toEmail) {
+        await sendSupportTicketReceivedEmail({
+          name: toName,
+          email: toEmail,
+          ticketId: String(ticket._id),
+          subject: ticket.subject,
+          category: ticket.category,
+        });
+      }
+    } catch (error) {
+      log.error("Failed to send support ticket received email:", error);
+    }
+  })();
 
   res.status(201).json({
     success: true,
@@ -142,23 +159,15 @@ const createTicketFromRequest = async (
   });
 };
 
-export const getMySupportTickets = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getMySupportTickets = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
-    const { page, limit, skip } = parsePagination(
-      req.query.page,
-      req.query.limit,
-    );
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit);
 
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
 
     const query: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(req.user.id),
@@ -169,11 +178,7 @@ export const getMySupportTickets = async (
     }
 
     const [tickets, total] = await Promise.all([
-      SupportTicket.find(query)
-        .sort({ updatedAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
+      SupportTicket.find(query).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
       SupportTicket.countDocuments(query),
     ]);
 
@@ -187,30 +192,14 @@ export const getMySupportTickets = async (
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve support tickets",
-    });
   }
-};
+);
 
-export const getSupportTicketsForAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { page, limit, skip } = parsePagination(
-      req.query.page,
-      req.query.limit,
-    );
-    const status =
-      typeof req.query.status === "string" ? req.query.status : undefined;
-    const priority =
-      typeof req.query.priority === "string" ? req.query.priority : undefined;
+export const getSupportTicketsForAdmin = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { page, limit, skip } = parsePagination(req.query.page, req.query.limit);
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
+    const priority = typeof req.query.priority === "string" ? req.query.priority : undefined;
 
     const query: Record<string, unknown> = {};
     if (status) {
@@ -241,31 +230,18 @@ export const getSupportTicketsForAdmin = async (
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to retrieve support tickets",
-    });
   }
-};
+);
 
-export const updateSupportTicketByAdmin = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const updateSupportTicketByAdmin = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id) {
-      res.status(401).json({ success: false, message: "Unauthorized" });
-      return;
+      throw new AppError("Unauthorized", 401);
     }
 
     const ticketId = (req.params as Record<string, unknown>).ticketId as string;
     if (!ticketId || !mongoose.Types.ObjectId.isValid(ticketId)) {
-      res.status(400).json({ success: false, message: "Invalid ticket id" });
-      return;
+      throw new AppError("Invalid ticket id", 400);
     }
 
     const {
@@ -309,7 +285,7 @@ export const updateSupportTicketByAdmin = async (
           ? {
               $push: {
                 notes: {
-                  authorType: "ADMIN",
+                  authorType: "Admin",
                   authorId: new mongoose.Types.ObjectId(req.user.id),
                   message: note.trim(),
                   createdAt: new Date(),
@@ -318,14 +294,33 @@ export const updateSupportTicketByAdmin = async (
             }
           : {}),
       },
-      { new: true },
+      { new: true }
     )
       .populate("userId", "name email role")
       .populate("assignedAdminId", "name email role");
 
     if (!ticket) {
-      res.status(404).json({ success: false, message: "Ticket not found" });
-      return;
+      throw new AppError("Ticket not found", 404);
+    }
+
+    // Notify the requester when the status changes (fire-and-forget).
+    if (status) {
+      const populatedUser = ticket.userId as unknown as {
+        name?: string;
+        email?: string;
+      } | null;
+      const toEmail = ticket.requesterEmail || populatedUser?.email;
+      const toName = ticket.requesterName || populatedUser?.name;
+      if (toEmail) {
+        sendSupportTicketStatusEmail({
+          name: toName,
+          email: toEmail,
+          ticketId: String(ticket._id),
+          subject: ticket.subject,
+          status,
+          note: note?.trim() || undefined,
+        }).catch((error) => log.error("Failed to send support ticket status email:", error));
+      }
     }
 
     res.status(200).json({
@@ -333,11 +328,5 @@ export const updateSupportTicketByAdmin = async (
       message: "Support ticket updated",
       data: ticket,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to update ticket",
-    });
   }
-};
+);

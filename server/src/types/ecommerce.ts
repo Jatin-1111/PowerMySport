@@ -1,16 +1,41 @@
 // Product & Catalog Types
-export type ProductCategory =
-  | "APPAREL"
-  | "FOOTWEAR"
-  | "ACCESSORIES"
-  | "EQUIPMENT";
+export type ProductCategory = "APPAREL" | "FOOTWEAR" | "ACCESSORIES" | "EQUIPMENT";
 
 export type AgeGroup = "KIDS" | "YOUTH" | "ADULT" | "ALL";
 export type SkillLevel = "BEGINNER" | "INTERMEDIATE" | "ADVANCED" | "ALL";
 export type Gender = "UNISEX" | "BOYS" | "GIRLS" | "MEN" | "WOMEN";
 
-export type ProductBrand = "SG" | "SS" | "KOOKABURRA" | "MRF" | "CEAT" | "NIKE" | "ADIDAS" | "PUMA" | "UNDER_ARMOUR" | "ASICS" | "WILSON" | "YONEX" | "BABOLAT" | "HEAD" | "GENERIC" | "OTHER";
-export type ProductMaterial = "ENGLISH_WILLOW" | "KASHMIR_WILLOW" | "CARBON_FIBER" | "FIBERGLASS" | "ALUMINUM" | "LEATHER" | "SYNTHETIC_LEATHER" | "RUBBER" | "COTTON" | "POLYESTER" | "NYLON" | "BLENDED" | "OTHER";
+export type ProductBrand =
+  | "SG"
+  | "SS"
+  | "KOOKABURRA"
+  | "MRF"
+  | "CEAT"
+  | "NIKE"
+  | "ADIDAS"
+  | "PUMA"
+  | "UNDER_ARMOUR"
+  | "ASICS"
+  | "WILSON"
+  | "YONEX"
+  | "BABOLAT"
+  | "HEAD"
+  | "GENERIC"
+  | "OTHER";
+export type ProductMaterial =
+  | "ENGLISH_WILLOW"
+  | "KASHMIR_WILLOW"
+  | "CARBON_FIBER"
+  | "FIBERGLASS"
+  | "ALUMINUM"
+  | "LEATHER"
+  | "SYNTHETIC_LEATHER"
+  | "RUBBER"
+  | "COTTON"
+  | "POLYESTER"
+  | "NYLON"
+  | "BLENDED"
+  | "OTHER";
 
 export interface IProductVariant {
   id: string;
@@ -53,6 +78,10 @@ export interface IProduct {
   variants: IProductVariant[];
   totalStock: number;
   isActive: boolean;
+  seller?: string;
+  sellerName?: string;
+  sellerType?: "MERCHANT" | "PARENT" | "Player" | "Coach" | "ACADEMY" | "SYSTEM";
+  condition?: "NEW" | "USED";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -112,7 +141,6 @@ export enum FulfillmentStatus {
 
 export enum PaymentGateway {
   PHONEPE = "PHONEPE",
-  STRIPE = "STRIPE",
 }
 
 // Order Types
@@ -137,6 +165,10 @@ export interface IOrderItem {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  sellerId?: string;
+  condition?: "NEW" | "USED";
+  fulfillmentStatus: FulfillmentStatus;
+  trackingNumber?: string;
   createdAt: Date;
 }
 

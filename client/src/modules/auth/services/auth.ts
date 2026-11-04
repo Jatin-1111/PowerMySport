@@ -1,5 +1,30 @@
 import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, AuthResponse, User } from "@/types";
+import { ApiResponse, AuthResponse, Dependent, User } from "@/types";
+import { requestParentalConsent } from "@/modules/player/store/parentalConsentStore";
+import { useAuthStore } from "../store/authStore";
+
+const CONSENT_REQUIRED = 428;
+
+/** Remembers that the parent has agreed, so the next save does not ask again. */
+const markConsentGiven = () => {
+  // setState, not setUser: the stored user already has normalized dependents,
+  // and setUser would normalize them a second time.
+  const { user } = useAuthStore.getState();
+  if (user) useAuthStore.setState({ user: { ...user, parentalConsentCurrent: true } });
+};
+
+/** Asks for the parent's agreement, then adds the child with it. */
+const askThenAddDependent = async (payload: Record<string, unknown>) => {
+  if (!(await requestParentalConsent())) {
+    throw new Error("We need your agreement to the Parental Consent policy to add a child.");
+  }
+  const response = await axiosInstance.post("/auth/dependents", {
+    ...payload,
+    parentalConsent: true,
+  });
+  markConsentGiven();
+  return response.data;
+};
 
 export const authApi = {
   register: async (data: {
@@ -7,21 +32,35 @@ export const authApi = {
     email: string;
     phone: string;
     password: string;
-    role: "PLAYER" | "VENUE_LISTER" | "COACH" | "ACADEMY_OWNER";
+    role: "Parent" | "Player" | "VenueLister" | "Coach" | "Academy" | "EXPERT";
     serviceMode?: "OWN_VENUE" | "FREELANCE" | "HYBRID";
     acceptedTerms: boolean;
     acceptedPrivacy: boolean;
+    /** Optional, unticked by default: agreement to get booking updates on WhatsApp. */
+    whatsappConsent?: boolean;
   }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/register", data);
     return response.data;
   },
 
-  login: async (data: {
-    email: string;
-    password: string;
-  }): Promise<AuthResponse> => {
+  login: async (data: { email: string; password: string }): Promise<AuthResponse> => {
     const response = await axiosInstance.post("/auth/login", data);
     return response.data;
+  },
+
+  getWhatsAppConsent: async (): Promise<{ granted: boolean; at: string | null }> => {
+    const response = await axiosInstance.get("/auth/whatsapp-consent");
+    return response.data.data;
+  },
+
+  setWhatsAppConsent: async (
+    granted: boolean
+  ): Promise<{ granted: boolean; at: string | null }> => {
+    const response = await axiosInstance.put("/auth/whatsapp-consent", {
+      granted,
+      source: "settings",
+    });
+    return response.data.data;
   },
 
   logout: async (): Promise<ApiResponse<null>> => {
@@ -39,31 +78,34 @@ export const authApi = {
     email?: string;
     phone?: string;
     dob?: string | Date;
+    parentProfile?: {
+      bio?: string;
+      sportInterests?: string[];
+      involvementYears?: number;
+    };
     playerProfile?: {
-      sports?: string[];
+      sportsFocus?: string[];
+      yearsPlaying?: number;
       personalityTags?: string[];
-      primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
+      primaryObjective?: "Recreational" | "Fitness" | "Compete";
       weeklyTimeCommitment?: number;
       budgetTier?: "Budget" | "Moderate" | "Premium";
+      location?: string;
     };
+    shippingAddress?: User["shippingAddress"];
   }): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.put("/auth/profile", data);
     return response.data;
   },
 
-  forgotPassword: async (
-    email: string,
-  ): Promise<ApiResponse<{ resetToken: string }>> => {
+  forgotPassword: async (email: string): Promise<ApiResponse<{ resetToken: string }>> => {
     const response = await axiosInstance.post("/auth/forgot-password", {
       email,
     });
     return response.data;
   },
 
-  resetPassword: async (
-    token: string,
-    newPassword: string,
-  ): Promise<ApiResponse<null>> => {
+  resetPassword: async (token: string, newPassword: string): Promise<ApiResponse<null>> => {
     const response = await axiosInstance.post("/auth/reset-password", {
       token,
       newPassword,
@@ -71,13 +113,27 @@ export const authApi = {
     return response.data;
   },
 
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.put("/auth/change-password", data);
+    return response.data;
+  },
+
+  deleteAccount: async (password: string): Promise<ApiResponse<null>> => {
+    const response = await axiosInstance.post("/auth/delete-account", {
+      password,
+    });
+    return response.data;
+  },
+
   googleLogin: async (data: {
-    googleId: string;
-    email: string;
-    name: string;
-    photoUrl?: string;
-    role?: "PLAYER" | "VENUE_LISTER" | "COACH" | "ACADEMY_OWNER";
-    userType?: string;
+    // Raw Google ID token ("credential" from Google Identity Services).
+    // The server verifies this and derives identity from it — we no longer
+    // send client-decoded googleId/email (those were forgeable).
+    credential: string;
+    role?: "Parent" | "Player" | "VenueLister" | "Coach" | "Academy" | "EXPERT";
     action?: "login" | "register";
     acceptedTerms?: boolean;
     acceptedPrivacy?: boolean;
@@ -101,46 +157,54 @@ export const authApi = {
     return response.data;
   },
 
-  addDependent: async (data: {
-    name: string;
-    dob: string | Date;
-    gender?: "MALE" | "FEMALE" | "OTHER";
-    relation?: string;
-    sports?: string[];
-    personalityTags?: string[];
-    primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
-    weeklyTimeCommitment?: number;
-    budgetTier?: "Budget" | "Moderate" | "Premium";
-  }): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.post("/auth/dependents", data);
-    return response.data;
+  /** A child goes to the server exactly as the `Dependent` type describes it. */
+  addDependent: async (
+    data: Partial<Omit<Dependent, "_id">> & { name: string }
+  ): Promise<ApiResponse<any>> => {
+    const payload: Record<string, unknown> = { ...data };
+
+    // The profile already says consent is missing, so ask first instead of sending a
+    // request that is certain to be refused.
+    if (useAuthStore.getState().user?.parentalConsentCurrent === false) {
+      return askThenAddDependent(payload);
+    }
+
+    try {
+      const response = await axiosInstance.post("/auth/dependents", payload);
+      return response.data;
+    } catch (error) {
+      // The consent state was not known here (a fresh sign-in has not loaded the
+      // profile yet), and the server asks before it takes a child's details.
+      if ((error as { response?: { status?: number } }).response?.status !== CONSENT_REQUIRED) {
+        throw error;
+      }
+      return askThenAddDependent(payload);
+    }
   },
 
   updateDependent: async (
     dependentId: string,
-    data: {
-      name?: string;
-      dob?: string | Date;
-      gender?: "MALE" | "FEMALE" | "OTHER";
-      relation?: string;
-      sports?: string[];
-      personalityTags?: string[];
-      primaryObjective?: "Recreational" | "Health" | "Social" | "Competitive";
-      weeklyTimeCommitment?: number;
-      budgetTier?: "Budget" | "Moderate" | "Premium";
-    },
+    data: Partial<Omit<Dependent, "_id">>
   ): Promise<ApiResponse<any>> => {
-    const response = await axiosInstance.put(
-      `/auth/dependents/${dependentId}`,
-      data,
-    );
+    // A parent who has not agreed to the current policy is asked at their next
+    // edit. Declining does not block the edit; only adding a child needs it.
+    const needsConsent = useAuthStore.getState().user?.parentalConsentCurrent === false;
+    const agreed = needsConsent ? await requestParentalConsent() : false;
+    const response = await axiosInstance.put(`/auth/dependents/${dependentId}`, {
+      ...data,
+      ...(agreed ? { parentalConsent: true } : {}),
+    });
+    if (agreed) markConsentGiven();
     return response.data;
   },
 
   deleteDependent: async (dependentId: string): Promise<ApiResponse<null>> => {
-    const response = await axiosInstance.delete(
-      `/auth/dependents/${dependentId}`,
-    );
+    const response = await axiosInstance.delete(`/auth/dependents/${dependentId}`);
+    return response.data;
+  },
+
+  getPlayers: async (): Promise<ApiResponse<any[]>> => {
+    const response = await axiosInstance.get("/auth/players");
     return response.data;
   },
 
@@ -149,7 +213,7 @@ export const authApi = {
    */
   getProfilePictureUploadUrl: async (
     fileName: string,
-    contentType: string,
+    contentType: string
   ): Promise<
     ApiResponse<{
       uploadUrl: string;
@@ -157,13 +221,10 @@ export const authApi = {
       key: string;
     }>
   > => {
-    const response = await axiosInstance.post(
-      "/auth/profile-picture/upload-url",
-      {
-        fileName,
-        contentType,
-      },
-    );
+    const response = await axiosInstance.post("/auth/profile-picture/upload-url", {
+      fileName,
+      contentType,
+    });
     return response.data;
   },
 
@@ -172,7 +233,7 @@ export const authApi = {
    */
   confirmProfilePicture: async (
     photoUrl: string,
-    photoS3Key: string,
+    photoS3Key: string
   ): Promise<ApiResponse<User>> => {
     const response = await axiosInstance.post("/auth/profile-picture/confirm", {
       photoUrl,
@@ -188,7 +249,7 @@ export const authApi = {
   uploadProfilePictureToS3: async (
     file: File,
     uploadUrl: string,
-    contentType: string,
+    contentType: string
   ): Promise<void> => {
     const response = await fetch(uploadUrl, {
       method: "PUT",
@@ -199,9 +260,14 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `S3 upload failed: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`S3 upload failed: ${response.status} ${response.statusText}`);
     }
+  },
+
+  linkGoogleAccount: async (credential: string): Promise<ApiResponse<{ user: User }>> => {
+    const response = await axiosInstance.post("/auth/google/link", {
+      credential,
+    });
+    return response.data;
   },
 };

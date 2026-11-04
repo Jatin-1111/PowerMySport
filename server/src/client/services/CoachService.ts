@@ -1,27 +1,61 @@
 import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
-import {
-  Coach,
-  CoachDocument,
-  CoachDocumentFile,
-  CoachVerificationStatus,
-} from "../models/Coach";
+import { Coach, CoachDocument, CoachDocumentFile, CoachVerificationStatus } from "../models/Coach";
 import { s3Service } from "../../shared/services/S3Service";
 import { ICoach, IOwnVenueDetails, ServiceMode } from "../../types/index";
+import { log as __rootLog } from "../../utils/logger";
+import { AppError } from "../../utils/AppError";
+import { withId } from "../../utils/withId";
+const log = __rootLog.child("coach");
 
 const COACH_LISTING_SELECT =
   "_id userId photoUrl profileImage bio sports hourlyRate sportPricing serviceMode ownVenueDetails rating reviewCount verificationStatus isVerified verifiedAt baseLocation serviceRadiusKm";
 
 const COACH_LISTING_USER_SELECT = "_id name photoUrl photoS3Key";
 
+const CHECK_LABELS: Record<string, string> = {
+  ID_PROOF: "ID",
+  CERTIFICATION: "Certificate",
+  BACKGROUND_CHECK: "Background check",
+  INSURANCE: "Insurance",
+};
+
+/**
+ * What a coach's reviewed documents cover, as plain labels for a public card.
+ * Only the document types are read; the files and links stay private.
+ */
+export const summarizeChecks = (docs?: { type?: string }[]): string[] => {
+  const types = new Set((docs || []).map((d) => d.type));
+  return Object.keys(CHECK_LABELS)
+    .filter((type) => types.has(type))
+    .map((type) => CHECK_LABELS[type] as string);
+};
+
+const withChecks = <T extends object>(coach: T): T => {
+  const { verificationDocuments, ...rest } = coach as T & {
+    verificationDocuments?: { type?: string }[];
+  };
+  return { ...rest, checks: summarizeChecks(verificationDocuments) } as unknown as T;
+};
+
+/**
+ * What the PUBLIC coach profile may serve: the listing fields plus the extras
+ * the detail page reads. An allowlist on purpose. The Coach document carries
+ * payout details (`payoutMethods`), KYC files, admin notes, GST and the
+ * coach's private block-out reasons, and the schema's `toJSON({getters:true})`
+ * runs the decrypt getters over the payout fields, so anything not excluded
+ * here is served in plaintext to anyone with a coach id.
+ */
+export const COACH_PUBLIC_SELECT = `${COACH_LISTING_SELECT} certifications availability availabilityBySport travelBufferTime createdAt updatedAt`;
+
 const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
   try {
-    return await s3Service.generateDownloadUrl(key, "images", 604800);
+    return await s3Service.generateCachedDownloadUrl(key, "images", 604800);
   } catch (imageError) {
     try {
-      return await s3Service.generateDownloadUrl(key, "verification", 604800);
+      return await s3Service.generateCachedDownloadUrl(key, "verification", 604800);
     } catch (verificationError) {
-      console.error(`Failed to refresh coach venue image URL for ${key}:`, {
+      log.error(`Failed to refresh coach venue image URL for ${key}:`, {
         imageError,
         verificationError,
       });
@@ -32,10 +66,7 @@ const resolveCoachVenueImageUrl = async (key: string): Promise<string> => {
 
 const toRadians = (value: number): number => (value * Math.PI) / 180;
 
-const calculateDistanceKm = (
-  from: [number, number],
-  to: [number, number],
-): number => {
+const calculateDistanceKm = (from: [number, number], to: [number, number]): number => {
   const [fromLng, fromLat] = from;
   const [toLng, toLat] = to;
 
@@ -60,27 +91,21 @@ const getCoachStartingRate = (coach: any): number => {
   const sportPricing = coach?.sportPricing;
   if (sportPricing && typeof sportPricing === "object") {
     const values = Object.values(sportPricing as Record<string, number>).filter(
-      (price) =>
-        typeof price === "number" && Number.isFinite(price) && price > 0,
+      (price) => typeof price === "number" && Number.isFinite(price) && price > 0
     );
     if (values.length > 0) {
       return Math.min(...values);
     }
   }
 
-  if (
-    typeof coach?.hourlyRate === "number" &&
-    Number.isFinite(coach.hourlyRate)
-  ) {
+  if (typeof coach?.hourlyRate === "number" && Number.isFinite(coach.hourlyRate)) {
     return coach.hourlyRate;
   }
 
   return 0;
 };
 
-const getVerificationRecencyScore = (
-  verifiedAt?: Date | string | null,
-): number => {
+const getVerificationRecencyScore = (verifiedAt?: Date | string | null): number => {
   if (!verifiedAt) {
     return 0;
   }
@@ -110,9 +135,7 @@ const buildCoachRelevanceScore = (params: {
   const startingRate = getCoachStartingRate(coach);
   const priceScore = clamp01(1 - Math.min(startingRate, 5000) / 5000);
 
-  const verificationRecencyScore = getVerificationRecencyScore(
-    coach?.verifiedAt,
-  );
+  const verificationRecencyScore = getVerificationRecencyScore(coach?.verifiedAt);
 
   let distanceScore = 0;
   if (
@@ -129,13 +152,10 @@ const buildCoachRelevanceScore = (params: {
   const sportMatchScore =
     normalizedSportFilter.length === 0
       ? 0
-      : coach?.sports?.some(
-            (sport: string) =>
-              sport.trim().toLowerCase() === normalizedSportFilter,
-          )
+      : coach?.sports?.some((sport: string) => sport.trim().toLowerCase() === normalizedSportFilter)
         ? 1
         : coach?.sports?.some((sport: string) =>
-              sport.trim().toLowerCase().includes(normalizedSportFilter),
+              sport.trim().toLowerCase().includes(normalizedSportFilter)
             )
           ? 0.6
           : 0;
@@ -154,7 +174,7 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   coach: T,
   options?: {
     includeVenueImages?: boolean;
-  },
+  }
 ): Promise<T> => {
   if (!coach) {
     return coach;
@@ -166,25 +186,20 @@ const refreshCoachMediaUrls = async <T extends Record<string, any>>(
   const user = mutableCoach.userId;
   if (user && typeof user === "object" && user.photoS3Key) {
     try {
-      user.photoUrl = await s3Service.generateDownloadUrl(
-        user.photoS3Key,
-        "images",
-        604800,
-      );
+      user.photoUrl = await s3Service.generateCachedDownloadUrl(user.photoS3Key, "images", 604800);
     } catch (error) {
-      console.error("Failed to refresh coach profile photo URL:", error);
+      log.error("Failed to refresh coach profile photo URL:", error);
     }
   }
 
   const venueKeys: string[] =
-    includeVenueImages &&
-    Array.isArray(mutableCoach.ownVenueDetails?.imageS3Keys)
+    includeVenueImages && Array.isArray(mutableCoach.ownVenueDetails?.imageS3Keys)
       ? mutableCoach.ownVenueDetails.imageS3Keys
       : [];
 
   if (includeVenueImages && venueKeys.length > 0) {
     const refreshedVenueImages = await Promise.all(
-      venueKeys.map(async (key) => await resolveCoachVenueImageUrl(key)),
+      venueKeys.map(async (key) => await resolveCoachVenueImageUrl(key))
     );
 
     if (!mutableCoach.ownVenueDetails) {
@@ -233,9 +248,7 @@ export interface CreateCoachPayload {
  * These venues do NOT appear in the marketplace. Coaches who want to rent out venues separately
  * must create a venue-lister account with different credentials.
  */
-export const createCoach = async (
-  payload: CreateCoachPayload,
-): Promise<CoachDocument> => {
+export const createCoach = async (payload: CreateCoachPayload): Promise<CoachDocument> => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -266,7 +279,7 @@ export const findCoachesNearby = async (
   radiusKm: number,
   sport?: string,
   limit: number = 50,
-  skip: number = 0,
+  skip: number = 0
 ): Promise<CoachDocument[]> => {
   try {
     const radiusMeters = radiusKm * 1000;
@@ -310,6 +323,7 @@ export const findCoachesNearby = async (
           verifiedAt: 1,
           baseLocation: 1,
           serviceRadiusKm: 1,
+          "verificationDocuments.type": 1,
         },
       },
     ];
@@ -324,12 +338,12 @@ export const findCoachesNearby = async (
 
     return Promise.all(
       populatedCoaches.map((coach) =>
-        refreshCoachMediaUrls(coach, { includeVenueImages: false }),
-      ),
+        refreshCoachMediaUrls(withChecks(coach), { includeVenueImages: false })
+      )
     );
   } catch (error) {
     throw new Error(
-      `Failed to find coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to find coaches: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
@@ -337,7 +351,7 @@ export const findCoachesNearby = async (
 export const getAllCoaches = async (
   sport?: string,
   limit: number = 50,
-  skip: number = 0,
+  skip: number = 0
 ): Promise<CoachDocument[]> => {
   try {
     const query: any = {
@@ -350,23 +364,24 @@ export const getAllCoaches = async (
     }
 
     const coaches = await Coach.find(query)
-      .select(COACH_LISTING_SELECT)
+      .select(`${COACH_LISTING_SELECT} verificationDocuments.type`)
       .sort({ rating: -1, reviewCount: -1, _id: 1 })
       .skip(skip)
       .limit(limit)
       .populate({
         path: "userId",
         select: COACH_LISTING_USER_SELECT,
-      });
+      })
+      .lean();
 
     return Promise.all(
       coaches.map((coach) =>
-        refreshCoachMediaUrls(coach, { includeVenueImages: false }),
-      ),
+        refreshCoachMediaUrls(withChecks(coach), { includeVenueImages: false })
+      )
     );
   } catch (error) {
     throw new Error(
-      `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to fetch coaches: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
@@ -382,7 +397,11 @@ export interface CoachVerificationSubmission {
 export const submitCoachVerification = async (
   userId: string,
   payload: CoachVerificationSubmission,
+  // An admin submitting on a coach's behalf vouches for them and may store
+  // fewer documents; a coach submitting for themselves may not.
+  options: { requireProof?: boolean } = {}
 ): Promise<CoachDocument> => {
+  const { requireProof = true } = options;
   const coach = await Coach.findOne({ userId });
   if (!coach) {
     throw new Error("Coach profile not found");
@@ -392,12 +411,23 @@ export const submitCoachVerification = async (
     const venueImagesCount = coach.ownVenueDetails?.images?.length || 0;
     if (venueImagesCount < 3) {
       throw new Error(
-        "OWN_VENUE coaches must upload at least 3 venue images before verification submission",
+        "OWN_VENUE coaches must upload at least 3 venue images before verification submission"
       );
     }
   }
 
   const documents = payload.documents || [];
+
+  // Verified means evidence is on file: an ID proof and at least one credential.
+  // Background check and safeguarding documents stay optional.
+  const hasDocument = (type: CoachDocumentFile["type"]) =>
+    documents.some((doc) => doc.type === type && Boolean(doc.url));
+  if (requireProof && (!hasDocument("ID_PROOF") || !hasDocument("CERTIFICATION"))) {
+    throw new AppError(
+      "Upload an ID proof and at least one certification to submit for verification",
+      400
+    );
+  }
 
   coach.verificationDocuments = documents.map((doc) => ({
     ...doc,
@@ -417,7 +447,7 @@ export const submitCoachVerification = async (
 export const listCoachVerificationRequests = async (
   status: CoachVerificationStatus | undefined,
   page: number = 1,
-  limit: number = 20,
+  limit: number = 20
 ): Promise<{
   coaches: CoachDocument[];
   total: number;
@@ -449,19 +479,21 @@ export const updateCoachVerificationStatus = async (
   coachId: string,
   status: CoachVerificationStatus,
   adminId: string,
-  notes?: string,
+  notes?: string
 ): Promise<CoachDocument> => {
   const coach = await Coach.findById(coachId);
   if (!coach) {
     throw new Error("Coach not found");
   }
 
+  if (status === "VERIFIED" && (coach.verificationStatus ?? "UNVERIFIED") === "UNVERIFIED") {
+    throw new AppError("This coach has not submitted verification yet", 409);
+  }
+
   coach.verificationStatus = status;
   coach.verificationNotes = notes || "";
-  coach.onboardingProgressStep = Math.max(
-    Number(coach.onboardingProgressStep || 1),
-    3,
-  ) as 1 | 2 | 3;
+  coach.onboardingProgressStep = Math.max(Number(coach.onboardingProgressStep || 1), 3) as
+    1 | 2 | 3;
 
   if (status === "VERIFIED") {
     coach.isVerified = true;
@@ -483,7 +515,7 @@ export const checkCoachAvailability = async (
   coachId: string,
   date: Date,
   startTime: string,
-  endTime: string,
+  endTime: string
 ): Promise<boolean> => {
   try {
     const coach = await Coach.findById(coachId);
@@ -493,16 +525,14 @@ export const checkCoachAvailability = async (
 
     // Check if coach has availability on this day of week
     const dayOfWeek = date.getDay();
-    const dayAvailabilities = coach.availability.filter(
-      (a) => a.dayOfWeek === dayOfWeek,
-    );
+    const dayAvailabilities = coach.availability.filter((a) => a.dayOfWeek === dayOfWeek);
 
     if (dayAvailabilities.length === 0) {
       return false; // Coach doesn't work on this day
     }
 
     const isWithinAnySlot = dayAvailabilities.some(
-      (slot) => startTime >= slot.startTime && endTime <= slot.endTime,
+      (slot) => startTime >= slot.startTime && endTime <= slot.endTime
     );
 
     if (!isWithinAnySlot) {
@@ -510,7 +540,8 @@ export const checkCoachAvailability = async (
     }
 
     // Check for existing bookings
-    // Only active bookings block slots: PENDING_CONFIRMATION, PENDING_INVITES, CONFIRMED, IN_PROGRESS
+    // Only active bookings block slots: AWAITING_PAYMENT, AWAITING_PROVIDER,
+    // PENDING_INVITES, CONFIRMED, IN_PROGRESS
     const existingBooking = await Booking.findOne({
       coachId,
       date: {
@@ -519,7 +550,8 @@ export const checkCoachAvailability = async (
       },
       status: {
         $in: [
-          "PENDING_CONFIRMATION",
+          "AWAITING_PAYMENT",
+          "AWAITING_PROVIDER",
           "PENDING_INVITES",
           "CONFIRMED",
           "IN_PROGRESS",
@@ -538,22 +570,42 @@ export const checkCoachAvailability = async (
     return !existingBooking;
   } catch (error) {
     throw new Error(
-      `Failed to check coach availability: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to check coach availability: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   }
 };
 
 /**
- * Get coach by ID
+ * Get coach by ID.
+ *
+ * `populateUserFields` is opt-in and off by default. An audit of every call
+ * site found 10 of 12 never read the populated `userId` document at all —
+ * they only need the Coach document itself, or already defensively handle
+ * `userId` as a raw (unpopulated) ObjectId. Populating unconditionally meant
+ * every one of those paid for a full `User` lookup and hydration for
+ * nothing; worse, the public coach-detail endpoint was serving the caller's
+ * *entire* User document (including email/phone) to unauthenticated
+ * requests. Pass the field string explicitly for the two call sites that
+ * actually render user fields.
  */
 export const getCoachById = async (
   coachId: string,
+  options?: { populateUserFields?: string; select?: string }
 ): Promise<CoachDocument | null> => {
   // Validate coachId
   if (!coachId || coachId === "undefined") {
     return null;
   }
-  const coach = await Coach.findById(coachId).populate("userId");
+  const query = Coach.findById(coachId);
+  // Public callers pass COACH_PUBLIC_SELECT; without it the whole document
+  // comes back, payout details included.
+  if (options?.select) {
+    query.select(options.select);
+  }
+  if (options?.populateUserFields) {
+    query.populate("userId", options.populateUserFields);
+  }
+  const coach = await query;
   if (!coach) {
     return null;
   }
@@ -562,12 +614,18 @@ export const getCoachById = async (
 };
 
 /**
- * Get coach by user ID
+ * Get coach by user ID. See getCoachById for why `populateUserFields` is
+ * opt-in.
  */
 export const getCoachByUserId = async (
   userId: string,
+  options?: { populateUserFields?: string }
 ): Promise<CoachDocument | null> => {
-  const coach = await Coach.findOne({ userId }).populate("userId");
+  const query = Coach.findOne({ userId });
+  if (options?.populateUserFields) {
+    query.populate("userId", options.populateUserFields);
+  }
+  const coach = await query;
   if (!coach) {
     return null;
   }
@@ -581,7 +639,7 @@ export const getCoachByUserId = async (
  */
 export const updateCoach = async (
   coachId: string,
-  updates: Partial<ICoach>,
+  updates: Partial<ICoach>
 ): Promise<CoachDocument | null> => {
   // Validate coachId is provided
   if (!coachId || coachId === "undefined") {
@@ -610,7 +668,7 @@ export const updateCoach = async (
 
         if (!rawCoords || rawCoords.length !== 2) {
           throw new Error(
-            "ownVenueDetails.location.coordinates ([longitude, latitude]) is required",
+            "ownVenueDetails.location.coordinates ([longitude, latitude]) is required"
           );
         }
 
@@ -628,8 +686,7 @@ export const updateCoach = async (
           pricePerHour: venueData.pricePerHour,
           description: venueData.description,
           images: venueData.images || coach.ownVenueDetails?.images || [],
-          imageS3Keys:
-            venueData.imageS3Keys || coach.ownVenueDetails?.imageS3Keys || [],
+          imageS3Keys: venueData.imageS3Keys || coach.ownVenueDetails?.imageS3Keys || [],
           openingHours: venueData.openingHours,
         };
 
@@ -661,7 +718,7 @@ export const deleteCoach = async (coachId: string): Promise<boolean> => {
   } catch (error) {
     await session.abortTransaction();
     throw new Error(
-      `Failed to delete coach: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Failed to delete coach: ${error instanceof Error ? error.message : "Unknown error"}`
     );
   } finally {
     session.endSession();
@@ -675,7 +732,7 @@ export const deleteCoach = async (coachId: string): Promise<boolean> => {
 export const getCoachCalendar = async (
   coachUserId: string,
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ): Promise<{
   bookings: any[];
   blockedDates: any[];
@@ -684,7 +741,7 @@ export const getCoachCalendar = async (
   travelBufferTime: number;
 }> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select(
-    "blockedDates availability availabilityBySport travelBufferTime",
+    "blockedDates availability availabilityBySport travelBufferTime"
   );
   if (!coach) throw new Error("Coach profile not found");
 
@@ -703,7 +760,7 @@ export const getCoachCalendar = async (
     : {};
 
   return {
-    bookings,
+    bookings: bookings.map(withId),
     blockedDates: (coach.blockedDates as any[]) ?? [],
     availability: coach.availability ?? [],
     availabilityBySport,
@@ -721,7 +778,7 @@ export const blockCoachDates = async (
     endDate: Date;
     reason?: string;
     allDay?: boolean;
-  },
+  }
 ): Promise<any> => {
   const coach = await Coach.findOne({ userId: coachUserId });
   if (!coach) throw new Error("Coach profile not found");
@@ -745,18 +802,13 @@ export const blockCoachDates = async (
 /**
  * Remove a blocked date entry by its subdocument id.
  */
-export const unblockCoachDate = async (
-  coachUserId: string,
-  blockId: string,
-): Promise<void> => {
+export const unblockCoachDate = async (coachUserId: string, blockId: string): Promise<void> => {
   const coach = await Coach.findOne({ userId: coachUserId });
   if (!coach) throw new Error("Coach profile not found");
 
   if (!coach.blockedDates) return;
 
-  const idx = (coach.blockedDates as any[]).findIndex(
-    (b: any) => b._id?.toString() === blockId,
-  );
+  const idx = (coach.blockedDates as any[]).findIndex((b: any) => b._id?.toString() === blockId);
   if (idx === -1) throw new Error("Blocked date entry not found");
 
   (coach.blockedDates as any[]).splice(idx, 1);

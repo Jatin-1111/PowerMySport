@@ -1,150 +1,467 @@
 @import "tailwindcss";
+@import "@powermysport/shared-tokens/tokens.css";
 
 :root {
-    --power-orange: #E97316;
-    --deep-slate: #0F172A;
-    --ghost-white: #F8FAFC;
-    --turf-green: #22C55E;
-    --error-red: #EF4444;
-    --background: #f4f7ff;
-    --foreground: #111827;
-    --surface: #ffffff;
-    --card: rgba(255, 255, 255, 0.92);
-    --card-foreground: #111827;
-    --muted: #eef2f7;
-    --muted-foreground: #64748b;
-    --border: rgba(148, 163, 184, 0.28);
-    --ring: #f59e0b;
-    color-scheme: light;
+  /* PowerMySport Brand Colors — see packages/shared-tokens/tokens.css,
+     imported above, for --power-orange/--power-orange-solid/etc. */
+  /* Warm paper, shared with the client app (client/DESIGN.md). */
+  --background: #f8f3ea;
+  --foreground: #1c1b1a;
+  --surface: #ffffff;
+  --card: #ffffff;
+  --card-foreground: #1c1b1a;
+  --muted: #efe7da;
+  --muted-foreground: #6b675f;
+  --border: #e1dcd3;
+  --ring: #1c1b1a;
+  --radius: 0.5rem;
+  color-scheme: light;
 }
 
 @theme inline {
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-    --color-surface: var(--surface);
-    --color-power-orange: var(--power-orange);
-    --color-deep-slate: var(--deep-slate);
-    --color-ghost-white: var(--ghost-white);
-    --color-turf-green: var(--turf-green);
-    --color-error-red: var(--error-red);
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-border: var(--border);
-    --color-ring: var(--ring);
-    --font-sans: var(--font-space-grotesk);
-    --font-title: var(--font-syne);
-    --font-mono: var(--font-geist-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-power-orange: var(--power-orange);
+  --color-power-orange-solid: var(--power-orange-solid);
+  --color-deep-slate: var(--deep-slate);
+  --color-ghost-white: var(--ghost-white);
+  --color-turf-green: var(--turf-green);
+  --color-error-red: var(--error-red);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-geist-sans);
+  --font-title: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-paper: #f8f3ea;
+  --color-paper-deep: #efe7da;
+  --color-wash: #fbe9d9;
+  --color-ink: #1c1b1a;
+  --color-ink-hover: #39332f;
+  --color-ink-body: #4a4741;
+  --color-ink-muted: #6b675f;
+  --color-ink-ash: #a8a5a0;
+  --color-hairline: #e1dcd3;
+
+  /* Every slate-* utility resolves to the warm neutrals (client/DESIGN.md). */
+  --color-slate-50: #f3ede3;
+  --color-slate-100: #efe7da;
+  --color-slate-200: #e1dcd3;
+  --color-slate-300: #cfc8bc;
+  --color-slate-400: #a8a5a0;
+  --color-slate-500: #6b675f;
+  --color-slate-600: #4a4741;
+  --color-slate-700: #3a3733;
+  --color-slate-800: #2b2825;
+  --color-slate-900: #1c1b1a;
+  --color-slate-950: #12110f;
+
+  /* Indigo was a second accent; the brand has one. */
+  --color-indigo-50: #fff7ed;
+  --color-indigo-100: #ffedd5;
+  --color-indigo-200: #fed7aa;
+  --color-indigo-300: #fdba74;
+  --color-indigo-400: #fb923c;
+  --color-indigo-500: #e97316;
+  --color-indigo-600: #c2410c;
+  --color-indigo-700: #9a3412;
+  --color-indigo-800: #7c2d12;
+  --color-indigo-900: #431407;
+  --color-indigo-950: #2a0d04;
+
+  --shadow-xs: 0 1px 2px 0 rgb(57 34 30 / 0.04);
+  --shadow-sm: 0 1px 2px 0 rgb(57 34 30 / 0.05);
+  --shadow-md: 0 8px 16px -10px rgb(57 34 30 / 0.16);
+  --shadow-lg: 0 14px 28px -14px rgb(57 34 30 / 0.2);
+  --shadow-xl: 0 22px 40px -20px rgb(57 34 30 / 0.24);
+  --shadow-2xl: 0 30px 60px -24px rgb(57 34 30 / 0.28);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    min-height: 100vh;
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
     html {
-        scroll-behavior: smooth;
-        -webkit-text-size-adjust: 100%;
+      scroll-behavior: auto;
     }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 
-    * {
-        @apply border-border outline-ring/50;
-    }
+  ::selection {
+    background: #fbe9d9;
+    color: var(--foreground);
+  }
 
-    body {
-        @apply bg-background text-foreground antialiased;
-        min-height: 100vh;
-        text-rendering: optimizeLegibility;
-        background:
-            radial-gradient(1100px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
-            radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 34%),
-            var(--background);
-    }
+  input,
+  select,
+  button,
+  textarea {
+    font: inherit;
+  }
 
-    ::selection {
-        background: color-mix(in oklab, var(--power-orange) 28%, white);
-        color: var(--deep-slate);
-    }
+  button {
+    @apply cursor-pointer;
+    touch-action: manipulation;
+  }
 
-    input,
-    select,
-    button,
-    textarea {
-        font: inherit;
-    }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
 
-    button {
-        @apply cursor-pointer;
-        touch-action: manipulation;
-    }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-    ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(122, 118, 110, 0.35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 
-    ::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: rgba(148, 163, 184, 0.35);
-        border-radius: 999px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(233, 115, 22, 0.45);
-        border: 2px solid transparent;
-        background-clip: content-box;
-    }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(28, 27, 26, 0.45);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 }
 
 @layer components {
-    .community-page-shell {
-        @apply min-h-screen px-4 py-5 sm:px-6 sm:py-8 lg:px-8;
-    }
+  .community-page-shell {
+    @apply min-h-screen px-3 py-4 sm:px-4 sm:py-6 lg:px-6;
+  }
 
-    .community-content-wrap {
-        @apply mx-auto w-full max-w-6xl;
-    }
+  .community-content-wrap {
+    @apply mx-auto w-full max-w-6xl;
+  }
 
-    .community-content-wrap-narrow {
-        @apply mx-auto w-full max-w-4xl;
-    }
+  .community-content-wrap-narrow {
+    @apply mx-auto w-full max-w-4xl;
+  }
 
-    .community-back-link {
-        @apply inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-border bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50;
-    }
+  .community-back-link {
+    @apply border-border text-ink-body hover:border-ink/40 hover:text-ink inline-flex min-h-10 items-center gap-1.5 rounded-md border bg-white px-3.5 py-2 text-sm font-medium transition-colors duration-200;
+  }
 
+  .community-card {
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: #ffffff;
+    padding: 16px;
+  }
+
+  @media (min-width: 640px) {
     .community-card {
-        @apply rounded-2xl border border-border bg-white p-4 shadow-sm sm:p-6;
+      padding: 24px;
     }
+  }
 
-    .community-section-title {
-        @apply text-lg font-semibold text-slate-900 sm:text-xl;
-    }
+  .community-section-title {
+    @apply text-xl font-normal text-slate-900 sm:text-2xl;
+    font-family: var(--font-newsreader), Georgia, serif;
+    letter-spacing: -0.02em;
+  }
 
-    .community-section-copy {
-        @apply mt-1 text-sm leading-6 text-slate-500 sm:text-base;
-    }
+  .community-section-copy {
+    @apply mt-1 text-sm leading-6 text-slate-500 sm:text-base;
+  }
 }
 
 @layer utilities {
-    .font-title {
-        font-family: var(--font-title), sans-serif;
-    }
+  .font-title {
+    font-family: var(--font-title), sans-serif;
+  }
 
-    .bg-app {
-        background:
-            radial-gradient(1200px circle at 8% -10%, #d2e7ff 0%, transparent 45%),
-            radial-gradient(1000px circle at 100% 0%, #ffe7bb 0%, transparent 36%),
-            var(--background);
-    }
+  /* Editorial serif for headings, light weights only (never body copy). */
+  .font-editorial {
+    font-family: var(--font-newsreader), Georgia, serif;
+    letter-spacing: -0.02em;
+  }
 
-    .nav-link {
-        @apply rounded-xl px-3 py-2 text-slate-700 transition-colors hover:bg-indigo-50 hover:text-slate-900;
-    }
+  /* Flat paper page colour: no glows. */
+  .bg-app {
+    background: var(--background);
+  }
 
-    .shop-surface {
-        @apply border border-white/60 bg-white/80 backdrop-blur-md;
-    }
+  .nav-link {
+    @apply text-ink-body hover:bg-paper-deep hover:text-ink rounded-lg px-3 py-2 transition-colors duration-200;
+  }
+
+  .btn-motion {
+    transition:
+      background-color 200ms,
+      color 200ms,
+      border-color 200ms,
+      scale 200ms;
+  }
+
+  .btn-motion:active:not(:disabled) {
+    scale: 0.98;
+  }
+}
+
+/* ── Blog rich text (Tiptap editor + rendered post body) ─────────────────── */
+/* Shared prose styling: Tailwind's preflight strips default tag styling, so
+   both the live editor and the read-only renderer restore it here from the
+   same class for WYSIWYG parity ("what you preview is what you publish"). */
+.blog-prose {
+  color: #4a4741;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.blog-prose > * + * {
+  margin-top: 1.1em;
+}
+
+.blog-prose h1,
+.blog-prose h2,
+.blog-prose h3 {
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #1c1b1a;
+}
+
+.blog-prose h1 {
+  font-size: 2.1rem;
+}
+
+.blog-prose h2 {
+  font-size: 1.75rem;
+}
+
+.blog-prose h3 {
+  font-size: 1.4rem;
+}
+
+.blog-prose ul,
+.blog-prose ol {
+  padding-left: 1.5rem;
+}
+
+.blog-prose ul {
+  list-style: disc;
+}
+
+.blog-prose ol {
+  list-style: decimal;
+}
+
+.blog-prose li + li {
+  margin-top: 0.35em;
+}
+
+.blog-prose blockquote {
+  border-left: 2px solid #1c1b1a;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  font-family: var(--font-newsreader), Georgia, serif;
+  font-size: 1.2em;
+  font-style: italic;
+}
+
+.blog-prose a {
+  color: #c2410c;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.blog-prose img {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid #e1dcd3;
+}
+
+.blog-prose hr {
+  border: none;
+  border-top: 1px solid #e1dcd3;
+  margin: 1.5rem 0;
+}
+
+.blog-prose code {
+  background: #efe7da;
+  color: #9a3412;
+  padding: 0.15em 0.4em;
+  border-radius: 0.35em;
+  font-size: 0.9em;
+}
+
+.blog-prose pre {
+  background: #1c1b1a;
+  color: #efe7da;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+}
+
+.blog-prose pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+.blog-prose mark,
+.blog-prose span[style*="background"] {
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* Editor-only affordances */
+.tiptap.blog-prose:focus {
+  outline: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #a8a5a0;
+  pointer-events: none;
+  height: 0;
+}
+
+.tiptap.blog-prose ::selection {
+  background: #fbe9d9;
+  color: inherit;
+}
+
+/* ── Chat Background Pattern ── */
+.chat-bg {
+  background-color: #f3ede3;
+}
+
+/* ── Emoji Picker Scroll ── */
+.emoji-picker-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.emoji-picker-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.emoji-picker-scroll::-webkit-scrollbar-thumb {
+  background: #e1dcd3;
+  border-radius: 4px;
+}
+
+.emoji-picker-scroll::-webkit-scrollbar-thumb:hover {
+  background: #cfc8bc;
+}
+
+/* ── Chat scrollbar ── */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 5px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(122, 118, 110, 0.25);
+  border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(122, 118, 110, 0.4);
+}
+
+/* ── Discover Page Utilities ── */
+/* Hairline tiles on paper, no glass and no lift (client/DESIGN.md). */
+.discover-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  transition: border-color 0.2s ease;
+}
+
+.discover-card:hover {
+  border-color: rgba(28, 27, 26, 0.45);
+}
+
+.discover-avatar-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #efe7da;
+  padding: 3px;
+}
+
+.discover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  background: #efe7da;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #4a4741;
+}
+
+.discover-search {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid #d9d3c8;
+  background: #ffffff;
+  padding: 12px 40px 12px 44px;
+  font-size: 15px;
+  color: #1c1b1a;
+  transition: border-color 0.2s ease;
+}
+
+.discover-search:hover {
+  border-color: rgba(28, 27, 26, 0.45);
+}
+
+.discover-search::placeholder {
+  color: #7a766e;
+}
+
+.discover-search:focus {
+  border-color: #1c1b1a;
+  outline: none;
+  box-shadow:
+    0 0 0 2px #f8f3ea,
+    0 0 0 4px #1c1b1a;
 }

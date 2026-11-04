@@ -1,54 +1,149 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { statsApi } from "@/modules/analytics/services/stats";
+import { adminApi } from "@/modules/admin/services/admin";
+import { toast } from "@/lib/toast";
 import { Venue } from "@/types";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import { Card } from "@/modules/shared/ui/Card";
-import { 
-  ArrowLeft, MapPin, Star, Clock, Info, CheckCircle2, 
-  Activity, XCircle, FileText, Image as ImageIcon 
-} from "lucide-react";
+import { btn, fieldClass, labelClass } from "@/modules/shared/ui/buttonStyles";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { ArrowLeft, Image as ImageIcon, Pencil, Star, X } from "lucide-react";
+import { ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
+
+interface VenueEditForm {
+  name: string;
+  description: string;
+  pricePerHour: number;
+  sports: string;
+  amenities: string;
+  allowExternalCoaches: boolean;
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
+}
 
 export default function AdminVenueDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const venueId = params.id as string;
 
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState<VenueEditForm | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const fetchVenue = async () => {
+    try {
+      setLoading(true);
+      const response = await statsApi.getVenueById(venueId);
+      if (response.success && response.data) {
+        setVenue(response.data);
+      } else {
+        setError(response.message || "Failed to load venue details");
+      }
+    } catch (err) {
+      console.error("Error fetching venue:", err);
+      setError("Failed to load venue details");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!venueId) return;
-
-    const fetchVenue = async () => {
-      try {
-        setLoading(true);
-        const response = await statsApi.getVenueById(venueId);
-        if (response.success && response.data) {
-          setVenue(response.data);
-        } else {
-          setError(response.message || "Failed to load venue details");
-        }
-      } catch (err) {
-        console.error("Error fetching venue:", err);
-        setError("Failed to load venue details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchVenue();
   }, [venueId]);
 
+  const openEdit = () => {
+    if (!venue) return;
+    setEditForm({
+      name: venue.name,
+      description: venue.description || "",
+      pricePerHour: venue.pricePerHour,
+      sports: (venue.sports || []).join(", "),
+      amenities: (venue.amenities || []).join(", "),
+      allowExternalCoaches: venue.allowExternalCoaches,
+      approvalStatus: venue.approvalStatus || "PENDING",
+    });
+    setIsEditing(true);
+  };
+
+  const closeEdit = () => {
+    setIsEditing(false);
+    setEditForm(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editForm) return;
+    setSaving(true);
+    try {
+      const response = await adminApi.updateVenue(venueId, {
+        name: editForm.name,
+        description: editForm.description,
+        pricePerHour: editForm.pricePerHour,
+        sports: editForm.sports
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        amenities: editForm.amenities
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        allowExternalCoaches: editForm.allowExternalCoaches,
+        approvalStatus: editForm.approvalStatus,
+      });
+      if (response.success) {
+        toast.success("Venue updated.");
+        closeEdit();
+        await fetchVenue();
+      } else {
+        toast.error(response.message || "Failed to update venue.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to update venue.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const header = (
+    <AdminPageHeader
+      badge="Commerce"
+      title={venue?.name || "Venue"}
+      subtitle={venue?.address || (loading ? "Loading venue" : "Venue details")}
+      action={
+        venue ? (
+          <div className="flex items-center gap-3">
+            <LifecycleBadge kind="venue" source={venue} />
+            <button type="button" onClick={openEdit} className={btn("outline")}>
+              <Pencil size={14} aria-hidden /> Edit venue
+            </button>
+          </div>
+        ) : undefined
+      }
+    />
+  );
+
+  const back = (
+    <Link
+      href="/admin/venues"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900"
+    >
+      <ArrowLeft size={16} aria-hidden />
+      Venues
+    </Link>
+  );
+
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-power-orange"></div>
+      <div className="space-y-6">
+        {header}
+        <SkeletonBlock rows={8} label="Loading venue" />
       </div>
     );
   }
@@ -56,195 +151,314 @@ export default function AdminVenueDetailPage() {
   if (error || !venue) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-4 transition-colors">
-          <ArrowLeft size={20} />
-          <button onClick={() => router.push("/admin/venues")} className="font-semibold">Back to Venues</button>
-        </div>
-        <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error || "Venue not found"}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </Card>
+        {header}
+        {back}
+        <ErrorNotice message={error || "We couldn't find this venue."} onRetry={fetchVenue} />
       </div>
     );
   }
 
   const imageUrl = venue.coverPhotoUrl || (venue.images && venue.images[0]) || null;
-  const joinedDate = venue.createdAt ? new Date(venue.createdAt).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric"
-  }) : "Unknown";
+  const joinedDate = venue.createdAt
+    ? new Date(venue.createdAt).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "Unknown";
+  const owner =
+    typeof venue.ownerId === "object" && venue.ownerId !== null
+      ? (venue.ownerId as { name?: string; email?: string; phone?: string })
+      : null;
+
+  const facts: Array<{ label: string; value: React.ReactNode }> = [
+    { label: "Price per hour", value: <span className="tabular-nums">₹{venue.pricePerHour}</span> },
+    {
+      label: "Rating",
+      value: venue.rating ? (
+        <span className="inline-flex items-center gap-1 tabular-nums">
+          <Star className="size-4 fill-amber-500 text-amber-500" aria-hidden />
+          {venue.rating.toFixed(1)}
+          <span className="font-normal text-slate-500">({venue.reviewCount || 0} reviews)</span>
+        </span>
+      ) : (
+        "No reviews yet"
+      ),
+    },
+    { label: "Listed on", value: joinedDate },
+    {
+      label: "External coaches",
+      value: venue.allowExternalCoaches ? "Allowed" : "Not allowed",
+    },
+    {
+      label: "Coordinates",
+      value: venue.location?.coordinates ? (
+        <span className="font-mono text-xs">
+          {venue.location.coordinates[1]}, {venue.location.coordinates[0]}
+        </span>
+      ) : (
+        "Not set"
+      ),
+    },
+    {
+      label: "Venue ID",
+      value: <span className="break-all font-mono text-xs">{venue.id || venue._id}</span>,
+    },
+  ];
 
   return (
     <div className="space-y-6 pb-12">
-      <div className="flex items-center justify-between mb-2">
-        <Link 
-          href="/admin/venues" 
-          className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Back to Venues
-        </Link>
-      </div>
+      {header}
+      {back}
 
-      {/* Hero Banner */}
-      <div className="relative h-64 md:h-80 w-full overflow-hidden rounded-2xl bg-slate-100 shadow-sm border border-slate-200">
-        {imageUrl ? (
-          <Image
-            src={imageUrl}
-            alt={venue.name}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200">
-            <ImageIcon className="h-16 w-16 text-slate-300" />
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)]">
+        <div className="space-y-6">
+          <div className="relative h-56 w-full overflow-hidden rounded-2xl bg-slate-100 ring-1 ring-slate-900/5 md:h-72">
+            {imageUrl ? (
+              <Image src={imageUrl} alt={`Photo of ${venue.name}`} fill className="object-cover" />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <ImageIcon className="size-12 text-slate-300" aria-hidden />
+              </div>
+            )}
           </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 p-6 md:p-8 w-full flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="text-white">
-            <h1 className="text-3xl md:text-4xl font-extrabold mb-2 text-white drop-shadow-md">
-              {venue.name}
-            </h1>
-            <p className="flex items-center gap-2 text-sm md:text-base font-medium text-white/90">
-              <MapPin size={18} />
-              {venue.address || "Location not provided"}
-            </p>
-          </div>
-          <div className="shrink-0">
-            <div className="inline-flex items-center gap-2 rounded-xl bg-white/20 backdrop-blur-md px-4 py-2 text-white shadow-lg border border-white/30">
-              <span className="text-sm font-semibold uppercase tracking-wider">Base Price</span>
-              <span className="text-2xl font-bold">₹{venue.pricePerHour}</span>
-              <span className="text-xs font-medium opacity-80">/hr</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Content - Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
-              <FileText className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">About this Venue</h2>
-            </div>
-            <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+          <Panel title="About this venue">
+            <p className="max-w-[65ch] whitespace-pre-line text-sm leading-relaxed text-slate-700">
               {venue.description || "No description provided."}
             </p>
-          </Card>
+          </Panel>
 
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
-              <Activity className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">Sports Available</h2>
-            </div>
-            {venue.sports && venue.sports.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {venue.sports.map((sport) => (
-                  <div key={sport} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700">
-                    {sport}
-                  </div>
-                ))}
+          <Panel title="Sports and amenities">
+            <div className="space-y-5">
+              <div>
+                <p className="mb-2 text-sm text-slate-500">Sports</p>
+                {venue.sports && venue.sports.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {venue.sports.map((sport) => (
+                      <li
+                        key={sport}
+                        className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-sm font-medium text-slate-800"
+                      >
+                        {sport}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500">No sports listed.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-slate-500 italic text-sm">No sports listed.</p>
-            )}
-          </Card>
-
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
-              <CheckCircle2 className="text-power-orange" size={24} />
-              <h2 className="text-xl font-bold text-slate-900">Amenities</h2>
-            </div>
-            {venue.amenities && venue.amenities.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {venue.amenities.map((amenity) => (
-                  <div key={amenity} className="px-3 py-1.5 bg-power-orange/10 text-power-orange rounded-full text-xs font-semibold">
-                    {amenity}
-                  </div>
-                ))}
+              <div>
+                <p className="mb-2 text-sm text-slate-500">Amenities</p>
+                {venue.amenities && venue.amenities.length > 0 ? (
+                  <ul className="flex flex-wrap gap-2">
+                    {venue.amenities.map((amenity) => (
+                      <li
+                        key={amenity}
+                        className="rounded-md bg-orange-50 px-2.5 py-1 text-sm font-medium text-orange-900"
+                      >
+                        {amenity}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-500">No amenities listed.</p>
+                )}
               </div>
-            ) : (
-              <p className="text-slate-500 italic text-sm">No amenities listed.</p>
-            )}
-          </Card>
+            </div>
+          </Panel>
         </div>
 
-        {/* Sidebar - Right Column */}
         <div className="space-y-6">
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
-              <Info className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">Quick Stats</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">Rating</span>
-                <div className="flex items-center gap-1 font-bold text-amber-600">
-                  <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                  {venue.rating ? venue.rating.toFixed(1) : "New"}
+          <Panel title="Details">
+            <dl className="divide-y divide-slate-100">
+              {facts.map((fact) => (
+                <div
+                  key={fact.label}
+                  className="flex items-start justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
+                >
+                  <dt className="shrink-0 text-sm text-slate-500">{fact.label}</dt>
+                  <dd className="min-w-0 text-right text-sm font-medium text-slate-900">
+                    {fact.value}
+                  </dd>
                 </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">Reviews</span>
-                <span className="font-semibold text-slate-900">{venue.reviewCount || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">Listed On</span>
-                <span className="font-semibold text-slate-900 text-sm">{joinedDate}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-500 font-medium">External Coaches</span>
-                <span className="font-semibold text-slate-900 text-sm">
-                  {venue.allowExternalCoaches ? (
-                    <span className="text-emerald-600 flex items-center gap-1"><CheckCircle2 size={14} /> Allowed</span>
-                  ) : (
-                    <span className="text-red-500 flex items-center gap-1"><XCircle size={14} /> Not Allowed</span>
-                  )}
-                </span>
-              </div>
-            </div>
-          </Card>
+              ))}
+            </dl>
+          </Panel>
 
-          <Card className="bg-white border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-4 border-b border-slate-100 pb-4">
-              <Clock className="text-slate-700" size={20} />
-              <h2 className="text-lg font-bold text-slate-900">Location Data</h2>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">Coordinates</span>
-                <p className="text-sm font-mono bg-slate-50 p-2 rounded border border-slate-100 text-slate-700">
-                  {venue.location?.coordinates ? `${venue.location.coordinates[1]}, ${venue.location.coordinates[0]}` : "N/A"}
-                </p>
+          <Panel title="Owner">
+            {owner ? (
+              <div className="text-sm text-slate-900">
+                <p className="font-semibold">{owner.name || "Unknown"}</p>
+                {owner.email && <p className="mt-1 text-slate-600">{owner.email}</p>}
+                {owner.phone && <p className="text-slate-600">{owner.phone}</p>}
               </div>
-              <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">Owner</span>
-                <p className="text-xs font-mono text-slate-500 break-all">
-                  {typeof venue.ownerId === 'object' && venue.ownerId !== null 
-                    ? `${(venue.ownerId as any).name || 'Unknown'} (${(venue.ownerId as any)._id || (venue.ownerId as any).id})`
-                    : venue.ownerId || 'N/A'}
-                </p>
-              </div>
-              <div>
-                <span className="text-xs text-slate-500 font-medium uppercase tracking-wider block mb-1">Venue ID</span>
-                <p className="text-xs font-mono text-slate-500 break-all">
-                  {venue.id || venue._id}
-                </p>
-              </div>
-            </div>
-          </Card>
+            ) : (
+              <p className="text-sm text-slate-500">Owner details aren&apos;t available.</p>
+            )}
+          </Panel>
         </div>
       </div>
+
+      {isEditing && editForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
+          onClick={closeEdit}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit venue"
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between">
+              <h2 className="text-lg font-semibold text-slate-900">Edit venue</h2>
+              <button
+                type="button"
+                onClick={closeEdit}
+                aria-label="Close"
+                className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="v-name" className={labelClass}>
+                  Name
+                </label>
+                <input
+                  id="v-name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm((prev) => prev && { ...prev, name: e.target.value })}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="v-desc" className={labelClass}>
+                  Description
+                </label>
+                <textarea
+                  id="v-desc"
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) =>
+                    setEditForm((prev) => prev && { ...prev, description: e.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="v-sports" className={labelClass}>
+                  Sports (comma separated)
+                </label>
+                <input
+                  id="v-sports"
+                  value={editForm.sports}
+                  onChange={(e) =>
+                    setEditForm((prev) => prev && { ...prev, sports: e.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="v-amen" className={labelClass}>
+                  Amenities (comma separated)
+                </label>
+                <input
+                  id="v-amen"
+                  value={editForm.amenities}
+                  onChange={(e) =>
+                    setEditForm((prev) => prev && { ...prev, amenities: e.target.value })
+                  }
+                  className={fieldClass}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="v-price" className={labelClass}>
+                    Price per hour (₹)
+                  </label>
+                  <input
+                    id="v-price"
+                    type="number"
+                    value={editForm.pricePerHour}
+                    onChange={(e) =>
+                      setEditForm(
+                        (prev) => prev && { ...prev, pricePerHour: Number(e.target.value) }
+                      )
+                    }
+                    className={fieldClass}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="v-status" className={labelClass}>
+                    Approval status
+                  </label>
+                  <select
+                    id="v-status"
+                    value={editForm.approvalStatus}
+                    onChange={(e) =>
+                      setEditForm(
+                        (prev) =>
+                          prev && {
+                            ...prev,
+                            approvalStatus: e.target.value as VenueEditForm["approvalStatus"],
+                          }
+                      )
+                    }
+                    className={fieldClass}
+                  >
+                    <option value="PENDING">Pending</option>
+                    <option value="REVIEW">In review</option>
+                    <option value="APPROVED">Approved</option>
+                    <option value="REJECTED">Rejected</option>
+                  </select>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={editForm.allowExternalCoaches}
+                  onChange={(e) =>
+                    setEditForm(
+                      (prev) => prev && { ...prev, allowExternalCoaches: e.target.checked }
+                    )
+                  }
+                  className="size-4 rounded accent-orange-700"
+                />
+                Allow external coaches
+              </label>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEdit}
+                  disabled={saving}
+                  className={btn("outline")}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={saving}
+                  className={btn("primary")}
+                >
+                  {saving ? "Saving…" : "Save changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

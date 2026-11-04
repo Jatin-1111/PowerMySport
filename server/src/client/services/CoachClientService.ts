@@ -25,9 +25,7 @@ export interface ClientDetails extends ClientSummary {
 
 const ACTIVE_THRESHOLD_DAYS = 60;
 
-export const getCoachClients = async (
-  coachUserId: string,
-): Promise<ClientSummary[]> => {
+export const getCoachClients = async (coachUserId: string): Promise<ClientSummary[]> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");
 
@@ -49,7 +47,12 @@ export const getCoachClients = async (
         pendingSessions: {
           $sum: {
             $cond: [
-              { $in: ["$status", ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"]] },
+              {
+                $in: [
+                  "$status",
+                  ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "CONFIRMED", "IN_PROGRESS"],
+                ],
+              },
               1,
               0,
             ],
@@ -98,15 +101,35 @@ export const getCoachClients = async (
     .filter(Boolean) as ClientSummary[];
 };
 
+/** True when the user has a non-cancelled booking with this coach. */
+const hasBookedWithCoach = async (
+  coachId: mongoose.Types.ObjectId,
+  clientUserId: string
+): Promise<boolean> =>
+  Boolean(
+    await Booking.exists({
+      coachId,
+      userId: new mongoose.Types.ObjectId(clientUserId),
+      status: { $nin: ["CANCELLED"] },
+    })
+  );
+
 export const getClientDetails = async (
   coachUserId: string,
-  clientUserId: string,
+  clientUserId: string
 ): Promise<ClientDetails> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");
 
   if (!mongoose.Types.ObjectId.isValid(clientUserId)) {
     throw new Error("Invalid client ID");
+  }
+
+  // A coach may only see a user's contact details if that user has booked with this
+  // coach. Answer exactly like a missing user so the response does not confirm which
+  // user ids exist.
+  if (!(await hasBookedWithCoach(coach._id, clientUserId))) {
+    throw new Error("Client not found");
   }
 
   const [user, bookings, notes] = await Promise.all([
@@ -132,7 +155,7 @@ export const getClientDetails = async (
   const totalSessions = bookings.length;
   const completedSessions = bookings.filter((b: any) => b.status === "COMPLETED").length;
   const pendingSessions = bookings.filter((b: any) =>
-    ["PENDING_CONFIRMATION", "CONFIRMED", "IN_PROGRESS"].includes(b.status),
+    ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "CONFIRMED", "IN_PROGRESS"].includes(b.status)
   ).length;
   const dates = bookings.map((b: any) => new Date(b.date).getTime()).filter(Boolean);
   const firstSessionDate = dates.length ? new Date(Math.min(...dates)).toISOString() : null;
@@ -163,13 +186,22 @@ export const getClientDetails = async (
 export const addClientNote = async (
   coachUserId: string,
   clientUserId: string,
-  payload: { note: string; noteType?: NoteType; sessionDate?: string; bookingId?: string },
+  payload: {
+    note: string;
+    noteType?: NoteType;
+    sessionDate?: string;
+    bookingId?: string;
+  }
 ): Promise<CoachClientNoteDocument> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");
 
   if (!mongoose.Types.ObjectId.isValid(clientUserId)) {
     throw new Error("Invalid client ID");
+  }
+
+  if (!(await hasBookedWithCoach(coach._id, clientUserId))) {
+    throw new Error("Client not found");
   }
 
   const created = await CoachClientNote.create({
@@ -189,7 +221,7 @@ export const addClientNote = async (
 export const deleteClientNote = async (
   coachUserId: string,
   clientUserId: string,
-  noteId: string,
+  noteId: string
 ): Promise<void> => {
   const coach = await Coach.findOne({ userId: coachUserId }).select("_id");
   if (!coach) throw new Error("Coach profile not found");

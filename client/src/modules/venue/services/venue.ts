@@ -1,5 +1,5 @@
-﻿import { ApiResponse, Venue } from "@/types";
-import axiosInstance from "@/lib/api/axios";
+﻿import axiosInstance from "@/lib/api/axios";
+import { ApiResponse, Venue } from "@/types";
 
 export const venueApi = {
   createVenue: async (data: {
@@ -12,6 +12,7 @@ export const venueApi = {
     description?: string;
     images?: string[];
     openingHours?: string;
+    gstNumber?: string;
   }): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.post("/venues", data);
     return response.data;
@@ -30,16 +31,11 @@ export const venueApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/venues/my-venues?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/venues/my-venues?${params.toString()}`);
     return response.data;
   },
 
-  updateVenue: async (
-    venueId: string,
-    data: Partial<Venue>,
-  ): Promise<ApiResponse<Venue>> => {
+  updateVenue: async (venueId: string, data: Partial<Venue>): Promise<ApiResponse<Venue>> => {
     const response = await axiosInstance.put(`/venues/${venueId}`, data);
     return response.data;
   },
@@ -47,7 +43,7 @@ export const venueApi = {
   getVenueImageUploadUrls: async (
     venueId: string,
     files: Array<{ fileName: string; contentType: string }>,
-    coverPhotoIndex: number,
+    coverPhotoIndex: number
   ): Promise<
     ApiResponse<{
       uploadUrls: Array<{
@@ -60,13 +56,10 @@ export const venueApi = {
       }>;
     }>
   > => {
-    const response = await axiosInstance.post(
-      `/venues/${venueId}/image-upload-urls`,
-      {
-        files,
-        coverPhotoIndex,
-      },
-    );
+    const response = await axiosInstance.post(`/venues/${venueId}/image-upload-urls`, {
+      files,
+      coverPhotoIndex,
+    });
     return response.data;
   },
 

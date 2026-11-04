@@ -1,5 +1,6 @@
 "use client";
 
+import { LifecycleBadge } from "@/modules/shared/ui/LifecycleBadge";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import {
   adminApi,
@@ -7,20 +8,16 @@ import {
   AcademyAdminReviewDetails,
 } from "@/modules/admin/services/admin";
 import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
-import { Card } from "@/modules/shared/ui/Card";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { Pagination } from "@/modules/shared/ui/Pagination";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { Tabs } from "@/modules/shared/ui/Tabs";
 import { toast } from "sonner";
-import {
-  BadgeCheck,
-  Ban,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Filter,
-  ShieldAlert,
-  Plus,
-} from "lucide-react";
+import { Eye, Plus, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { EmptyState, ErrorNotice, SkeletonBlock } from "@/modules/shared/ui/States";
 
 interface PaginationData {
   total: number;
@@ -32,19 +29,6 @@ type QueueFilter = "pending" | "approved" | "rejected";
 type ActionMode = "APPROVE" | "KYC" | "REJECT" | "SUSPEND";
 
 const PAGE_SIZE = 10;
-
-const statusBadge = (academy: AcademyAdminQueueRecord) => {
-  if (academy.isActive) {
-    return "bg-green-100 text-green-700 border border-green-200";
-  }
-  if (academy.isApproved) {
-    return "bg-blue-100 text-blue-700 border border-blue-200";
-  }
-  if (academy.rejectionReason) {
-    return "bg-red-100 text-red-700 border border-red-200";
-  }
-  return "bg-yellow-100 text-yellow-700 border border-yellow-200";
-};
 
 const formatDate = (value?: string) => {
   if (!value) return "N/A";
@@ -66,16 +50,17 @@ export default function AdminAcademiesPage() {
     page: 1,
     totalPages: 1,
   });
-  const [selectedAcademyId, setSelectedAcademyId] = useState<string | null>(
-    null,
-  );
-  const [selectedAcademy, setSelectedAcademy] =
-    useState<AcademyAdminReviewDetails | null>(null);
+  const [selectedAcademyId, setSelectedAcademyId] = useState<string | null>(null);
+  const [selectedAcademy, setSelectedAcademy] = useState<AcademyAdminReviewDetails | null>(null);
   const [selectedLoading, setSelectedLoading] = useState(false);
   const [actionMode, setActionMode] = useState<ActionMode | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [suspendReason, setSuspendReason] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState("");
+  const [showBulkRejectInput, setShowBulkRejectInput] = useState(false);
 
   const loadAcademies = useCallback(async () => {
     setLoading(true);
@@ -127,6 +112,7 @@ export default function AdminAcademiesPage() {
 
   useEffect(() => {
     loadAcademies();
+    setSelectedIds(new Set());
   }, [loadAcademies]);
 
   useEffect(() => {
@@ -134,13 +120,6 @@ export default function AdminAcademiesPage() {
       void loadSelectedAcademy(selectedAcademyId);
     }
   }, [selectedAcademyId, loadSelectedAcademy]);
-
-  const currentSelection = useMemo(() => {
-    if (!selectedAcademyId) return null;
-    return (
-      academies.find((academy) => academy.id === selectedAcademyId) || null
-    );
-  }, [academies, selectedAcademyId]);
 
   const openAction = (mode: ActionMode) => {
     if (!selectedAcademyId) return;
@@ -170,18 +149,12 @@ export default function AdminAcademiesPage() {
         await adminApi.rejectAcademy(selectedAcademyId, rejectionReason.trim());
         toast.success("Academy rejected successfully.");
       } else if (actionMode === "SUSPEND") {
-        await adminApi.suspendAcademy(
-          selectedAcademyId,
-          suspendReason.trim() || undefined,
-        );
+        await adminApi.suspendAcademy(selectedAcademyId, suspendReason.trim() || undefined);
         toast.success("Academy suspended successfully.");
       }
 
       closeAction();
-      await Promise.all([
-        loadAcademies(),
-        loadSelectedAcademy(selectedAcademyId),
-      ]);
+      await Promise.all([loadAcademies(), loadSelectedAcademy(selectedAcademyId)]);
     } catch (err) {
       console.error("Failed to process academy action:", err);
       toast.error("Failed to process academy action.");
@@ -190,269 +163,320 @@ export default function AdminAcademiesPage() {
     }
   };
 
-  const selectedQueueItem = currentSelection;
+  const toggleSelected = (academyId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(academyId)) {
+        next.delete(academyId);
+      } else {
+        next.add(academyId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((prev) =>
+      prev.size === academies.length ? new Set() : new Set(academies.map((a) => a.id))
+    );
+  };
+
+  const runBulkAction = async (mode: "APPROVE" | "REJECT") => {
+    if (selectedIds.size === 0) return;
+    if (mode === "REJECT" && !bulkRejectReason.trim()) {
+      toast.error("Please enter a rejection reason.");
+      return;
+    }
+
+    setBulkBusy(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          mode === "APPROVE"
+            ? adminApi.approveAcademy(id)
+            : adminApi.rejectAcademy(id, bulkRejectReason.trim())
+        )
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      const succeeded = ids.length - failed;
+
+      if (succeeded > 0) {
+        toast.success(
+          `${mode === "APPROVE" ? "Approved" : "Rejected"} ${succeeded} ${succeeded === 1 ? "academy" : "academies"}.`
+        );
+      }
+      if (failed > 0) {
+        toast.error(`Failed to process ${failed} ${failed === 1 ? "academy" : "academies"}.`);
+      }
+
+      setShowBulkRejectInput(false);
+      setBulkRejectReason("");
+      setSelectedIds(new Set());
+      await loadAcademies();
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <AdminPageHeader
-          badge="Admin"
-          title="Academy Management"
-          subtitle="Review academy submissions, verify KYC, and manage live status from one place."
+      <AdminPageHeader
+        badge="People"
+        title="Academies"
+        subtitle="Review academy submissions, verify KYC and manage live status."
+        action={
+          <Link href="/admin/academies/add" className={btn("accent")}>
+            <Plus size={16} aria-hidden />
+            Create academy
+          </Link>
+        }
+      />
+
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Tabs
+          className="min-w-0 flex-1"
+          label="Academy queue"
+          value={filter}
+          tabs={[
+            { id: "pending" as const, label: "Pending" },
+            { id: "approved" as const, label: "Approved" },
+            { id: "rejected" as const, label: "Rejected" },
+          ]}
+          onChange={(next) => {
+            setCurrentPage(1);
+            setSelectedAcademyId(null);
+            setSelectedAcademy(null);
+            setFilter(next);
+          }}
         />
-        <Link
-          href="/admin/academies/add"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-power-orange px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
-        >
-          <Plus size={16} />
-          Create Academy
-        </Link>
+        <p className="pb-2 text-sm tabular-nums text-slate-600">
+          {pagination.total} academ{pagination.total === 1 ? "y" : "ies"}
+        </p>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-slate-600">
-          {pagination.total} academy{submissionCountLabel(pagination.total)} in
-          queue
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <Filter size={16} />
-            <select
-              value={filter}
-              onChange={(event) => {
-                setCurrentPage(1);
-                setSelectedAcademyId(null);
-                setSelectedAcademy(null);
-                setFilter(event.target.value as QueueFilter);
-              }}
-              className="bg-transparent outline-none"
-            >
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {error ? (
-        <Card className="bg-white">
-          <div className="py-10 text-center space-y-3">
-            <p className="text-red-600 font-semibold">{error}</p>
+      {filter === "pending" && selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-semibold text-orange-800">
+              {selectedIds.size} selected
+            </span>
             <button
-              onClick={loadAcademies}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-white transition-colors hover:bg-slate-800"
+              disabled={bulkBusy}
+              onClick={() => runBulkAction("APPROVE")}
+              className={btn("primary", "sm")}
             >
-              Retry
+              Approve selected
+            </button>
+            <button
+              disabled={bulkBusy}
+              onClick={() =>
+                setShowBulkRejectInput((prev) => {
+                  const next = !prev;
+                  if (!next) setBulkRejectReason("");
+                  return next;
+                })
+              }
+              className={btn("dangerOutline", "sm")}
+            >
+              Reject selected
+            </button>
+            <button
+              disabled={bulkBusy}
+              onClick={() => {
+                setSelectedIds(new Set());
+                setShowBulkRejectInput(false);
+                setBulkRejectReason("");
+              }}
+              className={btn("outline", "sm")}
+            >
+              Clear
             </button>
           </div>
-        </Card>
+
+          {showBulkRejectInput && (
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <textarea
+                rows={1}
+                value={bulkRejectReason}
+                onChange={(event) => setBulkRejectReason(event.target.value)}
+                placeholder="Rejection reason applied to all selected academies..."
+                className={`${fieldClass} flex-1`}
+              />
+              <button
+                disabled={bulkBusy}
+                onClick={() => runBulkAction("REJECT")}
+                className={btn("danger", "sm")}
+              >
+                Reject all selected
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {error ? (
+        <ErrorNotice message={error} onRetry={loadAcademies} />
       ) : loading ? (
-        <div className="py-12 text-center">Loading academies...</div>
+        <SkeletonBlock rows={6} label="Loading academies" />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <Card className="bg-white">
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <Panel>
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Queue</h2>
-                <p className="text-sm text-slate-600">
-                  Click a row to review full submission details.
-                </p>
+                <h2 className="text-base font-semibold text-slate-900">Submissions</h2>
+                <p className="text-sm text-slate-600">Pick a row to review the full submission.</p>
               </div>
-              <div className="text-sm text-slate-500">
-                Page {pagination.page} of {pagination.totalPages}
+              <div className="flex items-center gap-3">
+                {filter === "pending" && academies.length > 0 && (
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size > 0 && selectedIds.size === academies.length}
+                      onChange={toggleSelectAll}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+                    Select all
+                  </label>
+                )}
               </div>
             </div>
 
             {academies.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 py-10 text-center text-slate-600">
-                <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
-                  No academies found
-                </div>
-                <p className="max-w-md">
-                  There are no records for the selected filter right now.
-                </p>
-              </div>
+              <EmptyState
+                title="No academies here"
+                description="Nothing matches this queue right now."
+              />
             ) : (
               <div className="space-y-3">
                 {academies.map((academy) => {
                   const isSelected = academy.id === selectedAcademyId;
                   return (
-                    <button
+                    <div
                       key={academy.id}
-                      type="button"
-                      onClick={() => setSelectedAcademyId(academy.id)}
-                      className={`w-full rounded-2xl border p-4 text-left transition ${
+                      className={`flex w-full items-start gap-3 rounded-xl border p-4 transition-colors ${
                         isSelected
-                          ? "border-power-orange bg-orange-50"
-                          : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm"
+                          ? "border-power-orange-solid ring-power-orange-solid bg-orange-50 ring-1"
+                          : "border-slate-200 bg-white hover:border-slate-300"
                       }`}
                     >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="text-base font-semibold text-slate-900">
-                              {academy.name}
-                            </h3>
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadge(academy)}`}
-                            >
-                              {academy.rejectionReason
-                                ? "Rejected"
-                                : academy.isActive
-                                  ? "Live"
-                                  : academy.isApproved
-                                    ? "Approved"
-                                    : "Pending"}
-                            </span>
+                      {filter === "pending" && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(academy.id)}
+                          onChange={() => toggleSelected(academy.id)}
+                          className="mt-1 h-4 w-4 shrink-0 rounded border-slate-300"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAcademyId(academy.id)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="text-base font-semibold text-slate-900">
+                                {academy.name}
+                              </h3>
+                              <LifecycleBadge kind="academy" source={academy} size="sm" />
+                            </div>
+                            <p className="mt-1 text-sm text-slate-600">
+                              {academy.city || "Location unavailable"} •{" "}
+                              {academy.sports.join(", ") || "No sports listed"}
+                            </p>
+                            <p className="mt-1 text-xs text-slate-500">
+                              Owner: {academy.ownerEmail || "N/A"}
+                            </p>
                           </div>
-                          <p className="mt-1 text-sm text-slate-600">
-                            {academy.city || "Location unavailable"} •{" "}
-                            {academy.sports.join(", ") || "No sports listed"}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            Owner: {academy.ownerEmail || "N/A"}
-                          </p>
+                          <div className="flex items-center gap-2 text-sm text-slate-500">
+                            <Eye size={16} />
+                            Review
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-500">
-                          <Eye size={16} />
-                          Review
-                        </div>
-                      </div>
-                    </button>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             )}
 
-            {pagination.totalPages > 1 && (
-              <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-center text-sm text-slate-600 sm:text-left">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
-                  {Math.min(currentPage * PAGE_SIZE, pagination.total)} of{" "}
-                  {pagination.total}
-                </p>
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage(
-                        Math.min(pagination.totalPages, currentPage + 1),
-                      )
-                    }
-                    disabled={currentPage === pagination.totalPages}
-                    className="rounded-lg border border-slate-300 p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </Card>
+            <Pagination
+              className="mt-5"
+              page={currentPage}
+              totalPages={pagination.totalPages}
+              total={pagination.total}
+              onPageChange={setCurrentPage}
+            />
+          </Panel>
 
-          <Card className="bg-white">
+          <Panel>
             {!selectedAcademyId ? (
               <div className="flex h-full flex-col items-center justify-center gap-3 py-14 text-center text-slate-600">
-                <ShieldAlert size={28} className="text-slate-400" />
-                <p className="font-semibold text-slate-900">
-                  Select an academy
-                </p>
+                <ShieldAlert size={28} className="text-slate-500" />
+                <p className="font-semibold text-slate-900">Select an academy</p>
                 <p className="max-w-sm text-sm">
-                  Review details, verify KYC, and approve or reject the
-                  submission.
+                  Review details, verify KYC, and approve or reject the submission.
                 </p>
               </div>
             ) : selectedLoading ? (
-              <div className="py-12 text-center">Loading review details...</div>
+              <SkeletonBlock rows={6} label="Loading review details" />
             ) : selectedAcademy ? (
               <div className="space-y-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">
-                    {selectedAcademy.name}
-                  </h2>
+                  <h2 className="text-xl font-semibold text-slate-900">{selectedAcademy.name}</h2>
                   <p className="mt-1 text-sm text-slate-600">
                     {selectedAcademy.legalName || selectedAcademy.name}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(selectedAcademy)}`}
-                    >
-                      {selectedAcademy.rejectionReason
-                        ? "Rejected"
-                        : selectedAcademy.isActive
-                          ? "Live"
-                          : selectedAcademy.isApproved
-                            ? "Approved"
-                            : "Pending"}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      Step {selectedAcademy.onboardingStep || 1}
-                    </span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {selectedAcademy.city || "No city"}
-                    </span>
+                    <LifecycleBadge kind="academy" source={selectedAcademy} />
+                    <StatusBadge
+                      status={`Step ${selectedAcademy.onboardingStep || 1}`}
+                      tone="slate"
+                      dot={false}
+                    />
+                    <StatusBadge
+                      status={selectedAcademy.city || "No city"}
+                      tone="slate"
+                      dot={false}
+                    />
                   </div>
                 </div>
 
-                <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <div className="grid gap-3 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
                   <div>
                     <span className="font-semibold text-slate-900">Owner:</span>{" "}
-                    {selectedAcademy.ownerId?.name ||
-                      selectedAcademy.ownerEmail ||
-                      "N/A"}
+                    {selectedAcademy.ownerId?.name || selectedAcademy.ownerEmail || "N/A"}
                   </div>
                   <div>
                     <span className="font-semibold text-slate-900">Phone:</span>{" "}
-                    {selectedAcademy.ownerId?.phone ||
-                      selectedAcademy.ownerPhone ||
-                      "N/A"}
+                    {selectedAcademy.ownerId?.phone || selectedAcademy.ownerPhone || "N/A"}
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-900">
-                      Submitted:
-                    </span>{" "}
+                    <span className="font-semibold text-slate-900">Submitted:</span>{" "}
                     {formatDate(selectedAcademy.submittedAt || "N/A")}
                   </div>
                   <div>
-                    <span className="font-semibold text-slate-900">
-                      Last reviewed:
-                    </span>{" "}
+                    <span className="font-semibold text-slate-900">Last reviewed:</span>{" "}
                     {formatDate(
-                      selectedAcademy.lastReviewedAt ||
-                        selectedAcademy.submittedAt ||
-                        "N/A",
+                      selectedAcademy.lastReviewedAt || selectedAcademy.submittedAt || "N/A"
                     )}
                   </div>
                 </div>
 
                 <div className="space-y-3 text-sm text-slate-700">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Sports
-                    </p>
-                    <p className="mt-1">
-                      {selectedAcademy.sports?.join(", ") || "N/A"}
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500">Sports</p>
+                    <p className="mt-1">{selectedAcademy.sports?.join(", ") || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Description
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500">Description</p>
                     <p className="mt-1 leading-relaxed">
-                      {selectedAcademy.description ||
-                        "No description provided."}
+                      {selectedAcademy.description || "No description provided."}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Compliance
-                    </p>
+                    <p className="text-xs font-semibold text-slate-500">Compliance</p>
                     <p className="mt-1">
                       PAN: {selectedAcademy.panNumber || "N/A"} • GST:{" "}
                       {selectedAcademy.gstNumber || "N/A"}
@@ -461,56 +485,66 @@ export default function AdminAcademiesPage() {
                 </div>
 
                 <div className="space-y-3 border-t border-slate-200 pt-4">
-                  <p className="text-sm font-semibold text-slate-900">Notes</p>
+                  <p className="text-sm font-semibold text-slate-900">Notes for the decision</p>
                   <textarea
                     value={rejectionReason}
                     onChange={(event) => setRejectionReason(event.target.value)}
                     rows={4}
                     placeholder="Use this field for rejection reasons or review notes."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                    className={fieldClass}
                   />
                   <textarea
                     value={suspendReason}
                     onChange={(event) => setSuspendReason(event.target.value)}
                     rows={3}
                     placeholder="Optional suspend reason."
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-power-orange focus:outline-none focus:ring-2 focus:ring-power-orange/40"
+                    className={fieldClass}
                   />
                 </div>
 
+                <p id="approve-needs-kyc" className="text-xs text-slate-500">
+                  {selectedAcademy.kycVerified
+                    ? "KYC is verified. Approving makes the academy live."
+                    : "Mark KYC verified first. Approving then makes the academy live."}
+                </p>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <button
+                    type="button"
                     onClick={() => openAction("APPROVE")}
-                    className="rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+                    disabled={!selectedAcademy.kycVerified}
+                    aria-describedby="approve-needs-kyc"
+                    className={btn("primary")}
                   >
-                    Approve Academy
+                    Approve academy
                   </button>
                   <button
+                    type="button"
                     onClick={() => openAction("KYC")}
-                    className="rounded-xl border border-blue-300 px-4 py-3 text-sm font-semibold text-blue-700 transition-colors hover:bg-blue-50"
+                    disabled={Boolean(selectedAcademy.kycVerified)}
+                    className={btn("outline")}
                   >
-                    Mark KYC Verified
+                    {selectedAcademy.kycVerified ? "KYC verified" : "Mark KYC verified"}
                   </button>
                   <button
-                    onClick={() => openAction("REJECT")}
-                    className="rounded-xl border border-red-300 px-4 py-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
-                  >
-                    Reject Academy
-                  </button>
-                  <button
+                    type="button"
                     onClick={() => openAction("SUSPEND")}
-                    className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                    className={btn("outline")}
                   >
-                    Suspend Academy
+                    Suspend academy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openAction("REJECT")}
+                    className={btn("dangerOutline")}
+                  >
+                    Reject academy
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-slate-600">
-                Failed to load academy details.
-              </div>
+              <ErrorNotice message="We couldn't load this academy's details." />
             )}
-          </Card>
+          </Panel>
         </div>
       )}
 
@@ -542,19 +576,11 @@ export default function AdminAcademiesPage() {
                 : "Suspend"
         }
         cancelLabel="Cancel"
-        variant={
-          actionMode === "REJECT" || actionMode === "SUSPEND"
-            ? "danger"
-            : "default"
-        }
+        variant={actionMode === "REJECT" || actionMode === "SUSPEND" ? "danger" : "default"}
         loading={actionLoading}
         onConfirm={runAction}
         onCancel={closeAction}
       />
     </div>
   );
-}
-
-function submissionCountLabel(total: number) {
-  return total === 1 ? "" : "s";
 }

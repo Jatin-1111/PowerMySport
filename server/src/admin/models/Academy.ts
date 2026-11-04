@@ -1,58 +1,11 @@
-import crypto from "crypto";
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation, OpeningHours } from "../../types/index";
-
-const rawEncryptionKey = process.env.BANK_ENCRYPTION_KEY || "";
-const ENCRYPTION_KEY = Buffer.from(rawEncryptionKey, "hex");
-if (!rawEncryptionKey || ENCRYPTION_KEY.length !== 32) {
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("FATAL: BANK_ENCRYPTION_KEY must be a 32-byte hex string.");
-  }
-  console.warn(
-    "WARNING: BANK_ENCRYPTION_KEY is missing or invalid. Academy bank fields will not be encrypted correctly.",
-  );
-}
-
-const isEncryptedValue = (value: string): boolean =>
-  value.split(":").length === 3;
-const encryptValue = (plaintext: string): string => {
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
-  const tag = cipher.getAuthTag();
-  return [
-    iv.toString("hex"),
-    tag.toString("hex"),
-    encrypted.toString("hex"),
-  ].join(":");
-};
-const decryptValue = (ciphertext: string): string => {
-  if (!ciphertext || !isEncryptedValue(ciphertext)) {
-    return ciphertext;
-  }
-
-  try {
-    const parts = ciphertext.split(":");
-    if (parts.length !== 3) {
-      return ciphertext;
-    }
-
-    const [ivHex, tagHex, encHex] = parts as [string, string, string];
-    const iv = Buffer.from(ivHex, "hex");
-    const tag = Buffer.from(tagHex, "hex");
-    const enc = Buffer.from(encHex, "hex");
-    const decipher = crypto.createDecipheriv("aes-256-gcm", ENCRYPTION_KEY, iv);
-    decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(enc), decipher.final()]).toString(
-      "utf8",
-    );
-  } catch {
-    return ciphertext;
-  }
-};
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
+import {
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
 
 export interface AcademyOwnedVenue {
   name: string;
@@ -88,23 +41,17 @@ export interface AcademyCoachOwnVenue {
   location?: IGeoLocation;
 }
 
+/**
+ * A coach an academy says works there. Only a name, an email and sports are
+ * kept: this is a person who has not agreed to be listed, so no contact number,
+ * bio, rate or location is stored. (Older records may still carry those fields;
+ * nothing reads them.)
+ */
 export interface AcademyOwnedCoach {
   firstName: string;
   lastName: string;
   email: string;
-  phone: string;
-  bio: string;
-  profilePhotoUrl?: string;
-  profilePhotoKey?: string;
   sports: string[];
-  hourlyRate: number;
-  sportPricing?: Record<string, number>;
-  serviceMode: "OWN_VENUE" | "FREELANCE" | "HYBRID";
-  baseLocation?: IGeoLocation;
-  serviceRadiusKm?: number;
-  travelBufferTime?: number;
-  ownVenueDetails?: AcademyCoachOwnVenue;
-  certifications?: string[];
 }
 
 export interface AcademyDocument extends Document {
@@ -181,12 +128,18 @@ export interface AcademyDocument extends Document {
   refundPolicy: string;
 
   // KYC & Status
+  /** Contact email confirmed with a code. Required before submission. */
+  emailVerified: boolean;
   kycVerified: boolean;
   isActive: boolean; // Can go live only if approved AND kycVerified
   isApproved: boolean;
   rejectionReason?: string; // If rejected, store reason
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
   onboardingStep: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   onboardingCompleted: boolean;
+  /** SHA-256 of the capability token issued at `start`. Never selected by default. */
+  onboardingTokenHash?: string;
 
   // Ratings & Engagement
   rating: number;
@@ -216,10 +169,7 @@ const academySchema = new Schema<AcademyDocument>(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [
-        /^[a-z0-9\-]+$/,
-        "Slug must contain only lowercase letters, numbers, and hyphens",
-      ],
+      match: [/^[a-z0-9\-]+$/, "Slug must contain only lowercase letters, numbers, and hyphens"],
     },
     description: {
       type: String,
@@ -284,9 +234,7 @@ const academySchema = new Schema<AcademyDocument>(
         validate: {
           validator(v: any) {
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every(
-              (coord) => typeof coord === "number" && !isNaN(coord),
-            );
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
           },
           message: "Coordinates must be [longitude, latitude]",
         },
@@ -452,10 +400,7 @@ const academySchema = new Schema<AcademyDocument>(
       type: String,
       required: [true, "Contact email is required"],
       lowercase: true,
-      match: [
-        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-        "Please provide a valid email",
-      ],
+      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"],
     },
     contactPhone: {
       type: String,
@@ -589,6 +534,10 @@ const academySchema = new Schema<AcademyDocument>(
     },
 
     // KYC & Status
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
     kycVerified: {
       type: Boolean,
       default: false,
@@ -602,6 +551,9 @@ const academySchema = new Schema<AcademyDocument>(
       type: Boolean,
       default: false,
     },
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
     rejectionReason: {
       type: String,
       optional: true,
@@ -614,6 +566,13 @@ const academySchema = new Schema<AcademyDocument>(
     onboardingCompleted: {
       type: Boolean,
       default: false,
+    },
+    // Hash of the token that authorises the anonymous onboarding calls (see
+    // utils/academyOnboardingToken.ts). select:false so it never rides along in
+    // a profile or progress response.
+    onboardingTokenHash: {
+      type: String,
+      select: false,
     },
 
     // Ratings & Engagement
@@ -629,7 +588,7 @@ const academySchema = new Schema<AcademyDocument>(
       min: [0, "Review count cannot be negative"],
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 academySchema.set("toJSON", { getters: true });
@@ -658,8 +617,8 @@ academySchema.pre("save", function () {
   }
 });
 
-// Create index for slug (used in /academies/[slug] route)
-academySchema.index({ slug: 1 });
+// slug is already indexed by `unique: true` on the field itself — declaring it
+// again here is what produced the duplicate-index warning at boot.
 
 // Create geospatial index for location-based queries
 academySchema.index({ location: "2dsphere" });
@@ -672,9 +631,15 @@ academySchema.index({ isApproved: 1, kycVerified: 1 });
 
 // Create compound index for filtering
 academySchema.index({ isApproved: 1, isActive: 1, sports: 1 });
+// Backs admin getPendingAcademies (review queue) — filters
+// {onboardingCompleted, isApproved?} sorted {createdAt:-1}, and
+// getPendingCounts' countDocuments({onboardingCompleted:true,isApproved:false})
+// hit on every admin dashboard load.
+academySchema.index({ onboardingCompleted: 1, isApproved: 1, createdAt: -1 });
+
+attachLifecycleSync(academySchema, "academy");
 
 const Academy =
-  mongoose.models.Academy ||
-  mongoose.model<AcademyDocument>("Academy", academySchema);
+  mongoose.models.Academy || mongoose.model<AcademyDocument>("Academy", academySchema);
 
 export default Academy;

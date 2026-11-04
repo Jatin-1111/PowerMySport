@@ -1,13 +1,14 @@
 "use client";
 
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
-import {
-  PromoCodeRecord,
-  PromoCodeStats,
-  adminApi,
-} from "@/modules/admin/services/admin";
-import { Card } from "@/modules/shared/ui/Card";
-import { useCallback, useEffect, useState } from "react";
+import { PromoCodeRecord, PromoCodeStats, adminApi } from "@/modules/admin/services/admin";
+import { btn, fieldClass } from "@/modules/shared/ui/buttonStyles";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { Panel } from "@/modules/shared/ui/Panel";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
 
 const emptyForm = {
   code: "",
@@ -53,14 +54,16 @@ export default function AdminPromoCodesPage() {
     loadCodes();
   }, [loadCodes]);
 
+  const [pendingDeactivate, setPendingDeactivate] = useState<PromoCodeRecord | null>(null);
+
   const handleDeactivate = async (codeId: string) => {
-    if (!window.confirm("Deactivate this promo code?")) return;
     setBusyId(codeId);
     try {
       await adminApi.deactivatePromoCode(codeId);
       await loadCodes();
     } finally {
       setBusyId(null);
+      setPendingDeactivate(null);
     }
   };
 
@@ -104,10 +107,7 @@ export default function AdminPromoCodesPage() {
     const validFromDate = new Date(`${form.validFrom}T00:00:00.000Z`);
     const validUntilDate = new Date(`${form.validUntil}T23:59:59.999Z`);
 
-    if (
-      Number.isNaN(validFromDate.getTime()) ||
-      Number.isNaN(validUntilDate.getTime())
-    ) {
+    if (Number.isNaN(validFromDate.getTime()) || Number.isNaN(validUntilDate.getTime())) {
       setFormError("Please provide valid dates.");
       return;
     }
@@ -127,18 +127,10 @@ export default function AdminPromoCodesPage() {
         applicableTo: form.applicableTo,
         validFrom: validFromDate.toISOString(),
         validUntil: validUntilDate.toISOString(),
-        ...(form.minBookingAmount
-          ? { minBookingAmount: Number(form.minBookingAmount) }
-          : {}),
-        ...(form.maxDiscountAmount
-          ? { maxDiscountAmount: Number(form.maxDiscountAmount) }
-          : {}),
-        ...(form.maxUsageTotal
-          ? { maxUsageTotal: Number(form.maxUsageTotal) }
-          : {}),
-        ...(form.maxUsagePerUser
-          ? { maxUsagePerUser: Number(form.maxUsagePerUser) }
-          : {}),
+        ...(form.minBookingAmount ? { minBookingAmount: Number(form.minBookingAmount) } : {}),
+        ...(form.maxDiscountAmount ? { maxDiscountAmount: Number(form.maxDiscountAmount) } : {}),
+        ...(form.maxUsageTotal ? { maxUsageTotal: Number(form.maxUsageTotal) } : {}),
+        ...(form.maxUsagePerUser ? { maxUsagePerUser: Number(form.maxUsagePerUser) } : {}),
       };
 
       const response = await adminApi.createPromoCode(payload);
@@ -156,40 +148,34 @@ export default function AdminPromoCodesPage() {
     }
   };
 
-  const inputCls =
-    "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
+  const inputCls = fieldClass;
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Admin"
-        title="Promo Codes"
-        subtitle="Create and manage discount codes for bookings."
+        badge="Commerce"
+        title="Promo codes"
+        subtitle="Discount codes players can apply at checkout."
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm((v) => !v);
+              setFormError(null);
+            }}
+            className={showForm ? btn("outline") : btn("accent")}
+          >
+            {showForm ? "Cancel" : "New promo code"}
+          </button>
+        }
       />
 
-      <div className="flex justify-end">
-        <button
-          onClick={() => {
-            setShowForm((v) => !v);
-            setFormError(null);
-          }}
-          className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 transition-colors"
-        >
-          {showForm ? "Cancel" : "+ New Promo Code"}
-        </button>
-      </div>
-
       {showForm && (
-        <Card className="bg-white">
-          <h2 className="text-base font-semibold text-slate-900 mb-4">
-            Create Promo Code
-          </h2>
+        <Panel title="Create promo code">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  Code *
-                </label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Code *</label>
                 <input
                   className={inputCls}
                   placeholder="e.g. SPORT20"
@@ -203,20 +189,18 @@ export default function AdminPromoCodesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Description *
                 </label>
                 <input
                   className={inputCls}
                   placeholder="e.g. 20% off all venues"
                   value={form.description}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, description: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Discount Type *
                 </label>
                 <select
@@ -225,9 +209,7 @@ export default function AdminPromoCodesPage() {
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,
-                      discountType: e.target.value as
-                        | "PERCENTAGE"
-                        | "FIXED_AMOUNT",
+                      discountType: e.target.value as "PERCENTAGE" | "FIXED_AMOUNT",
                     }))
                   }
                 >
@@ -236,24 +218,20 @@ export default function AdminPromoCodesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Discount Value *
                 </label>
                 <input
                   type="number"
                   min="0"
                   className={inputCls}
-                  placeholder={
-                    form.discountType === "PERCENTAGE" ? "e.g. 20" : "e.g. 200"
-                  }
+                  placeholder={form.discountType === "PERCENTAGE" ? "e.g. 20" : "e.g. 200"}
                   value={form.discountValue}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, discountValue: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Applicable To
                 </label>
                 <select
@@ -262,10 +240,7 @@ export default function AdminPromoCodesPage() {
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,
-                      applicableTo: e.target.value as
-                        | "ALL"
-                        | "VENUE_ONLY"
-                        | "COACH_ONLY",
+                      applicableTo: e.target.value as "ALL" | "VENUE_ONLY" | "COACH_ONLY",
                     }))
                   }
                 >
@@ -275,7 +250,7 @@ export default function AdminPromoCodesPage() {
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Min Booking Amount (₹)
                 </label>
                 <input
@@ -294,7 +269,7 @@ export default function AdminPromoCodesPage() {
               </div>
               {form.discountType === "PERCENTAGE" && (
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                  <label className="mb-1 block text-sm font-medium text-slate-700">
                     Max Discount Cap (₹)
                   </label>
                   <input
@@ -313,7 +288,7 @@ export default function AdminPromoCodesPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Max Total Uses
                 </label>
                 <input
@@ -322,13 +297,11 @@ export default function AdminPromoCodesPage() {
                   className={inputCls}
                   placeholder="Unlimited if empty"
                   value={form.maxUsageTotal}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, maxUsageTotal: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, maxUsageTotal: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Max Uses Per User
                 </label>
                 <input
@@ -337,41 +310,37 @@ export default function AdminPromoCodesPage() {
                   className={inputCls}
                   placeholder="Unlimited if empty"
                   value={form.maxUsagePerUser}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, maxUsagePerUser: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, maxUsagePerUser: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Valid From *
                 </label>
                 <input
                   type="date"
                   className={inputCls}
                   value={form.validFrom}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, validFrom: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <label className="mb-1 block text-sm font-medium text-slate-700">
                   Valid Until *
                 </label>
                 <input
                   type="date"
                   className={inputCls}
                   value={form.validUntil}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, validUntil: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
                 />
               </div>
             </div>
 
             {formError && (
-              <p className="text-sm text-red-600 font-medium">{formError}</p>
+              <p role="alert" className="text-sm font-medium text-red-700">
+                {formError}
+              </p>
             )}
 
             <div className="flex justify-end gap-3 pt-2">
@@ -382,180 +351,195 @@ export default function AdminPromoCodesPage() {
                   setForm(emptyForm);
                   setFormError(null);
                 }}
-                className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                className={btn("outline")}
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
-              >
-                {submitting ? "Creating..." : "Create Code"}
+              <button type="submit" disabled={submitting} className={btn("primary")}>
+                {submitting ? "Creating…" : "Create code"}
               </button>
             </div>
           </form>
-        </Card>
+        </Panel>
       )}
 
-      <Card className="bg-white space-y-4">
+      <Panel flush>
         {loading ? (
-          <div className="py-10 text-center text-slate-500">
-            Loading promo codes...
-          </div>
+          <SkeletonBlock rows={6} label="Loading promo codes" />
         ) : codes.length === 0 ? (
-          <div className="py-10 text-center text-slate-500">
-            No promo codes yet.
-          </div>
+          <EmptyState
+            title="No promo codes yet"
+            description="Create one to offer players a discount."
+          />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
-                <tr>
-                  {[
-                    "Code",
-                    "Description",
-                    "Discount",
-                    "Applies To",
-                    "Valid",
-                    "Usage",
-                    "Status",
-                    "Actions",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3 text-left text-xs font-semibold uppercase text-slate-500"
-                    >
-                      {h}
+          <div className="space-y-3">
+            <div className="flex justify-end px-5">
+              <ExportCsvButton
+                filename="promo-codes.csv"
+                rows={codes}
+                columns={[
+                  { header: "Code", value: (pc) => pc.code },
+                  { header: "Description", value: (pc) => pc.description },
+                  { header: "Discount Type", value: (pc) => pc.discountType },
+                  { header: "Discount Value", value: (pc) => pc.discountValue },
+                  { header: "Applies To", value: (pc) => pc.applicableTo },
+                  {
+                    header: "Valid From",
+                    value: (pc) => new Date(pc.validFrom).toISOString(),
+                  },
+                  {
+                    header: "Valid Until",
+                    value: (pc) => new Date(pc.validUntil).toISOString(),
+                  },
+                  {
+                    header: "Usage",
+                    value: (pc) => pc.currentUsageCount,
+                  },
+                  {
+                    header: "Max Usage Total",
+                    value: (pc) => pc.maxUsageTotal ?? "",
+                  },
+                  {
+                    header: "Status",
+                    value: (pc) => (pc.isActive ? "Active" : "Inactive"),
+                  },
+                ]}
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {[
+                      "Code",
+                      "Description",
+                      "Discount",
+                      "Applies to",
+                      "Valid",
+                      "Usage",
+                      "Status",
+                    ].map((h) => (
+                      <th key={h}>{h}</th>
+                    ))}
+                    <th>
+                      <span className="sr-only">Actions</span>
                     </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {codes.map((pc) => (
-                  <>
-                    <tr key={pc._id}>
-                      <td className="px-4 py-3 text-sm font-mono font-semibold text-slate-900">
-                        {pc.code}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700 max-w-48">
-                        {pc.description}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700 whitespace-nowrap">
-                        {pc.discountType === "PERCENTAGE"
-                          ? `${pc.discountValue}%`
-                          : `₹${pc.discountValue}`}
-                        {pc.maxDiscountAmount
-                          ? ` (cap ₹${pc.maxDiscountAmount})`
-                          : ""}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700">
-                        {pc.applicableTo}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
-                        {new Date(pc.validFrom).toLocaleDateString()} –{" "}
-                        {new Date(pc.validUntil).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-700">
-                        {pc.currentUsageCount}
-                        {pc.maxUsageTotal ? ` / ${pc.maxUsageTotal}` : ""}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`rounded px-2 py-0.5 text-xs font-semibold ${
-                            pc.isActive
-                              ? "bg-green-100 text-green-700"
-                              : "bg-slate-100 text-slate-500"
-                          }`}
-                        >
-                          {pc.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleViewStats(pc._id)}
-                            disabled={loadingStats === pc._id}
-                            className="rounded bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200"
-                          >
-                            {loadingStats === pc._id
-                              ? "..."
-                              : selectedStats?.id === pc._id
-                                ? "Hide Stats"
-                                : "Stats"}
-                          </button>
-                          {pc.isActive && (
+                  </tr>
+                </thead>
+                <tbody>
+                  {codes.map((pc) => (
+                    <Fragment key={pc._id}>
+                      <tr>
+                        <td className="font-mono font-semibold text-slate-900">{pc.code}</td>
+                        <td>{pc.description}</td>
+                        <td className="whitespace-nowrap">
+                          {pc.discountType === "PERCENTAGE"
+                            ? `${pc.discountValue}%`
+                            : `₹${pc.discountValue}`}
+                          {pc.maxDiscountAmount ? ` (cap ₹${pc.maxDiscountAmount})` : ""}
+                        </td>
+                        <td>{pc.applicableTo}</td>
+                        <td className="whitespace-nowrap">
+                          {new Date(pc.validFrom).toLocaleDateString()} –{" "}
+                          {new Date(pc.validUntil).toLocaleDateString()}
+                        </td>
+                        <td>
+                          {pc.currentUsageCount}
+                          {pc.maxUsageTotal ? ` / ${pc.maxUsageTotal}` : ""}
+                        </td>
+                        <td>
+                          <StatusBadge
+                            status={pc.isActive ? "Active" : "Inactive"}
+                            tone={pc.isActive ? "green" : "slate"}
+                            size="sm"
+                          />
+                        </td>
+                        <td>
+                          <div className="flex gap-2">
                             <button
-                              onClick={() => handleDeactivate(pc._id)}
-                              disabled={busyId === pc._id}
-                              className="rounded bg-red-100 px-2 py-1 text-xs text-red-700 hover:bg-red-200"
+                              onClick={() => handleViewStats(pc._id)}
+                              disabled={loadingStats === pc._id}
+                              className={btn("outline", "sm")}
                             >
-                              Deactivate
+                              {loadingStats === pc._id
+                                ? "..."
+                                : selectedStats?.id === pc._id
+                                  ? "Hide stats"
+                                  : "Stats"}
                             </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                    {selectedStats?.id === pc._id && (
-                      <tr key={`${pc._id}-stats`}>
-                        <td
-                          colSpan={8}
-                          className="bg-slate-50 px-4 py-3 text-sm"
-                        >
-                          <div className="flex flex-wrap gap-6">
-                            <div>
-                              <span className="text-xs text-slate-500 uppercase tracking-wide">
-                                Total Uses
-                              </span>
-                              <p className="text-lg font-bold text-slate-900">
-                                {selectedStats.stats.totalUsage}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-xs text-slate-500 uppercase tracking-wide">
-                                Total Discount Given
-                              </span>
-                              <p className="text-lg font-bold text-slate-900">
-                                ₹{selectedStats.stats.totalDiscountGiven}
-                              </p>
-                            </div>
-                            <div>
-                              <span className="text-xs text-slate-500 uppercase tracking-wide">
-                                Unique Users
-                              </span>
-                              <p className="text-lg font-bold text-slate-900">
-                                {selectedStats.stats.uniqueUsers}
-                              </p>
-                            </div>
+                            {pc.isActive && (
+                              <button
+                                onClick={() => setPendingDeactivate(pc)}
+                                disabled={busyId === pc._id}
+                                className={btn("dangerOutline", "sm")}
+                              >
+                                Deactivate
+                              </button>
+                            )}
                           </div>
-                          {selectedStats.stats.recentUsages.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">
-                                Recent Usages
-                              </p>
-                              <ul className="space-y-0.5 text-xs text-slate-600">
-                                {selectedStats.stats.recentUsages.map(
-                                  (u, i) => (
-                                    <li key={i}>
-                                      User {u.userId.slice(-6)} — ₹
-                                      {u.discountApplied} on{" "}
-                                      {new Date(u.usedAt).toLocaleDateString()}
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
-                            </div>
-                          )}
                         </td>
                       </tr>
-                    )}
-                  </>
-                ))}
-              </tbody>
-            </table>
+                      {selectedStats?.id === pc._id && (
+                        <tr key={`${pc._id}-stats`}>
+                          <td colSpan={8} className="bg-slate-50 px-4 py-3 text-sm">
+                            <div className="flex flex-wrap gap-6">
+                              <div>
+                                <span className="text-xs text-slate-500">Total Uses</span>
+                                <p className="text-lg font-semibold text-slate-900">
+                                  {selectedStats.stats.totalUsage}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-xs text-slate-500">Total Discount Given</span>
+                                <p className="text-lg font-semibold text-slate-900">
+                                  ₹{selectedStats.stats.totalDiscountGiven}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-xs text-slate-500">Unique Users</span>
+                                <p className="text-lg font-semibold text-slate-900">
+                                  {selectedStats.stats.uniqueUsers}
+                                </p>
+                              </div>
+                            </div>
+                            {selectedStats.stats.recentUsages.length > 0 && (
+                              <div className="mt-3">
+                                <p className="mb-1 text-xs font-semibold text-slate-500">
+                                  Recent Usages
+                                </p>
+                                <ul className="space-y-0.5 text-xs text-slate-600">
+                                  {selectedStats.stats.recentUsages.map((u, i) => (
+                                    <li key={i}>
+                                      {u.userName}
+                                      {u.userEmail && ` (${u.userEmail})`} — ₹{u.discountApplied} on{" "}
+                                      {new Date(u.usedAt).toLocaleDateString()}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
-      </Card>
+      </Panel>
+
+      <ConfirmModal
+        open={pendingDeactivate !== null}
+        variant="danger"
+        title={`Deactivate ${pendingDeactivate?.code ?? "this code"}?`}
+        description="Players will no longer be able to apply it at checkout."
+        confirmLabel="Deactivate"
+        loading={busyId !== null}
+        onConfirm={() => pendingDeactivate && handleDeactivate(pendingDeactivate._id)}
+        onCancel={() => setPendingDeactivate(null)}
+      />
     </div>
   );
 }

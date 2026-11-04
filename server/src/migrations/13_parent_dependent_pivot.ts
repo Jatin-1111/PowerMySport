@@ -1,9 +1,9 @@
-import mongoose from 'mongoose';
-import { User } from '../client/models/User';
-import { Booking } from '../client/models/Booking';
+import mongoose from "mongoose";
+import { User } from "../client/models/User";
+import { Booking } from "../client/models/Booking";
 
 export const up = async () => {
-  console.log('🔥 Initiating Structural Pivot: Parent-Dependent Model...');
+  console.log("🔥 Initiating Structural Pivot: Parent-Dependent Model...");
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -14,7 +14,7 @@ export const up = async () => {
     // It's much safer and equally fast to just do two targeted updates.
     const userUpdate1 = await User.updateMany(
       { userType: { $exists: false } },
-      { $set: { userType: 'Recreational' } },
+      { $set: { userType: "Recreational" } },
       { session }
     );
 
@@ -31,18 +31,18 @@ export const up = async () => {
       { participantId: { $exists: false } },
       {
         $set: {
-          participantId: null // Null means the master account user (Parent/Recreational) is playing
-        }
+          participantId: null, // Null means the master account user (Parent/Recreational) is playing
+        },
       },
       { session }
     );
     console.log(`✅ Bookings Patched (participantId normalized): ${bookingUpdate.modifiedCount}`);
 
     await session.commitTransaction();
-    console.log('🚀 Migration Completed Successfully.');
+    console.log("🚀 Migration Completed Successfully.");
   } catch (error) {
     await session.abortTransaction();
-    console.error('❌ Migration Failed. Rolling back.', error);
+    console.error("❌ Migration Failed. Rolling back.", error);
     throw error;
   } finally {
     session.endSession();
@@ -50,6 +50,6 @@ export const up = async () => {
 };
 
 export const down = async () => {
-  console.log('⚠️ Rollback initiated. Reverting schema changes...');
+  console.log("⚠️ Rollback initiated. Reverting schema changes...");
   // Add fallback logic here if needed
 };

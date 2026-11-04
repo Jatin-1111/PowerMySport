@@ -1,22 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import {
-  TrendingUp,
-  TrendingDown,
-  IndianRupee,
-  Clock,
-  Calendar,
-  ArrowRight,
-  Loader2,
-} from "lucide-react";
-import { Button } from "@/modules/shared/ui/Button";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
-import { toast } from "@/lib/toast";
-import Link from "next/link";
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import axiosInstance from "@/lib/api/axios";
-import type { EarningsData, MonthlyEarning, SportEarning, Booking, User } from "@/types";
+import { toast } from "@/lib/toast";
+import { Button } from "@/modules/shared/ui/Button";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { bookingKey } from "@/modules/academy/utils/format";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import type { Booking, EarningsData, MonthlyEarning, SportEarning, User } from "@/types";
+import { ArrowRight, Calendar, Clock, IndianRupee, Loader2, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -58,71 +52,14 @@ interface StatCardProps {
 
 function StatCard({ title, amount, subtitle, icon, accent, trend }: StatCardProps) {
   return (
-    <div
-      className={`rounded-2xl p-5 flex flex-col gap-3 shadow-sm border transition-shadow hover:shadow-md ${
-        accent
-          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-400"
-          : "bg-white text-slate-800 border-slate-100"
-      }`}
-    >
-      <div className="flex items-start justify-between">
-        <div
-          className={`rounded-xl p-2.5 ${
-            accent ? "bg-white/20" : "bg-orange-50"
-          }`}
-        >
-          <span className={accent ? "text-white" : "text-orange-500"}>
-            {icon}
-          </span>
-        </div>
-        {trend !== null && trend !== undefined && (
-          <div
-            className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${
-              accent
-                ? "bg-white/20 text-white"
-                : trend.positive
-                ? "bg-green-50 text-green-600"
-                : "bg-red-50 text-red-600"
-            }`}
-          >
-            {trend.positive ? (
-              <TrendingUp className="w-3 h-3" />
-            ) : (
-              <TrendingDown className="w-3 h-3" />
-            )}
-            {Math.abs(trend.value).toFixed(1)}%
-          </div>
-        )}
-      </div>
-      <div>
-        <p
-          className={`text-xs font-medium uppercase tracking-wider mb-1 ${
-            accent ? "text-white/80" : "text-slate-400"
-          }`}
-        >
-          {title}
-        </p>
-        <div className="flex items-baseline gap-0.5">
-          <IndianRupee
-            className={`w-4 h-4 mb-0.5 ${accent ? "text-white" : "text-slate-700"}`}
-          />
-          <span
-            className={`text-2xl font-bold tracking-tight ${
-              accent ? "text-white" : "text-slate-800"
-            }`}
-          >
-            {fmt(amount)}
-          </span>
-        </div>
-        <p
-          className={`text-xs mt-1 ${
-            accent ? "text-white/70" : "text-slate-400"
-          }`}
-        >
-          {subtitle}
-        </p>
-      </div>
-    </div>
+    <StatTile
+      label={title}
+      value={<>&#8377;{fmt(amount)}</>}
+      sub={subtitle}
+      icon={icon}
+      emphasis={accent}
+      trend={trend}
+    />
   );
 }
 
@@ -149,7 +86,7 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
     <div className="w-full">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-auto"
+        className="h-auto w-full"
         aria-label="Monthly earnings bar chart"
       >
         <defs>
@@ -170,8 +107,8 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
             tick >= 100000
               ? `${(tick / 100000).toFixed(0)}L`
               : tick >= 1000
-              ? `${(tick / 1000).toFixed(0)}k`
-              : `${tick.toFixed(0)}`;
+                ? `${(tick / 1000).toFixed(0)}k`
+                : `${tick.toFixed(0)}`;
           return (
             <g key={i}>
               <line
@@ -182,13 +119,7 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
                 stroke={i === 0 ? "#e2e8f0" : "#f1f5f9"}
                 strokeWidth={i === 0 ? 1.5 : 1}
               />
-              <text
-                x={PAD.left - 8}
-                y={y + 4}
-                textAnchor="end"
-                fontSize={9}
-                fill="#94a3b8"
-              >
+              <text x={PAD.left - 8} y={y + 4} textAnchor="end" fontSize={9} fill="#94a3b8">
                 {label}
               </text>
             </g>
@@ -199,8 +130,7 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
         {months.map((m, i) => {
           const centerX = PAD.left + i * slotW + slotW / 2;
           const barX = centerX - barW / 2;
-          const barH =
-            m.total > 0 ? Math.max(4, (m.total / maxVal) * chartH) : 0;
+          const barH = m.total > 0 ? Math.max(4, (m.total / maxVal) * chartH) : 0;
           const barY = PAD.top + chartH - barH;
           const isCurrent = m.label.startsWith(currentShortMonth);
 
@@ -249,8 +179,8 @@ function MonthlyChart({ months }: { months: MonthlyEarning[] }) {
                   {m.total >= 100000
                     ? `${(m.total / 100000).toFixed(1)}L`
                     : m.total >= 1000
-                    ? `${(m.total / 1000).toFixed(0)}k`
-                    : fmt(m.total)}
+                      ? `${(m.total / 1000).toFixed(0)}k`
+                      : fmt(m.total)}
                 </text>
               )}
 
@@ -279,11 +209,7 @@ function SportEarningsList({ sports }: { sports: SportEarning[] }) {
   const totalEarnings = sports.reduce((s, e) => s + e.total, 0) || 1;
 
   if (sports.length === 0) {
-    return (
-      <p className="text-slate-400 text-sm py-4 text-center">
-        No sport earnings data yet.
-      </p>
-    );
+    return <p className="py-4 text-center text-sm text-slate-400">No sport earnings data yet.</p>;
   }
 
   return (
@@ -293,21 +219,17 @@ function SportEarningsList({ sports }: { sports: SportEarning[] }) {
         return (
           <div key={s.sport} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium text-slate-700 capitalize">
-                {s.sport}
-              </span>
+              <span className="font-medium capitalize text-slate-700">{s.sport}</span>
               <div className="flex items-center gap-3 text-right">
-                <span className="text-slate-400 text-xs">
+                <span className="text-xs text-slate-400">
                   {s.sessions} session{s.sessions !== 1 ? "s" : ""}
                 </span>
-                <span className="font-semibold text-slate-800">
-                  ₹{fmt(s.total)}
-                </span>
+                <span className="font-semibold text-slate-800">₹{fmt(s.total)}</span>
               </div>
             </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-orange-400 to-orange-600 transition-all duration-700"
+                className="h-full rounded-full bg-orange-400 transition-all duration-700"
                 style={{ width: `${pct}%` }}
               />
             </div>
@@ -323,42 +245,30 @@ function SportEarningsList({ sports }: { sports: SportEarning[] }) {
 function RecentTransactions({ bookings }: { bookings: Booking[] }) {
   if (bookings.length === 0) {
     return (
-      <p className="text-slate-400 text-sm py-4 text-center">
-        No completed transactions yet.
-      </p>
+      <p className="py-4 text-center text-sm text-slate-400">No completed transactions yet.</p>
     );
   }
 
   return (
     <div className="flex flex-col divide-y divide-slate-50">
-      {bookings.slice(0, 10).map((b) => (
-        <div
-          key={b.id}
-          className="flex items-center justify-between py-3 gap-3"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-              <IndianRupee className="w-4 h-4 text-orange-500" />
+      {bookings.slice(0, 10).map((b, index) => (
+        <div key={bookingKey(b, index)} className="flex items-center justify-between gap-3 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-50">
+              <IndianRupee className="text-power-orange h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-800 truncate">
-                {getPlayerName(b)}
-              </p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-xs text-slate-400 capitalize">
-                  {b.sport}
-                </span>
+              <p className="truncate text-sm font-medium text-slate-800">{getPlayerName(b)}</p>
+              <div className="mt-0.5 flex items-center gap-1.5">
+                <span className="text-xs capitalize text-slate-400">{b.sport}</span>
                 <span className="text-slate-200">·</span>
                 <span className="text-xs text-slate-400">{fmtDate(b.date)}</span>
               </div>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <span className="text-sm font-bold text-slate-800">
+          <div className="shrink-0">
+            <span className="text-sm font-bold tabular-nums text-slate-800">
               ₹{fmt(b.totalAmount)}
-            </span>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
-              Completed
             </span>
           </div>
         </div>
@@ -379,17 +289,18 @@ export default function AcademyEarningsPage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await axiosInstance.get<{ success: boolean; message: string; data?: EarningsData }>(
-          "/academies/my/earnings"
-        );
+        const res = await axiosInstance.get<{
+          success: boolean;
+          message: string;
+          data?: EarningsData;
+        }>("/academies/my/earnings");
         if (res.data.success && res.data.data) {
           setData(res.data.data);
         } else {
           throw new Error(res.data.message || "Failed to load earnings data.");
         }
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : "Failed to load earnings.";
+        const msg = err instanceof Error ? err.message : "Failed to load earnings.";
         setError(msg);
         toast.error(msg);
       } finally {
@@ -404,10 +315,7 @@ export default function AcademyEarningsPage() {
   const monthlyTrend =
     data && data.lastMonth.total > 0
       ? {
-          value:
-            ((data.thisMonth.total - data.lastMonth.total) /
-              data.lastMonth.total) *
-            100,
+          value: ((data.thisMonth.total - data.lastMonth.total) / data.lastMonth.total) * 100,
           positive: data.thisMonth.total >= data.lastMonth.total,
         }
       : null;
@@ -418,9 +326,9 @@ export default function AcademyEarningsPage() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
           <p className="text-sm font-medium">Loading earnings…</p>
         </div>
       </div>
@@ -430,24 +338,16 @@ export default function AcademyEarningsPage() {
   // ── Error ────────────────────────────────────────────────────────────────
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 max-w-sm w-full text-center flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
-            <IndianRupee className="w-5 h-5 text-red-400" />
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50">
+            <IndianRupee className="h-5 w-5 text-red-400" />
           </div>
           <div>
-            <p className="font-semibold text-slate-700">
-              Could not load earnings
-            </p>
-            <p className="text-sm text-slate-400 mt-1">
-              {error || "Please try again."}
-            </p>
+            <p className="font-semibold text-slate-700">Could not load earnings</p>
+            <p className="mt-1 text-sm text-slate-400">{error || "Please try again."}</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.reload()}
-          >
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
             Retry
           </Button>
         </div>
@@ -457,84 +357,72 @@ export default function AcademyEarningsPage() {
 
   // ── Main content ─────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-8">
-
+    <div>
+      <div className="flex flex-col gap-8">
         {/* ── Page header ── */}
         <SlideUp delay={0}>
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-                Academy Earnings
-              </h1>
-              <p className="text-slate-400 text-sm mt-0.5">
+              <h1 className="font-editorial text-2xl font-normal text-slate-800">Earnings</h1>
+              <p className="mt-0.5 text-sm text-slate-400">
                 Your academy&apos;s revenue overview and booking history
               </p>
             </div>
-            <Link href="/academy">
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<IndianRupee className="w-4 h-4" />}
-              >
-                Manage Academy
-              </Button>
+            <Link href="/academy" className={`${TEXT_LINK} ring-offset-paper text-sm`}>
+              Back to overview
+              <ArrowRight className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
             </Link>
           </div>
         </SlideUp>
 
         {/* ── Stats row ── */}
         <SlideUp delay={0.05}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <StatCard
-              title="Total Earnings"
+              title="Total earnings"
               amount={data.allTime.total}
               subtitle={`${data.allTime.sessions} session${data.allTime.sessions !== 1 ? "s" : ""} all time`}
-              icon={<IndianRupee className="w-5 h-5" />}
+              icon={<IndianRupee className="h-5 w-5" />}
               accent
             />
             <StatCard
-              title="This Month"
+              title="This month"
               amount={data.thisMonth.total}
               subtitle={`${data.thisMonth.sessions} session${data.thisMonth.sessions !== 1 ? "s" : ""}`}
-              icon={<TrendingUp className="w-5 h-5" />}
+              icon={<TrendingUp className="h-5 w-5" />}
               trend={monthlyTrend}
             />
             <StatCard
-              title="Last Month"
+              title="Last month"
               amount={data.lastMonth.total}
               subtitle={`${data.lastMonth.sessions} session${data.lastMonth.sessions !== 1 ? "s" : ""}`}
-              icon={<Calendar className="w-5 h-5" />}
+              icon={<Calendar className="h-5 w-5" />}
             />
             <StatCard
-              title="Pending"
+              title="Still to come"
               amount={data.pending.total}
-              subtitle={`${data.pending.sessions} session${data.pending.sessions !== 1 ? "s" : ""} in progress`}
-              icon={<Clock className="w-5 h-5" />}
+              subtitle={`${data.pending.sessions} session${data.pending.sessions !== 1 ? "s" : ""} confirmed`}
+              icon={<Clock className="h-5 w-5" />}
             />
           </div>
         </SlideUp>
 
         {/* ── Monthly trend chart ── */}
         <SlideUp delay={0.1}>
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <div className="flex items-center justify-between mb-5">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold text-slate-800">
-                  Monthly Trend
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Last {last6Months.length} months
-                </p>
+                <h2 className="text-base font-semibold text-slate-800">Monthly trend</h2>
+                <p className="mt-0.5 text-xs text-slate-400">Last {last6Months.length} months</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-sm bg-orange-500 inline-block" />
+                <span className="bg-power-orange inline-block h-3 w-3 rounded-sm" />
                 <span className="text-xs text-slate-400">Earnings</span>
               </div>
             </div>
 
             {last6Months.length === 0 ? (
-              <div className="h-40 flex items-center justify-center text-slate-300 text-sm">
+              <div className="flex h-40 items-center justify-center text-sm text-slate-300">
                 No monthly data available yet.
               </div>
             ) : (
@@ -545,71 +433,28 @@ export default function AcademyEarningsPage() {
 
         {/* ── Two-column section ── */}
         <SlideUp delay={0.15}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
-
+          <div className="grid grid-cols-1 items-start gap-4 sm:gap-5 xl:grid-cols-2">
             {/* By sport */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-5">
+            <div className="flex flex-col gap-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
               <div>
-                <h2 className="text-base font-semibold text-slate-800">
-                  Earnings by Sport
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Breakdown across all sports
-                </p>
+                <h2 className="text-base font-semibold text-slate-800">Earnings by sport</h2>
+                <p className="mt-0.5 text-xs text-slate-400">Breakdown across all sports</p>
               </div>
               <SportEarningsList sports={data.bySport} />
             </div>
 
             {/* Recent transactions */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col gap-5">
+            <div className="flex flex-col gap-5 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
               <div>
-                <h2 className="text-base font-semibold text-slate-800">
-                  Recent Transactions
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <h2 className="text-base font-semibold text-slate-800">Recent transactions</h2>
+                <p className="mt-0.5 text-xs text-slate-400">
                   Last {Math.min(10, data.recentBookings.length)} completed bookings
                 </p>
               </div>
               <RecentTransactions bookings={data.recentBookings} />
             </div>
-
           </div>
         </SlideUp>
-
-        {/* ── Manage Academy CTA ── */}
-        <SlideUp delay={0.2}>
-          <motion.div
-            className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 shadow-md"
-            whileHover={{ scale: 1.005 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold uppercase tracking-widest text-orange-400">
-                  Academy Management
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-white">
-                Manage your academy
-              </h3>
-              <p className="text-slate-400 text-sm max-w-md">
-                Update your academy profile, manage enrollments, set pricing for
-                programs, and keep your schedule up to date to maximize revenue.
-              </p>
-            </div>
-            <Link href="/academy" className="shrink-0">
-              <Button
-                variant="primary"
-                size="md"
-                icon={<ArrowRight className="w-4 h-4" />}
-                className="whitespace-nowrap"
-              >
-                Manage Academy
-              </Button>
-            </Link>
-          </motion.div>
-        </SlideUp>
-
       </div>
     </div>
   );

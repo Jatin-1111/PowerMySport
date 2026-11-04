@@ -32,7 +32,7 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       primary_objective: {
         type: String,
         required: true,
-        enum: ["Recreational", "Health", "Social", "Competitive"],
+        enum: ["Recreational", "Fitness", "Compete", "Elite"],
       },
       weekly_time_commitment: {
         type: Number,
@@ -48,12 +48,17 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       parent_specific_question: {
         type: String,
         trim: true,
-        maxlength: 1000,
+        maxlength: 3000,
       },
-      sport: {
+      sport: { type: String, trim: true },
+      location: { type: String, trim: true },
+      current_pathway_level: { type: Number, min: 1, max: 5 },
+      years_playing: { type: Number, min: 0, max: 20 },
+      plan_horizon: {
         type: String,
-        trim: true,
+        enum: ["short", "journey", "auto"],
       },
+      dependent_id: { type: Schema.Types.ObjectId, ref: "Player" },
     },
     response: {
       profileAnalysis: { type: String, required: true },
@@ -65,14 +70,75 @@ const guidanceSubmissionSchema = new Schema<GuidanceSubmissionDocument>(
       },
       recommendedPlatformActions: { type: String, required: true },
       recommendedSports: { type: [String] },
+      mentalSkillsRoadmap: {
+        currentFocus: { type: String },
+        skills: [
+          {
+            skill: { type: String },
+            howToDevelop: { type: String },
+            _id: false,
+          },
+        ],
+      },
+      talentIdentifiers: { type: [String] },
+      multiSportAdvisory: { type: String },
+      journeyPhases: [
+        {
+          title: { type: String },
+          timeframe: { type: String },
+          focus: { type: String },
+          milestones: { type: [String] },
+          outcome: { type: String },
+          estimatedCost: { type: String },
+          pathwayLevel: { type: Number, min: 1, max: 5 },
+          _id: false,
+        },
+      ],
+      shortTermPlan: {
+        durationWeeks: { type: Number },
+        weeks: [
+          {
+            label: { type: String },
+            focus: { type: String },
+            // Mixed: new submissions store {name, minutes, how, doneRight}
+            // objects; pre-July-2026 ones store plain strings.
+            sessions: { type: [Schema.Types.Mixed] },
+            _id: false,
+          },
+        ],
+        successCheck: { type: String },
+      },
+      goalAssessment: {
+        statedGoal: { type: String },
+        verdict: {
+          type: String,
+          enum: ["On Track", "Achievable", "Ambitious", "Long-Term"],
+        },
+        rationale: { type: String },
+        benchmark: { type: String },
+      },
+      costBreakdown: {
+        monthlyCoaching: { type: String },
+        equipment: { type: String },
+        tournaments: { type: String },
+      },
+      burnoutRisk: {
+        level: { type: String, enum: ["low", "medium", "high"] },
+        message: { type: String },
+        recommendations: { type: [String] },
+      },
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 guidanceSubmissionSchema.index({ createdAt: -1 });
+// Backs getGuidanceHistory's {userId} + sort {createdAt:-1} — the index
+// above has no userId prefix, so that per-user history list couldn't use it
+// at all. Production has autoIndex off, so this also needs migration 35.
+guidanceSubmissionSchema.index({ userId: 1, createdAt: -1 });
 
 export const GuidanceSubmission = mongoose.model<GuidanceSubmissionDocument>(
   "GuidanceSubmission",
-  guidanceSubmissionSchema,
+  guidanceSubmissionSchema
 );

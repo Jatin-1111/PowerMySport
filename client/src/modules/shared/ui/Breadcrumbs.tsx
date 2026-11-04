@@ -1,0 +1,115 @@
+import { cn } from "@/utils/cn";
+import { ChevronRight, Home } from "lucide-react";
+import Link from "next/link";
+import React from "react";
+
+export interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface BreadcrumbsProps {
+  items: BreadcrumbItem[];
+  className?: string;
+}
+
+export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
+  if (items.length === 0) return null;
+
+  return (
+    // `flex-wrap` + `gap` rather than `space-x`: detail pages end the trail with
+    // a tournament or player name, and an unwrapped row pushed a phone page
+    // sideways.
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm", className)}
+    >
+      <Link
+        href="/"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        aria-label="Home"
+      >
+        <Home className="h-4 w-4" />
+      </Link>
+
+      {items.map((item, index) => {
+        const isLast = index === items.length - 1;
+
+        return (
+          <React.Fragment key={index}>
+            <ChevronRight className="text-muted-foreground h-4 w-4" />
+            {isLast || !item.href ? (
+              <span
+                className="text-foreground font-medium"
+                aria-current={isLast ? "page" : undefined}
+              >
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                href={item.href}
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              >
+                {item.label}
+              </Link>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
+}
+
+// Mobile-optimized breadcrumbs - shows only last 2 items with "..." for middle
+interface MobileBreadcrumbsProps extends BreadcrumbsProps {
+  maxItems?: number;
+}
+
+export function MobileBreadcrumbs({ items, maxItems = 2, className }: MobileBreadcrumbsProps) {
+  if (items.length === 0) return null;
+
+  const displayItems =
+    items.length > maxItems
+      ? [{ label: "...", href: undefined }, ...items.slice(items.length - maxItems)]
+      : items;
+
+  return (
+    <nav
+      aria-label="Breadcrumb"
+      className={cn("flex items-center space-x-1 text-sm md:hidden", className)}
+    >
+      <Link
+        href="/"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+        aria-label="Home"
+      >
+        <Home className="h-4 w-4" />
+      </Link>
+
+      {displayItems.map((item, index) => {
+        const isLast = index === displayItems.length - 1;
+
+        return (
+          <React.Fragment key={index}>
+            <ChevronRight className="text-muted-foreground h-4 w-4" />
+            {isLast || !item.href ? (
+              <span
+                className="text-foreground max-w-37.5 truncate font-medium"
+                aria-current={isLast ? "page" : undefined}
+              >
+                {item.label}
+              </span>
+            ) : (
+              <Link
+                href={item.href}
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-power-orange max-w-25 truncate rounded px-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              >
+                {item.label}
+              </Link>
+            )}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
+}

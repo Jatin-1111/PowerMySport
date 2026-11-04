@@ -1,5 +1,6 @@
 "use client";
 
+import { StatTile } from "@/modules/shared/ui/StatTile";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Activity,
@@ -13,7 +14,6 @@ import {
   Plus,
   Target,
   Trash2,
-  User,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -79,7 +79,7 @@ const NOTE_TYPE_CONFIG: Record<
   },
   SESSION: {
     label: "Session",
-    className: "bg-blue-100 text-blue-700 border border-blue-200",
+    className: "bg-indigo-100 text-indigo-700 border border-indigo-200",
     icon: <Activity size={12} />,
   },
   INJURY: {
@@ -102,14 +102,15 @@ const NOTE_TYPE_CONFIG: Record<
 function getBookingStatusClass(status: Booking["status"]): string {
   switch (status) {
     case "CONFIRMED":
-      return "bg-green-100 text-green-700 border border-green-200";
+      return "bg-emerald-100 text-emerald-700 border border-emerald-200";
     case "COMPLETED":
       return "bg-emerald-100 text-emerald-700 border border-emerald-200";
-    case "PENDING_CONFIRMATION":
+    case "AWAITING_PAYMENT":
+    case "AWAITING_PROVIDER":
     case "PENDING_INVITES":
       return "bg-amber-100 text-amber-700 border border-amber-200";
     case "IN_PROGRESS":
-      return "bg-blue-100 text-blue-700 border border-blue-200";
+      return "bg-indigo-100 text-indigo-700 border border-indigo-200";
     case "NO_SHOW":
       return "bg-yellow-100 text-yellow-700 border border-yellow-200";
     case "CANCELLED":
@@ -130,22 +131,14 @@ function StatCard({
   label: string;
   value: string | number;
 }) {
-  return (
-    <div className="flex flex-col items-center gap-1 rounded-xl bg-white/60 border border-slate-200 px-4 py-3 min-w-[90px]">
-      <span className="text-slate-400">{icon}</span>
-      <span className="text-xl font-bold text-slate-800">{value}</span>
-      <span className="text-xs text-slate-500 text-center leading-tight">
-        {label}
-      </span>
-    </div>
-  );
+  return <StatTile label={label} value={value} icon={icon} className="min-w-[110px]" />;
 }
 
 function NoteTypeBadge({ type }: { type: NoteType }) {
   const cfg = NOTE_TYPE_CONFIG[type];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}
+      className={`inline-flex items-center gap-1 rounded-sm px-2.5 py-0.5 text-xs font-medium ${cfg.className}`}
     >
       {cfg.icon}
       {cfg.label}
@@ -173,38 +166,34 @@ function NoteCard({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.2 }}
-        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
               <NoteTypeBadge type={note.noteType} />
-              <span className="text-xs text-slate-400 flex items-center gap-1">
+              <span className="flex items-center gap-1 text-xs text-slate-400">
                 <Calendar size={11} />
                 {formatDate(note.createdAt)}
               </span>
               {note.sessionDate && (
-                <span className="text-xs text-slate-400 flex items-center gap-1">
+                <span className="flex items-center gap-1 text-xs text-slate-400">
                   <Clock size={11} />
                   Session: {formatDate(note.sessionDate)}
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
               {note.note}
             </p>
           </div>
           <button
             onClick={() => setConfirmOpen(true)}
             disabled={deleting}
-            className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors disabled:opacity-40"
+            className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-500 disabled:opacity-40"
             aria-label="Delete note"
           >
-            {deleting ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <Trash2 size={15} />
-            )}
+            {deleting ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
           </button>
         </div>
       </motion.div>
@@ -215,12 +204,8 @@ function NoteCard({
         title="Delete Note"
         size="sm"
         footer={
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setConfirmOpen(false)}
-            >
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" size="sm" onClick={() => setConfirmOpen(false)}>
               Cancel
             </Button>
             <Button
@@ -238,8 +223,7 @@ function NoteCard({
         }
       >
         <p className="text-sm text-slate-600">
-          Are you sure you want to delete this note? This action cannot be
-          undone.
+          Are you sure you want to delete this note? This action cannot be undone.
         </p>
       </Modal>
     </>
@@ -248,32 +232,30 @@ function NoteCard({
 
 function BookingRow({ booking }: { booking: Booking }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="text-sm font-medium text-slate-800">
-            {formatDate(booking.date)}
-          </span>
-          <span className="text-xs text-slate-500 flex items-center gap-1">
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-slate-800">{formatDate(booking.date)}</span>
+          <span className="flex items-center gap-1 text-xs text-slate-500">
             <Clock size={11} />
             {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {booking.sport && (
-            <span className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700 border border-orange-200">
+            <span className="rounded-sm border border-orange-200 bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700">
               {booking.sport}
             </span>
           )}
           <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getBookingStatusClass(booking.status)}`}
+            className={`rounded-sm px-2.5 py-0.5 text-xs font-medium ${getBookingStatusClass(booking.status)}`}
           >
             {formatStatusLabel(booking.status)}
           </span>
         </div>
       </div>
       {booking.totalAmount !== undefined && (
-        <div className="text-sm font-semibold text-slate-700 shrink-0">
+        <div className="shrink-0 text-sm font-semibold text-slate-700">
           ₹{booking.totalAmount.toLocaleString("en-IN")}
         </div>
       )}
@@ -319,12 +301,10 @@ export default function ClientProfilePage() {
         const sorted = {
           ...res.data,
           bookings: [...(res.data.bookings ?? [])].sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
           ),
           notes: [...(res.data.notes ?? [])].sort(
-            (a, b) =>
-              new Date(b.createdAt).getTime() -
-              new Date(a.createdAt).getTime(),
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           ),
         };
         setClient(sorted);
@@ -332,8 +312,7 @@ export default function ClientProfilePage() {
         setError(res.message ?? "Failed to load client details.");
       }
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err.message : "Failed to load client details.";
+      const msg = err instanceof Error ? err.message : "Failed to load client details.";
       setError(msg);
     } finally {
       setLoading(false);
@@ -365,7 +344,7 @@ export default function ClientProfilePage() {
 
       const res = await coachApi.addClientNote(clientId, payload);
       if (res.success) {
-        toast.success("Note added successfully.");
+        toast.success("Note added.");
         setNoteText("");
         setNoteType("GENERAL");
         setSessionDate("");
@@ -404,13 +383,13 @@ export default function ClientProfilePage() {
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+      <div>
+        <div>
           {/* Back button skeleton */}
-          <div className="mb-6 h-8 w-28 rounded-lg bg-slate-200 animate-pulse" />
+          <div className="mb-6 h-8 w-28 animate-pulse rounded-lg bg-slate-200" />
           {/* Header skeleton */}
-          <div className="mb-8 rounded-2xl bg-white border border-slate-200 p-6 flex gap-5 items-center shadow-sm animate-pulse">
-            <div className="w-16 h-16 rounded-full bg-slate-200 shrink-0" />
+          <div className="mb-8 flex animate-pulse items-center gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="h-16 w-16 shrink-0 rounded-full bg-slate-200" />
             <div className="flex-1 space-y-2">
               <div className="h-5 w-48 rounded bg-slate-200" />
               <div className="h-4 w-64 rounded bg-slate-200" />
@@ -418,21 +397,15 @@ export default function ClientProfilePage() {
             </div>
           </div>
           {/* Body skeleton */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3 space-y-3">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+            <div className="space-y-3 lg:col-span-3">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="h-24 rounded-xl bg-slate-200 animate-pulse"
-                />
+                <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-200" />
               ))}
             </div>
-            <div className="lg:col-span-2 space-y-3">
+            <div className="space-y-3 lg:col-span-2">
               {[1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="h-20 rounded-xl bg-slate-200 animate-pulse"
-                />
+                <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-200" />
               ))}
             </div>
           </div>
@@ -444,17 +417,13 @@ export default function ClientProfilePage() {
   // ── Error state ───────────────────────────────────────────────────────────
   if (error || !client) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="text-center max-w-sm">
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div className="max-w-sm text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
             <AlertTriangle size={28} className="text-red-500" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-800 mb-2">
-            Could not load client
-          </h2>
-          <p className="text-sm text-slate-500 mb-6">
-            {error ?? "Client not found."}
-          </p>
+          <h2 className="mb-2 text-xl font-semibold text-slate-800">Could not load client</h2>
+          <p className="mb-6 text-sm text-slate-500">{error ?? "Client not found."}</p>
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft size={16} />
             Go Back
@@ -469,16 +438,15 @@ export default function ClientProfilePage() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-
+    <div>
+      <div>
         {/* Back button */}
         <motion.button
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.25 }}
           onClick={() => router.back()}
-          className="mb-6 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-white hover:text-slate-900 hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
+          className="mb-6 inline-flex items-center gap-2 rounded-lg border border-transparent px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-200 hover:bg-white hover:text-slate-900 hover:shadow-sm"
         >
           <ArrowLeft size={16} />
           Clients
@@ -489,15 +457,15 @@ export default function ClientProfilePage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="mb-8 rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden"
+          className="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
         >
           {/* Orange top bar accent */}
-          <div className="h-1.5 bg-gradient-to-r from-orange-400 to-orange-600" />
+          <div className="h-1.5 bg-orange-400" />
 
           <div className="p-6">
-            <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-center">
+            <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
               {/* Avatar */}
-              <div className="shrink-0 flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-white text-xl font-bold shadow-md select-none">
+              <div className="bg-power-orange-solid flex h-16 w-16 shrink-0 select-none items-center justify-center rounded-full text-xl font-bold text-white shadow-md">
                 {client.photoUrl ? (
                   <img
                     src={client.photoUrl}
@@ -510,29 +478,29 @@ export default function ClientProfilePage() {
               </div>
 
               {/* Name / email / sports */}
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-3 mb-1">
-                  <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex flex-wrap items-center gap-3">
+                  <h1 className="font-editorial text-2xl font-normal leading-tight text-slate-900">
                     {client.name}
                   </h1>
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                    className={`rounded-sm border px-2.5 py-0.5 text-xs font-semibold ${
                       client.isActive
-                        ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                        : "bg-slate-100 text-slate-500 border-slate-200"
+                        ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                        : "border-slate-200 bg-slate-100 text-slate-500"
                     }`}
                   >
                     {client.isActive ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <p className="text-sm text-slate-500 mb-3">{client.email}</p>
+                <p className="mb-3 text-sm text-slate-500">{client.email}</p>
 
                 {client.sports && client.sports.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {client.sports.map((sport) => (
                       <span
                         key={sport}
-                        className="rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 text-xs font-medium text-orange-700"
+                        className="rounded-sm border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700"
                       >
                         {sport}
                       </span>
@@ -554,11 +522,7 @@ export default function ClientProfilePage() {
                 label="Completed"
                 value={client.completedSessions}
               />
-              <StatCard
-                icon={<Clock size={16} />}
-                label="Pending"
-                value={client.pendingSessions}
-              />
+              <StatCard icon={<Clock size={16} />} label="Pending" value={client.pendingSessions} />
               {client.lastSessionDate && (
                 <StatCard
                   icon={<Activity size={16} />}
@@ -571,8 +535,7 @@ export default function ClientProfilePage() {
         </motion.div>
 
         {/* ── Body: 2-column grid ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           {/* LEFT: Session Notes */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -580,13 +543,13 @@ export default function ClientProfilePage() {
             transition={{ duration: 0.35, delay: 0.05 }}
             className="lg:col-span-3"
           >
-            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                  <FileText size={17} className="text-orange-500" />
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+                  <FileText size={17} className="text-power-orange" />
                   Session Notes
                   {client.notes.length > 0 && (
-                    <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 font-medium">
+                    <span className="ml-1 rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                       {client.notes.length}
                     </span>
                   )}
@@ -612,14 +575,12 @@ export default function ClientProfilePage() {
                     transition={{ duration: 0.25 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/60">
-                      <h3 className="text-sm font-semibold text-slate-700 mb-4">
-                        New Note
-                      </h3>
+                    <div className="border-b border-slate-100 bg-slate-50/60 px-6 py-5">
+                      <h3 className="mb-4 text-sm font-semibold text-slate-700">New Note</h3>
                       <div className="space-y-4">
                         {/* Note textarea */}
                         <div>
-                          <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                          <label className="mb-1.5 block text-xs font-medium text-slate-600">
                             Note <span className="text-red-500">*</span>
                           </label>
                           <textarea
@@ -627,22 +588,20 @@ export default function ClientProfilePage() {
                             value={noteText}
                             onChange={(e) => setNoteText(e.target.value)}
                             placeholder="Write your note here..."
-                            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 resize-none transition"
+                            className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder-slate-400 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                           />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                           {/* Note type */}
                           <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                            <label className="mb-1.5 block text-xs font-medium text-slate-600">
                               Note Type
                             </label>
                             <select
                               value={noteType}
-                              onChange={(e) =>
-                                setNoteType(e.target.value as NoteType)
-                              }
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition"
+                              onChange={(e) => setNoteType(e.target.value as NoteType)}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                             >
                               <option value="GENERAL">General</option>
                               <option value="SESSION">Session</option>
@@ -654,15 +613,14 @@ export default function ClientProfilePage() {
 
                           {/* Session date */}
                           <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                              Session Date{" "}
-                              <span className="text-slate-400">(optional)</span>
+                            <label className="mb-1.5 block text-xs font-medium text-slate-600">
+                              Session Date <span className="text-slate-400">(optional)</span>
                             </label>
                             <input
                               type="date"
                               value={sessionDate}
                               onChange={(e) => setSessionDate(e.target.value)}
-                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100 transition"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                             />
                           </div>
                         </div>
@@ -698,7 +656,7 @@ export default function ClientProfilePage() {
               </AnimatePresence>
 
               {/* Notes list */}
-              <div className="p-5 space-y-3">
+              <div className="space-y-3 p-5">
                 <AnimatePresence mode="popLayout">
                   {client.notes.length === 0 ? (
                     <motion.div
@@ -710,9 +668,7 @@ export default function ClientProfilePage() {
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                         <FileText size={22} className="text-slate-400" />
                       </div>
-                      <p className="text-sm font-medium text-slate-600 mb-1">
-                        No notes yet
-                      </p>
+                      <p className="mb-1 text-sm font-medium text-slate-600">No notes yet</p>
                       <p className="text-xs text-slate-400">
                         Add notes to track this athlete's progress.
                       </p>
@@ -742,20 +698,20 @@ export default function ClientProfilePage() {
             transition={{ duration: 0.35, delay: 0.1 }}
             className="lg:col-span-2"
           >
-            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
-                  <Calendar size={17} className="text-orange-500" />
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                <h2 className="flex items-center gap-2 text-base font-semibold text-slate-800">
+                  <Calendar size={17} className="text-power-orange" />
                   Session History
                   {client.bookings.length > 0 && (
-                    <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500 font-medium">
+                    <span className="ml-1 rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
                       {client.bookings.length}
                     </span>
                   )}
                 </h2>
               </div>
 
-              <div className="p-5 space-y-3">
+              <div className="space-y-3 p-5">
                 <AnimatePresence mode="popLayout">
                   {client.bookings.length === 0 ? (
                     <motion.div
@@ -767,9 +723,7 @@ export default function ClientProfilePage() {
                       <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
                         <Calendar size={22} className="text-slate-400" />
                       </div>
-                      <p className="text-sm font-medium text-slate-600 mb-1">
-                        No sessions yet
-                      </p>
+                      <p className="mb-1 text-sm font-medium text-slate-600">No sessions yet</p>
                       <p className="text-xs text-slate-400">
                         Past sessions with this athlete will appear here.
                       </p>
@@ -797,12 +751,9 @@ export default function ClientProfilePage() {
                             variant="ghost"
                             size="sm"
                             fullWidth
-                            onClick={() =>
-                              setVisibleBookings((v) => v + BOOKINGS_PAGE_SIZE)
-                            }
+                            onClick={() => setVisibleBookings((v) => v + BOOKINGS_PAGE_SIZE)}
                           >
-                            Load more (
-                            {client.bookings.length - visibleBookings} more)
+                            Load more ({client.bookings.length - visibleBookings} more)
                           </Button>
                         </motion.div>
                       )}

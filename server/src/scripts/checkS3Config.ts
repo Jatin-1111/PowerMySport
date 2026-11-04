@@ -12,8 +12,7 @@ import "dotenv/config";
 
 const region = process.env.AWS_REGION || "us-east-1";
 const imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
-const documentsBucket =
-  process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
+const documentsBucket = process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-documents";
 
 const s3Client = new S3Client({
   region,
@@ -37,9 +36,7 @@ async function checkBucketConfig(bucketName: string) {
   } catch (error: any) {
     if (error.name === "NoSuchCORSConfiguration") {
       console.log("\n❌ NO CORS CONFIGURATION FOUND!");
-      console.log(
-        "   This is the problem - CORS must be configured for uploads",
-      );
+      console.log("   This is the problem - CORS must be configured for uploads");
     } else {
       console.log(`\n❌ Error checking CORS: ${error.message}`);
     }
@@ -52,13 +49,7 @@ async function checkBucketConfig(bucketName: string) {
     });
     const publicAccessResponse = await s3Client.send(publicAccessCommand);
     console.log("\n📋 Public Access Block Configuration:");
-    console.log(
-      JSON.stringify(
-        publicAccessResponse.PublicAccessBlockConfiguration,
-        null,
-        2,
-      ),
-    );
+    console.log(JSON.stringify(publicAccessResponse.PublicAccessBlockConfiguration, null, 2));
   } catch (error: any) {
     if (error.name === "NoSuchPublicAccessBlockConfiguration") {
       console.log("\n✅ No Public Access Block (bucket can be public)");
@@ -76,7 +67,7 @@ async function checkBucketConfig(bucketName: string) {
     console.log(`   Grants: ${aclResponse.Grants?.length || 0}`);
     aclResponse.Grants?.forEach((grant) => {
       console.log(
-        `   - ${grant.Grantee?.Type}: ${grant.Grantee?.URI || grant.Grantee?.DisplayName} (${grant.Permission})`,
+        `   - ${grant.Grantee?.Type}: ${grant.Grantee?.URI || grant.Grantee?.DisplayName} (${grant.Permission})`
       );
     });
   } catch (error: any) {
@@ -104,9 +95,7 @@ async function main() {
   console.log("   - AllowedHeaders: *");
   console.log("3. ⚠️  Public access is NOT required for presigned URLs");
   console.log("4. ⚠️  Presigned URLs work even with private buckets");
-  console.log(
-    "\nIf CORS is missing, run: npx tsx src/scripts/configureS3Cors.ts",
-  );
+  console.log("\nIf CORS is missing, run: npx tsx src/scripts/configureS3Cors.ts");
 }
 
 main();

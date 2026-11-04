@@ -14,8 +14,7 @@ async function clearTestReminders() {
     console.log("🗑️  Clearing test reminders...");
 
     // Connect to MongoDB
-    const mongoUri =
-      process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
+    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/powermysport";
     await mongoose.connect(mongoUri);
     console.log("✅ Connected to MongoDB");
 
@@ -26,7 +25,7 @@ async function clearTestReminders() {
     console.log(`✅ Deleted ${result.deletedCount} scheduled notifications`);
 
     // Also clear any test bookings if needed (commented out for safety)
-    const bookingResult = await Booking.deleteMany({ /* your test criteria */ });
+    const bookingResult = await Booking.deleteMany({/* your test criteria */});
     console.log(`✅ Deleted ${bookingResult.deletedCount} test bookings`);
 
     console.log("\n✨ Database cleanup complete!");

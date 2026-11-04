@@ -1,25 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Card } from "@/modules/shared/ui/Card";
-import { Button } from "@/modules/shared/ui/Button";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminApi, PayoutSummary } from "@/modules/admin/services/admin";
+import { btn } from "@/modules/shared/ui/buttonStyles";
+import { ConfirmModal } from "@/modules/shared/ui/ConfirmModal";
+import { ExportCsvButton } from "@/modules/shared/ui/ExportCsvButton";
+import { MetricStrip, Panel } from "@/modules/shared/ui/Panel";
+import { EmptyState, SkeletonBlock } from "@/modules/shared/ui/States";
+import { StatusBadge } from "@/modules/shared/ui/StatusBadge";
 import { toast } from "@/lib/toast";
-import {
-  CheckCircle2,
-  AlertCircle,
-  Building2,
-  UserCircle2,
-  Landmark,
-  Smartphone,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, Landmark, Smartphone } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const VENDOR_LABEL: Record<PayoutSummary["vendorRole"], string> = {
+  Coach: "Coach",
+  CoachSession: "Coach, classes",
+  VenueLister: "Venue owner",
+  Expert: "Expert",
+};
+
+const inr = (value: number) => {
+  const amount = Number(value || 0);
+  return `₹${amount.toLocaleString("en-IN", {
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const payoutKey = (payout: PayoutSummary) => `${payout.vendorId}-${payout.vendorRole}`;
+
+type PendingConfirm = { kind: "one"; payout: PayoutSummary } | { kind: "bulk" } | null;
 
 export default function AdminPayoutsPage() {
   const [payouts, setPayouts] = useState<PayoutSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [confirm, setConfirm] = useState<PendingConfirm>(null);
 
   const loadPayouts = async () => {
     try {
@@ -42,238 +60,286 @@ export default function AdminPayoutsPage() {
     loadPayouts();
   }, []);
 
-  const handleMarkAsPaid = async (payout: PayoutSummary) => {
-    const confirmMessage = `Are you sure you want to mark ₹${payout.totalPendingAmount} as PAID for ${payout.vendorName}?`;
-    if (!window.confirm(confirmMessage)) return;
-
-    setProcessingId(payout.vendorId);
-    try {
-      const response = await adminApi.markPayoutsAsPaid({
-        vendorId: payout.vendorId,
-        vendorRole: payout.vendorRole,
-        bookingIds: payout.bookingIds,
-      });
-
-      if (response.success) {
-        toast.success(response.message || "Payout marked as paid!");
-        await loadPayouts();
-      } else {
-        toast.error(response.message || "Failed to mark as paid");
-      }
-    } catch (error) {
-      toast.error("Failed to process payout");
-      console.error(error);
-    } finally {
-      setProcessingId(null);
+  const payOneVendor = async (payout: PayoutSummary) => {
+    const response = await adminApi.markPayoutsAsPaid({
+      vendorId: payout.vendorId,
+      vendorRole: payout.vendorRole,
+      bookingIds: payout.bookingIds,
+    });
+    if (!response.success) {
+      throw new Error(response.message || `Failed to pay ${payout.vendorName}`);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <AdminPageHeader
-          badge="Finance"
-          title="Pending Payouts"
-          subtitle="Manage and settle pending earnings for Venue Listers and Coaches."
-        />
-        <div className="flex flex-col items-center justify-center py-16 text-slate-500">
-          <Loader2 className="h-10 w-10 animate-spin mb-3" />
-          <p className="text-sm">Loading pending payouts...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleMarkAsPaid = async (payout: PayoutSummary) => {
+    setProcessingId(payout.vendorId);
+    try {
+      await payOneVendor(payout);
+      toast.success(`${payout.vendorName} marked as paid`);
+      await loadPayouts();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to process payout");
+      console.error(error);
+    } finally {
+      setProcessingId(null);
+      setConfirm(null);
+    }
+  };
 
-  const totalAmountOwed = payouts.reduce(
-    (sum, p) => sum + p.totalPendingAmount,
-    0,
+  const toggleSelected = (payout: PayoutSummary) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const key = payoutKey(payout);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const payableSelectedPayouts = payouts.filter(
+    (p) => selected.has(payoutKey(p)) && p.payoutMethod
   );
+  const selectedTotal = payableSelectedPayouts.reduce((sum, p) => sum + p.totalPendingAmount, 0);
+
+  const handleBulkPay = async () => {
+    if (payableSelectedPayouts.length === 0) return;
+
+    setBulkProcessing(true);
+    try {
+      const results = await Promise.allSettled(
+        payableSelectedPayouts.map((payout) => payOneVendor(payout))
+      );
+      const failedCount = results.filter((r) => r.status === "rejected").length;
+      if (failedCount > 0) {
+        toast.error(`${payableSelectedPayouts.length - failedCount} paid, ${failedCount} failed.`);
+      } else {
+        toast.success(`${payableSelectedPayouts.length} vendor(s) paid.`);
+      }
+      setSelected(new Set());
+      await loadPayouts();
+    } finally {
+      setBulkProcessing(false);
+      setConfirm(null);
+    }
+  };
+
+  const totalAmountOwed = payouts.reduce((sum, p) => sum + p.totalPendingAmount, 0);
+  const withoutMethod = payouts.filter((p) => !p.payoutMethod).length;
+  const payableAll = payouts.filter((p) => p.payoutMethod);
+  const allSelected = payableAll.length > 0 && payableAll.every((p) => selected.has(payoutKey(p)));
+
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set() : new Set(payableAll.map(payoutKey)));
+  };
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        badge="Finance"
-        title="Pending Payouts"
-        subtitle="Manage and settle pending earnings for Venue Listers and Coaches."
+        badge="Commerce"
+        title="Pending payouts"
+        subtitle="Earnings owed to venue owners, coaches and experts for completed sessions."
+        action={
+          payouts.length > 0 ? (
+            <ExportCsvButton
+              filename="pending-payouts.csv"
+              rows={payouts}
+              columns={[
+                { header: "Vendor Name", value: (p) => p.vendorName },
+                { header: "Vendor Role", value: (p) => p.vendorRole },
+                { header: "Email", value: (p) => p.vendorEmail },
+                { header: "Phone", value: (p) => p.vendorPhone },
+                { header: "Completed Sessions", value: (p) => p.bookingIds.length },
+                { header: "Amount Owed (INR)", value: (p) => p.totalPendingAmount },
+                { header: "Payout Method", value: (p) => p.payoutMethod?.type || "NOT CONFIGURED" },
+              ]}
+            />
+          ) : undefined
+        }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-white p-6 border-l-4 border-l-power-orange">
-          <p className="text-sm font-semibold text-slate-500">
-            Total Pending Vendors
-          </p>
-          <p className="text-3xl font-bold text-slate-900 mt-2">
-            {payouts.length}
-          </p>
-        </Card>
-        <Card className="bg-white p-6 border-l-4 border-l-emerald-500">
-          <p className="text-sm font-semibold text-slate-500">
-            Total Amount Owed
-          </p>
-          <p className="text-3xl font-bold text-emerald-600 mt-2">
-            ₹{totalAmountOwed.toLocaleString()}
-          </p>
-        </Card>
-      </div>
-
-      {payouts.length === 0 ? (
-        <Card className="bg-white py-12 text-center">
-          <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900">
-            All caught up!
-          </h3>
-          <p className="text-slate-500 max-w-md mx-auto mt-2">
-            There are currently no pending payouts. All completed bookings have
-            been successfully settled.
-          </p>
-        </Card>
+      {loading ? (
+        <SkeletonBlock rows={8} label="Loading pending payouts" />
+      ) : payouts.length === 0 ? (
+        <EmptyState
+          title="Nothing to pay out"
+          description="Every completed booking has been settled."
+        />
       ) : (
-        <div className="space-y-4">
-          {payouts.map((payout) => (
-            <Card
-              key={`${payout.vendorId}-${payout.vendorRole}`}
-              className="bg-white overflow-hidden transition-all hover:shadow-md border border-slate-200"
+        <>
+          <MetricStrip
+            items={[
+              { label: "Vendors waiting", value: String(payouts.length) },
+              { label: "Total owed", value: inr(totalAmountOwed) },
+              {
+                label: "Missing payout details",
+                value: String(withoutMethod),
+                detail: withoutMethod > 0 ? "Can't be paid until they add them" : undefined,
+              },
+            ]}
+          />
+
+          {selected.size > 0 && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3"
             >
-              <div className="flex flex-col md:flex-row md:items-stretch">
-                {/* Left side: Vendor Info */}
-                <div className="p-6 border-b md:border-b-0 md:border-r border-slate-100 flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className={`p-2 rounded-lg ${payout.vendorRole === "COACH" ? "bg-blue-100 text-blue-600" : "bg-purple-100 text-purple-600"}`}
-                    >
-                      {payout.vendorRole === "COACH" ? (
-                        <UserCircle2 size={24} />
-                      ) : (
-                        <Building2 size={24} />
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        {payout.vendorName}
-                      </h3>
-                      <p className="text-sm font-semibold text-slate-500">
-                        {payout.vendorRole === "COACH"
-                          ? "Coach"
-                          : "Venue Owner"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-slate-500">Contact</p>
-                      <p className="font-medium text-slate-900">
-                        {payout.vendorEmail}
-                      </p>
-                      <p className="text-slate-600">{payout.vendorPhone}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500">Bookings</p>
-                      <p className="font-medium text-slate-900">
-                        {payout.bookingIds.length} completed sessions
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Middle: Payout Method */}
-                <div className="p-6 border-b md:border-b-0 md:border-r border-slate-100 flex-1 bg-slate-50/50">
-                  <p className="text-sm font-semibold text-slate-500 mb-3">
-                    Preferred Payout Method
-                  </p>
-
-                  {!payout.payoutMethod ? (
-                    <div className="flex items-start gap-2 text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                      <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                      <p className="text-sm font-medium">
-                        This user has not configured a payout method yet. They
-                        need to set it up in their dashboard.
-                      </p>
-                    </div>
-                  ) : payout.payoutMethod.type === "BANK_TRANSFER" ? (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                        <Landmark size={18} className="text-slate-500" /> Bank
-                        Transfer
-                      </div>
-                      <p>
-                        <span className="text-slate-500">Bank:</span>{" "}
-                        {payout.payoutMethod.bankName}
-                      </p>
-                      <p>
-                        <span className="text-slate-500">Name:</span>{" "}
-                        {payout.payoutMethod.accountHolderName}
-                      </p>
-                      <p>
-                        <span className="text-slate-500">A/C No:</span>{" "}
-                        <span className="font-mono text-slate-900 font-medium">
-                          {payout.payoutMethod.accountNumber}
-                        </span>
-                      </p>
-                      <p>
-                        <span className="text-slate-500">IFSC:</span>{" "}
-                        <span className="font-mono text-slate-900 font-medium">
-                          {payout.payoutMethod.ifscCode}
-                        </span>
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 font-semibold text-slate-900 mb-2">
-                        <Smartphone size={18} className="text-slate-500" /> UPI
-                        Transfer
-                      </div>
-                      <p>
-                        <span className="text-slate-500">UPI ID:</span>{" "}
-                        <span className="font-mono text-slate-900 font-medium">
-                          {payout.payoutMethod.upiId}
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Right side: Action */}
-                <div className="p-6 flex flex-col justify-center items-center text-center w-full md:w-64 bg-slate-50/50">
-                  <p className="text-sm font-semibold text-slate-500 mb-2">
-                    Amount Owed
-                  </p>
-                  <p className="text-3xl font-bold text-power-orange mb-6">
-                    ₹{payout.totalPendingAmount.toLocaleString()}
-                  </p>
-
-                  <Button
-                    onClick={() => handleMarkAsPaid(payout)}
-                    disabled={
-                      !payout.payoutMethod || processingId === payout.vendorId
-                    }
-                    variant={!payout.payoutMethod ? "ghost" : "success"}
-                    size="md"
-                    fullWidth
-                  >
-                    {processingId === payout.vendorId ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 size={18} />
-                        Mark as Paid
-                      </>
-                    )}
-                  </Button>
-                  {!payout.payoutMethod && (
-                    <p className="text-xs text-slate-500 mt-3 text-center">
-                      Cannot pay without payout details
-                    </p>
-                  )}
-                </div>
+              <p className="text-sm font-medium text-slate-900">
+                {selected.size} selected, {inr(selectedTotal)} to pay
+                {payableSelectedPayouts.length !== selected.size &&
+                  ` (${selected.size - payableSelectedPayouts.length} without payout details will be skipped)`}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelected(new Set())}
+                  className={btn("quiet")}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirm({ kind: "bulk" })}
+                  disabled={bulkProcessing || payableSelectedPayouts.length === 0}
+                  className={btn("primary")}
+                >
+                  Mark {payableSelectedPayouts.length} as paid
+                </button>
               </div>
-            </Card>
-          ))}
-        </div>
+            </div>
+          )}
+
+          <Panel flush>
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th className="w-10">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all vendors that can be paid"
+                        checked={allSelected}
+                        disabled={payableAll.length === 0}
+                        onChange={toggleAll}
+                        className="size-4 rounded accent-orange-700"
+                      />
+                    </th>
+                    <th>Vendor</th>
+                    <th>Payout details</th>
+                    <th className="text-right">Owed</th>
+                    <th>
+                      <span className="sr-only">Action</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payouts.map((payout) => {
+                    const method = payout.payoutMethod;
+                    return (
+                      <tr key={payoutKey(payout)} className="align-top">
+                        <td>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${payout.vendorName}`}
+                            checked={selected.has(payoutKey(payout))}
+                            onChange={() => toggleSelected(payout)}
+                            disabled={!method}
+                            title={method ? undefined : "No payout details yet"}
+                            className="size-4 rounded accent-orange-700"
+                          />
+                        </td>
+                        <td>
+                          <p className="font-semibold text-slate-900">{payout.vendorName}</p>
+                          <p className="text-xs text-slate-500">
+                            {VENDOR_LABEL[payout.vendorRole]}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-600">{payout.vendorEmail}</p>
+                          <p className="text-xs text-slate-600">{payout.vendorPhone}</p>
+                        </td>
+                        <td className="min-w-48">
+                          {!method ? (
+                            <p className="flex items-start gap-1.5 text-sm text-amber-800">
+                              <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+                              Not added yet. They set it up in their dashboard.
+                            </p>
+                          ) : method.type === "BANK_TRANSFER" ? (
+                            <div className="space-y-0.5 text-sm">
+                              <p className="flex items-center gap-1.5 font-medium text-slate-900">
+                                <Landmark size={14} className="text-slate-500" aria-hidden />
+                                Bank transfer
+                              </p>
+                              <p className="text-slate-600">
+                                {method.accountHolderName}, {method.bankName}
+                              </p>
+                              <p className="font-mono text-xs text-slate-700">
+                                {method.accountNumber} · {method.ifscCode}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="space-y-0.5 text-sm">
+                              <p className="flex items-center gap-1.5 font-medium text-slate-900">
+                                <Smartphone size={14} className="text-slate-500" aria-hidden />
+                                UPI
+                              </p>
+                              <p className="font-mono text-xs text-slate-700">{method.upiId}</p>
+                            </div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap text-right">
+                          <p className="text-base font-semibold tabular-nums text-slate-900">
+                            {inr(payout.totalPendingAmount)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {payout.bookingIds.length} session
+                            {payout.bookingIds.length === 1 ? "" : "s"}
+                          </p>
+                        </td>
+                        <td className="text-right">
+                          {method ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirm({ kind: "one", payout })}
+                              disabled={processingId === payout.vendorId}
+                              className={btn("outline", "sm")}
+                            >
+                              {processingId === payout.vendorId ? "Saving…" : "Mark as paid"}
+                            </button>
+                          ) : (
+                            <StatusBadge status="No details" tone="amber" dot={false} size="sm" />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+        </>
       )}
+
+      <ConfirmModal
+        open={confirm !== null}
+        title={
+          confirm?.kind === "one"
+            ? `Mark ${inr(confirm.payout.totalPendingAmount)} as paid?`
+            : `Mark ${inr(selectedTotal)} as paid?`
+        }
+        description={
+          confirm?.kind === "one"
+            ? `This records ${confirm.payout.vendorName}'s ${confirm.payout.bookingIds.length} completed session${confirm.payout.bookingIds.length === 1 ? "" : "s"} as settled. Do it only after the money has been sent.`
+            : `This records ${payableSelectedPayouts.length} vendor${payableSelectedPayouts.length === 1 ? "" : "s"} as settled. Do it only after the money has been sent.`
+        }
+        confirmLabel="Mark as paid"
+        loading={processingId !== null || bulkProcessing}
+        onConfirm={() => {
+          if (confirm?.kind === "one") void handleMarkAsPaid(confirm.payout);
+          else void handleBulkPay();
+        }}
+        onCancel={() => setConfirm(null)}
+      />
     </div>
   );
 }

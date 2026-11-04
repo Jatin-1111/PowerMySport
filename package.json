@@ -1,13 +1,42 @@
 {
-    "name": "Powermysport",
-    "private": true,
-    "packageManager": "npm@11.14.1",
-    "workspaces": [
-        "admin",
-        "client",
-        "community"
+  "name": "Powermysport",
+  "private": true,
+  "packageManager": "npm@11.14.1",
+  "workspaces": [
+    "admin",
+    "client",
+    "community",
+    "packages/*"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky",
+    "client": "cd client && npm run dev",
+    "admin": "cd admin && npm run dev",
+    "community": "cd community && npm run dev",
+    "server": "cd server && npm run dev",
+    "deploy:server": "cd server && npm run deploy"
+  },
+  "devDependencies": {
+    "turbo": "^2.9.16",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.12",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx,mjs}": [
+      "prettier --write"
     ],
-    "devDependencies": {
-        "turbo": "^2.9.16"
-    }
+    "server/**/*.{ts,js,mjs}": [
+      "eslint --fix --no-warn-ignored --config server/eslint.config.mjs"
+    ],
+    "community/**/*.{ts,tsx,js,jsx,mjs}": [
+      "eslint --fix --no-warn-ignored --config community/eslint.config.mjs"
+    ],
+    "**/*.{json,css,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  }
 }

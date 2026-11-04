@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { motion } from "framer-motion";
 import { BarChart2 } from "lucide-react";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
+import React from "react";
 
 // ---------------------------------------------------------------------------
 // KpiCard
@@ -23,13 +23,13 @@ export function KpiCard({
   delay?: number;
 }) {
   return (
-    <SlideUp delay={delay ?? 0}>
-      <div className="group flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-orange-300">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-500">
+    <SlideUp delay={delay ?? 0} className="h-full">
+      <div className="group flex h-full items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 transition-colors hover:border-orange-300">
+        <div className="text-power-orange flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-orange-50">
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm text-slate-500">{label}</p>
+          <p className="text-sm leading-snug text-slate-600">{label}</p>
           <p className={`mt-0.5 text-2xl font-semibold text-slate-900 ${valueClass ?? ""}`}>
             {value}
           </p>
@@ -43,11 +43,7 @@ export function KpiCard({
 // SparklineBarChart
 // ---------------------------------------------------------------------------
 
-export function SparklineBarChart({
-  data,
-}: {
-  data: Array<{ label: string; count: number }>;
-}) {
+export function SparklineBarChart({ data }: { data: Array<{ label: string; count: number }> }) {
   const PAD = { top: 12, right: 0, bottom: 28, left: 28 };
   const W = 600;
   const H = 120;
@@ -60,27 +56,12 @@ export function SparklineBarChart({
   const barW = barCount > 0 ? (chartW - gap * (barCount - 1)) / barCount : 0;
 
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="w-full h-auto"
-    >
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full">
       {/* Y-axis labels */}
-      <text
-        x={PAD.left - 4}
-        y={PAD.top + 4}
-        textAnchor="end"
-        fontSize={10}
-        fill="#94a3b8"
-      >
+      <text x={PAD.left - 4} y={PAD.top + 4} textAnchor="end" fontSize={10} fill="#94a3b8">
         {maxCount}
       </text>
-      <text
-        x={PAD.left - 4}
-        y={PAD.top + chartH}
-        textAnchor="end"
-        fontSize={10}
-        fill="#94a3b8"
-      >
+      <text x={PAD.left - 4} y={PAD.top + chartH} textAnchor="end" fontSize={10} fill="#94a3b8">
         0
       </text>
 
@@ -116,23 +97,11 @@ export function SparklineBarChart({
       {/* X-axis: first and last labels only */}
       {data.length > 0 && (
         <>
-          <text
-            x={PAD.left + barW / 2}
-            y={H - 4}
-            textAnchor="middle"
-            fontSize={10}
-            fill="#94a3b8"
-          >
+          <text x={PAD.left} y={H - 4} textAnchor="start" fontSize={10} fill="#94a3b8">
             {data[0].label}
           </text>
           {data.length > 1 && (
-            <text
-              x={PAD.left + (barCount - 1) * (barW + gap) + barW / 2}
-              y={H - 4}
-              textAnchor="middle"
-              fontSize={10}
-              fill="#94a3b8"
-            >
+            <text x={PAD.left + chartW} y={H - 4} textAnchor="end" fontSize={10} fill="#94a3b8">
               {data[data.length - 1].label}
             </text>
           )}
@@ -174,7 +143,10 @@ export function SportBreakdownPanel({
             <p className="truncate text-sm font-medium text-slate-700">{item.sport}</p>
             <p className="text-xs text-slate-500">{item.count} sessions</p>
           </div>
-          <div className="relative flex-1 overflow-hidden rounded-full bg-slate-100" style={{ height: 8 }}>
+          <div
+            className="relative flex-1 overflow-hidden rounded-full bg-slate-100"
+            style={{ height: 8 }}
+          >
             <motion.div
               className="absolute inset-y-0 left-0 rounded-full"
               style={{
@@ -200,11 +172,7 @@ export function SportBreakdownPanel({
 
 const HEATMAP_HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6–21
 
-export function BusyHoursHeatmap({
-  data,
-}: {
-  data: Array<{ hour: number; count: number }>;
-}) {
+export function BusyHoursHeatmap({ data }: { data: Array<{ hour: number; count: number }> }) {
   const countByHour = new Map(data.map((d) => [d.hour, d.count]));
   const maxCount = Math.max(...Array.from(countByHour.values()), 1);
 
@@ -215,9 +183,7 @@ export function BusyHoursHeatmap({
         const intensity = count / maxCount;
         const isEmpty = count === 0;
 
-        const bgColor = isEmpty
-          ? "#f1f5f9"
-          : `rgba(249,115,22,${0.12 + intensity * 0.75})`;
+        const bgColor = isEmpty ? "#f1f5f9" : `rgba(249,115,22,${0.12 + intensity * 0.75})`;
         const borderColor = isEmpty ? "#e2e8f0" : "transparent";
         const textColor = intensity > 0.55 ? "#ffffff" : "#64748b";
 
@@ -225,7 +191,7 @@ export function BusyHoursHeatmap({
           <div
             key={hour}
             className="flex flex-col items-center gap-0.5"
-            title={`${hour}:00 — ${count} bookings`}
+            title={`${hour}:00, ${count} bookings`}
           >
             <div
               className="flex h-9 w-9 items-center justify-center rounded-lg border text-xs font-medium"
@@ -238,9 +204,7 @@ export function BusyHoursHeatmap({
             >
               {count > 0 ? count : ""}
             </div>
-            <span className="text-[10px] text-slate-400">
-              {hour}
-            </span>
+            <span className="text-[10px] text-slate-400">{hour}</span>
           </div>
         );
       })}
@@ -269,14 +233,7 @@ export function DonutChart({ rate }: { rate: number }) {
   return (
     <svg width={96} height={96} viewBox="0 0 96 96">
       {/* Track */}
-      <circle
-        cx={48}
-        cy={48}
-        r={R}
-        fill="none"
-        stroke="#f1f5f9"
-        strokeWidth={10}
-      />
+      <circle cx={48} cy={48} r={R} fill="none" stroke="#f1f5f9" strokeWidth={10} />
       {/* Animated arc */}
       <motion.circle
         cx={48}
@@ -333,9 +290,9 @@ export function RetentionCard({
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         {/* New clients */}
-        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-center">
-          <p className="text-2xl font-bold text-blue-700">{newCount}</p>
-          <p className="mt-1 text-xs text-blue-500">{newLabel}</p>
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-center">
+          <p className="text-2xl font-bold text-indigo-700">{newCount}</p>
+          <p className="mt-1 text-xs text-indigo-500">{newLabel}</p>
         </div>
         {/* Returning clients */}
         <div className="rounded-xl border border-orange-100 bg-orange-50 p-4 text-center">

@@ -4,13 +4,8 @@ import { useEffect } from "react";
 
 const alphabetRegex = /[A-Za-z]/;
 
-const isGuardedInput = (
-  target: EventTarget | null,
-): target is HTMLInputElement => {
-  return (
-    target instanceof HTMLInputElement &&
-    (target.type === "number" || target.type === "tel")
-  );
+const isGuardedInput = (target: EventTarget | null): target is HTMLInputElement => {
+  return target instanceof HTMLInputElement && (target.type === "number" || target.type === "tel");
 };
 
 export function NumericInputGuard() {

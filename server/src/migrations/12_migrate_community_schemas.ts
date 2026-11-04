@@ -25,8 +25,12 @@ export const migrateCommunitySchemas = async (): Promise<void> => {
       { status: { $exists: false } },
       { $set: { status: "ACTIVE" } }
     );
-    console.log(`✓ Migrated ${conversationUpdateResult.modifiedCount} conversations to have conversationType`);
-    console.log(`✓ Migrated ${conversationStatusUpdateResult.modifiedCount} conversations to have status`);
+    console.log(
+      `✓ Migrated ${conversationUpdateResult.modifiedCount} conversations to have conversationType`
+    );
+    console.log(
+      `✓ Migrated ${conversationStatusUpdateResult.modifiedCount} conversations to have status`
+    );
 
     // 2. Migrate CommunityMessage
     const messageCollection = db.collection("communitymessages");
@@ -46,8 +50,12 @@ export const migrateCommunitySchemas = async (): Promise<void> => {
       { memberAddPolicy: { $exists: false } },
       { $set: { memberAddPolicy: "ADMIN_ONLY" } }
     );
-    console.log(`✓ Migrated ${groupAudienceUpdateResult.modifiedCount} groups to have audience policy`);
-    console.log(`✓ Migrated ${groupMemberPolicyUpdateResult.modifiedCount} groups to have memberAddPolicy`);
+    console.log(
+      `✓ Migrated ${groupAudienceUpdateResult.modifiedCount} groups to have audience policy`
+    );
+    console.log(
+      `✓ Migrated ${groupMemberPolicyUpdateResult.modifiedCount} groups to have memberAddPolicy`
+    );
 
     console.log("✓ Successfully migrated all community schemas");
   } catch (error) {

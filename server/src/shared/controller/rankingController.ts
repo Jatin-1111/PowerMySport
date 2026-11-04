@@ -1,0 +1,524 @@
+import { Request, Response } from "express";
+import { RankingEntry } from "../models/RankingEntry";
+import { RankingSnapshot } from "../models/RankingSnapshot";
+import { AitaRankingIngestService } from "../services/aita/AitaRankingIngestService";
+import { nextTierFor, TOP_BAND, type Benchmark } from "../services/aita/rankingInsights";
+import { projectRanking } from "../services/ranking/rankingProjection";
+import { LIVE_COMBOS } from "../services/aita/types";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+
+/**
+ * Public read API for the ranking mirror.
+ *
+ * ── The rule this file exists to hold ────────────────────────────────────────
+ * No endpoint here returns a date of birth. `dob` is `select: false` on the
+ * model, so it is excluded unless a query names it, and every projection below
+ * is also written out explicitly — belt and braces, because the data is
+ * children's and the cost of getting it wrong is not a bug report.
+ *
+ * `birthYear` is the public-safe derivative and is what the payloads carry. It
+ * is already implied by the age category, so it adds context without adding
+ * identifiability.
+ */
+
+/** Fields safe to send to a browser. Deliberately enumerated, not `-dob`. */
+const PUBLIC_ENTRY_FIELDS =
+  "rank regNo givenName familyName fullName birthYear state stateCode " +
+  "points totalPoints category subcategory asOnDate prevRank stateRank";
+
+/**
+ * The derived analytics a snapshot carries. Sent with every list because they
+ * are what turns a rank into something a reader can act on — the tier a player
+ * is chasing, how many of their state are ahead of them, what the point mix
+ * looks like at the top — and because they are a few hundred bytes against a
+ * fifty-row table.
+ */
+const SNAPSHOT_INSIGHT_FIELDS =
+  "asOnDate columns rowCount sourceUrl publishedAt comparedTo benchmarks " +
+  "stateCounts bandProfiles";
+
+/**
+ * `prevRank` is what the pipeline stores; `rankDelta` is what a reader wants.
+ * Derived on the way out rather than stored twice — one of them would go stale.
+ * Positive means the player moved up.
+ */
+const withMovement = <T extends { rank: number; prevRank?: number }>(entry: T) => ({
+  ...entry,
+  rankDelta: typeof entry.prevRank === "number" ? entry.prevRank - entry.rank : null,
+});
+
+const MAX_PAGE_SIZE = 200;
+const DEFAULT_PAGE_SIZE = 50;
+
+/** Mongo treats a raw string as a pattern; a name with "(" would 500 without this. */
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * GET /api/rankings
+ *   ?category=Boys&subcategory=U-14   (required pair)
+ *   &state=Maharashtra&search=aarav&date=2026-07-27&page=1&limit=50
+ *
+ * Defaults to the current list. `date` pins it to a historical snapshot, which
+ * is the query the source itself can only answer by making you download a PDF.
+ */
+/**
+ * Which sport's lists a request is about. Defaults to tennis so every existing
+ * caller keeps working unchanged — the documents have carried `sportSlug` since
+ * the mirror was built, but nothing sent it until the URLs grew a sport segment.
+ */
+const sportOf = (req: Request): string =>
+  String(req.query.sport ?? "tennis")
+    .trim()
+    .toLowerCase() || "tennis";
+
+export const listRankings = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const sportSlug = sportOf(req);
+  const category = String(req.query.category ?? "").trim();
+  const subcategory = String(req.query.subcategory ?? "").trim();
+  if (!category || !subcategory) {
+    throw new AppError("category and subcategory are both required.", 400);
+  }
+
+  const page = Math.max(1, Number.parseInt(String(req.query.page ?? "1"), 10) || 1);
+  const limit = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(1, Number.parseInt(String(req.query.limit ?? ""), 10) || DEFAULT_PAGE_SIZE)
+  );
+
+  const filter: Record<string, unknown> = { sportSlug, category, subcategory };
+
+  const date = String(req.query.date ?? "").trim();
+  if (date) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new AppError("date must be YYYY-MM-DD.", 400);
+    }
+    filter.asOnDate = new Date(date);
+  } else {
+    filter.isLatest = true;
+  }
+
+  const state = String(req.query.state ?? "").trim();
+  if (state) filter.state = state;
+
+  const search = String(req.query.search ?? "").trim();
+  if (search) {
+    // Anchored so the nameSearch index is usable. Matches on either name part
+    // because "Given Family" order is not what a parent types half the time.
+    const pattern = escapeRegex(search.toLowerCase());
+    filter.$or = [
+      { nameSearch: { $regex: `^${pattern}` } },
+      { nameSearch: { $regex: `\\s${pattern}` } },
+      { regNo: search },
+    ];
+  }
+
+  const [entries, total, snapshot] = await Promise.all([
+    RankingEntry.find(filter)
+      .sort({ rank: 1, totalPoints: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .select(PUBLIC_ENTRY_FIELDS)
+      .lean(),
+    RankingEntry.countDocuments(filter),
+    RankingSnapshot.findOne({
+      sportSlug,
+      category,
+      subcategory,
+      status: "published",
+      ...(date ? { asOnDate: new Date(date) } : { isLatestForCombo: true }),
+    })
+      // An archived week can hold a corrected re-upload beside the original;
+      // without a sort, findOne returned whichever was stored first, so the
+      // insights could describe the version the correction replaced.
+      .sort({ version: -1 })
+      .select(SNAPSHOT_INSIGHT_FIELDS)
+      .lean(),
+  ]);
+
+  // How many ranked players share each row's state, so "#18 in Maharashtra"
+  // can be read as "#18 of 214" rather than an unscaled number. Comes off the
+  // snapshot aggregate — the alternative is a count query per distinct state
+  // on the page.
+  const stateSizes = new Map<string, number>(
+    ((snapshot?.stateCounts ?? []) as Array<{ state: string; count: number }>).map((bucket) => [
+      bucket.state,
+      bucket.count,
+    ])
+  );
+
+  const benchmarks = (snapshot?.benchmarks ?? []) as Benchmark[];
+
+  res.json({
+    success: true,
+    data: {
+      entries: entries.map((entry) => ({
+        ...withMovement(entry),
+        stateSize: entry.state ? (stateSizes.get(entry.state) ?? null) : null,
+        // Computed here rather than in the browser so the rule for "which
+        // rung is next" lives in exactly one place.
+        nextTier:
+          benchmarks.length > 0 ? nextTierFor(entry.rank, entry.totalPoints, benchmarks) : null,
+      })),
+      // The source page this list came from, so a parent can check us against
+      // AITA rather than taking our word for it.
+      snapshot: snapshot ?? null,
+      pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+    },
+  });
+});
+
+/**
+ * GET /api/rankings/meta
+ * Which combos exist, what each one's current list is dated, and which states
+ * appear in it — everything a filter UI needs in one call.
+ */
+export const getRankingMeta = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const snapshots = await RankingSnapshot.find({
+    sportSlug: sportOf(req),
+    status: "published",
+    isLatestForCombo: true,
+  })
+    .select("category subcategory asOnDate rowCount columns")
+    .lean();
+
+  const combos = LIVE_COMBOS.map(({ category, subcategory }) => {
+    const snapshot = snapshots.find(
+      (s) => s.category === category && s.subcategory === subcategory
+    );
+    return {
+      category,
+      subcategory,
+      asOnDate: snapshot?.asOnDate ?? null,
+      rowCount: snapshot?.rowCount ?? 0,
+      columns: snapshot?.columns ?? [],
+      available: Boolean(snapshot),
+    };
+  });
+
+  const states = await RankingEntry.distinct("state", { isLatest: true });
+
+  res.json({
+    success: true,
+    data: {
+      combos,
+      states: (states as string[]).filter(Boolean).sort(),
+      source: {
+        federation: "All India Tennis Association",
+        acronym: "AITA",
+        // The new platform's ranking index. The old /playerranking/ path died
+        // with the August 2026 move to hitcourt.com.
+        url: "https://www.aita.hitcourt.com/ranking",
+      },
+    },
+  });
+});
+
+/**
+ * GET /api/rankings/dates?category=Boys&subcategory=U-14
+ *
+ * Every as-on date we hold for a combo, newest first — what backs the "view an
+ * earlier week" control. Deliberately its own endpoint rather than a field on
+ * /meta: /meta is fetched on every hub render and would otherwise carry twelve
+ * lists of up to 250 dates each for a control most visitors never touch.
+ */
+export const listRankingDates = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const category = String(req.query.category ?? "").trim();
+  const subcategory = String(req.query.subcategory ?? "").trim();
+  if (!category || !subcategory) {
+    throw new AppError("category and subcategory are both required.", 400);
+  }
+
+  // Newest version first within a date, so the first snapshot seen for each
+  // week is the one that wins everywhere else (see resolveSnapshotVersions).
+  const snapshots = await RankingSnapshot.find({
+    sportSlug: sportOf(req),
+    category,
+    subcategory,
+    status: "published",
+  })
+    .sort({ asOnDate: -1, version: -1 })
+    .select("asOnDate rowCount isLatestForCombo")
+    .lean();
+
+  // One entry per week. A corrected re-upload keeps every version published on
+  // purpose, and between the August cutover and 2026-09-17 unchanged re-fetches
+  // were recorded as corrections too (see aitaIngestDedupe). Listing each one
+  // gave the week picker the same date two or three times over: Boys U-12 had
+  // 31 Aug three times, each option a duplicate React key.
+  const weeks = new Map<number, (typeof snapshots)[number]>();
+  for (const snapshot of snapshots) {
+    const week = new Date(snapshot.asOnDate).getTime();
+    if (!weeks.has(week)) weeks.set(week, snapshot);
+  }
+
+  res.json({
+    success: true,
+    data: [...weeks.values()].map((s) => ({
+      asOnDate: s.asOnDate,
+      rowCount: s.rowCount ?? 0,
+      isLatest: Boolean(s.isLatestForCombo),
+    })),
+  });
+});
+
+/**
+ * GET /api/rankings/players/:regNo
+ *
+ * A player's current standing plus their rank and points over every snapshot we
+ * hold — the trajectory view, which is the whole reason for keeping history
+ * rather than only mirroring the current list.
+ *
+ * Note for whoever builds the UI on top of this: a per-player page for a minor
+ * is the surface that needs a deliberate indexing decision (see the DPDP note
+ * on the RankingEntry model). The API is safe; a crawlable page keyed on a
+ * child's name is a separate call that has not been made.
+ */
+export const getPlayerRankingHistory = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const regNo = String(req.params.regNo ?? "").trim();
+    if (!/^\d{4,8}$/.test(regNo)) {
+      throw new AppError("Invalid registration number.", 400);
+    }
+
+    const sportSlug = sportOf(req);
+    const current = await RankingEntry.find({ sportSlug, regNo, isLatest: true })
+      .select(PUBLIC_ENTRY_FIELDS)
+      .lean();
+
+    if (current.length === 0) {
+      const everRanked = await RankingEntry.exists({ sportSlug, regNo });
+      if (!everRanked) {
+        throw new AppError("Player not found.", 404);
+      }
+    }
+
+    // Capped: a player with five years of weekly history across four combos
+    // would otherwise return well over a thousand points.
+    const history = await RankingEntry.find({ sportSlug, regNo })
+      .sort({ asOnDate: -1 })
+      .limit(600)
+      .select("category subcategory asOnDate rank totalPoints snapshot")
+      .lean();
+
+    // Which of two rows for the same as-on date is the live one. Corrections are
+    // rare, so the lookup is too: it runs only when a duplicate date is actually
+    // present, rather than costing every player page a second query for a case
+    // most of them do not have.
+    const snapshotVersions = await resolveSnapshotVersions(history);
+
+    // The lists the player currently sits in, for the context each standing
+    // needs: how long the list is, what the rungs above them cost, how many of
+    // their state are ranked at all.
+    const snapshots =
+      current.length > 0
+        ? await RankingSnapshot.find({
+            sportSlug,
+            status: "published",
+            isLatestForCombo: true,
+            $or: current.map((entry) => ({
+              category: entry.category,
+              subcategory: entry.subcategory,
+            })),
+          })
+            .select("category subcategory rowCount benchmarks stateCounts bandProfiles comparedTo")
+            .lean()
+        : [];
+
+    const profile = current[0] ?? null;
+    res.json({
+      success: true,
+      data: {
+        player: profile
+          ? {
+              regNo,
+              fullName: profile.fullName,
+              givenName: profile.givenName,
+              familyName: profile.familyName,
+              birthYear: profile.birthYear ?? null,
+              state: profile.state ?? null,
+            }
+          : { regNo },
+        current: current.map((entry) => ({
+          ...withMovement(entry),
+          insight: buildPlayerInsight(entry, snapshots, history),
+          projection: buildProjection(entry, snapshots, history, snapshotVersions),
+        })),
+        history,
+      },
+    });
+  }
+);
+
+/**
+ * Snapshot versions, but only for dates that actually have more than one row.
+ *
+ * The federation re-uploads a corrected list under the same as-on date often
+ * enough that the pipeline treats a new content hash as a new snapshot rather
+ * than an overwrite (see `RankingSnapshot.contentHash`). Both sets of rows
+ * survive, so a player's history can hold two entries for one week — and a
+ * trajectory computed over both would read the correction as a week's gain.
+ *
+ * The check is per combo, because the same date legitimately appears once in
+ * each list a player sits in.
+ */
+async function resolveSnapshotVersions(
+  history: Array<{ category: string; subcategory: string; asOnDate: Date; snapshot?: unknown }>
+): Promise<Map<string, number>> {
+  const seen = new Set<string>();
+  const duplicated = new Set<string>();
+  for (const point of history) {
+    const key = `${point.category}|${point.subcategory}|${new Date(point.asOnDate).getTime()}`;
+    if (seen.has(key)) duplicated.add(key);
+    else seen.add(key);
+  }
+  if (duplicated.size === 0) return new Map();
+
+  const ids = history
+    .filter((point) =>
+      duplicated.has(`${point.category}|${point.subcategory}|${new Date(point.asOnDate).getTime()}`)
+    )
+    .map((point) => point.snapshot)
+    .filter(Boolean);
+
+  const snapshots = await RankingSnapshot.find({ _id: { $in: ids } })
+    .select("version status")
+    .lean();
+
+  return new Map(
+    snapshots.map((snapshot) => [
+      String(snapshot._id),
+      // A snapshot that never published is not a version of the truth at all,
+      // so it sorts below every published one rather than winning on number.
+      snapshot.status === "published" ? (snapshot.version ?? 1) : -1,
+    ])
+  );
+}
+
+/**
+ * Where this player is heading, from the series of lists we hold for them.
+ *
+ * Computed per request rather than stored at publish time, which is the
+ * opposite of the rule the snapshot analytics follow — and deliberately so.
+ * Those are per list and every reader of that list wants them. This is per
+ * player, the rows it needs are already in hand from the history query above,
+ * and precomputing it for every player on every list would mean 12,000 writes a
+ * week on a shared-tier cluster to serve a page most of them never have opened.
+ */
+function buildProjection(
+  entry: { category: string; subcategory: string },
+  snapshots: Array<{ category: string; subcategory: string; benchmarks?: Benchmark[] }>,
+  history: Array<{
+    category: string;
+    subcategory: string;
+    asOnDate: Date;
+    rank: number;
+    totalPoints: number;
+    snapshot?: unknown;
+  }>,
+  snapshotVersions: Map<string, number>
+) {
+  const own = history.filter(
+    (point) => point.category === entry.category && point.subcategory === entry.subcategory
+  );
+  const snapshot = snapshots.find(
+    (s) => s.category === entry.category && s.subcategory === entry.subcategory
+  );
+
+  return projectRanking({
+    history: own.map((point) => ({
+      asOnDate: point.asOnDate,
+      rank: point.rank,
+      totalPoints: point.totalPoints,
+      ...(snapshotVersions.size > 0
+        ? { version: snapshotVersions.get(String(point.snapshot)) ?? 1 }
+        : {}),
+    })),
+    benchmarks: snapshot?.benchmarks,
+  });
+}
+
+/**
+ * The context one standing needs to mean something.
+ *
+ * A rank is a position in a field whose size the reader cannot see, so the
+ * useful facts are all relative: what share of the field is ahead, how many of
+ * the player's own state are, what the next rung costs, and whether this week is
+ * their best. None of it is new data — it is the stored list read sideways.
+ */
+function buildPlayerInsight(
+  entry: {
+    category: string;
+    subcategory: string;
+    rank: number;
+    totalPoints: number;
+    state?: string;
+  },
+  snapshots: Array<{
+    category: string;
+    subcategory: string;
+    rowCount?: number;
+    benchmarks?: Benchmark[];
+    stateCounts?: Array<{ state: string; count: number }>;
+    bandProfiles?: unknown[];
+  }>,
+  history: Array<{ category: string; subcategory: string; asOnDate: Date; rank: number }>
+) {
+  const snapshot = snapshots.find(
+    (s) => s.category === entry.category && s.subcategory === entry.subcategory
+  );
+  const listSize = typeof snapshot?.rowCount === "number" ? snapshot.rowCount : null;
+
+  // Every week we hold for this player in *this* list. Not a career total: the
+  // mirror goes back twelve months, and a number that looks like a career and
+  // is not would be the wrong kind of wrong.
+  const own = history.filter(
+    (point) => point.category === entry.category && point.subcategory === entry.subcategory
+  );
+
+  let careerHigh: { rank: number; asOnDate: Date } | null = null;
+  for (const point of own) {
+    if (!careerHigh || point.rank < careerHigh.rank) {
+      careerHigh = { rank: point.rank, asOnDate: point.asOnDate };
+    }
+  }
+
+  return {
+    listSize,
+    stateSize: entry.state
+      ? ((snapshot?.stateCounts ?? []).find((b) => b.state === entry.state)?.count ?? null)
+      : null,
+    // "Top 25%" rather than "#412 of 1,648" — the same fact, in the form a
+    // reader can actually hold. Rounded up so a player is never told they are
+    // in a better band than they are.
+    percentile:
+      listSize && listSize > 0 ? Math.max(1, Math.ceil((entry.rank / listSize) * 100)) : null,
+    nextTier:
+      snapshot?.benchmarks && snapshot.benchmarks.length > 0
+        ? nextTierFor(entry.rank, entry.totalPoints, snapshot.benchmarks)
+        : null,
+    careerHigh,
+    weeksTracked: own.length,
+    // Meaningless on a list shorter than the band itself, so it is withheld
+    // rather than reported as a technically-true 100%.
+    weeksInTop100:
+      listSize !== null && listSize >= TOP_BAND
+        ? own.filter((point) => point.rank <= TOP_BAND).length
+        : null,
+    // The list's own point-source mix, so a player's breakdown can be read
+    // against the players above them rather than in isolation.
+    bands: snapshot?.bandProfiles ?? [],
+  };
+}
+
+/**
+ * GET /api/rankings/health
+ * Staleness and quarantine counts. Public because it says nothing a ranking
+ * page does not already, and because "how fresh is this?" is a fair question.
+ */
+export const getRankingHealth = asyncHandler(
+  async (_req: Request, res: Response): Promise<void> => {
+    const health = await new AitaRankingIngestService().getHealth();
+    res.json({ success: true, data: health });
+  }
+);

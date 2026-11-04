@@ -1,0 +1,10 @@
+{
+  "name": "@powermysport/shared-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical brand color tokens shared across client, admin and community — the fix for each app's Tailwind v4 @theme block independently redeclaring the same palette (three copies, no drift yet, but nothing preventing it).",
+  "main": "tokens.css",
+  "files": [
+    "tokens.css"
+  ]
+}

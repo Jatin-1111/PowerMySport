@@ -5,19 +5,14 @@ import { Venue, VenueDocument } from "../client/models/Venue";
 const deleteDevUserVenues = async () => {
   try {
     const MONGODB_URI =
-      process.env.MONGO_URI ||
-      process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/powermysport";
+      process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
 
     await mongoose.connect(MONGODB_URI);
     console.log("✅ Connected to MongoDB");
 
     // Find venues where ownerName or name contains "dev user" (case-insensitive)
     const venues = await Venue.find({
-      $or: [
-        { ownerName: { $regex: /dev user/i } },
-        { name: { $regex: /dev user/i } },
-      ],
+      $or: [{ ownerName: { $regex: /dev user/i } }, { name: { $regex: /dev user/i } }],
     });
 
     if (venues.length === 0) {
@@ -31,10 +26,7 @@ const deleteDevUserVenues = async () => {
     });
 
     const result = await Venue.deleteMany({
-      $or: [
-        { ownerName: { $regex: /dev user/i } },
-        { name: { $regex: /dev user/i } },
-      ],
+      $or: [{ ownerName: { $regex: /dev user/i } }, { name: { $regex: /dev user/i } }],
     });
 
     console.log(`\n✅ Deleted ${result.deletedCount} venue(s) successfully.`);

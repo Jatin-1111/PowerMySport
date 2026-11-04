@@ -7,11 +7,7 @@ export interface DisputeDocument extends Document {
   disputeDetails?: string;
   status: "OPEN" | "RESOLVED" | "CLOSED";
   resolutionMethod?: "AUTO" | "MANUAL";
-  recommendedAction?:
-    | "FULL_REFUND"
-    | "PARTIAL_REFUND"
-    | "NO_REFUND"
-    | "MANUAL_REVIEW";
+  recommendedAction?: "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND" | "MANUAL_REVIEW";
   refundPercentage?: number;
   reasoning?: string;
   confidence?: "HIGH" | "MEDIUM" | "LOW";
@@ -46,7 +42,6 @@ const disputeSchema = new Schema<DisputeDocument>(
       type: String,
       enum: ["OPEN", "RESOLVED", "CLOSED"],
       default: "OPEN",
-      index: true,
     },
     resolutionMethod: {
       type: String,
@@ -72,10 +67,15 @@ const disputeSchema = new Schema<DisputeDocument>(
       default: false,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-export const Dispute = mongoose.model<DisputeDocument>(
-  "Dispute",
-  disputeSchema,
-);
+// listDisputes (admin) has no filter, only sorts {createdAt:-1} — none of
+// the single-field indexes above serve that sort.
+disputeSchema.index({ createdAt: -1 });
+// getPendingCounts (admin dashboard/nav badge, hit on every admin page load)
+// runs countDocuments({status:"OPEN"}) — also serves a future status-filtered
+// list without needing a separate solo index.
+disputeSchema.index({ status: 1, createdAt: -1 });
+
+export const Dispute = mongoose.model<DisputeDocument>("Dispute", disputeSchema);

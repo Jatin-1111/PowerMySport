@@ -1,11 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export type BookingInvitationStatus =
-  | "PENDING"
-  | "ACCEPTED"
-  | "DECLINED"
-  | "EXPIRED"
-  | "CANCELLED";
+export type BookingInvitationStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED" | "CANCELLED";
 
 export interface IBookingInvitation extends Document {
   bookingId: mongoose.Types.ObjectId;
@@ -82,7 +77,7 @@ const bookingInvitationSchema = new Schema<IBookingInvitation>(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 // Indexes for efficient queries
@@ -95,13 +90,12 @@ bookingInvitationSchema.index(
   {
     expireAfterSeconds: 30 * 24 * 60 * 60, // 30 days
     partialFilterExpression: { status: { $in: ["DECLINED", "EXPIRED"] } },
-  },
+  }
 );
 
-const BookingInvitation: Model<IBookingInvitation> =
-  mongoose.model<IBookingInvitation>(
-    "BookingInvitation",
-    bookingInvitationSchema,
-  );
+const BookingInvitation: Model<IBookingInvitation> = mongoose.model<IBookingInvitation>(
+  "BookingInvitation",
+  bookingInvitationSchema
+);
 
 export default BookingInvitation;

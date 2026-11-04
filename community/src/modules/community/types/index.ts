@@ -1,7 +1,7 @@
 export type MessagePrivacy = "EVERYONE" | "REQUEST_ONLY" | "NONE";
 export type ConversationType = "DM" | "GROUP";
-export type CommunityUserRole = "PLAYER" | "COACH";
-export type CommunityGroupAudience = "ALL" | "PLAYERS_ONLY" | "COACHES_ONLY";
+export type CommunityUserRole = "Player" | "Coach" | "Parent";
+export type CommunityGroupAudience = "ALL";
 
 export interface CommunityProfile {
   _id: string;
@@ -47,18 +47,54 @@ export interface ConversationListResponse {
   };
 }
 
+/**
+ * PUBLIC      — listed in Discover, anyone eligible can join themselves.
+ * INVITE_ONLY — listed, but joining needs an invite link or an admin.
+ * PRIVATE     — not listed at all; invite link or admin only.
+ */
+export type CommunityGroupVisibility = "PUBLIC" | "INVITE_ONLY" | "PRIVATE";
+
 export interface CommunityGroupSummary {
   id: string;
   name: string;
   description: string;
-  visibility: "PUBLIC";
+  visibility: CommunityGroupVisibility;
   audience?: CommunityGroupAudience;
   memberAddPolicy?: "ADMIN_ONLY" | "ANY_MEMBER";
+  /** ANY_MEMBER, or ADMIN_ONLY for an announcement group. */
+  postPolicy?: "ANY_MEMBER" | "ADMIN_ONLY";
+  /** Shared across the group, not per-device. */
+  pinnedMessageId?: string | null;
+  /** Whether this viewer may post — server-computed, so the composer does not
+   *  have to re-derive the announcement rule. */
+  canPost?: boolean;
   sport: string;
   city: string;
+  createdBy?: string;
+  profilePicture?: string;
+  profilePictureKey?: string;
   memberCount: number;
   isMember?: boolean;
   isAdmin?: boolean;
+  isOwner?: boolean;
+}
+
+/**
+ * One of a member's children, as another parent sees them.
+ *
+ * Deliberately coarse and deliberately nameless: a sport, a competition category
+ * (an age BAND and "Boy"/"Girl" — never an age or a date of birth), and a city.
+ * Enough for a parent to recognise a peer — "Tennis, Boys U-14, Chandigarh" —
+ * and not enough to identify a specific child. Every field is independently
+ * optional, because a parent who filled in only the sport should still show the
+ * sport.
+ */
+export interface CommunityDependentSummary {
+  sport: string | null;
+  ageBand: string | null;
+  /** Null both for a child recorded as OTHER and for one with none on file. */
+  gender: "Boy" | "Girl" | null;
+  city: string | null;
 }
 
 export interface CommunityUserSearchResult {
@@ -66,22 +102,26 @@ export interface CommunityUserSearchResult {
   displayName: string;
   isIdentityPublic: boolean;
   role?: CommunityUserRole;
-  userType?: string;
   photoUrl?: string | null;
+  /** The first child's city. Use `cities` wherever more than one can be shown. */
   city?: string | null;
+  /** Every distinct city across this member's children. */
+  cities?: string[];
   age?: number | null;
   sports: string[];
+  dependents?: CommunityDependentSummary[];
 }
 
 export interface CommunityMemberProfile {
   id: string;
   role: CommunityUserRole;
-  userType?: string;
   displayName: string;
   alias: string;
   isIdentityPublic: boolean;
   photoUrl?: string | null;
   sports: string[];
+  /** Absent on a cached response written before children were published. */
+  dependents?: CommunityDependentSummary[];
   city?: string | null;
   age?: number | null;
   dob?: string | null;
@@ -101,6 +141,25 @@ export interface BlockedUser {
   photoUrl?: string | null;
 }
 
+/** The message a reply quotes. Resolved live rather than snapshotted, so an
+ *  edit shows through and a deletion is visible instead of leaving stale text
+ *  quoted. Null when the original has been hard-removed. */
+export interface ConversationReplyPreview {
+  id: string;
+  senderId: string;
+  senderDisplayName: string;
+  type: "TEXT" | "IMAGE" | "FILE" | "VOICE";
+  /** Already clamped and, for images, replaced with a label — never the S3 key. */
+  content: string;
+  isDeleted: boolean;
+}
+
+export interface MessageReaction {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
+}
+
 export interface ConversationMessage {
   id: string;
   conversationId: string;
@@ -109,14 +168,24 @@ export interface ConversationMessage {
   senderDisplayName: string;
   /** TEXT: the message text. IMAGE: the S3 object key (never the full URL). */
   content: string;
-  /** 'IMAGE' when the message is a shared image, 'TEXT' (default) otherwise. */
-  type?: "TEXT" | "IMAGE";
-  /** Present for IMAGE messages — pixel dimensions to prevent layout shift. */
+  /** TEXT (default), IMAGE, FILE (document) or VOICE (recorded clip). */
+  type?: "TEXT" | "IMAGE" | "FILE" | "VOICE";
   metadata?: {
+    /** IMAGE: pixel dimensions, to prevent layout shift. */
     width?: number;
     height?: number;
     caption?: string;
+    /** FILE: the original name, shown and used as the download filename. */
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
+    /** VOICE: clip length, so a duration renders before the audio loads. */
+    durationMs?: number;
+    /** VOICE: amplitude peaks 0-100, computed once when recorded. */
+    waveform?: number[];
   } | null;
+  replyTo?: ConversationReplyPreview | null;
+  reactions?: MessageReaction[];
   createdAt: string;
   updatedAt?: string;
   editedAt?: string | null;
@@ -130,7 +199,8 @@ export interface ConversationMessage {
   localPreviewUrl?: string;
 }
 
-export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED";
+export type CommunityFeedSort = "NEW" | "TOP" | "UNANSWERED" | "ANSWERED";
+export type CommunityFeedSortDirection = "ASC" | "DESC";
 
 export const COMMUNITY_POST_CATEGORIES = [
   "General",
@@ -151,7 +221,10 @@ export interface CommunityAuthorSummary {
   isIdentityPublic: boolean;
   photoUrl?: string | null;
   isVerifiedExpert?: boolean;
+  /** Server-supplied badge text, so the wording cannot drift between the feed,
+   *  the thread and the JSON-LD. Absent when the author is not verified. */
   expertTitle?: string;
+  credentialKind?: "VERIFIED_EXPERT" | "VERIFIED_COACH";
 }
 
 export interface CommunityPost {
@@ -170,8 +243,24 @@ export interface CommunityPost {
   answerCount: number;
   viewCount: number;
   myVote: -1 | 0 | 1;
+  /** The answer the asker marked as the solution, if they have picked one. */
+  acceptedAnswerId?: string | null;
+  /** True only for the asker — including on their own anonymous post. */
+  canAccept?: boolean;
   createdAt: string;
   updatedAt: string;
+  author: CommunityAuthorSummary;
+}
+
+export interface CommunityAnswerComment {
+  id: string;
+  answerId: string;
+  postId: string;
+  content: string;
+  isAnonymous: boolean;
+  createdAt: string;
+  /** True for the comment's author and for whoever asked the question. */
+  canDelete: boolean;
   author: CommunityAuthorSummary;
 }
 
@@ -184,6 +273,8 @@ export interface CommunityAnswer {
   upvoteCount: number;
   downvoteCount: number;
   myVote: -1 | 0 | 1;
+  isAccepted?: boolean;
+  comments?: CommunityAnswerComment[];
   createdAt: string;
   updatedAt: string;
   author: CommunityAuthorSummary;
@@ -226,6 +317,104 @@ export interface CommunityVoteResult {
   downvoteCount: number;
 }
 
+// ─── Blog ─────────────────────────────────────────────────────────────────
+export interface SocialLinks {
+  youtube?: string;
+  instagram?: string;
+  facebook?: string;
+  twitter?: string;
+  github?: string;
+  website?: string;
+}
+
+export interface BlogAuthorSummary {
+  id: string;
+  name: string;
+  username: string;
+  photoUrl: string | null;
+}
+
+export interface ExperienceSubject {
+  kind: "TOURNAMENT" | "TOURNAMENT_EDITION" | "VENUE" | "ACADEMY" | "COACH" | "EXPERT";
+  refId: string;
+  name: string;
+  slug: string | null;
+}
+
+export interface BlogListItem {
+  id: string;
+  title: string;
+  excerpt: string;
+  coverImageKey: string | null;
+  coverImageUrl: string | null;
+  /** Intrinsic size of the cover, when it was captured at upload. */
+  coverImageWidth: number | null;
+  coverImageHeight: number | null;
+  /** @deprecated Collapsed sport-or-category. Use `category`/`sport`. */
+  topic: string;
+  category: string;
+  sport: string | null;
+  tags: string[];
+  status: "PUBLISHED" | "DRAFT";
+  likeCount: number;
+  commentCount: number;
+  viewCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  author: BlogAuthorSummary;
+  subject: ExperienceSubject | null;
+  attendedAt: string | null;
+}
+
+export interface BlogDetail extends BlogListItem {
+  /** Sanitized rich-text HTML produced by the Tiptap editor. */
+  content: string;
+  updatedAt: string;
+  isMine: boolean;
+  signals: Record<string, string> | null;
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  /** The named coach/expert's one right of reply, if they have posted it. */
+  subjectReply: { content: string; authorName: string | null; createdAt: string } | null;
+  /** True only for the specific coach/expert `subject` names, while unreplied. */
+  canReply: boolean;
+}
+
+export interface BlogComment {
+  id: string;
+  blogId: string;
+  content: string;
+  parentId: string | null;
+  likeCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  author: BlogAuthorSummary;
+  replies: BlogComment[];
+  isMine: boolean;
+}
+
+export interface BlogAuthorProfile {
+  userId: string;
+  username: string;
+  name: string;
+  photoUrl: string | null;
+  bio: string;
+  socialLinks: SocialLinks;
+  joinedAt: string;
+  blogCount: number;
+  totalLikes: number;
+  isMe: boolean;
+}
+
+export interface BlogListResponse {
+  items: BlogListItem[];
+  pagination: { total: number; page: number; totalPages: number };
+}
+
+export interface BlogCommentListResponse {
+  items: BlogComment[];
+  pagination: { total: number; page: number; totalPages: number };
+}
+
 export interface CommunityActivityItem {
   id: string;
   title: string;
@@ -246,4 +435,56 @@ export interface CommunityActivityItem {
     // COMMUNITY_CONVERSATION_REQUESTED | COMMUNITY_CONVERSATION_ACCEPTED | COMMUNITY_CONVERSATION_REJECTED
     // COMMUNITY_GROUP_JOINED | COMMUNITY_GROUP_LEFT
   };
+}
+
+export type CommunityFollowKind = "GROUP" | "TOPIC";
+
+/** As returned by the server: `label` and `href` are resolved from the group or
+ *  tag at read time, never stored, so a renamed group shows its current name. */
+export interface CommunityFollowRecord {
+  kind: CommunityFollowKind;
+  targetId: string;
+  label: string;
+  href: string;
+  createdAt: string;
+}
+
+export interface CommunityLeaderboardEntry {
+  /** Empty when the member keeps their identity private — there is no profile
+   *  to open, so the row renders as a name without a link. */
+  id: string;
+  name: string;
+  photoUrl?: string | null;
+  isIdentityPublic: boolean;
+  rank: number;
+  posts: number;
+  answers: number;
+  upvotes: number;
+  score: number;
+}
+
+export interface CommunityLeaderboardResponse {
+  items: CommunityLeaderboardEntry[];
+  /** The caller's own standing, present even when they rank outside the page. */
+  me: CommunityLeaderboardEntry | null;
+}
+
+export interface CommunitySearchItem {
+  kind: "POST" | "BLOG";
+  id: string;
+  title: string;
+  snippet: string;
+  href: string;
+  sport: string;
+  tags: string[];
+  answerCount: number;
+  isSolved: boolean;
+  createdAt: string;
+  /** 0-1, normalized per collection so questions and stories rank together. */
+  relevance: number;
+}
+
+export interface CommunitySearchResponse {
+  items: CommunitySearchItem[];
+  query: string;
 }

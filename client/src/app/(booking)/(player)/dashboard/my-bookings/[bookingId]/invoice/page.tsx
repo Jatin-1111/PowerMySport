@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import { toast } from "@/lib/toast";
 import { bookingApi } from "@/modules/booking/services/booking";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Booking, Coach, Venue } from "@/types";
+import { AcademyRef, Booking, Coach, Venue } from "@/types";
 import { formatDate, formatTime } from "@/utils/format";
-import { toast } from "@/lib/toast";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 const formatCurrency = (value?: number) => {
   if (!Number.isFinite(Number(value))) return "-";
@@ -35,8 +35,21 @@ const asCoach = (value: Booking["coachId"]): Coach | null => {
   return null;
 };
 
+const asAcademy = (value: Booking["academyId"]): AcademyRef | null => {
+  if (value && typeof value === "object") {
+    return value as AcademyRef;
+  }
+  return null;
+};
+
+const coachName = (coach: Coach | null): string | undefined => {
+  if (!coach) return undefined;
+  const user = coach.userId;
+  return user && typeof user === "object" ? user.name : undefined;
+};
+
 const asUser = (
-  value?: Booking["userId"],
+  value?: Booking["userId"]
 ): { name?: string; email?: string; phone?: string } | null => {
   if (value && typeof value === "object") {
     return value as { name?: string; email?: string; phone?: string };
@@ -70,8 +83,7 @@ export default function BookingInvoicePage() {
         }
         setBooking(response.data);
       } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Unable to load invoice";
+        const message = error instanceof Error ? error.message : "Unable to load invoice";
         toast.error(message);
       } finally {
         setLoading(false);
@@ -83,6 +95,7 @@ export default function BookingInvoicePage() {
 
   const venue = useMemo(() => asVenue(booking?.venueId), [booking?.venueId]);
   const coach = useMemo(() => asCoach(booking?.coachId), [booking?.coachId]);
+  const academy = useMemo(() => asAcademy(booking?.academyId), [booking?.academyId]);
   const customer = useMemo(() => asUser(booking?.userId), [booking?.userId]);
 
   const invoiceNumber = useMemo(() => {
@@ -114,11 +127,7 @@ export default function BookingInvoicePage() {
     return (
       <Card className="bg-white text-center">
         <p className="text-slate-600">Invoice not found.</p>
-        <Button
-          variant="secondary"
-          className="mt-4"
-          onClick={() => router.back()}
-        >
+        <Button variant="secondary" className="mt-4" onClick={() => router.back()}>
           Go back
         </Button>
       </Card>
@@ -136,11 +145,17 @@ export default function BookingInvoicePage() {
 
   const providerName =
     venue?.name ||
-    (coach ? `${coach.sports?.[0] || "Coach"} Coach` : "Provider");
+    academy?.name ||
+    (coach ? `${coachName(coach) || "Coach"} · ${coach.sports?.[0] || booking.sport}` : "Provider");
   const providerAddress =
-    venue?.address || coach?.ownVenueDetails?.address || "-";
+    venue?.address ||
+    coach?.ownVenueDetails?.address ||
+    [academy?.address, academy?.city, academy?.state, academy?.pincode]
+      .filter(Boolean)
+      .join(", ") ||
+    "-";
   const providerGst =
-    (venue as any)?.gstNumber || (coach as any)?.gstNumber || "-";
+    (venue as any)?.gstNumber || (coach as any)?.gstNumber || academy?.gstNumber || "-";
   const isInvoiceAvailable = canViewInvoice(booking.status);
 
   if (!isInvoiceAvailable) {
@@ -168,9 +183,7 @@ export default function BookingInvoicePage() {
         <Card className="bg-white p-6">
           <p className="text-sm text-slate-700">
             Current booking status:{" "}
-            <span className="font-semibold">
-              {booking.status.replace(/_/g, " ")}
-            </span>
+            <span className="font-semibold">{booking.status.replace(/_/g, " ")}</span>
           </p>
         </Card>
       </div>
@@ -197,9 +210,7 @@ export default function BookingInvoicePage() {
               variant="secondary"
               onClick={async () => {
                 try {
-                  const pdfBlob = await bookingApi.downloadInvoicePdf(
-                    booking.id,
-                  );
+                  const pdfBlob = await bookingApi.downloadInvoicePdf(booking.id);
                   const url = window.URL.createObjectURL(pdfBlob);
                   const link = document.createElement("a");
                   link.href = url;
@@ -210,9 +221,7 @@ export default function BookingInvoicePage() {
                   window.URL.revokeObjectURL(url);
                 } catch (error) {
                   const message =
-                    error instanceof Error
-                      ? error.message
-                      : "Unable to download invoice";
+                    error instanceof Error ? error.message : "Unable to download invoice";
                   toast.error(message);
                 }
               }}
@@ -226,16 +235,12 @@ export default function BookingInvoicePage() {
         }
       />
 
-      <Card className="bg-white p-6 sm:p-8 print:shadow-none print:border-none">
+      <Card className="bg-white p-6 sm:p-8 print:border-none print:shadow-none">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">
-              Invoice
-            </p>
-            <h1 className="text-2xl font-bold text-slate-900">PowerMySport</h1>
-            <p className="mt-2 text-sm text-slate-600">
-              Thank you for booking with PowerMySport.
-            </p>
+            <p className="text-xs uppercase tracking-wide text-slate-400">Invoice</p>
+            <h1 className="font-editorial text-2xl font-normal text-slate-900">PowerMySport</h1>
+            <p className="mt-2 text-sm text-slate-600">Thank you for booking with PowerMySport.</p>
           </div>
           <div className="text-sm text-slate-700">
             <p className="font-semibold">Invoice Number</p>
@@ -258,12 +263,8 @@ export default function BookingInvoicePage() {
           </div>
 
           <div className="rounded-xl border border-slate-200 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Provider
-            </p>
-            <p className="mt-2 text-base font-semibold text-slate-900">
-              {providerName}
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider</p>
+            <p className="mt-2 text-base font-semibold text-slate-900">{providerName}</p>
             <p className="text-sm text-slate-600">{providerAddress}</p>
             <p className="text-sm text-slate-600">GST: {providerGst}</p>
           </div>
@@ -276,9 +277,7 @@ export default function BookingInvoicePage() {
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
               <p className="text-xs text-slate-500">Date</p>
-              <p className="text-sm font-semibold text-slate-900">
-                {formatDate(booking.date)}
-              </p>
+              <p className="text-sm font-semibold text-slate-900">{formatDate(booking.date)}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500">Time</p>
@@ -288,9 +287,7 @@ export default function BookingInvoicePage() {
             </div>
             <div>
               <p className="text-xs text-slate-500">Sport</p>
-              <p className="text-sm font-semibold text-slate-900">
-                {booking.sport}
-              </p>
+              <p className="text-sm font-semibold text-slate-900">{booking.sport}</p>
             </div>
             <div>
               <p className="text-xs text-slate-500">Participant</p>
@@ -302,9 +299,7 @@ export default function BookingInvoicePage() {
         </div>
 
         <div className="mt-6 rounded-xl border border-slate-200 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Pricing
-          </p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pricing</p>
           <div className="mt-4 space-y-2 text-sm text-slate-700">
             <div className="flex items-center justify-between">
               <span>Subtotal</span>
@@ -320,11 +315,7 @@ export default function BookingInvoicePage() {
             </div>
             <div className="flex items-center justify-between">
               <span>Discount</span>
-              <span>
-                {discount > 0
-                  ? `-${formatCurrency(discount)}`
-                  : formatCurrency(0)}
-              </span>
+              <span>{discount > 0 ? `-${formatCurrency(discount)}` : formatCurrency(0)}</span>
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-3 text-base font-semibold text-slate-900">
               <span>Total Paid</span>
@@ -334,18 +325,21 @@ export default function BookingInvoicePage() {
         </div>
 
         <div className="mt-6 text-xs text-slate-500">
-          This is a system generated invoice. For support, reach out to the
-          PowerMySport team.
+          This is a system generated invoice. For support, reach out to the PowerMySport team.
         </div>
       </Card>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @media print {
           body {
             background: #ffffff;
           }
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }

@@ -1,0 +1,235 @@
+import { Request, Response } from "express";
+import { Federation } from "../models/Federation";
+import { TournamentEdition } from "../models/TournamentEdition";
+import { listSportEditions } from "../services/tournamentEditionListing";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+
+/**
+ * The federation to attribute an edition to.
+ *
+ * The stored `federationSlug` is the answer: it records whose calendar the
+ * edition was read from (migration 47), and it is what scopes the federation
+ * pages. Guessing from the name is only for a row that predates it. Guessing
+ * first was wrong in a way the name invites: AITA prints ITF junior events on
+ * its own calendar as "ITF J30 (Delhi)", and those were being credited to ITF.
+ */
+async function resolveEditionFederation(
+  sportSlug: string,
+  editionName: string,
+  federationSlug?: string | null
+): Promise<{ slug: string; name: string; acronym: string } | null> {
+  const federations = await Federation.find({ sportSlug, isActive: true })
+    .select("slug name acronym")
+    .lean();
+  if (federations.length === 0) return null;
+
+  const stored = federationSlug ? federations.find((f) => f.slug === federationSlug) : undefined;
+  const leadingToken = (editionName.trim().split(/\s+/)[0] ?? "").toUpperCase();
+  const byAcronym = federations.find((f) => f.acronym?.toUpperCase() === leadingToken);
+  const chosen = stored ?? byAcronym ?? federations[0]!;
+  return { slug: chosen.slug, name: chosen.name, acronym: chosen.acronym };
+}
+
+/**
+ * The recurring series an edition belongs to, as a comparable key.
+ *
+ * "22nd Delhi International Open Grandmasters Chess Tournament" and its 2027
+ * running differ only by the ordinal and the year, so both reduce to "delhi
+ * grandmasters". Used to point a finished event at its next running, which is
+ * the one thing someone searching for a tournament that already happened
+ * actually wants.
+ */
+function seriesKey(name: string): string {
+  return (name || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(
+      /\b(\d+(st|nd|rd|th)?|20\d\d|fide|rated|rating|open|chess|tournament|tournaments|championship|championships|all|india|international|the|for|below|above|cat|category|edition)\b/g,
+      " "
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * GET /api/tournament-editions/:slug
+ * One dated edition, for the public /tournaments/[slug] page.
+ */
+export const getTournamentEdition = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const slug = typeof req.params.slug === "string" ? req.params.slug.toLowerCase() : "";
+    if (!slug) {
+      throw new AppError("A slug is required.", 400);
+    }
+
+    const edition = await TournamentEdition.findOne({ slug }).lean();
+    if (!edition) {
+      throw new AppError("Tournament not found.", 404);
+    }
+
+    // A merged duplicate exists only to redirect, so skip the work that builds
+    // a page nobody will see.
+    if (edition.mergedInto) {
+      res.json({
+        success: true,
+        data: { edition, federation: null, related: [], nextInSeries: null },
+      });
+      return;
+    }
+
+    const federation = await resolveEditionFederation(
+      edition.sportSlug,
+      edition.name,
+      edition.federationSlug
+    );
+
+    // Other upcoming events in the same sport, so the page is a stop on the way
+    // to a decision rather than a dead end.
+    //
+    // Pulled sport-wide and ranked here rather than filtered to the edition's
+    // city in the query: city used to be a hard filter, which meant a tournament
+    // in a city with nothing else coming up rendered no onward links at all.
+    // That hits finished events hardest — they are precisely the pages where the
+    // rest of the content is no longer useful. Same city still sorts first.
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+    const upcoming = await TournamentEdition.find({
+      sportSlug: edition.sportSlug,
+      _id: { $ne: edition._id },
+      slug: { $exists: true, $ne: null },
+      startDate: { $gte: startOfToday },
+      status: { $ne: "cancelled" },
+      // Merged duplicates only redirect; listing them would show the same
+      // tournament two or three times in a row (see migration 41).
+      mergedInto: { $in: [null, undefined] },
+    })
+      .sort({ startDate: 1 })
+      .limit(400)
+      .select("slug name startDate city venue ageGroups level")
+      .lean();
+
+    const key = seriesKey(edition.name);
+    const nextInSeries = key ? (upcoming.find((e) => seriesKey(e.name) === key) ?? null) : null;
+
+    const sameCity = edition.city ? upcoming.filter((e) => e.city === edition.city) : [];
+    const related = [...sameCity, ...upcoming.filter((e) => !sameCity.includes(e))]
+      .filter((e) => !nextInSeries || String(e._id) !== String(nextInSeries._id))
+      .slice(0, 6);
+
+    res.json({ success: true, data: { edition, federation, related, nextInSeries } });
+  }
+);
+
+/**
+ * GET /api/tournament-editions?limit=1000
+ * Slug + timestamp only — this exists to feed the sitemap, so it deliberately
+ * returns no content fields and skips editions that have already finished.
+ *
+ * GET /api/tournament-editions?sport=chess&page=1&limit=24&upcoming=false
+ *   &category=championship-series&age=Under-14&month=2026-10
+ * Card-shape, paginated editions for one sport, plus the options each filter
+ * offers — backs the /tournaments/sport/[sport] hub page (see
+ * tournamentEditionListing.ts). A separate branch on the same route rather than a new one: both are
+ * "list editions", and the sitemap's unfiltered call (no `sport`) keeps its exact
+ * existing shape so nothing else has to change.
+ */
+export const listTournamentEditionSlugs = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const sportSlug = typeof req.query.sport === "string" ? req.query.sport.toLowerCase() : "";
+
+    // The merge map, for next.config.ts to turn into real 308s at build time.
+    // Redirecting from the page component instead only ever produces a
+    // `<meta http-equiv="refresh">` on a 200, because by the time a Server
+    // Component throws, the response has already been committed — and a meta
+    // refresh does not consolidate ranking signals the way an HTTP redirect
+    // does, which is the whole reason these rows were merged.
+    if (req.query.merged === "true") {
+      const merged = await TournamentEdition.find({
+        slug: { $exists: true, $ne: null },
+        mergedInto: { $exists: true, $ne: null },
+      })
+        .select("slug mergedInto")
+        .lean();
+
+      res.json({ success: true, data: merged });
+      return;
+    }
+
+    // How many editions each sport actually holds. The sport hubs are generated
+    // from a static list of supported sports, but only three of them have any
+    // tournaments — the rest render an empty page. Listing those in the sitemap
+    // asks Google to crawl seven blank URLs, which is how a site earns "Soft
+    // 404" and burns crawl budget it is already short of.
+    if (req.query.facets === "sports") {
+      const startOfToday = new Date();
+      startOfToday.setUTCHours(0, 0, 0, 0);
+
+      const rows = await TournamentEdition.aggregate<{
+        _id: string;
+        total: number;
+        upcoming: number;
+      }>([
+        {
+          $match: {
+            slug: { $exists: true, $ne: null },
+            status: { $ne: "cancelled" },
+            mergedInto: { $in: [null, undefined] },
+          },
+        },
+        {
+          $group: {
+            _id: "$sportSlug",
+            total: { $sum: 1 },
+            upcoming: { $sum: { $cond: [{ $gte: ["$startDate", startOfToday] }, 1, 0] } },
+          },
+        },
+      ]);
+
+      res.json({
+        success: true,
+        data: rows.map((r) => ({ sportSlug: r._id, total: r.total, upcoming: r.upcoming })),
+      });
+      return;
+    }
+
+    if (sportSlug) {
+      const page = Math.max(1, parseInt((req.query.page as string) || "1", 10) || 1);
+      const limit = Math.min(
+        60,
+        Math.max(1, parseInt((req.query.limit as string) || "24", 10) || 24)
+      );
+      const text = (key: string) =>
+        typeof req.query[key] === "string" ? (req.query[key] as string) : undefined;
+
+      const data = await listSportEditions(sportSlug, {
+        page,
+        limit,
+        upcoming: req.query.upcoming !== "false",
+        filters: { category: text("category"), age: text("age"), month: text("month") },
+      });
+
+      res.json({ success: true, data });
+      return;
+    }
+
+    const limit = Math.min(5000, Math.max(1, parseInt((req.query.limit as string) || "2000", 10)));
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
+
+    const editions = await TournamentEdition.find({
+      slug: { $exists: true, $ne: null },
+      startDate: { $gte: startOfToday },
+      status: { $ne: "cancelled" },
+      // A merged duplicate redirects, so submitting it would ask Google to
+      // crawl a URL whose only job is to hand it back to the survivor.
+      mergedInto: { $in: [null, undefined] },
+    })
+      .sort({ startDate: 1 })
+      .limit(limit)
+      .select("slug updatedAt")
+      .lean();
+
+    res.json({ success: true, data: editions });
+  }
+);

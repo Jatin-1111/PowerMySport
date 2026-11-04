@@ -20,19 +20,16 @@ export interface UseMutationStateOptions {
  */
 export function useMutationState(
   mutationFn: (id: string, payload?: any, signal?: AbortSignal) => Promise<any>,
-  options: UseMutationStateOptions = {},
+  options: UseMutationStateOptions = {}
 ) {
   const { onSuccess, onError } = options;
 
-  const [mutations, setMutations] = useState<Map<string, MutationState>>(
-    new Map(),
-  );
+  const [mutations, setMutations] = useState<Map<string, MutationState>>(new Map());
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   const getMutation = useCallback(
-    (id: string) =>
-      mutations.get(id) || { status: "idle" as const, error: null },
-    [mutations],
+    (id: string) => mutations.get(id) || { status: "idle" as const, error: null },
+    [mutations]
   );
 
   const mutate = useCallback(
@@ -82,7 +79,7 @@ export function useMutationState(
         }
       }
     },
-    [mutationFn, onSuccess, onError],
+    [mutationFn, onSuccess, onError]
   );
 
   // Cleanup on unmount

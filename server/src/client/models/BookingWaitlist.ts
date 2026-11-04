@@ -38,15 +38,15 @@ const bookingWaitlistSchema = new Schema<BookingWaitlistDocument>(
     },
     notifiedAt: { type: Date },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 bookingWaitlistSchema.index(
   { userId: 1, venueId: 1, coachId: 1, date: 1, startTime: 1 },
-  { unique: true, partialFilterExpression: { status: "ACTIVE" } },
+  { unique: true, partialFilterExpression: { status: "ACTIVE" } }
 );
 
 export const BookingWaitlist = mongoose.model<BookingWaitlistDocument>(
   "BookingWaitlist",
-  bookingWaitlistSchema,
+  bookingWaitlistSchema
 );

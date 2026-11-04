@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { communityService } from "@/modules/community/services/community";
 import { toast } from "@/lib/toast";
-import { Loader, CheckCircle, AlertCircle } from "lucide-react";
 
 type JoinStatus = "loading" | "success" | "error" | "redirecting";
 
@@ -21,9 +20,7 @@ export default function JoinCommunityPage() {
   const params = useParams();
   const router = useRouter();
   const inviteCodeParam = params.code;
-  const inviteCode = Array.isArray(inviteCodeParam)
-    ? inviteCodeParam[0]
-    : inviteCodeParam;
+  const inviteCode = Array.isArray(inviteCodeParam) ? inviteCodeParam[0] : inviteCodeParam;
 
   const [status, setStatus] = useState<JoinStatus>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -38,9 +35,7 @@ export default function JoinCommunityPage() {
         }
 
         setStatus("loading");
-        const result = await communityService.joinGroupByCode(
-          inviteCode.trim(),
-        );
+        const result = await communityService.joinGroupByCode(inviteCode.trim());
 
         if (!isActive) {
           return;
@@ -57,7 +52,7 @@ export default function JoinCommunityPage() {
 
         // Navigate to the community page with a stable inbox/conversations context.
         router.push(
-          `/chats?sidebar=conversations&conversation=${encodeURIComponent(result.conversationId)}`,
+          `/chats?sidebar=conversations&conversation=${encodeURIComponent(result.conversationId)}`
         );
       } catch (joinError) {
         if (!isActive) {
@@ -65,9 +60,7 @@ export default function JoinCommunityPage() {
         }
 
         const message =
-          joinError instanceof Error
-            ? joinError.message
-            : "Failed to join community";
+          joinError instanceof Error ? joinError.message : "We could not add you to this group";
         setError(message);
         setStatus("error");
         toast.error(message);
@@ -81,64 +74,69 @@ export default function JoinCommunityPage() {
     };
   }, [inviteCode, router]);
 
+  const btn =
+    "btn-motion inline-flex min-h-12 flex-1 items-center justify-center rounded-md px-6 text-base font-semibold";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,rgba(233,115,22,0.12),transparent_35%),linear-gradient(to_bottom,#f8fafc,#f1f5f9)] px-4 py-6 sm:py-8">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-white p-5 shadow-xl sm:p-8">
+    <div className="bg-paper flex min-h-screen items-center justify-center px-4 py-6 sm:py-8">
+      <div className="w-full max-w-md" role="status" aria-live="polite">
         {status === "loading" && (
-          <div className="text-center">
-            <Loader className="mx-auto h-12 w-12 animate-spin text-power-orange" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Joining Group...
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              Please wait while we add you to the group
+          <>
+            <p className="text-ink-muted text-sm">Invite link</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              Joining the group
+            </h1>
+            <p className="text-ink-body mt-3 text-base leading-relaxed">
+              One moment while we add you.
             </p>
-          </div>
+          </>
         )}
 
         {status === "success" && (
-          <div className="text-center">
-            <CheckCircle className="mx-auto h-12 w-12 text-turf-green" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Successfully Joined!
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">
-              You&apos;ve been added to the community group. Redirecting...
+          <>
+            <p className="text-sm font-semibold text-green-800">Joined</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              You are in.
+            </h1>
+            <p className="text-ink-body mt-3 text-base leading-relaxed">
+              You have been added to the group. Taking you there now.
             </p>
-          </div>
+          </>
         )}
 
         {status === "redirecting" && (
-          <div className="text-center">
-            <Loader className="mx-auto h-12 w-12 animate-spin text-power-orange" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Taking you to the group...
-            </h2>
-          </div>
+          <>
+            <p className="text-ink-muted text-sm">Invite link</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              Opening the group
+            </h1>
+          </>
         )}
 
         {status === "error" && (
-          <div className="text-center">
-            <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900 sm:text-xl">
-              Could Not Join
-            </h2>
-            <p className="mt-2 text-sm text-slate-600">{error}</p>
-            <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+          <>
+            <p className="text-sm font-semibold text-red-700">Could not join</p>
+            <h1 className="font-editorial text-ink mt-2 text-4xl font-light leading-[1.1]">
+              That did not work.
+            </h1>
+            <p className="text-ink-body mt-3 text-base leading-relaxed">{error}</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button
+                type="button"
                 onClick={() => router.push("/")}
-                className="flex-1 rounded-lg border border-border bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                className={`${btn} border-ink text-ink hover:bg-ink border hover:text-white`}
               >
-                Go to Community
+                Go to community
               </button>
               <button
+                type="button"
                 onClick={() => window.location.reload()}
-                className="flex-1 rounded-lg bg-power-orange px-4 py-2 text-sm font-medium text-white transition hover:opacity-90"
+                className={`${btn} bg-power-orange-solid text-white hover:bg-indigo-700`}
               >
-                Try Again
+                Try again
               </button>
             </div>
-          </div>
+          </>
         )}
       </div>
     </div>

@@ -60,7 +60,7 @@ export const fixCommunityConversationIndexes = async (): Promise<{
           conversationType: "DM",
           participantKey: { $type: "string" },
         },
-      },
+      }
     );
 
     console.log(`✓ Created index: ${NEW_INDEX_NAME}`);
@@ -93,10 +93,7 @@ export const down = async (): Promise<void> => {
       }
     }
   } catch (error) {
-    console.error(
-      "❌ Rollback failed for community conversation indexes:",
-      error,
-    );
+    console.error("❌ Rollback failed for community conversation indexes:", error);
     throw error;
   }
 };

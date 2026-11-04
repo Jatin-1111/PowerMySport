@@ -82,7 +82,7 @@ async function testSendFriendRequest() {
     const response = await axios.post(
       `${BASE_URL}/friends/request`,
       { recipientId: testFriendId },
-      { headers: { Authorization: `Bearer ${authToken}` } },
+      { headers: { Authorization: `Bearer ${authToken}` } }
     );
 
     connectionId = response.data.data._id;
@@ -148,10 +148,9 @@ async function testGetFriendStatus() {
   logTest("Get Friend Status");
   try {
     const testUserId = "507f1f77bcf86cd799439011"; // Replace with real user ID
-    const response = await axios.get(
-      `${BASE_URL}/friends/status/${testUserId}`,
-      { headers: { Authorization: `Bearer ${authToken}` } },
-    );
+    const response = await axios.get(`${BASE_URL}/friends/status/${testUserId}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
 
     logSuccess(`Friend status: ${response.data.data.status}`);
     return true;
@@ -175,11 +174,9 @@ async function testInitiateGroupBooking() {
       participantName: "Test User",
     };
 
-    const response = await axios.post(
-      `${BASE_URL}/bookings/group/initiate`,
-      bookingData,
-      { headers: { Authorization: `Bearer ${authToken}` } },
-    );
+    const response = await axios.post(`${BASE_URL}/bookings/group/initiate`, bookingData, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
 
     bookingId = response.data.data.booking.id;
     logSuccess(`Group booking created. Booking ID: ${bookingId}`);
@@ -193,10 +190,9 @@ async function testInitiateGroupBooking() {
 async function testGetInvitations() {
   logTest("Get Booking Invitations");
   try {
-    const response = await axios.get(
-      `${BASE_URL}/bookings/invitations?status=PENDING`,
-      { headers: { Authorization: `Bearer ${authToken}` } },
-    );
+    const response = await axios.get(`${BASE_URL}/bookings/invitations?status=PENDING`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
 
     logSuccess(`Retrieved ${response.data.data.length} invitations`);
     if (response.data.data.length > 0) {
@@ -221,7 +217,7 @@ async function testRespondToInvitation() {
     const response = await axios.post(
       `${BASE_URL}/bookings/invitations/${invitationId}/respond`,
       { accept: true },
-      { headers: { Authorization: `Bearer ${authToken}` } },
+      { headers: { Authorization: `Bearer ${authToken}` } }
     );
 
     logSuccess("Invitation accepted successfully");
@@ -243,7 +239,7 @@ async function testCoverUnpaidShares() {
     const response = await axios.post(
       `${BASE_URL}/bookings/${bookingId}/cover-unpaid`,
       {},
-      { headers: { Authorization: `Bearer ${authToken}` } },
+      { headers: { Authorization: `Bearer ${authToken}` } }
     );
 
     logSuccess("Unpaid shares covered successfully");
@@ -310,17 +306,13 @@ async function runAllTests() {
 
   console.log("\n");
   const percentage = Math.round((passed / total) * 100);
-  const summaryColor =
-    percentage === 100 ? "green" : percentage >= 50 ? "yellow" : "red";
+  const summaryColor = percentage === 100 ? "green" : percentage >= 50 ? "yellow" : "red";
   log(`TOTAL: ${passed}/${total} tests passed (${percentage}%)`, summaryColor);
   console.log("\n");
 
   if (percentage < 100) {
     log("⚠️  Some tests failed. Check the errors above for details.", "yellow");
-    log(
-      "💡 Some tests are commented out and require valid test data.",
-      "yellow",
-    );
+    log("💡 Some tests are commented out and require valid test data.", "yellow");
   } else {
     log("🎉 All tests passed! The API is working correctly.", "green");
   }

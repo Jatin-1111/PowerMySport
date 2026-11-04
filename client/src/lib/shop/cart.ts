@@ -33,7 +33,7 @@ function sanitizeCart(items: ShopCartItem[]): ShopCartItem[] {
         typeof item.unitPrice === "number" &&
         Number.isFinite(item.unitPrice) &&
         typeof item.quantity === "number" &&
-        item.quantity > 0,
+        item.quantity > 0
     )
     .map((item) => ({
       ...item,
@@ -83,7 +83,7 @@ export function addShopCartItem(item: ShopCartItem): ShopCartItem[] {
   if (existing) {
     existing.quantity = Math.min(
       item.stock ?? Number.MAX_SAFE_INTEGER,
-      existing.quantity + item.quantity,
+      existing.quantity + item.quantity
     );
   } else {
     current.push({
@@ -96,10 +96,7 @@ export function addShopCartItem(item: ShopCartItem): ShopCartItem[] {
   return readShopCart();
 }
 
-export function updateShopCartQuantity(
-  variantId: string,
-  quantity: number,
-): ShopCartItem[] {
+export function updateShopCartQuantity(variantId: string, quantity: number): ShopCartItem[] {
   const current = readShopCart();
 
   if (quantity <= 0) {
@@ -114,11 +111,11 @@ export function updateShopCartQuantity(
             ...item,
             quantity: Math.min(
               item.stock ?? Number.MAX_SAFE_INTEGER,
-              Math.max(1, Math.floor(quantity)),
+              Math.max(1, Math.floor(quantity))
             ),
           }
-        : item,
-    ),
+        : item
+    )
   );
   return readShopCart();
 }
@@ -130,10 +127,7 @@ export function clearShopCart(): void {
 }
 
 export function getShopCartTotals(items: ShopCartItem[]) {
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0,
-  );
+  const subtotal = items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   const taxAmount = Math.round(subtotal * 0.18);
   const shippingAmount = subtotal > 0 && subtotal < 500000 ? 4900 : 0;
 

@@ -1,6 +1,18 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IGeoLocation } from "../../types/index";
 import { IPayoutMethod } from "./Coach";
+import { isEncryptedValue, encryptValue, decryptValue } from "../../shared/utils/encryption";
+import { log as __rootLog } from "../../utils/logger";
+import {
+  LIFECYCLES,
+  attachLifecycleSync,
+  type Lifecycle,
+} from "../../shared/services/providerLifecycle";
+const log = __rootLog.child("venue");
+
+// Matches the GST_REGEX used in ExpertsService.ts / Academy's Step3Legal.tsx —
+// enforces the literal checksum-style "Z" in the 14th character.
+const GST_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
 export interface VenueCoach {
   name: string;
@@ -38,8 +50,12 @@ export interface VenueDocument extends Document {
   allowExternalCoaches: boolean;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED" | "REVIEW";
   documents: VenueDocumentFile[];
+  /** Calculated from the status fields; see providerLifecycle.ts. */
+  lifecycle?: Lifecycle;
   rejectionReason?: string;
   reviewNotes?: string;
+  /** Claim-field edits awaiting admin review; the approved values stay live. */
+  pendingChanges?: { fields: Record<string, unknown>; submittedAt: Date };
   rating: number;
   reviewCount: number;
   hasCoaches: boolean;
@@ -50,6 +66,8 @@ export interface VenueDocument extends Document {
    * MIGRATION NOTE: Changed from single payoutMethod to payoutMethods array
    */
   payoutMethods?: IPayoutMethod[];
+  /** GST number — optional; not every venue lister is GST-registered. */
+  gstNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 
@@ -61,12 +79,7 @@ export interface VenueDocument extends Document {
 
 export interface VenueDocumentFile {
   id?: string;
-  type:
-    | "OWNERSHIP_PROOF"
-    | "BUSINESS_REGISTRATION"
-    | "TAX_DOCUMENT"
-    | "INSURANCE"
-    | "CERTIFICATE";
+  type: "OWNERSHIP_PROOF" | "BUSINESS_REGISTRATION" | "TAX_DOCUMENT" | "INSURANCE" | "CERTIFICATE";
   url: string; // For backward compatibility
   s3Key: string; // S3 object key for regenerating URLs
   fileName: string;
@@ -120,9 +133,7 @@ const venueSchema = new Schema<VenueDocument>(
         validate: {
           validator(v: any) {
             if (!Array.isArray(v) || v.length !== 2) return false;
-            return v.every(
-              (coord) => typeof coord === "number" && !isNaN(coord),
-            );
+            return v.every((coord) => typeof coord === "number" && !isNaN(coord));
           },
           message: "Coordinates must be [longitude, latitude]",
         },
@@ -344,6 +355,11 @@ const venueSchema = new Schema<VenueDocument>(
       enum: ["PENDING", "APPROVED", "REJECTED", "REVIEW"],
       default: "PENDING",
     },
+    // Claim-field edits made after approval, held until an admin approves them.
+    pendingChanges: {
+      fields: { type: Schema.Types.Mixed },
+      submittedAt: { type: Date },
+    },
     hasCoaches: {
       type: Boolean,
       default: false,
@@ -400,6 +416,9 @@ const venueSchema = new Schema<VenueDocument>(
         },
       },
     ],
+    // One status vocabulary across providers. Calculated by attachLifecycleSync
+    // from the fields above; never set by hand.
+    lifecycle: { type: String, enum: LIFECYCLES },
     rejectionReason: {
       type: String,
       optional: true,
@@ -426,18 +445,60 @@ const venueSchema = new Schema<VenueDocument>(
           enum: ["BANK_TRANSFER", "UPI"],
         },
         accountHolderName: { type: String, trim: true },
-        accountNumber: { type: String, trim: true },
-        ifscCode: { type: String, trim: true, uppercase: true },
+        accountNumber: {
+          type: String,
+          trim: true,
+          get: (v: string) => decryptValue(v),
+        },
+        ifscCode: {
+          type: String,
+          trim: true,
+          uppercase: true,
+          get: (v: string) => decryptValue(v),
+        },
         bankName: { type: String, trim: true },
-        upiId: { type: String, trim: true },
+        upiId: { type: String, trim: true, get: (v: string) => decryptValue(v) },
         isDefault: { type: Boolean, default: false },
         addedAt: { type: Date, default: Date.now },
         updatedAt: { type: Date, default: Date.now },
       },
     ],
+    // GST — not encrypted: a business-registration number, semi-public by
+    // nature, unlike bank details. Matches Expert/Academy's own precedent.
+    gstNumber: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      validate: {
+        validator(v: string) {
+          if (!v) return true; // Optional field
+          return GST_REGEX.test(v);
+        },
+        message: "Invalid GST number format",
+      },
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
+
+venueSchema.set("toJSON", { getters: true });
+venueSchema.set("toObject", { getters: true });
+
+venueSchema.pre("save", function () {
+  if (this.isModified("payoutMethods") && Array.isArray(this.payoutMethods)) {
+    this.payoutMethods.forEach((method) => {
+      if (method.accountNumber && !isEncryptedValue(method.accountNumber)) {
+        method.accountNumber = encryptValue(method.accountNumber);
+      }
+      if (method.ifscCode && !isEncryptedValue(method.ifscCode)) {
+        method.ifscCode = encryptValue(method.ifscCode);
+      }
+      if (method.upiId && !isEncryptedValue(method.upiId)) {
+        method.upiId = encryptValue(method.upiId);
+      }
+    });
+  }
+});
 
 // Geo-spatial index for $near queries
 venueSchema.index({ location: "2dsphere" });
@@ -447,6 +508,24 @@ venueSchema.index({ ownerId: 1, createdAt: -1 });
 venueSchema.index({ ownerEmail: 1, approvalStatus: 1 });
 venueSchema.index({ approvalStatus: 1, createdAt: -1 });
 venueSchema.index({ sports: 1, approvalStatus: 1 });
+
+// Backs getAllVenues'/findVenuesNearby's public list/search sort — filter on
+// {approvalStatus, sports?} then sort {rating:-1, reviewCount:-1, _id:1}.
+// Without these, that sort has no supporting index and falls back to an
+// in-memory sort on every discovery-page request. Two variants because
+// `sports` is an optional filter: an unconstrained middle field in a
+// compound index blocks Mongo from using the index's tail for the sort, so
+// "browse all sports" (the more common default) needs its own index rather
+// than relying on a prefix of the sports-filtered one. Production has
+// autoIndex off, so both also need migration 34.
+venueSchema.index({ approvalStatus: 1, rating: -1, reviewCount: -1, _id: 1 });
+venueSchema.index({
+  approvalStatus: 1,
+  sports: 1,
+  rating: -1,
+  reviewCount: -1,
+  _id: 1,
+});
 
 /**
  * Instance method to regenerate presigned URLs for documents
@@ -462,18 +541,11 @@ venueSchema.methods.refreshDocumentUrls = async function () {
         if (!doc.s3Key) return;
 
         try {
-          doc.url = await s3Service.generateDownloadUrl(
-            doc.s3Key,
-            "verification",
-            86400,
-          );
+          doc.url = await s3Service.generateCachedDownloadUrl(doc.s3Key, "verification", 86400);
         } catch (error) {
-          console.error(
-            `Failed to refresh URL for document ${doc.fileName}:`,
-            error,
-          );
+          log.error(`Failed to refresh URL for document ${doc.fileName}:`, error);
         }
-      }),
+      })
     );
   }
 
@@ -493,9 +565,7 @@ venueSchema.methods.refreshImageUrls = async function () {
 
     try {
       const parsed = new URL(url);
-      const rawPath = parsed.pathname.startsWith("/")
-        ? parsed.pathname.slice(1)
-        : parsed.pathname;
+      const rawPath = parsed.pathname.startsWith("/") ? parsed.pathname.slice(1) : parsed.pathname;
       const key = decodeURIComponent(rawPath);
       return key.length > 0 ? key : null;
     } catch {
@@ -507,12 +577,12 @@ venueSchema.methods.refreshImageUrls = async function () {
     const freshImages = await Promise.all(
       keys.map(async (key: string) => {
         try {
-          return await s3Service.generateDownloadUrl(key, "images", 604800); // 7 days
+          return await s3Service.generateCachedDownloadUrl(key, "images", 604800); // 7 days
         } catch (error) {
-          console.error(`Failed to refresh URL for image ${key}:`, error);
+          log.error(`Failed to refresh URL for image ${key}:`, error);
           return "";
         }
-      }),
+      })
     );
 
     return freshImages.filter((url) => Boolean(url));
@@ -549,7 +619,7 @@ venueSchema.methods.refreshImageUrls = async function () {
   // Refresh sportImages
   if (this.sportImageKeys || this.sportImages) {
     const newSportImages = new Map<string, string[]>();
-    
+
     // First, collect all sports from either sportImageKeys or sportImages
     const sportsSet = new Set<string>();
     if (this.sportImageKeys && this.sportImageKeys instanceof Map) {
@@ -561,7 +631,7 @@ venueSchema.methods.refreshImageUrls = async function () {
         sportsSet.add(key);
       }
     }
-    
+
     if (this.sportImages && this.sportImages instanceof Map) {
       for (const key of Array.from(this.sportImages.keys())) {
         sportsSet.add(key);
@@ -574,14 +644,16 @@ venueSchema.methods.refreshImageUrls = async function () {
 
     for (const sport of Array.from(sportsSet)) {
       let keysToUse: string[] = [];
-      
-      const sportKeys = this.sportImageKeys instanceof Map 
-        ? this.sportImageKeys.get(sport) 
-        : (this.sportImageKeys as any)?.[sport];
-        
-      const sportUrls = this.sportImages instanceof Map 
-        ? this.sportImages.get(sport) 
-        : (this.sportImages as any)?.[sport];
+
+      const sportKeys =
+        this.sportImageKeys instanceof Map
+          ? this.sportImageKeys.get(sport)
+          : (this.sportImageKeys as any)?.[sport];
+
+      const sportUrls =
+        this.sportImages instanceof Map
+          ? this.sportImages.get(sport)
+          : (this.sportImages as any)?.[sport];
 
       if (Array.isArray(sportKeys) && sportKeys.length > 0) {
         keysToUse = sportKeys;
@@ -598,7 +670,7 @@ venueSchema.methods.refreshImageUrls = async function () {
         }
       }
     }
-    
+
     if (newSportImages.size > 0) {
       this.sportImages = newSportImages as any;
     }
@@ -606,20 +678,17 @@ venueSchema.methods.refreshImageUrls = async function () {
 
   // Refresh cover photo
   const coverKey =
-    this.coverPhotoKey ||
-    extractKeyFromUrl(this.coverPhotoUrl) ||
-    imageKeysToUse[0] ||
-    "";
+    this.coverPhotoKey || extractKeyFromUrl(this.coverPhotoUrl) || imageKeysToUse[0] || "";
 
   if (coverKey) {
     try {
-      this.coverPhotoUrl = await s3Service.generateDownloadUrl(
+      this.coverPhotoUrl = await s3Service.generateCachedDownloadUrl(
         coverKey,
         "images",
-        604800, // 7 days
+        604800 // 7 days
       );
     } catch (error) {
-      console.error(`Failed to refresh cover photo URL:`, error);
+      log.error(`Failed to refresh cover photo URL:`, error);
     }
   }
 
@@ -636,8 +705,6 @@ venueSchema.methods.refreshAllUrls = async function () {
   return this;
 };
 
-export const Venue = mongoose.model<VenueDocument>(
-  "Venue",
-  venueSchema,
-  "venues",
-);
+attachLifecycleSync(venueSchema, "venue");
+
+export const Venue = mongoose.model<VenueDocument>("Venue", venueSchema, "venues");

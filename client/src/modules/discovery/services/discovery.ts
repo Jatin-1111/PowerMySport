@@ -1,31 +1,8 @@
 import axiosInstance from "@/lib/api/axios";
-import { withRequestCache } from "@/lib/api/requestCache";
 import { ApiResponse, DiscoveryResponse } from "@/types";
 
-const DISCOVERY_LIST_TTL_MS = 60000;
-const DISCOVERY_DETAIL_TTL_MS = 120000;
-
-const buildDiscoveryListKey = (
-  type: "venues" | "coaches",
-  params: {
-    latitude?: number;
-    longitude?: number;
-    maxDistance?: number;
-    sport?: string;
-    page?: number;
-    limit?: number;
-  },
-) =>
-  [
-    `discovery:${type}`,
-    String(params.latitude ?? ""),
-    String(params.longitude ?? ""),
-    String(params.maxDistance ?? ""),
-    params.sport ?? "",
-    String(params.page ?? ""),
-    String(params.limit ?? ""),
-  ].join(":");
-
+// Caching lives in the query layer now (see src/lib/query/keys.ts); these are
+// plain fetchers.
 export const discoveryApi = {
   // Search for venues near a location or get paginated venue listings
   searchNearbyVenues: async (params: {
@@ -33,6 +10,8 @@ export const discoveryApi = {
     longitude?: number;
     maxDistance?: number;
     sport?: string;
+    /** Free text over name, address (city) and sport. */
+    search?: string;
     page?: number;
     limit?: number;
   }): Promise<ApiResponse<DiscoveryResponse>> => {
@@ -50,6 +29,10 @@ export const discoveryApi = {
       queryParams.sport = params.sport;
     }
 
+    if (params.search) {
+      queryParams.search = params.search;
+    }
+
     if (params.page) {
       queryParams.page = params.page;
     }
@@ -58,17 +41,10 @@ export const discoveryApi = {
       queryParams.limit = params.limit;
     }
 
-    const cacheKey = buildDiscoveryListKey("venues", params);
-    return withRequestCache(
-      cacheKey,
-      async () => {
-        const response = await axiosInstance.get("/venues/discover", {
-          params: queryParams,
-        });
-        return response.data;
-      },
-      DISCOVERY_LIST_TTL_MS,
-    );
+    const response = await axiosInstance.get("/venues/discover", {
+      params: queryParams,
+    });
+    return response.data;
   },
 
   // Search for coaches near a location or get coach listings
@@ -101,40 +77,21 @@ export const discoveryApi = {
       queryParams.limit = params.limit;
     }
 
-    const cacheKey = buildDiscoveryListKey("coaches", params);
-    return withRequestCache(
-      cacheKey,
-      async () => {
-        const response = await axiosInstance.get("/coaches/discover", {
-          params: queryParams,
-        });
-        return response.data;
-      },
-      DISCOVERY_LIST_TTL_MS,
-    );
+    const response = await axiosInstance.get("/coaches/discover", {
+      params: queryParams,
+    });
+    return response.data;
   },
 
   // Get venue details by ID
   getVenueById: async (id: string): Promise<ApiResponse<any>> => {
-    return withRequestCache(
-      `discovery:venue:${id}`,
-      async () => {
-        const response = await axiosInstance.get(`/venues/${id}`);
-        return response.data;
-      },
-      DISCOVERY_DETAIL_TTL_MS,
-    );
+    const response = await axiosInstance.get(`/venues/${id}`);
+    return response.data;
   },
 
   // Get coach details by ID
   getCoachById: async (id: string): Promise<ApiResponse<any>> => {
-    return withRequestCache(
-      `discovery:coach:${id}`,
-      async () => {
-        const response = await axiosInstance.get(`/coaches/${id}`);
-        return response.data;
-      },
-      DISCOVERY_DETAIL_TTL_MS,
-    );
+    const response = await axiosInstance.get(`/coaches/${id}`);
+    return response.data;
   },
 };

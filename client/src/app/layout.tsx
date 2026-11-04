@@ -1,23 +1,18 @@
+import { GuestAnalyticsTracker } from "@/modules/analytics/components/GuestAnalyticsTracker";
+import { CookieConsentBanner } from "@/components/layout/CookieConsentBanner";
 import { HydrationBoundary } from "@/components/layout/HydrationBoundary";
 import { NumericInputGuard } from "@/components/layout/NumericInputGuard";
 import { FriendSocketProvider } from "@/hooks/useFriendSocket";
+import { ParentalConsentHost } from "@/modules/player/components/ParentalConsentHost";
+import { QueryProvider } from "@/lib/query/QueryProvider";
+import { SITE_DESCRIPTION as siteDescription, SITE_URL as siteUrl } from "@/lib/seo";
 import type { Metadata } from "next";
-import { Geist_Mono, Space_Grotesk, Syne } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://powermysport.com";
-const siteTitle = "PowerMySport";
-const siteDescription =
-  "PowerMySport is organizing the unorganized sports sector. We solve the biggest problem for parents by providing a unified platform to discover athletic pathways, book venues, and find certified coaches.";
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-});
-
-const syne = Syne({
-  variable: "--font-syne",
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
@@ -26,61 +21,84 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Editorial serif for large headings (`.font-editorial`), light weights only.
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   manifest: "/site.webmanifest",
   title: {
-    default: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
-    template: `%s | ${siteTitle}`,
+    default: "PowerMySport | Sports Guide for Parents in India",
+    template: "%s | PowerMySport",
   },
   description: siteDescription,
-  applicationName: siteTitle,
+  applicationName: "PowerMySport",
   keywords: [
-    "unorganized sports sector",
-    "sports for parents",
-    "youth sports pathway",
-    "sports academy",
-    "sports coach booking",
-    "parent sports guide",
-    "sports venue booking",
-    "book turf online",
+    // High-intent parent queries
+    "sports pathway for kids India",
+    "child sports journey planning",
+    "which sport is right for my child",
+    "youth sports guidance India",
+    "sports roadmap for children",
+    // Feature-specific
+    "AI sports guidance",
+    "personalised sports plan India",
+    "sports expert consultation",
+    "book sports expert India",
+    // Rankings — high-intent and highest-volume of anything here. Parents search
+    // the federation acronym and the age bracket, not "youth sports guidance".
+    "AITA rankings",
+    "AITA tennis ranking list",
+    "tennis rankings India",
+    "junior tennis ranking India",
+    "AITA player registration number",
+    // Brand
     "PowerMySport",
+    "powermysport.com",
   ],
   category: "sports",
   icons: {
+    // Sizes declared smallest-first so a browser picking by size gets the one
+    // drawn for that size rather than downscaling a larger one itself.
+    // `favicon.png` used to be a 1280x1280 copy of the full logo — 249KB
+    // fetched by every visitor to paint a 16px square.
     icon: [
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "48x48", type: "image/png" },
     ],
     shortcut: "/favicon.png",
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
-  alternates: {
-    canonical: "/",
-  },
+  // NO `alternates.canonical` here, deliberately.
+  //
+  // Next.js merges metadata per top-level key, so a canonical set at the root
+  // is inherited by every descendant that does not define its own. This layout
+  // used to set `canonical: "/"`, which meant every route without its own
+  // canonical — /shop/products/[id], /academies/[slug], /booking, all the
+  // dashboards — told Google "I am a duplicate of the homepage". Each route now
+  // declares its own; the homepage declares it in (marketing)/page.tsx.
   openGraph: {
     type: "website",
     locale: "en_IN",
     url: siteUrl,
-    siteName: siteTitle,
-    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
+    siteName: "PowerMySport",
+    title: "PowerMySport | Sports Guide for Parents in India",
     description: siteDescription,
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: `${siteTitle} preview`,
-      },
-    ],
+    // `images` intentionally absent: `app/opengraph-image.tsx` and
+    // `app/twitter-image.tsx` generate both, and a file convention in the same
+    // segment overrides whatever is declared here. Listing them twice would
+    // only create something to forget to update.
   },
   twitter: {
     card: "summary_large_image",
-    title: `${siteTitle} | Organizing the Unorganized Sports Sector for Parents`,
+    title: "PowerMySport | Sports Guide for Parents in India",
     description: siteDescription,
-    images: ["/twitter-image.png"],
   },
   robots: {
     index: true,
@@ -101,15 +119,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${spaceGrotesk.variable} ${syne.variable} ${geistMono.variable} antialiased`}
-      >
+    // The font variables go on <html>, not <body>. Tailwind resolves
+    // `--font-sans` on :root, so a variable that only exists from <body> down
+    // is undefined there and every page silently falls back to the system
+    // font, which is how Space Grotesk never rendered anywhere.
+    <html
+      lang="en"
+      // Next 16 no longer forces an instant jump to the top on a route change
+      // when `scroll-behavior: smooth` is set; this attribute restores it, so
+      // only in-page links glide, not page navigation.
+      data-scroll-behavior="smooth"
+      className={`${geistSans.variable} ${geistMono.variable} ${newsreader.variable}`}
+    >
+      <body className="antialiased">
         <NumericInputGuard />
+        <GuestAnalyticsTracker />
         <HydrationBoundary>
-          <FriendSocketProvider>{children}</FriendSocketProvider>
+          {/* Inside HydrationBoundary: the query cache is scoped to the signed-in
+              identity, so it has to be able to observe the restored session. */}
+          <QueryProvider>
+            <FriendSocketProvider>{children}</FriendSocketProvider>
+            <ParentalConsentHost />
+          </QueryProvider>
         </HydrationBoundary>
-        <Toaster richColors closeButton position="top-right" />
+        <CookieConsentBanner />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          toastOptions={{ style: { width: "fit-content", maxWidth: "420px" } }}
+        />
       </body>
     </html>
   );

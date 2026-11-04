@@ -7,12 +7,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
-import {
-  ReviewCard,
-  ReviewSummaryCard,
-  StarDisplay,
-} from "@/modules/shared/components/dashboard/reviews";
 import { reviewApi } from "@/modules/review/services/review";
+import { ReviewCard, ReviewSummaryCard } from "@/modules/shared/components/dashboard/reviews";
 import type { ReviewItem, ReviewSummary, Venue } from "@/types";
 
 // ---------------------------------------------------------------------------
@@ -50,7 +46,7 @@ export default function AcademyReviewsPage() {
         const res = await axiosInstance.get<{
           success: boolean;
           data?: Venue[];
-        }>("/venues/my-venues");
+        }>("/academies/my/venues");
         const list: Venue[] = res.data?.data ?? [];
         setVenues(list);
         if (list.length > 0) {
@@ -66,31 +62,26 @@ export default function AcademyReviewsPage() {
   }, []);
 
   // ── 2. Fetch reviews for selected venue ───────────────────────────────────
-  const fetchReviews = useCallback(
-    async (venueId: string, pageNum: number, append: boolean) => {
-      try {
-        append ? setLoadingMore(true) : setLoadingReviews(true);
-        const res = await reviewApi.getVenueReviews(venueId, pageNum, LIMIT);
-        if (res.success && res.data) {
-          const { reviews, summary: sum } = res.data;
-          setAllReviews((prev) => (append ? [...prev, ...reviews] : reviews));
-          setSummary(sum);
-          const pagination = (
-            res as { pagination?: { totalPages?: number } }
-          ).pagination;
-          setTotalPages(pagination?.totalPages ?? 1);
-        } else {
-          toast.error("Could not load reviews for this venue.");
-        }
-      } catch {
+  const fetchReviews = useCallback(async (venueId: string, pageNum: number, append: boolean) => {
+    try {
+      append ? setLoadingMore(true) : setLoadingReviews(true);
+      const res = await reviewApi.getVenueReviews(venueId, pageNum, LIMIT);
+      if (res.success && res.data) {
+        const { reviews, summary: sum } = res.data;
+        setAllReviews((prev) => (append ? [...prev, ...reviews] : reviews));
+        setSummary(sum);
+        const pagination = (res as { pagination?: { totalPages?: number } }).pagination;
+        setTotalPages(pagination?.totalPages ?? 1);
+      } else {
         toast.error("Could not load reviews for this venue.");
-      } finally {
-        setLoadingMore(false);
-        setLoadingReviews(false);
       }
-    },
-    [],
-  );
+    } catch {
+      toast.error("Could not load reviews for this venue.");
+    } finally {
+      setLoadingMore(false);
+      setLoadingReviews(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!selectedVenueId) return;
@@ -128,7 +119,7 @@ export default function AcademyReviewsPage() {
   if (loadingVenues) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -136,8 +127,8 @@ export default function AcademyReviewsPage() {
   // ── No venues ─────────────────────────────────────────────────────────────
   if (venues.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 lg:px-8">
+      <div>
+        <div className="mx-auto max-w-2xl py-12">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -148,20 +139,18 @@ export default function AcademyReviewsPage() {
               <Building2 className="h-8 w-8 text-orange-400" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-800">
-                No venues linked yet
-              </h2>
+              <h2 className="text-xl font-bold text-slate-800">No venues linked yet</h2>
               <p className="mt-2 text-sm text-slate-500">
-                Academy reviews are shown per venue. Link venues to your academy
-                to see their reviews here.
+                Academy reviews are shown per venue. Link venues to your academy to see their
+                reviews here.
               </p>
             </div>
             <Link
-              href="/academy/venues"
-              className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
+              href="/academy/onboarding"
+              className="bg-power-orange-solid inline-flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-2"
             >
               <Building2 size={16} />
-              Manage venues
+              Add venues
             </Link>
           </motion.div>
         </div>
@@ -170,13 +159,11 @@ export default function AcademyReviewsPage() {
   }
 
   // ── Full page ─────────────────────────────────────────────────────────────
-  const selectedVenue = venues.find(
-    (v) => (v.id ?? v._id) === selectedVenueId,
-  );
+  const selectedVenue = venues.find((v) => (v.id ?? v._id) === selectedVenueId);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      <div className="max-w-4xl">
         {/* ── Page Header ─────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: -16 }}
@@ -184,7 +171,7 @@ export default function AcademyReviewsPage() {
           transition={{ duration: 0.45 }}
           className="mb-8"
         >
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">
+          <h1 className="font-editorial text-2xl font-light text-slate-900 sm:text-3xl">
             Venue Reviews
           </h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -231,11 +218,7 @@ export default function AcademyReviewsPage() {
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M19 9l-7 7-7-7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </motion.div>
@@ -266,9 +249,7 @@ export default function AcademyReviewsPage() {
             className="mb-4 flex items-center gap-2 text-sm text-slate-500"
           >
             <Building2 size={15} className="text-orange-400" />
-            <span className="font-medium text-slate-700">
-              {selectedVenue.name}
-            </span>
+            <span className="font-medium text-slate-700">{selectedVenue.name}</span>
           </motion.div>
         )}
 
@@ -287,7 +268,7 @@ export default function AcademyReviewsPage() {
                 onClick={() => setActiveFilter(tab.value)}
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orange-400 ${
                   activeFilter === tab.value
-                    ? "bg-orange-500 text-white shadow-sm"
+                    ? "bg-power-orange-solid text-white shadow-sm"
                     : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-orange-50 hover:text-orange-600"
                 }`}
               >
@@ -300,7 +281,7 @@ export default function AcademyReviewsPage() {
         {/* ── Review List ──────────────────────────────────────── */}
         {loadingReviews ? (
           <div className="flex justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="text-power-orange h-8 w-8 animate-spin" />
           </div>
         ) : filteredReviews.length === 0 ? (
           <EmptyState activeFilter={activeFilter} />
@@ -336,9 +317,7 @@ export default function AcademyReviewsPage() {
               disabled={loadingMore}
               className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-orange-300 hover:text-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loadingMore && (
-                <Loader2 size={15} className="animate-spin text-orange-500" />
-              )}
+              {loadingMore && <Loader2 size={15} className="text-power-orange animate-spin" />}
               {loadingMore ? "Loading..." : "Load more reviews"}
             </button>
           </div>
@@ -365,9 +344,7 @@ function EmptyState({ activeFilter }: { activeFilter: FilterTab }) {
       </div>
       <div>
         <p className="font-semibold text-slate-700">
-          {activeFilter === "all"
-            ? "No reviews yet"
-            : `No ${activeFilter}-star reviews`}
+          {activeFilter === "all" ? "No reviews yet" : `No ${activeFilter}-star reviews`}
         </p>
         <p className="mt-1 text-sm text-slate-400">
           {activeFilter === "all"

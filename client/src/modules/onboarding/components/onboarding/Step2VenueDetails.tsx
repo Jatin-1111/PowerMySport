@@ -41,8 +41,7 @@ const AMENITIES_OPTIONS = [
   "WiFi",
 ];
 
-const isDev =
-  typeof window !== "undefined" && process.env.NODE_ENV === "development";
+const isDev = typeof window !== "undefined" && process.env.NODE_ENV === "development";
 
 const isValidTimeRange = (openTime?: string, closeTime?: string): boolean => {
   if (!openTime || !closeTime) {
@@ -124,9 +123,7 @@ export default function Step2VenueDetails({
   }, [addressQuery]);
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
 
@@ -211,15 +208,13 @@ export default function Step2VenueDetails({
       () => {
         setSearchError("Location access was denied");
         setIsGeocoding(false);
-      },
+      }
     );
   };
 
   const toggleSport = (sport: string) => {
     setSelectedSports((prev) => {
-      const updated = prev.includes(sport)
-        ? prev.filter((s) => s !== sport)
-        : [...prev, sport];
+      const updated = prev.includes(sport) ? prev.filter((s) => s !== sport) : [...prev, sport];
       setFormData((prev) => ({
         ...prev,
         sports: updated,
@@ -242,7 +237,7 @@ export default function Step2VenueDetails({
   const handleBasePriceChange = (value: number) => {
     setBasePricePerHour(value);
     if (samePriceForAll) {
-      setSportPricing((prev) => {
+      setSportPricing(() => {
         const nextPricing: Record<string, number> = {};
         formData.sports.forEach((sport) => {
           nextPricing[sport] = value;
@@ -291,9 +286,7 @@ export default function Step2VenueDetails({
         return;
       }
     } else {
-      const invalidSport = formData.sports.find(
-        (sport) => (sportPricing[sport] || 0) <= 0,
-      );
+      const invalidSport = formData.sports.find((sport) => (sportPricing[sport] || 0) <= 0);
       if (invalidSport) {
         toast.error(`Please enter a valid price for ${invalidSport}`);
         return;
@@ -311,16 +304,14 @@ export default function Step2VenueDetails({
       return;
     }
 
-    const openDays = Object.entries(formData.openingHours).filter(
-      ([, hours]) => hours.isOpen,
-    );
+    const openDays = Object.entries(formData.openingHours).filter(([, hours]) => hours.isOpen);
     if (openDays.length === 0) {
       toast.error("Please set opening hours for at least one day");
       return;
     }
 
     const invalidDay = openDays.find(
-      ([, hours]) => !isValidTimeRange(hours.openTime, hours.closeTime),
+      ([, hours]) => !isValidTimeRange(hours.openTime, hours.closeTime)
     );
     if (invalidDay) {
       toast.error("Opening time must be before closing time for open days");
@@ -333,9 +324,7 @@ export default function Step2VenueDetails({
       try {
         const result = await geoApi.geocode(formData.address);
         if (!result) {
-          toast.error(
-            "We couldn't find this address. Please pick a suggestion.",
-          );
+          toast.error("Address not found. Please pick a suggestion.");
           return;
         }
 
@@ -350,7 +339,7 @@ export default function Step2VenueDetails({
           },
         }));
       } catch (err) {
-        toast.error("Unable to verify address right now. Please try again.");
+        toast.error("Unable to verify address. Please try again.");
         return;
       } finally {
         setIsGeocoding(false);
@@ -359,9 +348,7 @@ export default function Step2VenueDetails({
 
     try {
       const pricingMap = samePriceForAll
-        ? Object.fromEntries(
-            formData.sports.map((sport) => [sport, basePricePerHour]),
-          )
+        ? Object.fromEntries(formData.sports.map((sport) => [sport, basePricePerHour]))
         : formData.sports.reduce<Record<string, number>>((acc, sport) => {
             acc[sport] = sportPricing[sport] || 0;
             return acc;
@@ -385,9 +372,9 @@ export default function Step2VenueDetails({
   };
 
   return (
-    <div className="space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-xs md:p-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-2">
+    <div className="shadow-xs space-y-6 rounded-2xl border border-slate-200 bg-white/90 p-6 md:p-8">
+      <div className="mb-8 text-center">
+        <h1 className="font-editorial mb-2 text-3xl font-light text-slate-900">
           Tell us about your venue
         </h1>
         <p className="text-slate-600">Step 2 of 4: Venue Details</p>
@@ -399,7 +386,7 @@ export default function Step2VenueDetails({
           title="Venue Name"
           subtitle="Give your facility a clear, recognizable name"
         >
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Venue Name <span className="text-error-red">*</span>
           </label>
           <input
@@ -408,7 +395,7 @@ export default function Step2VenueDetails({
             value={formData.name}
             onChange={handleInputChange}
             placeholder="e.g., Central Sports Complex"
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
+            className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
             required
             disabled={loading}
           />
@@ -419,20 +406,20 @@ export default function Step2VenueDetails({
           title="Sports Available"
           subtitle="Choose all sports your venue supports"
         >
-          <label className="block text-sm font-semibold text-slate-900 mb-3">
+          <label className="mb-3 block text-sm font-semibold text-slate-900">
             Sports Available <span className="text-error-red">*</span>
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {SPORTS_OPTIONS.map((sport) => (
               <label
                 key={sport}
-                className="flex items-center space-x-2 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-power-orange/5 transition"
+                className="hover:bg-power-orange/5 flex cursor-pointer items-center space-x-2 rounded-lg border border-slate-200 p-3 transition"
               >
                 <input
                   type="checkbox"
                   checked={selectedSports.includes(sport)}
                   onChange={() => toggleSport(sport)}
-                  className="w-4 h-4 accent-power-orange rounded"
+                  className="accent-power-orange h-4 w-4 rounded"
                   disabled={loading}
                 />
                 <span className="text-sm text-slate-700">{sport}</span>
@@ -466,7 +453,7 @@ export default function Step2VenueDetails({
                     setSportPricing(nextPricing);
                   }
                 }}
-                className="w-4 h-4 accent-power-orange rounded"
+                className="accent-power-orange h-4 w-4 rounded"
                 disabled={loading}
               />
               Same price for all sports
@@ -474,20 +461,18 @@ export default function Step2VenueDetails({
           </div>
 
           {samePriceForAll && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-semibold text-slate-900 mb-2">
+                <label className="mb-2 block text-sm font-semibold text-slate-900">
                   Base price per hour
                 </label>
                 <input
                   type="number"
                   value={basePricePerHour === 0 ? "" : basePricePerHour}
-                  onChange={(e) =>
-                    handleBasePriceChange(parseFloat(e.target.value) || 0)
-                  }
+                  onChange={(e) => handleBasePriceChange(parseFloat(e.target.value) || 0)}
                   placeholder="500"
                   min="0"
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
+                  className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
                   required
                   disabled={loading}
                 />
@@ -496,34 +481,25 @@ export default function Step2VenueDetails({
           )}
 
           {formData.sports.length === 0 && (
-            <p className="text-sm text-slate-500">
-              Select sports to set specific prices.
-            </p>
+            <p className="text-sm text-slate-500">Select sports to set specific prices.</p>
           )}
 
           {!samePriceForAll && formData.sports.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {formData.sports.map((sport) => (
                 <div key={sport}>
-                  <label className="block text-sm font-semibold text-slate-900 mb-2">
+                  <label className="mb-2 block text-sm font-semibold text-slate-900">
                     {sport} price per hour
                   </label>
                   <input
                     type="number"
                     value={
-                      sportPricing[sport] === 0 || !sportPricing[sport]
-                        ? ""
-                        : sportPricing[sport]
+                      sportPricing[sport] === 0 || !sportPricing[sport] ? "" : sportPricing[sport]
                     }
-                    onChange={(e) =>
-                      handleSportPriceChange(
-                        sport,
-                        parseFloat(e.target.value) || 0,
-                      )
-                    }
+                    onChange={(e) => handleSportPriceChange(sport, parseFloat(e.target.value) || 0)}
                     placeholder="500"
                     min="0"
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
+                    className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
                     required
                     disabled={loading}
                   />
@@ -540,9 +516,7 @@ export default function Step2VenueDetails({
         >
           <OpeningHoursInput
             value={formData.openingHours}
-            onChange={(hours) =>
-              setFormData((prev) => ({ ...prev, openingHours: hours }))
-            }
+            onChange={(hours) => setFormData((prev) => ({ ...prev, openingHours: hours }))}
           />
         </OnboardingSectionCard>
 
@@ -551,7 +525,7 @@ export default function Step2VenueDetails({
           title="Venue Address"
           subtitle="Use search suggestions or current location for accurate mapping"
         >
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="mb-2 block text-sm font-semibold text-slate-900">
             Address <span className="text-error-red">*</span>
           </label>
           <div className="relative">
@@ -561,40 +535,34 @@ export default function Step2VenueDetails({
               value={addressQuery}
               onChange={handleAddressChange}
               placeholder="Search your venue location"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500"
+              className="focus:ring-power-orange w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
               required
               disabled={loading}
             />
             {isSearching && (
-              <span className="absolute right-3 top-2.5 text-xs text-slate-500">
-                Searching...
-              </span>
+              <span className="absolute right-3 top-2.5 text-xs text-slate-500">Searching...</span>
             )}
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-slate-500">
-              Start typing to see suggestions
-            </p>
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-xs text-slate-500">Start typing to see suggestions</p>
             <button
               type="button"
               onClick={handleUseCurrentLocation}
-              className="text-xs font-semibold text-power-orange hover:text-orange-600"
+              className="text-power-orange text-xs font-semibold hover:text-orange-600"
               disabled={loading || isGeocoding}
             >
               {isGeocoding ? "Locating..." : "Use current location"}
             </button>
           </div>
-          {searchError && (
-            <p className="text-xs text-error-red mt-2">{searchError}</p>
-          )}
+          {searchError && <p className="text-error-red mt-2 text-xs">{searchError}</p>}
           {suggestions.length > 0 && (
-            <div className="mt-2 border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm">
+            <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               {suggestions.map((suggestion) => (
                 <button
                   type="button"
                   key={`${suggestion.lat}-${suggestion.lon}-${suggestion.label}`}
                   onClick={() => handleSelectSuggestion(suggestion)}
-                  className="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-power-orange/5"
+                  className="hover:bg-power-orange/5 w-full px-3 py-2 text-left text-sm text-slate-700"
                 >
                   {suggestion.label}
                 </button>
@@ -608,16 +576,14 @@ export default function Step2VenueDetails({
           title="Description"
           subtitle="Help players understand your venue experience"
         >
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
-            Description
-          </label>
+          <label className="mb-2 block text-sm font-semibold text-slate-900">Description</label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleInputChange}
             placeholder="Tell players about your venue..."
             rows={4}
-            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange focus:ring-offset-1 transition bg-white text-slate-900 placeholder-slate-500 resize-none"
+            className="focus:ring-power-orange w-full resize-none rounded-lg border border-slate-300 bg-white px-4 py-2 text-slate-900 placeholder-slate-500 transition focus:outline-none focus:ring-2 focus:ring-offset-1"
             disabled={loading}
           />
         </OnboardingSectionCard>
@@ -627,20 +593,18 @@ export default function Step2VenueDetails({
           title="Amenities"
           subtitle="Select facilities available for your customers"
         >
-          <label className="block text-sm font-semibold text-slate-900 mb-3">
-            Amenities
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <label className="mb-3 block text-sm font-semibold text-slate-900">Amenities</label>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {AMENITIES_OPTIONS.map((amenity) => (
               <label
                 key={amenity}
-                className="flex items-center space-x-2 cursor-pointer p-3 border border-slate-200 rounded-lg hover:bg-power-orange/5 transition"
+                className="hover:bg-power-orange/5 flex cursor-pointer items-center space-x-2 rounded-lg border border-slate-200 p-3 transition"
               >
                 <input
                   type="checkbox"
                   checked={selectedAmenities.includes(amenity)}
                   onChange={() => toggleAmenity(amenity)}
-                  className="w-4 h-4 accent-power-orange rounded"
+                  className="accent-power-orange h-4 w-4 rounded"
                   disabled={loading}
                 />
                 <span className="text-sm text-slate-700">{amenity}</span>
@@ -654,27 +618,25 @@ export default function Step2VenueDetails({
           title="Coach Preferences"
           subtitle="Configure external and in-house coach settings"
         >
-          <div className="flex items-center space-x-2 p-4 bg-power-orange/5 border border-power-orange/20 rounded-lg">
+          <div className="bg-power-orange/5 border-power-orange/20 flex items-center space-x-2 rounded-lg border p-4">
             <input
               type="checkbox"
               name="allowExternalCoaches"
               checked={formData.allowExternalCoaches}
               onChange={handleInputChange}
-              className="w-4 h-4 accent-power-orange rounded"
+              className="accent-power-orange h-4 w-4 rounded"
               disabled={loading}
             />
-            <label className="text-sm text-slate-700">
-              Allow external coaches at your venue?
-            </label>
+            <label className="text-sm text-slate-700">Allow external coaches at your venue?</label>
           </div>
 
-          <div className="flex items-center space-x-2 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+          <div className="flex items-center space-x-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <input
               type="checkbox"
               name="hasCoaches"
               checked={formData.hasCoaches}
               onChange={handleInputChange}
-              className="w-4 h-4 accent-power-orange rounded"
+              className="accent-power-orange h-4 w-4 rounded"
               disabled={loading}
             />
             <label className="text-sm text-slate-700">
@@ -686,19 +648,17 @@ export default function Step2VenueDetails({
         {/* Submit Button */}
         <Button
           type="submit"
-          className="w-full bg-power-orange hover:bg-orange-600 text-white py-2.5 text-base"
+          className="bg-power-orange-solid w-full py-2.5 text-base text-white hover:bg-orange-600"
           disabled={loading}
         >
-          {loading
-            ? "Saving Details..."
-            : "Continue to Step 3: Upload Images & Documents"}
+          {loading ? "Saving Details..." : "Continue to Step 3: Upload Images & Documents"}
         </Button>
         {isDev && onSkip && (
           <Button
             type="button"
             onClick={() => onSkip && onSkip(formData.hasCoaches)}
             disabled={loading}
-            className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2.5 text-base"
+            className="w-full bg-slate-600 py-2.5 text-base text-white hover:bg-slate-700"
           >
             Skip (Dev)
           </Button>

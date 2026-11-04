@@ -1,24 +1,24 @@
 "use client";
 
+import { Input } from "@/modules/shared/ui/Input";
+import { Textarea } from "@/modules/shared/ui/Textarea";
 import { toast } from "@/lib/toast";
 import { coachApi } from "@/modules/coach/services/coach";
-import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card } from "@/modules/shared/ui/Card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ConfirmDialog } from "@/modules/shared/ui/ConfirmDialog";
 import {
   AlertCircle,
+  CalendarRange,
   CheckCircle2,
   Coins,
-  CalendarRange,
   Loader2,
   PencilLine,
   Plus,
   Sparkles,
   Ticket,
-  TrendingUp,
   Trash2,
+  TrendingUp,
   Users,
   Zap,
 } from "lucide-react";
@@ -101,8 +101,8 @@ const parseFeatureList = (value: string) => {
       value
         .split(/[\n,]/)
         .map((item) => item.trim())
-        .filter(Boolean),
-    ),
+        .filter(Boolean)
+    )
   );
 };
 
@@ -158,9 +158,7 @@ const buildFormErrors = (form: PackageFormState): PackageFormErrors => {
   return errors;
 };
 
-const buildPackagePayload = (
-  form: PackageFormState,
-): CoachSubscriptionPackageCreateInput => {
+const buildPackagePayload = (form: PackageFormState): CoachSubscriptionPackageCreateInput => {
   const features = parseFeatureList(form.featuresText);
   const priceRupees = Number(form.priceRupees);
 
@@ -195,14 +193,10 @@ const packageToForm = (pkg: CoachSubscriptionPackage): PackageFormState => ({
   description: pkg.description ?? "",
   frequency: pkg.frequency,
   priceRupees:
-    typeof pkg.price === "number" && Number.isFinite(pkg.price)
-      ? String(pkg.price / 100)
-      : "",
+    typeof pkg.price === "number" && Number.isFinite(pkg.price) ? String(pkg.price / 100) : "",
   featuresText: pkg.features.join("\n"),
-  maxStudents:
-    typeof pkg.maxStudents === "number" ? String(pkg.maxStudents) : "",
-  maxSessions:
-    typeof pkg.maxSessions === "number" ? String(pkg.maxSessions) : "",
+  maxStudents: typeof pkg.maxStudents === "number" ? String(pkg.maxStudents) : "",
+  maxSessions: typeof pkg.maxSessions === "number" ? String(pkg.maxSessions) : "",
   isActive: pkg.isActive,
 });
 
@@ -225,8 +219,7 @@ export default function CoachBillingPage() {
   const [form, setForm] = useState<PackageFormState>(DEFAULT_FORM);
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [editingPackageId, setEditingPackageId] = useState<string | null>(null);
-  const [packageToDelete, setPackageToDelete] =
-    useState<CoachSubscriptionPackage | null>(null);
+  const [packageToDelete, setPackageToDelete] = useState<CoachSubscriptionPackage | null>(null);
   const [touched, setTouched] = useState<Record<PackageFormField, boolean>>({
     name: false,
     description: false,
@@ -241,21 +234,18 @@ export default function CoachBillingPage() {
   const loadPackages = useCallback(async () => {
     setLoading(true);
     try {
-      const [packagesResult, subscriptionsResult, revenueResult] =
-        await Promise.allSettled([
-          coachApi.listMyPackages(),
-          coachApi.getCoachActiveSubscriptions(),
-          coachApi.getSubscriptionRevenue(),
-        ]);
+      const [packagesResult, subscriptionsResult, revenueResult] = await Promise.allSettled([
+        coachApi.listMyPackages(),
+        coachApi.getCoachActiveSubscriptions(),
+        coachApi.getSubscriptionRevenue(),
+      ]);
 
       if (packagesResult.status === "fulfilled") {
         setPackages(packagesResult.value.data?.packages || []);
       }
 
       if (subscriptionsResult.status === "fulfilled") {
-        setActiveSubscriptions(
-          subscriptionsResult.value.data?.subscriptions || [],
-        );
+        setActiveSubscriptions(subscriptionsResult.value.data?.subscriptions || []);
       }
 
       if (revenueResult.status === "fulfilled") {
@@ -264,7 +254,7 @@ export default function CoachBillingPage() {
             total: 0,
             count: 0,
             byFrequency: { MONTHLY: 0, QUARTERLY: 0, YEARLY: 0 },
-          },
+          }
         );
       }
     } catch (error) {
@@ -280,12 +270,8 @@ export default function CoachBillingPage() {
   }, [loadPackages]);
 
   const formErrors = useMemo(() => buildFormErrors(form), [form]);
-  const showError = (field: PackageFormField) =>
-    submitAttempted || touched[field];
-  const featureList = useMemo(
-    () => parseFeatureList(form.featuresText),
-    [form.featuresText],
-  );
+  const showError = (field: PackageFormField) => submitAttempted || touched[field];
+  const featureList = useMemo(() => parseFeatureList(form.featuresText), [form.featuresText]);
   const previewPrice = useMemo(() => {
     const value = Number(form.priceRupees);
     return Number.isFinite(value) && value > 0 ? value : 0;
@@ -302,9 +288,8 @@ export default function CoachBillingPage() {
   }, [form.name, form.priceRupees, formErrors]);
 
   const editingPackage = useMemo(
-    () =>
-      packages.find((pkg) => (pkg._id || pkg.id) === editingPackageId) ?? null,
-    [editingPackageId, packages],
+    () => packages.find((pkg) => (pkg._id || pkg.id) === editingPackageId) ?? null,
+    [editingPackageId, packages]
   );
 
   const isSaving = creating || updating;
@@ -315,10 +300,7 @@ export default function CoachBillingPage() {
         acc[pkg.frequency] += 1;
         return acc;
       },
-      { MONTHLY: 0, QUARTERLY: 0, YEARLY: 0 } as Record<
-        CoachSubscriptionPackageFrequency,
-        number
-      >,
+      { MONTHLY: 0, QUARTERLY: 0, YEARLY: 0 } as Record<CoachSubscriptionPackageFrequency, number>
     );
 
     return {
@@ -330,10 +312,7 @@ export default function CoachBillingPage() {
     };
   }, [activeSubscriptions.length, packages, subscriptionRevenue.total]);
 
-  const setField = <T extends PackageFormField>(
-    field: T,
-    value: PackageFormState[T],
-  ) => {
+  const setField = <T extends PackageFormField>(field: T, value: PackageFormState[T]) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
@@ -378,7 +357,7 @@ export default function CoachBillingPage() {
     setSubmitAttempted(true);
 
     if (Object.keys(formErrors).length > 0) {
-      toast.error("Fix the highlighted fields before saving this package.");
+      toast.error("Fix the highlighted fields to continue.");
       return;
     }
 
@@ -403,9 +382,7 @@ export default function CoachBillingPage() {
       await loadPackages();
     } catch (error) {
       console.error(error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to create package",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to create package");
     } finally {
       setCreating(false);
       setUpdating(false);
@@ -440,39 +417,26 @@ export default function CoachBillingPage() {
       await loadPackages();
     } catch (error) {
       console.error(error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to delete package",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to delete package");
     } finally {
       setDeleting(false);
     }
   };
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl space-y-3 px-2 py-2 sm:space-y-4 sm:px-3 sm:py-3 lg:px-4">
-        <Card className="overflow-hidden border-white/70 bg-white/85 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-md">
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f7fbff_45%,#fff5e8_100%)] p-4 sm:p-6">
-            <div className="relative z-10 max-w-3xl space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
-                <Sparkles size={12} /> Package builder
-              </span>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
-                Create subscription packages that feel premium and easy to buy.
-              </h1>
-              <p className="max-w-2xl text-xs leading-5 text-slate-600 sm:text-sm lg:text-base">
-                Shape monthly, quarterly, or yearly packages with clear pricing,
-                precise limits, and a polished player-facing preview. The price
-                you enter is converted to paise on save, so the backend gets
-                clean numeric data.
-              </p>
-            </div>
-            <div className="pointer-events-none absolute -right-20 -top-16 h-48 w-48 rounded-full bg-turf-green/15 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-power-orange/20 blur-3xl" />
-          </div>
-        </Card>
+    <div>
+      <div className="space-y-6">
+        <header className="max-w-3xl">
+          <h1 className="font-editorial text-ink text-balance text-3xl font-light tracking-tight sm:text-4xl">
+            Client packages
+          </h1>
+          <p className="text-ink-body mt-2 max-w-[56ch] text-pretty">
+            Monthly, quarterly or yearly packages your clients can subscribe to. Build one, check
+            the preview, then switch it on.
+          </p>
+        </header>
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[
             {
               label: "Total packages",
@@ -505,15 +469,10 @@ export default function CoachBillingPage() {
               icon: Coins,
             },
           ].map((item) => (
-            <Card
-              key={item.label}
-              className="border-slate-200 bg-white/90 shadow-sm"
-            >
+            <Card key={item.label} className="border-slate-200 bg-white">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-medium text-slate-500 sm:text-sm">
-                    {item.label}
-                  </p>
+                  <p className="text-xs font-medium text-slate-500 sm:text-sm">{item.label}</p>
                   <p className="mt-1 text-xl font-semibold text-slate-950 sm:text-2xl">
                     {item.value}
                   </p>
@@ -527,32 +486,24 @@ export default function CoachBillingPage() {
         </div>
 
         {activeSubscriptions.length > 0 ? (
-          <Card className="border-slate-200 bg-white/95 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+          <Card className="border-slate-200 bg-white">
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-950 sm:text-xl">
-                  Active subscribers
-                </h2>
+                <h2 className="text-lg font-bold text-slate-950 sm:text-xl">Active subscribers</h2>
                 <p className="text-xs text-slate-600 sm:text-sm">
                   Players currently subscribed to your packages.
                 </p>
               </div>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+              <span className="rounded-md bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                 {activeSubscriptions.length} active
               </span>
             </div>
             <div className="mt-4 space-y-3">
               {activeSubscriptions.map((subscription: any) => {
                 const packageData = subscription.packageId as
-                  | { name?: string; frequency?: string }
-                  | string
-                  | null
-                  | undefined;
+                  { name?: string; frequency?: string } | string | null | undefined;
                 const userData = subscription.userId as
-                  | { name?: string; email?: string }
-                  | string
-                  | null
-                  | undefined;
+                  { name?: string; email?: string } | string | null | undefined;
 
                 return (
                   <div
@@ -571,7 +522,7 @@ export default function CoachBillingPage() {
                           : packageData?.name || "Subscription package"}
                         {subscription.currentPeriodEnd
                           ? ` • Expires ${new Date(
-                              subscription.currentPeriodEnd,
+                              subscription.currentPeriodEnd
                             ).toLocaleDateString("en-IN", {
                               day: "numeric",
                               month: "short",
@@ -581,7 +532,7 @@ export default function CoachBillingPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      <span className="rounded-md bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                         {subscription.status}
                       </span>
                     </div>
@@ -593,7 +544,7 @@ export default function CoachBillingPage() {
         ) : null}
 
         <div className="grid gap-3 lg:gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <Card className="border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+          <Card className="border-slate-200 bg-white">
             <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -601,17 +552,17 @@ export default function CoachBillingPage() {
                     {editingPackage ? "Edit package" : "Build a package"}
                   </h2>
                   {editingPackage ? (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                    <span className="rounded-md bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
                       Editing existing package
                     </span>
                   ) : null}
                 </div>
                 <p className="mt-1 text-xs text-slate-600 sm:text-sm">
-                  Use concise names, clear inclusions, and realistic limits. The
-                  live preview updates as you type.
+                  Use concise names, clear inclusions, and realistic limits. The live preview
+                  updates as you type.
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              <span className="rounded-md bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                 Optimized for player conversion
               </span>
             </div>
@@ -644,7 +595,7 @@ export default function CoachBillingPage() {
                   <label className="mb-1 block text-xs font-semibold text-slate-900 sm:text-sm">
                     Frequency
                   </label>
-                  <div className="grid gap-3 sm:grid-cols-3 items-stretch">
+                  <div className="grid items-stretch gap-3 sm:grid-cols-3">
                     {FREQUENCY_OPTIONS.map((option) => {
                       const active = form.frequency === option.value;
 
@@ -654,20 +605,18 @@ export default function CoachBillingPage() {
                           type="button"
                           onClick={() => setField("frequency", option.value)}
                           onBlur={() => markTouched("frequency")}
-                          className={`w-full h-full rounded-2xl border p-4 text-left transition ${active ? "border-turf-green bg-turf-green/5 ring-4 ring-turf-green/10" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                          className={`h-full w-full rounded-2xl border p-4 text-left transition ${active ? "border-turf-green bg-turf-green/5 ring-turf-green/10 ring-4" : "border-slate-200 bg-white hover:border-slate-300"}`}
                         >
                           <div className="flex h-full flex-col justify-between gap-3">
                             <div>
                               <p className="text-xs font-semibold text-slate-950 sm:text-sm">
                                 {option.label}
                               </p>
-                              <p className="mt-1 text-xs text-slate-500">
-                                {option.description}
-                              </p>
+                              <p className="mt-1 text-xs text-slate-500">{option.description}</p>
                             </div>
                             <div className="flex justify-end">
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${active ? "bg-turf-green text-white" : "bg-slate-100 text-slate-600"}`}
+                                className={`rounded-md px-2 py-0.5 text-[10px] font-semibold sm:px-2.5 sm:py-1 sm:text-[11px] ${active ? "bg-turf-green text-white" : "bg-slate-100 text-slate-600"}`}
                               >
                                 {option.cadence}
                               </span>
@@ -678,8 +627,7 @@ export default function CoachBillingPage() {
                     })}
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
-                    Choose the package cadence that best matches the commitment
-                    you want.
+                    Choose the package cadence that best matches the commitment you want.
                   </p>
                 </div>
 
@@ -689,9 +637,7 @@ export default function CoachBillingPage() {
                   </label>
                   <Textarea
                     value={form.description}
-                    onChange={(event) =>
-                      setField("description", event.target.value)
-                    }
+                    onChange={(event) => setField("description", event.target.value)}
                     onBlur={() => markTouched("description")}
                     placeholder="Explain who this package is for and what it unlocks."
                     rows={4}
@@ -717,23 +663,17 @@ export default function CoachBillingPage() {
                     min={1}
                     step="0.01"
                     value={form.priceRupees}
-                    onChange={(event) =>
-                      setField("priceRupees", event.target.value)
-                    }
+                    onChange={(event) => setField("priceRupees", event.target.value)}
                     onBlur={() => markTouched("priceRupees")}
                     placeholder="4999"
                     inputMode="decimal"
                     pattern="^\\d+(\\.\\d{1,2})?$"
-                    aria-invalid={
-                      showError("priceRupees") && !!formErrors.priceRupees
-                    }
+                    aria-invalid={showError("priceRupees") && !!formErrors.priceRupees}
                     className={`${showError("priceRupees") && formErrors.priceRupees ? "border-rose-300 bg-rose-50/50" : "border-slate-200 bg-white"}`}
                   />
                   <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
                     <span>Stored as paise on save.</span>
-                    <span>
-                      ₹ {previewPrice ? formatRupees(previewPrice) : "0"}
-                    </span>
+                    <span>₹ {previewPrice ? formatRupees(previewPrice) : "0"}</span>
                   </div>
                   {showError("priceRupees") && formErrors.priceRupees ? (
                     <p className="mt-2 flex items-center gap-2 text-xs font-medium text-rose-600">
@@ -761,7 +701,7 @@ export default function CoachBillingPage() {
                       </p>
                     </div>
                     <span
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${form.isActive ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}
+                      className={`rounded-md px-3 py-1 text-xs font-semibold ${form.isActive ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}
                     >
                       {form.isActive ? "Active" : "Inactive"}
                     </span>
@@ -777,9 +717,7 @@ export default function CoachBillingPage() {
                     min={1}
                     step={1}
                     value={form.maxStudents}
-                    onChange={(event) =>
-                      setField("maxStudents", event.target.value)
-                    }
+                    onChange={(event) => setField("maxStudents", event.target.value)}
                     onBlur={() => markTouched("maxStudents")}
                     placeholder="Unlimited"
                     className={`${showError("maxStudents") && formErrors.maxStudents ? "border-rose-300 bg-rose-50/50" : "border-slate-200 bg-white"}`}
@@ -803,9 +741,7 @@ export default function CoachBillingPage() {
                     min={1}
                     step={1}
                     value={form.maxSessions}
-                    onChange={(event) =>
-                      setField("maxSessions", event.target.value)
-                    }
+                    onChange={(event) => setField("maxSessions", event.target.value)}
                     onBlur={() => markTouched("maxSessions")}
                     placeholder="Unlimited"
                     className={`${showError("maxSessions") && formErrors.maxSessions ? "border-rose-300 bg-rose-50/50" : "border-slate-200 bg-white"}`}
@@ -826,9 +762,7 @@ export default function CoachBillingPage() {
                   </label>
                   <Textarea
                     value={form.featuresText}
-                    onChange={(event) =>
-                      setField("featuresText", event.target.value)
-                    }
+                    onChange={(event) => setField("featuresText", event.target.value)}
                     onBlur={() => markTouched("featuresText")}
                     placeholder={
                       "Examples:\n1-on-1 weekly coaching\nProgress tracking\nPriority WhatsApp support"
@@ -837,9 +771,7 @@ export default function CoachBillingPage() {
                     className={`${showError("featuresText") && formErrors.featuresText ? "border-rose-300 bg-rose-50/50" : "border-slate-200 bg-white"}`}
                   />
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-                    <span>
-                      Enter one feature per line or separate with commas.
-                    </span>
+                    <span>Enter one feature per line or separate with commas.</span>
                     <span>{featureList.length} feature(s)</span>
                   </div>
                   {featureList.length > 0 ? (
@@ -847,16 +779,10 @@ export default function CoachBillingPage() {
                       {featureList.map((feature) => (
                         <span
                           key={feature}
-                          className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 sm:px-3 sm:py-1"
+                          className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 sm:px-3 sm:py-1"
                         >
-                          <Zap
-                            size={10}
-                            className="text-turf-green sm:block hidden"
-                          />
-                          <Zap
-                            size={10}
-                            className="text-turf-green sm:hidden"
-                          />
+                          <Zap size={10} className="text-turf-green hidden sm:block" />
+                          <Zap size={10} className="text-turf-green sm:hidden" />
                           {feature}
                         </span>
                       ))}
@@ -872,8 +798,8 @@ export default function CoachBillingPage() {
 
               <div className="flex flex-col gap-2 border-t border-slate-200 pt-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-slate-500 sm:text-sm">
-                  You can always change a package later. Start with a simple,
-                  easy-to-understand offer.
+                  You can always change a package later. Start with a simple, easy-to-understand
+                  offer.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                   <Button
@@ -898,7 +824,7 @@ export default function CoachBillingPage() {
                         )
                       ) : undefined
                     }
-                    className="bg-turf-green hover:bg-green-700 whitespace-nowrap sm:flex-1"
+                    className="bg-turf-green whitespace-nowrap hover:bg-emerald-700 sm:flex-1"
                   >
                     {editingPackage ? "Save changes" : "Create package"}
                   </Button>
@@ -918,24 +844,22 @@ export default function CoachBillingPage() {
           </Card>
 
           <div className="space-y-3">
-            <Card className="xl:sticky xl:top-6 border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+            <Card className="border-slate-200 bg-white xl:sticky xl:top-6">
               <div className="flex flex-col gap-3 border-b border-slate-200 pb-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950 sm:text-2xl">
-                    Live preview
-                  </h2>
+                  <h2 className="text-xl font-bold text-slate-950 sm:text-2xl">Live preview</h2>
                   <p className="mt-1 text-xs text-slate-600 sm:text-sm">
                     This is close to what players will see before subscribing.
                   </p>
                 </div>
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold sm:px-3 sm:py-1 ${form.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+                  className={`rounded-md px-2 py-0.5 text-xs font-semibold sm:px-3 sm:py-1 ${form.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
                 >
                   {form.isActive ? "Visible" : "Hidden"}
                 </span>
               </div>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#ffffff_40%,#fff8ef_100%)] p-4">
+              <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -949,51 +873,45 @@ export default function CoachBillingPage() {
                         "Add a short description to explain who this package is for."}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white px-4 py-3 text-left shadow-sm sm:text-right">
+                  <div className="rounded-2xl bg-white px-4 py-3 text-left sm:text-right">
                     <p className="text-2xl font-bold text-slate-950">
                       {previewPrice
-                        ? formatCurrencyFromPaise(
-                            Math.round(previewPrice * 100),
-                          )
+                        ? formatCurrencyFromPaise(Math.round(previewPrice * 100))
                         : "₹0"}
                     </p>
                     <p className="text-xs font-medium text-slate-500">
-                      {FREQUENCY_OPTIONS.find(
-                        (option) => option.value === form.frequency,
-                      )?.label || "Monthly"}
+                      {FREQUENCY_OPTIONS.find((option) => option.value === form.frequency)?.label ||
+                        "Monthly"}
                     </p>
                   </div>
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
+                  <span className="rounded-md bg-slate-950 px-3 py-1 text-xs font-semibold text-white">
                     {form.frequency}
                   </span>
                   {Number.isInteger(parseOptionalWholeNumber(form.maxStudents)) ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
-                      Up to {parseOptionalWholeNumber(form.maxStudents)}{" "}
-                      students
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                      Up to {parseOptionalWholeNumber(form.maxStudents)} students
                     </span>
                   ) : (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       Flexible student count
                     </span>
                   )}
                   {Number.isInteger(parseOptionalWholeNumber(form.maxSessions)) ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       {parseOptionalWholeNumber(form.maxSessions)} sessions
                     </span>
                   ) : (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm">
+                    <span className="rounded-md bg-white px-3 py-1 text-xs font-semibold text-slate-700">
                       Flexible session count
                     </span>
                   )}
                 </div>
 
-                <div className="mt-3 rounded-2xl border border-slate-200 bg-white/90 p-3">
-                  <p className="text-sm font-semibold text-slate-900">
-                    Included features
-                  </p>
+                <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3">
+                  <p className="text-sm font-semibold text-slate-900">Included features</p>
                   <div className="mt-3 space-y-2">
                     {featureList.length > 0 ? (
                       featureList.map((feature) => (
@@ -1001,10 +919,7 @@ export default function CoachBillingPage() {
                           key={feature}
                           className="flex items-start gap-2 text-sm text-slate-700"
                         >
-                          <CheckCircle2
-                            size={16}
-                            className="mt-0.5 shrink-0 text-turf-green"
-                          />
+                          <CheckCircle2 size={16} className="text-turf-green mt-0.5 shrink-0" />
                           <span>{feature}</span>
                         </div>
                       ))
@@ -1019,76 +934,56 @@ export default function CoachBillingPage() {
 
               <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-3 text-sm text-slate-600">
                 <div className="flex gap-3">
-                  <Coins size={18} className="mt-0.5 text-power-orange" />
+                  <Coins size={18} className="text-power-orange mt-0.5" />
                   <p>
-                    The number you enter is treated as INR in the form and
-                    converted to paise before saving.
+                    The number you enter is treated as INR in the form and converted to paise before
+                    saving.
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <Users size={18} className="mt-0.5 text-turf-green" />
+                  <Users size={18} className="text-turf-green mt-0.5" />
                   <p>
-                    Keep the package focused. Three to five concrete benefits
-                    usually convert better than a long list.
+                    Keep the package focused. Three to five concrete benefits usually convert better
+                    than a long list.
                   </p>
                 </div>
               </div>
             </Card>
 
-            <Card className="border-slate-200 bg-white/90 shadow-sm">
+            <Card className="border-slate-200 bg-white">
               <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-950">
-                    Publishing checklist
-                  </h2>
+                  <h2 className="text-xl font-bold text-slate-950">Publishing checklist</h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    A good package is clear, narrow, and easy to understand in
-                    under 10 seconds.
+                    A good package is clear, narrow, and easy to understand in under 10 seconds.
                   </p>
                 </div>
               </div>
               <div className="mt-4 space-y-3 text-sm text-slate-700">
                 <div className="flex gap-3">
-                  <CheckCircle2
-                    size={16}
-                    className="mt-0.5 shrink-0 text-emerald-600"
-                  />
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <p>Use a short name that describes the outcome, not just the billing cycle.</p>
+                </div>
+                <div className="flex gap-3">
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
                   <p>
-                    Use a short name that describes the outcome, not just the
-                    billing cycle.
+                    State the real limits if there are any. Vague limits create support friction
+                    later.
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <CheckCircle2
-                    size={16}
-                    className="mt-0.5 shrink-0 text-emerald-600"
-                  />
-                  <p>
-                    State the real limits if there are any. Vague limits create
-                    support friction later.
-                  </p>
-                </div>
-                <div className="flex gap-3">
-                  <CheckCircle2
-                    size={16}
-                    className="mt-0.5 shrink-0 text-emerald-600"
-                  />
-                  <p>
-                    Prefer outcomes and support details over generic marketing
-                    copy.
-                  </p>
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                  <p>Prefer outcomes and support details over generic marketing copy.</p>
                 </div>
               </div>
             </Card>
           </div>
         </div>
 
-        <Card className="border-slate-200 bg-white/95 shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+        <Card className="border-slate-200 bg-white">
           <div className="flex flex-col gap-3 border-b border-slate-200 pb-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-slate-950">
-                Your packages
-              </h2>
+              <h2 className="text-2xl font-bold text-slate-950">Your packages</h2>
               <p className="mt-1 text-sm text-slate-600">
                 Review the packages you’ve published so far.
               </p>
@@ -1105,12 +1000,9 @@ export default function CoachBillingPage() {
                 <Sparkles size={18} />
               </div>
               <div>
-                <p className="text-base font-semibold text-slate-950">
-                  No packages yet
-                </p>
+                <p className="text-base font-semibold text-slate-950">No packages yet</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  Create your first package above. Keep it simple, clear, and
-                  easy to buy.
+                  Create your first package above. Keep it simple, clear, and easy to buy.
                 </p>
               </div>
             </div>
@@ -1119,35 +1011,30 @@ export default function CoachBillingPage() {
               {packages.map((pkg) => {
                 const priceLabel = formatCurrencyFromPaise(pkg.price);
                 const frequencyLabel =
-                  FREQUENCY_OPTIONS.find(
-                    (option) => option.value === pkg.frequency,
-                  )?.label || pkg.frequency;
+                  FREQUENCY_OPTIONS.find((option) => option.value === pkg.frequency)?.label ||
+                  pkg.frequency;
 
                 return (
                   <div
                     key={pkg._id || pkg.id}
-                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-base font-semibold text-slate-950">
-                          {pkg.name}
-                        </p>
+                        <p className="text-base font-semibold text-slate-950">{pkg.name}</p>
                         <p className="mt-1 text-sm text-slate-600">
                           {frequencyLabel} • {priceLabel}
                         </p>
                       </div>
                       <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${pkg.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
+                        className={`rounded-md px-2.5 py-1 text-xs font-semibold ${pkg.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}
                       >
                         {pkg.isActive ? "Active" : "Inactive"}
                       </span>
                     </div>
 
                     {pkg.description ? (
-                      <p className="mt-3 text-sm leading-6 text-slate-600">
-                        {pkg.description}
-                      </p>
+                      <p className="mt-3 text-sm leading-6 text-slate-600">{pkg.description}</p>
                     ) : null}
 
                     {pkg.features?.length ? (
@@ -1157,36 +1044,31 @@ export default function CoachBillingPage() {
                             key={feature}
                             className="flex items-start gap-2 text-sm text-slate-700"
                           >
-                            <CheckCircle2
-                              size={16}
-                              className="mt-0.5 shrink-0 text-turf-green"
-                            />
+                            <CheckCircle2 size={16} className="text-turf-green mt-0.5 shrink-0" />
                             <span>{feature}</span>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-4 text-sm text-slate-500">
-                        No features listed yet.
-                      </p>
+                      <p className="mt-4 text-sm text-slate-500">No features listed yet.</p>
                     )}
 
                     <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-600">
                       {typeof pkg.maxStudents === "number" ? (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           Up to {pkg.maxStudents} students
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           Unlimited students
                         </span>
                       )}
                       {typeof pkg.maxSessions === "number" ? (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           {pkg.maxSessions} sessions
                         </span>
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-3 py-1">
+                        <span className="rounded-md bg-slate-100 px-3 py-1">
                           Unlimited sessions
                         </span>
                       )}

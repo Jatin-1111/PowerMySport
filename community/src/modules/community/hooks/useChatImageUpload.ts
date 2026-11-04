@@ -12,9 +12,7 @@ const MAX_CLIENT_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB friendly gate (server e
  * Read pixel dimensions from a File without uploading it.
  * Returns null if dimensions cannot be determined (e.g., unsupported env).
  */
-async function readImageDimensions(
-  file: File,
-): Promise<{ width: number; height: number } | null> {
+async function readImageDimensions(file: File): Promise<{ width: number; height: number } | null> {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -52,7 +50,7 @@ export interface ChatImageUploadResult {
  */
 export async function uploadChatImage(
   file: File,
-  conversationId: string,
+  conversationId: string
 ): Promise<ChatImageUploadResult> {
   // ── 1. Type validation ──────────────────────────────────────────────────
   if (!ALLOWED_TYPES.includes(file.type as AllowedType)) {
@@ -70,10 +68,7 @@ export async function uploadChatImage(
   const height = dims?.height ?? 0;
 
   // ── 4. Request presigned POST from server ───────────────────────────────
-  const { url, fields, key } = await communityService.getImageUploadUrl(
-    conversationId,
-    file.type,
-  );
+  const { url, fields, key } = await communityService.getImageUploadUrl(conversationId, file.type);
 
   // ── 5. POST directly to S3 ──────────────────────────────────────────────
   const formData = new FormData();

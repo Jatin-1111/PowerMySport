@@ -1,9 +1,11 @@
-import redis from "../../config/redis";
+import redis, { REDIS_ENABLED } from "../../config/redis";
 import { User } from "../../client/models/User";
 import { getNotificationSocket } from "../../client/sockets/notificationSocket";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("userPresence");
 
 const WRITE_THROTTLE_MS = 60 * 1_000;
-const PRESENCE_TTL_S    = 300; // 5-minute safety-net TTL per user key
+const PRESENCE_TTL_S = 300; // 5-minute safety-net TTL per user key
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const presenceKey = (userId: string) => `community:presence:${userId}`;
@@ -18,18 +20,12 @@ const shouldWriteNow = (userId: string): boolean => {
   return true;
 };
 
-const persistLastActive = async (
-  userId: string,
-  force = false,
-): Promise<void> => {
+const persistLastActive = async (userId: string, force = false): Promise<void> => {
   if (!force && !shouldWriteNow(userId)) return;
   try {
-    await User.updateOne(
-      { _id: userId },
-      { $set: { lastActiveAt: new Date() } },
-    );
+    await User.updateOne({ _id: userId }, { $set: { lastActiveAt: new Date() } });
   } catch (error) {
-    console.error("Failed to persist user lastActiveAt:", error);
+    log.error("Failed to persist user lastActiveAt:", error);
   }
 };
 
@@ -50,16 +46,15 @@ const emitPresenceUpdate = (userId: string, isOnlineNow: boolean): void => {
  * Registers the socket ID under the user's Redis presence hash and
  * resets the TTL so the key doesn't expire while the user is active.
  */
-export const markUserOnline = async (
-  userId: string,
-  socketId: string,
-): Promise<void> => {
+export const markUserOnline = async (userId: string, socketId: string): Promise<void> => {
   try {
     const key = presenceKey(userId);
     await redis.hset(key, socketId, "1");
     await redis.expire(key, PRESENCE_TTL_S);
   } catch (err) {
-    console.error("[presence] markUserOnline redis error:", err);
+    if (REDIS_ENABLED) {
+      log.error("[presence] markUserOnline redis error:", err);
+    }
   }
   await persistLastActive(userId);
   emitPresenceUpdate(userId, true);
@@ -70,10 +65,7 @@ export const markUserOnline = async (
  * Removes only that socket's entry; the user stays online if they have
  * other open connections (e.g. two browser tabs).
  */
-export const markUserOffline = async (
-  userId: string,
-  socketId: string,
-): Promise<void> => {
+export const markUserOffline = async (userId: string, socketId: string): Promise<void> => {
   let isStillOnline = false;
   try {
     const key = presenceKey(userId);
@@ -84,7 +76,9 @@ export const markUserOffline = async (
       await redis.del(key); // clean up immediately — don't wait for TTL
     }
   } catch (err) {
-    console.error("[presence] markUserOffline redis error:", err);
+    if (REDIS_ENABLED) {
+      log.error("[presence] markUserOffline redis error:", err);
+    }
   }
   await persistLastActive(userId, true);
   emitPresenceUpdate(userId, isStillOnline);
@@ -112,3 +106,26 @@ export const isUserOnline = async (userId: string): Promise<boolean> => {
   }
 };
 
+/**
+ * Batched version of isUserOnline — one Redis pipeline round trip instead of
+ * N sequential/parallel HLEN calls. Used by admin list endpoints that need
+ * presence for a whole page of users at once.
+ */
+export const areUsersOnline = async (userIds: string[]): Promise<Map<string, boolean>> => {
+  const result = new Map<string, boolean>();
+  if (userIds.length === 0) return result;
+  try {
+    const pipeline = redis.pipeline();
+    for (const userId of userIds) {
+      pipeline.hlen(presenceKey(userId));
+    }
+    const responses = await pipeline.exec();
+    userIds.forEach((userId, index) => {
+      const count = (responses?.[index]?.[1] as number) ?? 0;
+      result.set(userId, count > 0);
+    });
+  } catch {
+    for (const userId of userIds) result.set(userId, false);
+  }
+  return result;
+};

@@ -1,0 +1,113 @@
+"use client";
+
+import { INDIAN_STATES_AND_UTS } from "@/lib/indianStates";
+import { SPORT_LABEL } from "@/modules/pathway/config/tournamentDisplay";
+import { parseTypedAge } from "@/modules/pathway/utils/childAge";
+import { useId } from "react";
+
+import { useOpportunityProfile } from "../hooks/useOpportunityProfile";
+
+const MAX_AGE = 25;
+
+const fieldClass =
+  "focus-visible:border-ink focus-visible:ring-ink/20 border-hairline w-full rounded-md border bg-white px-3 py-2 text-base text-slate-900 focus-visible:outline-none focus-visible:ring-2";
+
+/**
+ * The four answers that let us mark which entries fit a child: age, sport,
+ * gender, state. They are kept in this browser only (see useOpportunityProfile)
+ * and each one is optional; an entry is checked against whatever was given.
+ *
+ * `sports` are the slugs worth offering. With none given, every sport we name.
+ */
+export function ProfileFields({
+  sports,
+  className = "grid gap-3 sm:grid-cols-2 lg:grid-cols-4",
+}: {
+  sports: string[];
+  /** The grid classes. The default is four across on a wide page. */
+  className?: string;
+}) {
+  const { profile, setField } = useOpportunityProfile();
+  const ids = { age: useId(), sport: useId(), gender: useId(), state: useId() };
+  const sportOptions = sports.length > 0 ? sports : Object.keys(SPORT_LABEL);
+
+  return (
+    <div className={className}>
+      <div>
+        <label htmlFor={ids.age} className="text-ink mb-1 block text-sm font-medium">
+          Child&apos;s age
+        </label>
+        <input
+          id={ids.age}
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={MAX_AGE}
+          placeholder="e.g. 12"
+          value={profile.age ?? ""}
+          onChange={(e) => {
+            const age = parseTypedAge(e.target.value);
+            setField("age", age === null ? null : Math.min(MAX_AGE, age));
+          }}
+          className={fieldClass}
+        />
+      </div>
+
+      <div>
+        <label htmlFor={ids.sport} className="text-ink mb-1 block text-sm font-medium">
+          Sport
+        </label>
+        <select
+          id={ids.sport}
+          value={profile.sport ?? ""}
+          onChange={(e) => setField("sport", e.target.value || null)}
+          className={fieldClass}
+        >
+          <option value="">Not chosen</option>
+          {sportOptions.map((slug) => (
+            <option key={slug} value={slug}>
+              {SPORT_LABEL[slug] ?? slug}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor={ids.gender} className="text-ink mb-1 block text-sm font-medium">
+          Boy or girl
+        </label>
+        <select
+          id={ids.gender}
+          value={profile.gender ?? ""}
+          onChange={(e) =>
+            setField("gender", e.target.value === "" ? null : (e.target.value as "boy" | "girl"))
+          }
+          className={fieldClass}
+        >
+          <option value="">Not said</option>
+          <option value="boy">Boy</option>
+          <option value="girl">Girl</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor={ids.state} className="text-ink mb-1 block text-sm font-medium">
+          State
+        </label>
+        <select
+          id={ids.state}
+          value={profile.state ?? ""}
+          onChange={(e) => setField("state", e.target.value || null)}
+          className={fieldClass}
+        >
+          <option value="">Not chosen</option>
+          {INDIAN_STATES_AND_UTS.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}

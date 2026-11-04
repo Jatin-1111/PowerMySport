@@ -2,6 +2,9 @@ import { Router, Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
 import {
   acceptConversationRequest,
+  acceptCommunityAnswer,
+  createCommunityAnswerComment,
+  deleteCommunityAnswerComment,
   addGroupMember,
   blockUser,
   createCommunityAnswer,
@@ -13,46 +16,63 @@ import {
   deleteGroup,
   getCommunityPostDetails,
   getMyCommunityReputation,
+  importCommunityFollows,
+  listCommunityFollows,
+  listCommunityLeaderboard,
+  toggleCommunityFollow,
   editMessage,
   getBlockedUsers,
   getCommunityProfile,
   getPlayerProfile,
   getConversationMessages,
+  getUnreadConversationCount,
   getGroupInviteCode,
   getGroupMembers,
+  getChatAttachmentUploadUrl,
   getChatImageUploadUrl,
+  getGroupImageUploadUrl,
   joinGroup,
   joinGroupByCode,
   leaveGroup,
   listMyCommunityReports,
   listGroups,
+  pinGroupMessage,
   listCommunityPosts,
   listConversations,
   rejectConversationRequest,
   reportCommunityContent,
+  searchCommunity,
   searchPlayers,
   sendMessage,
   startConversation,
   updateCommunityAnswer,
   updateCommunityPost,
   unblockUser,
+  updateGroup,
   updateGroupSettings,
   updateCommunityProfile,
   voteCommunityTarget,
 } from "../controllers/communityController";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware, optionalAuthMiddleware } from "../../middleware/auth";
+import { cacheControl } from "../../middleware/cacheControl";
 import {
   communityBlockSchema,
   communityAddGroupMemberSchema,
   communityCreateAnswerSchema,
   communityCreateGroupSchema,
+  communityAnswerCommentSchema,
   communityCreatePostSchema,
+  communityFollowImportSchema,
+  communityFollowToggleSchema,
   communityReportSchema,
+  communityUpdateGroupSchema,
   communityUpdateGroupSettingsSchema,
   communityUpdateMessageSchema,
   communityUpdatePostSchema,
   communitySendMessageSchema,
+  communityChatAttachmentUploadUrlSchema,
   communityChatUploadUrlSchema,
+  communityGroupUploadUrlSchema,
   communityStartConversationSchema,
   communityUpdateProfileSchema,
   communityVoteSchema,
@@ -61,101 +81,146 @@ import { validateRequest } from "../../middleware/validation";
 
 const router = Router();
 
-router.use(authMiddleware);
-
-router.get("/profile", getCommunityProfile);
-router.get("/players/search", searchPlayers);
-router.get("/players/:userId/profile", getPlayerProfile);
+router.get("/profile", authMiddleware, getCommunityProfile);
+router.get("/players/search", authMiddleware, searchPlayers);
+router.get("/players/:userId/profile", authMiddleware, getPlayerProfile);
 router.patch(
   "/profile",
+  authMiddleware,
   validateRequest(communityUpdateProfileSchema),
-  updateCommunityProfile,
+  updateCommunityProfile
 );
 
-router.get("/blocked-users", getBlockedUsers);
-router.post("/block", validateRequest(communityBlockSchema), blockUser);
-router.post("/unblock", validateRequest(communityBlockSchema), unblockUser);
+router.get("/blocked-users", authMiddleware, getBlockedUsers);
+router.post("/block", authMiddleware, validateRequest(communityBlockSchema), blockUser);
+router.post("/unblock", authMiddleware, validateRequest(communityBlockSchema), unblockUser);
 
-router.get("/conversations", listConversations);
+router.get("/conversations", authMiddleware, listConversations);
+router.get("/conversations/unread-count", authMiddleware, getUnreadConversationCount);
 router.post(
   "/conversations/start",
+  authMiddleware,
   validateRequest(communityStartConversationSchema),
-  startConversation,
+  startConversation
 );
-router.post("/conversations/:conversationId/accept", acceptConversationRequest);
-router.post("/conversations/:conversationId/reject", rejectConversationRequest);
-router.get("/conversations/:conversationId/messages", getConversationMessages);
-router.post(
-  "/messages",
-  validateRequest(communitySendMessageSchema),
-  sendMessage,
-);
+router.post("/conversations/:conversationId/accept", authMiddleware, acceptConversationRequest);
+router.post("/conversations/:conversationId/reject", authMiddleware, rejectConversationRequest);
+router.get("/conversations/:conversationId/messages", authMiddleware, getConversationMessages);
+router.post("/messages", authMiddleware, validateRequest(communitySendMessageSchema), sendMessage);
 router.patch(
   "/messages/:messageId",
+  authMiddleware,
   validateRequest(communityUpdateMessageSchema),
-  editMessage,
+  editMessage
 );
-router.delete("/messages/:messageId", deleteMessage);
+router.post("/messages/:messageId/pin", authMiddleware, pinGroupMessage);
+router.delete("/messages/:messageId", authMiddleware, deleteMessage);
 
-router.get("/groups", listGroups);
+// Public — powers the Discover page's community/group directory for guests.
+// private: isMember/isAdmin vary per viewer.
+router.get("/groups", optionalAuthMiddleware, cacheControl(20), listGroups);
 router.post(
-  "/groups",
-  validateRequest(communityCreateGroupSchema),
-  createGroup,
+  "/groups/upload-url",
+  authMiddleware,
+  validateRequest(communityGroupUploadUrlSchema),
+  getGroupImageUploadUrl
 );
+router.post("/groups", authMiddleware, validateRequest(communityCreateGroupSchema), createGroup);
 router.post(
   "/groups/:groupId/members",
+  authMiddleware,
   validateRequest(communityAddGroupMemberSchema),
-  addGroupMember,
+  addGroupMember
+);
+router.patch(
+  "/groups/:groupId",
+  authMiddleware,
+  validateRequest(communityUpdateGroupSchema),
+  updateGroup
 );
 router.patch(
   "/groups/:groupId/settings",
+  authMiddleware,
   validateRequest(communityUpdateGroupSettingsSchema),
-  updateGroupSettings,
+  updateGroupSettings
 );
-router.post("/groups/:groupId/join", joinGroup);
-router.post("/groups/join-by-code/:inviteCode", joinGroupByCode);
-router.get("/groups/:groupId/members", getGroupMembers);
-router.get("/groups/:groupId/invite-code", getGroupInviteCode);
-router.post("/groups/:groupId/leave", leaveGroup);
-router.delete("/groups/:groupId", deleteGroup);
+router.post("/groups/:groupId/join", authMiddleware, joinGroup);
+router.post("/groups/join-by-code/:inviteCode", authMiddleware, joinGroupByCode);
+router.get("/groups/:groupId/members", authMiddleware, getGroupMembers);
+router.get("/groups/:groupId/invite-code", authMiddleware, getGroupInviteCode);
+router.post("/groups/:groupId/leave", authMiddleware, leaveGroup);
+router.delete("/groups/:groupId", authMiddleware, deleteGroup);
 router.post(
   "/reports",
+  authMiddleware,
   validateRequest(communityReportSchema),
-  reportCommunityContent,
+  reportCommunityContent
 );
-router.get("/reports/my", listMyCommunityReports);
+router.get("/reports/my", authMiddleware, listMyCommunityReports);
 
-router.get("/reputation", getMyCommunityReputation);
-router.get("/posts", listCommunityPosts);
-router.get("/posts/:postId", getCommunityPostDetails);
+router.get("/reputation", authMiddleware, getMyCommunityReputation);
+router.get("/leaderboard", authMiddleware, listCommunityLeaderboard);
+
+router.get("/follows", authMiddleware, listCommunityFollows);
+router.post(
+  "/follows/toggle",
+  authMiddleware,
+  validateRequest(communityFollowToggleSchema),
+  toggleCommunityFollow
+);
+router.post(
+  "/follows/import",
+  authMiddleware,
+  validateRequest(communityFollowImportSchema),
+  importCommunityFollows
+);
+// Public — questions and published stories are readable without an account,
+// so search over them is too. public: search results carry no per-viewer
+// field, so this is safe to share across viewers/CDNs.
+router.get("/search", optionalAuthMiddleware, cacheControl(45, "public"), searchCommunity);
+
+// Public — Q&A list/detail feed the community landing page, shared post
+// links, and the sitemap generator. private: myVote/likedByMe/canAccept vary
+// per viewer.
+router.get("/posts", optionalAuthMiddleware, cacheControl(20), listCommunityPosts);
+router.get("/posts/:postId", optionalAuthMiddleware, cacheControl(15), getCommunityPostDetails);
 router.post(
   "/posts",
+  authMiddleware,
   validateRequest(communityCreatePostSchema),
-  createCommunityPost,
+  createCommunityPost
 );
 router.patch(
   "/posts/:postId",
+  authMiddleware,
   validateRequest(communityUpdatePostSchema),
-  updateCommunityPost,
+  updateCommunityPost
 );
-router.delete("/posts/:postId", deleteCommunityPost);
+router.delete("/posts/:postId", authMiddleware, deleteCommunityPost);
 router.post(
   "/posts/:postId/answers",
+  authMiddleware,
   validateRequest(communityCreateAnswerSchema),
-  createCommunityAnswer,
+  createCommunityAnswer
 );
 router.patch(
   "/answers/:answerId",
+  authMiddleware,
   validateRequest(communityCreateAnswerSchema),
-  updateCommunityAnswer,
+  updateCommunityAnswer
 );
-router.delete("/answers/:answerId", deleteCommunityAnswer);
+router.delete("/answers/:answerId", authMiddleware, deleteCommunityAnswer);
+
+router.post("/posts/:postId/accept/:answerId", authMiddleware, acceptCommunityAnswer);
+
 router.post(
-  "/votes",
-  validateRequest(communityVoteSchema),
-  voteCommunityTarget,
+  "/answers/:answerId/comments",
+  authMiddleware,
+  validateRequest(communityAnswerCommentSchema),
+  createCommunityAnswerComment
 );
+router.delete("/answer-comments/:commentId", authMiddleware, deleteCommunityAnswerComment);
+router.post("/votes", authMiddleware, validateRequest(communityVoteSchema), voteCommunityTarget);
 
 /**
  * Rate limiter for chat image upload URL generation.
@@ -178,9 +243,19 @@ const chatUploadRateLimit = rateLimit({
 
 router.post(
   "/chat/upload-url",
+  authMiddleware,
   chatUploadRateLimit,
   validateRequest(communityChatUploadUrlSchema),
-  getChatImageUploadUrl,
+  getChatImageUploadUrl
+);
+
+// Shares the image upload rate limit — same bucket, same abuse surface.
+router.post(
+  "/chat/attachment-url",
+  authMiddleware,
+  chatUploadRateLimit,
+  validateRequest(communityChatAttachmentUploadUrlSchema),
+  getChatAttachmentUploadUrl
 );
 
 export default router;

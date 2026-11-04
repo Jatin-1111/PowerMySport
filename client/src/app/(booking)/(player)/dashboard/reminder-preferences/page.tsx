@@ -1,17 +1,16 @@
 "use client";
 
+import { Breadcrumbs } from "@/modules/shared/ui/Breadcrumbs";
+import axiosInstance from "@/lib/api/axios";
 import { toast } from "@/lib/toast";
 import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
 import { ProfileSectionHeader } from "@/modules/player/components/ProfileSectionHeader";
-import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent } from "@/modules/shared/ui/Card";
+import { EmptyState } from "@/modules/shared/ui/EmptyState";
 import { ListSkeleton } from "@/modules/shared/ui/Skeleton";
-import axiosInstance from "@/lib/api/axios";
-import { motion } from "framer-motion";
-import { Bell, Clock, CheckCircle } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
-import { cn } from "@/utils/cn";
 
 interface ReminderPreferences {
   bookingReminders: {
@@ -36,8 +35,7 @@ const defaultPreferences: ReminderPreferences = {
 };
 
 export default function ReminderPreferencesPage() {
-  const [preferences, setPreferences] =
-    useState<ReminderPreferences>(defaultPreferences);
+  const [preferences, setPreferences] = useState<ReminderPreferences>(defaultPreferences);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -67,7 +65,7 @@ export default function ReminderPreferencesPage() {
       setIsSaving(true);
       const response = await axiosInstance.patch<{ success: boolean }>(
         "/reminders/preferences",
-        preferences,
+        preferences
       );
       if (response.data.success) {
         toast.success("Reminder preferences saved");
@@ -88,7 +86,7 @@ export default function ReminderPreferencesPage() {
 
   const toggleInterval = (
     interval: keyof ReminderPreferences["bookingReminders"]["intervals"],
-    value: boolean,
+    value: boolean
   ) => {
     setPreferences((prev) => ({
       ...prev,
@@ -103,14 +101,11 @@ export default function ReminderPreferencesPage() {
     return (
       <div className="space-y-6">
         <Breadcrumbs
-          items={[
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Reminder Preferences" },
-          ]}
+          items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder preferences" }]}
         />
         <PlayerPageHeader
           badge="Player"
-          title="Reminder Preferences"
+          title="Reminder preferences"
           subtitle="Control when and how you receive booking reminders."
         />
         <ListSkeleton count={3} />
@@ -124,42 +119,36 @@ export default function ReminderPreferencesPage() {
     {
       key: "twentyFourHours" as const,
       label: "24 hours before",
-      description: "A day in advance — great for planning ahead",
-      icon: "🗓️",
+      description: "A day in advance, good for planning ahead",
     },
     {
       key: "oneHour" as const,
       label: "1 hour before",
-      description: "An hour in advance — time to get ready",
-      icon: "⏰",
+      description: "An hour in advance, time to get ready",
     },
     {
       key: "fifteenMinutes" as const,
       label: "15 minutes before",
-      description: "Last-minute heads up — just before the session",
-      icon: "🔔",
+      description: "A last-minute heads up, just before the session",
     },
   ];
 
   return (
     <div className="space-y-6">
       <Breadcrumbs
-        items={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Reminder Preferences" },
-        ]}
+        items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Reminder preferences" }]}
       />
 
       <PlayerPageHeader
         badge="Player"
-        title="Reminder Preferences"
+        title="Reminder preferences"
         subtitle="Control when and how you receive booking reminders."
       />
 
-      <Card className="shop-surface premium-shadow overflow-hidden p-0">
+      <Card className="overflow-hidden p-0">
         <ProfileSectionHeader
           icon={Bell}
-          title="Booking Reminders"
+          title="Booking reminders"
           description="Receive push notifications before your upcoming sessions."
           action={
             <label className="relative inline-flex cursor-pointer items-center gap-2">
@@ -167,110 +156,66 @@ export default function ReminderPreferencesPage() {
                 type="checkbox"
                 checked={bookingReminders.enabled}
                 onChange={(e) => toggleEnabled(e.target.checked)}
-                className="sr-only"
+                role="switch"
+                className="peer sr-only"
               />
               <div
-                className={`relative h-6 w-11 rounded-full transition-colors cursor-pointer ${
-                  bookingReminders.enabled ? "bg-power-orange" : "bg-slate-200"
+                className={`relative h-6 w-11 cursor-pointer rounded-full transition-colors ${
+                  bookingReminders.enabled ? "bg-ink" : "bg-slate-300"
                 }`}
               >
                 <span
                   className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                    bookingReminders.enabled
-                      ? "translate-x-5"
-                      : "translate-x-0"
+                    bookingReminders.enabled ? "translate-x-5" : "translate-x-0"
                   }`}
                 />
               </div>
-              <span className="text-sm font-semibold text-slate-700">
-                {bookingReminders.enabled ? "Enabled" : "Disabled"}
+              <span className="text-ink text-sm font-medium">
+                {bookingReminders.enabled ? "On" : "Off"}
               </span>
             </label>
           }
         />
 
-        <CardContent className="px-6 py-6 space-y-4">
+        <CardContent className="space-y-4 px-6 py-6">
           {bookingReminders.enabled ? (
-            <>
-              <p className="text-sm font-semibold text-slate-700">
-                Remind me before a booking:
-              </p>
-              <div className="space-y-3">
-                {intervalItems.map(({ key, label, description, icon }) => {
+            <fieldset>
+              <legend className="text-ink mb-1 text-base font-medium">
+                Remind me before a booking
+              </legend>
+              <ul className="border-hairline divide-hairline divide-y border-y">
+                {intervalItems.map(({ key, label, description }) => {
                   const isChecked = bookingReminders.intervals[key];
                   return (
-                    <motion.label
-                      key={key}
-                      className={cn(
-                        "flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all",
-                        isChecked
-                          ? "border-power-orange/30 bg-orange-50/50"
-                          : "border-slate-200/70 bg-slate-50/40 hover:border-slate-300 hover:bg-white",
-                      )}
-                      whileHover={{ y: -1 }}
-                      transition={{ duration: 0.15 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg",
-                            isChecked
-                              ? "bg-power-orange/10"
-                              : "bg-slate-100",
-                          )}
-                        >
-                          {icon}
-                        </div>
-                        <div>
-                          <p
-                            className={cn(
-                              "text-sm font-semibold",
-                              isChecked ? "text-slate-900" : "text-slate-700",
-                            )}
-                          >
-                            {label}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isChecked && (
-                          <CheckCircle className="h-4 w-4 text-power-orange" />
-                        )}
+                    <li key={key}>
+                      <label className="hover:bg-paper-deep/60 flex cursor-pointer items-center justify-between gap-4 px-1 py-4 transition-colors">
+                        <span>
+                          <span className="text-ink block font-medium">{label}</span>
+                          <span className="text-ink-muted block text-sm">{description}</span>
+                        </span>
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={(e) => toggleInterval(key, e.target.checked)}
-                          className="h-4 w-4 cursor-pointer accent-power-orange"
+                          className="accent-ink h-5 w-5 shrink-0 cursor-pointer"
                         />
-                      </div>
-                    </motion.label>
+                      </label>
+                    </li>
                   );
                 })}
-              </div>
-            </>
+              </ul>
+            </fieldset>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/40 px-4 py-8 text-center">
-              <Bell className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm font-medium text-slate-500">
-                Booking reminders are currently disabled.
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                Toggle the switch above to enable notifications.
-              </p>
-            </div>
+            <EmptyState
+              icon={Bell}
+              title="Reminders are off"
+              description="Switch booking reminders on above to be told before your sessions."
+            />
           )}
 
-          <div className="flex justify-end border-t border-slate-200/60 pt-4">
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={isSaving}
-              loading={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save Preferences"}
+          <div className="flex justify-end pt-2">
+            <Button variant="primary" onClick={handleSave} disabled={isSaving} loading={isSaving}>
+              {isSaving ? "Saving" : "Save preferences"}
             </Button>
           </div>
         </CardContent>

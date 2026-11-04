@@ -1,9 +1,6 @@
 import type { IOwnVenueDetails } from "@/types";
 
-type OwnVenueLocationDetails = Pick<
-  IOwnVenueDetails,
-  "name" | "address" | "location"
->;
+type OwnVenueLocationDetails = Pick<IOwnVenueDetails, "name" | "address" | "location">;
 
 export interface OwnVenueLocationDisplay {
   title: string;
@@ -11,19 +8,22 @@ export interface OwnVenueLocationDisplay {
   mapsUrl?: string;
 }
 
-export const formatCoordinatesLabel = (
-  coordinates?: [number, number] | null,
-): string => {
-  if (!coordinates) {
+export const formatCoordinatesLabel = (coordinates?: [number, number] | null): string => {
+  if (!coordinates || coordinates.length < 2) {
     return "";
   }
 
   const [longitude, latitude] = coordinates;
+
+  if (typeof longitude !== "number" || typeof latitude !== "number") {
+    return "";
+  }
+
   return `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
 };
 
 export const getOwnVenueLocationDisplay = (
-  details?: OwnVenueLocationDetails | null,
+  details?: OwnVenueLocationDetails | null
 ): OwnVenueLocationDisplay | null => {
   if (!details) {
     return null;
@@ -49,7 +49,7 @@ export const getOwnVenueLocationDisplay = (
   const mapsQuery = address || coordinateLabel;
   if (mapsQuery) {
     display.mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-      mapsQuery,
+      mapsQuery
     )}`;
   }
 

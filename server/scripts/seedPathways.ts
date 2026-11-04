@@ -1,29 +1,9 @@
 import "dotenv/config";
 import mongoose from "mongoose";
 import { pathwayService } from "../src/shared/services/PathwayService";
+import { SUPPORTED_SPORTS } from "../src/shared/constants/supportedSports";
 
-const TOP_SPORTS = [
-  "Cricket",
-  "Football",
-  "Badminton",
-  "Tennis",
-  "Kabaddi",
-  "Athletics",
-  "Boxing",
-  "Wrestling",
-  "Weightlifting",
-  "Table Tennis",
-  "Hockey",
-  "Basketball",
-  "Volleyball",
-  "Swimming",
-  "Gymnastics",
-  "Archery",
-  "Shooting",
-  "Cycling",
-  "Judo",
-  "Taekwondo"
-];
+const TOP_SPORTS = SUPPORTED_SPORTS.map((s) => s.name);
 
 async function seed() {
   try {
@@ -52,9 +32,9 @@ async function seed() {
       } catch (error) {
         console.error(`Error processing ${sport}:`, error);
       }
-      
+
       // Sleep for 2 seconds to avoid rate limits
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     console.log(`\n===========================================`);

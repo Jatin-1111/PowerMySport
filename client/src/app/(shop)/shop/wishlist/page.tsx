@@ -1,11 +1,10 @@
+import { noindexMetadata } from "@/lib/seo";
 import { Metadata } from "next";
-import { WishlistClient } from "./WishlistClient";
 import { cookies } from "next/headers";
+import { WishlistClient } from "./WishlistClient";
 
-export const metadata: Metadata = {
-  title: "Wishlist | PowerMySport",
-  description: "View your saved performance gear.",
-};
+// Per-user list — nothing here is the same for two visitors.
+export const metadata: Metadata = noindexMetadata("Wishlist", "View your saved performance gear.");
 
 export default async function WishlistPage() {
   const cookieStore = await cookies();
@@ -15,10 +14,13 @@ export default async function WishlistPage() {
 
   if (token) {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/v1/shop/wishlist`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/v1/shop/wishlist`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }
+      );
       const data = await res.json();
       if (data.ok) {
         wishlistProducts = data.data.map((item: any) => ({

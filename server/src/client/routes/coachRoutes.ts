@@ -18,18 +18,13 @@ import {
   unblockCoachDateHandler,
 } from "../controllers/coachController";
 import {
-  cancelMyCoachSubscriptionHandler,
-  createOrUpdateMyCoachSubscriptionHandler,
-  getMyCoachSubscriptionHandler,
-  listCoachPlansHandler,
-} from "../controllers/coachSubscriptionController";
-import {
   createCoachPackageHandler,
   getCoachPackagesHandler,
   getCoachPublicPackagesHandler,
   updateCoachPackageHandler,
   deleteCoachPackageHandler,
   subscribeToCoachPackageHandler,
+  getSubscriptionQuoteHandler,
   getUserCoachSubscriptionsHandler,
   cancelSubscriptionHandler,
   getCoachActiveSubscriptionsHandler,
@@ -39,9 +34,6 @@ import {
 } from "../controllers/coachSubscriptionPackageController";
 import { authMiddleware } from "../../middleware/auth";
 import {
-  coachSubscriptionCancelSchema,
-  coachSubscriptionCreateSchema,
-  coachSubscriptionOverrideRequestSchema,
   coachVerificationStep1Schema,
   coachVerificationStep2Schema,
   coachVerificationStep3Schema,
@@ -59,11 +51,13 @@ import {
   getCoachAnalyticsHandler,
 } from "../controllers/coachAnalyticsController";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
+import { cacheControl } from "../../middleware/cacheControl";
 
 const router = Router();
 
-// Discovery endpoint (public) - returns coaches only
-router.get("/discover", cacheResponse(60), discoverCoachesNearby);
+// Discovery endpoint (public) - returns coaches only. public: never reads
+// req.user or embeds a per-viewer field.
+router.get("/discover", cacheControl(60, "public"), cacheResponse(60), discoverCoachesNearby);
 
 // Create coach profile (requires authentication and COACH role)
 router.post("/", authMiddleware, createNewCoach);
@@ -73,21 +67,13 @@ router.get("/my-profile/calendar", authMiddleware, getCoachCalendarHandler);
 
 // Block date ranges
 router.post("/my-profile/block-dates", authMiddleware, blockCoachDatesHandler);
-router.delete(
-  "/my-profile/block-dates/:blockId",
-  authMiddleware,
-  unblockCoachDateHandler,
-);
+router.delete("/my-profile/block-dates/:blockId", authMiddleware, unblockCoachDateHandler);
 
 // CRM — client/athlete management
 router.get("/my-clients", authMiddleware, getCoachClientsHandler);
 router.get("/my-clients/:clientUserId", authMiddleware, getClientDetailsHandler);
 router.post("/my-clients/:clientUserId/notes", authMiddleware, addClientNoteHandler);
-router.delete(
-  "/my-clients/:clientUserId/notes/:noteId",
-  authMiddleware,
-  deleteClientNoteHandler,
-);
+router.delete("/my-clients/:clientUserId/notes/:noteId", authMiddleware, deleteClientNoteHandler);
 
 // Earnings & Analytics
 router.get("/earnings", authMiddleware, getCoachEarningsHandler);
@@ -97,25 +83,17 @@ router.get("/analytics", authMiddleware, getCoachAnalyticsHandler);
 router.get("/my-profile", authMiddleware, getMyCoachProfile);
 
 // Update current coach's availability calendar
-router.put(
-  "/my-profile/availability",
-  authMiddleware,
-  updateMyCoachAvailability,
-);
+router.put("/my-profile/availability", authMiddleware, updateMyCoachAvailability);
 
 // Get upload URL for verification documents
-router.post(
-  "/verification/upload-url",
-  authMiddleware,
-  getCoachVerificationUploadUrlHandler,
-);
+router.post("/verification/upload-url", authMiddleware, getCoachVerificationUploadUrlHandler);
 
 // Save verification step 1 (bio)
 router.post(
   "/verification/step1",
   authMiddleware,
   validateRequest(coachVerificationStep1Schema),
-  saveCoachVerificationStep1Handler,
+  saveCoachVerificationStep1Handler
 );
 
 // Save verification step 2 (sports/profile)
@@ -123,7 +101,7 @@ router.post(
   "/verification/step2",
   authMiddleware,
   validateRequest(coachVerificationStep2Schema),
-  saveCoachVerificationStep2Handler,
+  saveCoachVerificationStep2Handler
 );
 
 // Submit verification step 3 (documents)
@@ -131,7 +109,7 @@ router.post(
   "/verification/step3",
   authMiddleware,
   validateRequest(coachVerificationStep3Schema),
-  submitCoachVerificationStep3Handler,
+  submitCoachVerificationStep3Handler
 );
 
 // Submit verification documents
@@ -139,71 +117,38 @@ router.post(
   "/verification",
   authMiddleware,
   validateRequest(coachVerificationStep3Schema),
-  submitCoachVerificationHandler,
+  submitCoachVerificationHandler
 );
 
-// Coach subscription routes
-router.get("/subscription/plans", authMiddleware, listCoachPlansHandler);
-router.get(
-  "/subscription/my-subscription",
-  authMiddleware,
-  getMyCoachSubscriptionHandler,
-);
-router.post(
-  "/subscription/subscribe",
-  authMiddleware,
-  validateRequest(coachSubscriptionCreateSchema),
-  createOrUpdateMyCoachSubscriptionHandler,
-);
-router.post(
-  "/subscription/cancel",
-  authMiddleware,
-  validateRequest(coachSubscriptionCancelSchema),
-  cancelMyCoachSubscriptionHandler,
-);
-// Override requests deprecated in new package model
-
-// NEW: Coach subscription packages (flexible coach-owned packages)
+// Coach subscription packages (flexible coach-owned packages)
 // Create package (Coach only)
-router.post(
-  "/subscription-packages",
-  authMiddleware,
-  createCoachPackageHandler,
-);
+router.post("/subscription-packages", authMiddleware, createCoachPackageHandler);
 
 // Get own packages (Coach only)
 router.get("/subscription-packages", authMiddleware, getCoachPackagesHandler);
 
 // Update package (Coach only)
-router.put(
-  "/subscription-packages/:packageId",
-  authMiddleware,
-  updateCoachPackageHandler,
-);
+router.put("/subscription-packages/:packageId", authMiddleware, updateCoachPackageHandler);
 
 // Delete package (Coach only)
-router.delete(
-  "/subscription-packages/:packageId",
-  authMiddleware,
-  deleteCoachPackageHandler,
-);
+router.delete("/subscription-packages/:packageId", authMiddleware, deleteCoachPackageHandler);
 
 // Get coach's active subscriptions (Coach only)
 router.get(
   "/subscription-packages/active-subscriptions",
   authMiddleware,
-  getCoachActiveSubscriptionsHandler,
+  getCoachActiveSubscriptionsHandler
 );
 
 // Get coach's revenue (Coach only)
-router.get(
-  "/subscription-packages/revenue",
-  authMiddleware,
-  getCoachSubscriptionRevenueHandler,
-);
+router.get("/subscription-packages/revenue", authMiddleware, getCoachSubscriptionRevenueHandler);
 
 // Public endpoints for subscription management
 // Subscribe to a coach's package
+// Subscription pricing quote — the client displays what this returns rather than
+// recomputing fees from its own rate copies.
+router.post("/subscriptions/quote", authMiddleware, getSubscriptionQuoteHandler);
+
 router.post("/subscriptions", authMiddleware, subscribeToCoachPackageHandler);
 
 // Get user's subscriptions
@@ -213,20 +158,16 @@ router.get("/subscriptions", authMiddleware, getUserCoachSubscriptionsHandler);
 router.post(
   "/subscriptions/phonepe/initiate",
   authMiddleware,
-  initiateCoachSubscriptionPaymentHandler,
+  initiateCoachSubscriptionPaymentHandler
 );
 router.get(
   "/subscriptions/phonepe/status/:merchantOrderId",
   authMiddleware,
-  verifyCoachSubscriptionPaymentStatusHandler,
+  verifyCoachSubscriptionPaymentStatusHandler
 );
 
 // Cancel subscription
-router.delete(
-  "/subscriptions/:subscriptionId",
-  authMiddleware,
-  cancelSubscriptionHandler,
-);
+router.delete("/subscriptions/:subscriptionId", authMiddleware, cancelSubscriptionHandler);
 
 // Check coach availability
 router.get("/availability/:coachId", getCoachAvailability);
@@ -234,8 +175,9 @@ router.get("/availability/:coachId", getCoachAvailability);
 // Get coach's subscription packages (public)
 router.get("/:coachId/subscription-packages", getCoachPublicPackagesHandler);
 
-// Get coach by ID (public)
-router.get("/:coachId", getCoach);
+// Get coach by ID (public) — 60s Redis cache, same pattern as /discover.
+// public: never reads req.user or embeds a per-viewer field.
+router.get("/:coachId", cacheControl(60, "public"), cacheResponse(60), getCoach);
 
 // Update coach profile
 router.put("/:coachId", authMiddleware, updateCoachProfile);

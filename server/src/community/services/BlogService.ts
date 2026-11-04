@@ -1,0 +1,1319 @@
+import mongoose from "mongoose";
+import { Experience } from "../models/Experience";
+import { ExperienceComment } from "../models/ExperienceComment";
+import {
+  isExperienceSport,
+  normalizeExperienceCategory,
+  pickValidSignals,
+  requiresPreModeration,
+  EXPERIENCE_SUBJECT_KINDS,
+  type ExperienceCategory,
+  type ExperienceSubjectKind,
+  type SignalKey,
+  type SignalValue,
+} from "../constants/experience";
+import { ExperienceLike, ExperienceLikeTargetType } from "../models/ExperienceLike";
+import { CommunityProfile, CommunitySocialLinks } from "../models/CommunityProfile";
+import { User } from "../../client/models/User";
+import { S3Service } from "../../shared/services/S3Service";
+import { normalizeTags } from "./communityQnaUtils";
+import { awardExperienceReputation } from "./communityShared";
+import { ExperienceSubjectService } from "./ExperienceSubjectService";
+import { log as __rootLog } from "../../utils/logger";
+const log = __rootLog.child("blog");
+
+const s3Service = new S3Service();
+
+const COMMUNITY_ALLOWED_ROLES = ["Player", "Coach", "Parent"] as const;
+const SOCIAL_KEYS: Array<keyof CommunitySocialLinks> = [
+  "youtube",
+  "instagram",
+  "facebook",
+  "twitter",
+  "github",
+  "website",
+];
+
+// ─── Shared response shapes ─────────────────────────────────────────────────
+export interface BlogAuthorSummary {
+  id: string;
+  name: string;
+  username: string;
+  photoUrl: string | null;
+}
+
+export interface ExperienceSubjectView {
+  kind: ExperienceSubjectKind;
+  refId: string;
+  name: string;
+  slug: string | null;
+}
+
+export interface BlogListItem {
+  id: string;
+  title: string;
+  excerpt: string;
+  coverImageKey: string | null;
+  coverImageWidth: number | null;
+  coverImageHeight: number | null;
+  coverImageUrl: string | null;
+  /** @deprecated Collapsed sport-or-category, kept for old clients. Use `category`/`sport`. */
+  topic: string;
+  category: string;
+  sport: string | null;
+  tags: string[];
+  status: "PUBLISHED" | "DRAFT";
+  likeCount: number;
+  commentCount: number;
+  viewCount: number;
+  likedByMe: boolean;
+  createdAt: Date;
+  author: BlogAuthorSummary;
+  subject: ExperienceSubjectView | null;
+  attendedAt: Date | null;
+}
+
+export interface BlogDetail extends BlogListItem {
+  content: string;
+  updatedAt: Date;
+  isMine: boolean;
+  signals: Partial<Record<SignalKey, SignalValue>> | null;
+  /**
+   * Only meaningful to the author: an experience anchored to a coach or
+   * expert is not publicly visible until this is APPROVED (see
+   * requiresPreModeration). Every other subject — and every unanchored
+   * experience — publishes as APPROVED immediately.
+   */
+  moderationStatus: "PENDING" | "APPROVED" | "FLAGGED" | "REMOVED";
+  /** The named coach/expert's one right of reply, if they have posted it. */
+  subjectReply: { content: string; authorName: string | null; createdAt: Date } | null;
+  /**
+   * True only for the specific coach/expert `subject` names, verified against
+   * their own Coach/Expert profile — never inferred from any other signal —
+   * and only while no reply exists yet.
+   */
+  canReply: boolean;
+}
+
+export interface BlogCommentItem {
+  id: string;
+  blogId: string;
+  content: string;
+  parentId: string | null;
+  likeCount: number;
+  likedByMe: boolean;
+  createdAt: Date;
+  author: BlogAuthorSummary;
+  replies: BlogCommentItem[];
+  isMine: boolean;
+}
+
+export interface BlogAuthorProfile {
+  userId: string;
+  username: string;
+  name: string;
+  photoUrl: string | null;
+  bio: string;
+  socialLinks: CommunitySocialLinks;
+  joinedAt: Date;
+  blogCount: number;
+  totalLikes: number;
+  isMe: boolean;
+}
+
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const resolveUserPhotoUrl = async (user?: {
+  photoUrl?: string | null;
+  photoS3Key?: string | null;
+}): Promise<string | null> => {
+  if (!user) {
+    return null;
+  }
+  if (!user.photoS3Key) {
+    return user.photoUrl || null;
+  }
+  try {
+    return await s3Service.generateCachedDownloadUrl(user.photoS3Key, "images", 604800);
+  } catch (error) {
+    log.error("Failed to refresh blog author photo URL:", error);
+    return user.photoUrl || null;
+  }
+};
+
+/** Presigned GET URL for a blog image stored in the private images bucket. */
+const resolveBlogImageUrl = async (key?: string | null): Promise<string | null> => {
+  if (!key) return null;
+  try {
+    return await s3Service.generateCachedDownloadUrl(key, "images", 604800);
+  } catch (error) {
+    log.error("Failed to resolve blog image URL:", error);
+    return null;
+  }
+};
+
+const ensureCommunityUser = async (userId: string) => {
+  const user = await User.findById(userId)
+    .select("_id role name photoUrl photoS3Key createdAt")
+    .lean();
+  if (!user) {
+    throw new Error("User not found");
+  }
+  if (!COMMUNITY_ALLOWED_ROLES.includes(user.role as (typeof COMMUNITY_ALLOWED_ROLES)[number])) {
+    throw new Error("The blog is available only for player, coach, and parent accounts");
+  }
+  return user;
+};
+
+const slugifyUsername = (name?: string): string => {
+  const base = (name || "member")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 20);
+  return base.length >= 3 ? base : `member${base}`;
+};
+
+const isDuplicateKeyError = (error: unknown): boolean =>
+  Boolean((error as { code?: number })?.code === 11000);
+
+const generateUniqueUsername = async (name?: string): Promise<string> => {
+  const base = slugifyUsername(name);
+  // Try the bare slug first, then append incrementing suffixes.
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const candidate = attempt === 0 ? base : `${base}${Math.floor(1000 + Math.random() * 9000)}`;
+    const exists = await CommunityProfile.exists({ username: candidate });
+    if (!exists) {
+      return candidate.slice(0, 30);
+    }
+  }
+  return `${base}${Date.now().toString().slice(-6)}`.slice(0, 30);
+};
+
+const makeDefaultAlias = (name?: string): string => {
+  const seed = Math.floor(1000 + Math.random() * 9000);
+  const safeName = name?.trim().split(" ")[0] || "Member";
+  return `${safeName}-${seed}`;
+};
+
+/**
+ * Ensure a CommunityProfile exists for the user and has a blog username.
+ * Reuses the community profile so blog + chat identities stay unified.
+ */
+const ensureBlogProfile = async (userId: string) => {
+  const user = await ensureCommunityUser(userId);
+
+  let profile = await CommunityProfile.findOne({ userId });
+  if (!profile) {
+    try {
+      profile = await CommunityProfile.create({
+        userId,
+        anonymousAlias: makeDefaultAlias(user.name),
+      });
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) {
+        throw error;
+      }
+      profile = await CommunityProfile.findOne({ userId });
+    }
+  }
+
+  if (!profile) {
+    throw new Error("Failed to initialize blog profile");
+  }
+
+  if (!profile.username) {
+    profile.username = await generateUniqueUsername(user.name);
+    try {
+      await profile.save();
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) {
+        throw error;
+      }
+      profile.username = await generateUniqueUsername(`${user.name}${Date.now()}`);
+      await profile.save();
+    }
+  }
+
+  return { profile, user };
+};
+
+const normalizeSocialLinks = (input?: Partial<CommunitySocialLinks>): CommunitySocialLinks => {
+  const result: CommunitySocialLinks = {};
+  for (const key of SOCIAL_KEYS) {
+    const value = input?.[key];
+    result[key] = typeof value === "string" ? value.trim() : "";
+  }
+  return result;
+};
+
+/** Strip HTML tags/entities from rich-text block content for plain excerpts. */
+const stripHtml = (value: string): string =>
+  value
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const deriveExcerpt = (explicit: string | undefined, content: string): string => {
+  if (explicit && explicit.trim()) {
+    return stripHtml(explicit).slice(0, 300);
+  }
+  return stripHtml(content || "").slice(0, 280);
+};
+
+const escapeHtml = (value: string): string =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+interface LegacyBlogBlock {
+  id: string;
+  type: "heading" | "text" | "list" | "image" | "quote";
+  text?: string;
+  level?: 1 | 2 | 3;
+  items?: string[];
+  ordered?: boolean;
+  imageKey?: string;
+  caption?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Posts published before the Tiptap editor stored `content` as an array of
+ * blocks (see git history of BlogPost.ts, now Experience.ts). `.lean()` reads
+ * return whatever shape is actually persisted, so old documents still surface
+ * as arrays here — convert them to the equivalent HTML on the fly rather than migrating
+ * (and potentially corrupting) other authors' stored content.
+ */
+const legacyBlocksToHtml = (blocks: LegacyBlogBlock[]): string =>
+  blocks
+    .map((block) => {
+      switch (block.type) {
+        case "heading": {
+          const level = Math.min(Math.max(block.level || 2, 1), 3);
+          return `<h${level}>${block.text || ""}</h${level}>`;
+        }
+        case "quote":
+          return `<blockquote><p>${block.text || ""}</p></blockquote>`;
+        case "list": {
+          const tag = block.ordered ? "ol" : "ul";
+          const items = (block.items || [])
+            .filter((item) => item.trim())
+            .map((item) => `<li>${escapeHtml(item)}</li>`)
+            .join("");
+          return items ? `<${tag}>${items}</${tag}>` : "";
+        }
+        case "image": {
+          if (!block.imageKey) return "";
+          const img = `<img data-key="${escapeAttr(block.imageKey)}" alt="${escapeAttr(block.caption || "")}">`;
+          return block.caption ? `${img}<p><em>${escapeHtml(block.caption)}</em></p>` : img;
+        }
+        case "text":
+        default:
+          return block.text ? `<p>${block.text}</p>` : "";
+      }
+    })
+    .filter(Boolean)
+    .join("");
+
+/**
+ * Normalize a post's persisted `content` to HTML, upgrading legacy block
+ * arrays.
+ *
+ * Exported so migration 28 converts stored content with exactly the function
+ * that renders it today — anything else risks the migration and the reader
+ * disagreeing about what a post says.
+ */
+export const toContentHtml = (content: unknown): string =>
+  Array.isArray(content)
+    ? legacyBlocksToHtml(content as LegacyBlogBlock[])
+    : (content as string) || "";
+
+const CONTENT_IMG_RE = /<img\b[^>]*>/gi;
+const DATA_KEY_ATTR_RE = /data-key="([^"]*)"/i;
+const SRC_ATTR_RE = /\ssrc="[^"]*"/i;
+
+const escapeAttr = (value: string): string => value.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+/**
+ * Blank the `src` of every content image that carries a `data-key` before
+ * persisting — only the S3 key is stored; the URL is re-resolved fresh on
+ * every read (mirrors cover image / author photo handling).
+ */
+const stripContentImageSrc = (html: string): string =>
+  (html || "").replace(CONTENT_IMG_RE, (tag) => {
+    const key = DATA_KEY_ATTR_RE.exec(tag)?.[1];
+    if (!key) return tag;
+    return SRC_ATTR_RE.test(tag) ? tag.replace(SRC_ATTR_RE, ' src=""') : tag;
+  });
+
+/** Re-sign every content image's `src` from its stored `data-key`. */
+const resolveContentImageUrls = async (html: string): Promise<string> => {
+  if (!html) return html;
+  const tags = [...new Set(html.match(CONTENT_IMG_RE) || [])];
+  const entries = tags
+    .map((tag) => ({ tag, key: DATA_KEY_ATTR_RE.exec(tag)?.[1] }))
+    .filter((entry): entry is { tag: string; key: string } => Boolean(entry.key));
+
+  const replacements = await Promise.all(
+    entries.map(async ({ tag, key }) => {
+      const url = await resolveBlogImageUrl(key);
+      if (!url) return null;
+      const safeUrl = escapeAttr(url);
+      const nextTag = SRC_ATTR_RE.test(tag)
+        ? tag.replace(SRC_ATTR_RE, ` src="${safeUrl}"`)
+        : tag.replace(/^<img/i, `<img src="${safeUrl}"`);
+      return { tag, nextTag };
+    })
+  );
+
+  let result = html;
+  for (const replacement of replacements) {
+    if (replacement) {
+      result = result.split(replacement.tag).join(replacement.nextTag);
+    }
+  }
+  return result;
+};
+
+const toObjectId = (id: string, label = "id"): mongoose.Types.ObjectId => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new Error(`Invalid ${label}`);
+  }
+  return new mongoose.Types.ObjectId(id);
+};
+
+// ─── Author resolution for lists ────────────────────────────────────────────
+type LeanUser = {
+  _id: mongoose.Types.ObjectId;
+  name?: string;
+  photoUrl?: string | null;
+  photoS3Key?: string | null;
+};
+
+const buildAuthorMaps = async (authorIds: mongoose.Types.ObjectId[]) => {
+  const uniqueIds = [...new Set(authorIds.map((id) => String(id)))];
+  const [users, profiles] = await Promise.all([
+    User.find({ _id: { $in: uniqueIds } })
+      .select("_id name photoUrl photoS3Key")
+      .lean<LeanUser[]>(),
+    CommunityProfile.find({ userId: { $in: uniqueIds } })
+      .select("userId username")
+      .lean(),
+  ]);
+
+  const userMap = new Map(users.map((user) => [String(user._id), user]));
+  const usernameMap = new Map(
+    profiles.map((profile) => [String(profile.userId), profile.username || ""])
+  );
+
+  // Resolve photo URLs once per unique author.
+  const photoEntries = await Promise.all(
+    uniqueIds.map(async (id) => {
+      const user = userMap.get(id);
+      const url = await resolveUserPhotoUrl(user || undefined);
+      return [id, url] as const;
+    })
+  );
+  const photoMap = new Map(photoEntries);
+
+  const buildAuthor = (authorId: string): BlogAuthorSummary => {
+    const user = userMap.get(authorId);
+    return {
+      id: authorId,
+      name: user?.name || "PowerMySport Member",
+      username: usernameMap.get(authorId) || "",
+      photoUrl: photoMap.get(authorId) || null,
+    };
+  };
+
+  return { buildAuthor };
+};
+
+// ─── `topic` compatibility ────────────────────────────────────────────────────
+// The stored `topic` field split into `sport` (Cricket, Tennis, …) and
+// `category` (tournament, gear, …) — it had been carrying both, which is why the
+// old topic strip mixed sports and themes in one row. The API still speaks
+// `topic` so the community app keeps working unchanged; these three helpers are
+// the whole of the translation and go away when the app moves to explicit
+// `sport` / `category` params.
+
+/** A read: collapse the two stored fields back into the one the API returns. */
+const topicOf = (doc: { sport?: string | null; category?: string | null }): string =>
+  doc.sport || doc.category || "general";
+
+/** A filter: `topic=Tennis` and `topic=gear` both have to keep matching. */
+const topicFilter = (topic: string): Record<string, unknown> =>
+  isExperienceSport(topic) ? { sport: topic } : { category: normalizeExperienceCategory(topic) };
+
+/** A write: route the incoming topic into whichever field it belongs to. */
+const topicToFields = (
+  topic?: string | null
+): { sport: string | null; category: ExperienceCategory } => {
+  const value = (topic || "").trim();
+  return isExperienceSport(value)
+    ? { sport: value, category: "general" }
+    : { sport: null, category: normalizeExperienceCategory(value) };
+};
+
+/**
+ * The category-first composer sends `category` and `sport` explicitly rather
+ * than folding both into one `topic` string — that collapse is what mixed
+ * "Tennis" and "Nutrition" into one field in the first place (see migration
+ * 39). `topic` is kept working for anything that still sends it; either
+ * explicit field, when present, takes precedence over it.
+ */
+const resolveCategoryAndSport = (payload: {
+  topic?: string;
+  category?: string;
+  sport?: string | null;
+}): { sport: string | null; category: ExperienceCategory } => {
+  if (payload.category === undefined && payload.sport === undefined) {
+    return topicToFields(payload.topic);
+  }
+  const sport = payload.sport?.trim();
+  return {
+    sport: sport && isExperienceSport(sport) ? sport : null,
+    category: normalizeExperienceCategory(payload.category),
+  };
+};
+
+/**
+ * `title` is optional on the model now — two lines and a photo is a complete
+ * experience, and demanding a headline first was most of what made the old
+ * composer read as "write an essay". The API still always returns one, so it is
+ * derived from the opening sentence when the author did not write it.
+ */
+const deriveTitle = (doc: {
+  title?: string | null;
+  excerpt?: string | null;
+  content?: string | null;
+}): string => {
+  const explicit = (doc.title || "").trim();
+  if (explicit) return explicit;
+
+  // `excerpt` before `content`: it is derived from the body at write time and,
+  // unlike the body, is projected by the list query — so a derived title is the
+  // same string in the feed and on the detail page.
+  const plain = (doc.excerpt || "").trim() || stripHtml(toContentHtml(doc.content ?? ""));
+  if (!plain) return "Untitled experience";
+
+  // First sentence, or the first 80 characters on a word boundary.
+  const sentence = plain.split(/(?<=[.!?])\s/)[0] || plain;
+  if (sentence.length <= 80) return sentence;
+  return `${sentence.slice(0, 80).replace(/\s+\S*$/, "")}…`;
+};
+
+/**
+ * "BLOG" is what every existing client sends and what the old rows stored.
+ * Migration 39 rewrites the rows; this keeps the wire backwards-compatible in
+ * the meantime.
+ */
+const normalizeLikeTargetType = (raw: string): ExperienceLikeTargetType =>
+  raw === "COMMENT" ? "COMMENT" : "EXPERIENCE";
+
+interface SubjectInput {
+  kind: string;
+  refId: string;
+  nameSnapshot: string;
+  slugSnapshot?: string | null;
+}
+
+/**
+ * Validate and normalize an incoming subject from the composer. Returns
+ * undefined for anything malformed rather than throwing — a broken subject
+ * should fall back to an unanchored experience, not fail the whole write.
+ */
+const toSubjectDoc = (
+  input: SubjectInput | null | undefined
+):
+  | {
+      kind: ExperienceSubjectKind;
+      refId: mongoose.Types.ObjectId;
+      nameSnapshot: string;
+      slugSnapshot: string | null;
+    }
+  | null
+  | undefined => {
+  if (input === null) return null; // explicit clear
+  if (!input) return undefined; // omitted: leave as-is
+  if (!(EXPERIENCE_SUBJECT_KINDS as readonly string[]).includes(input.kind)) return undefined;
+  if (!input.nameSnapshot?.trim()) return undefined;
+  if (!mongoose.Types.ObjectId.isValid(input.refId)) return undefined;
+
+  return {
+    kind: input.kind as ExperienceSubjectKind,
+    refId: new mongoose.Types.ObjectId(input.refId),
+    nameSnapshot: input.nameSnapshot.trim().slice(0, 200),
+    slugSnapshot: input.slugSnapshot?.trim().slice(0, 200) || null,
+  };
+};
+
+const subjectToView = (doc: {
+  subject?: {
+    kind: ExperienceSubjectKind;
+    refId: mongoose.Types.ObjectId;
+    nameSnapshot: string;
+    slugSnapshot?: string | null;
+  } | null;
+}): ExperienceSubjectView | null =>
+  doc.subject
+    ? {
+        kind: doc.subject.kind,
+        refId: String(doc.subject.refId),
+        name: doc.subject.nameSnapshot,
+        slug: doc.subject.slugSnapshot || null,
+      }
+    : null;
+
+export const BlogService = {
+  async listBlogs(
+    userId: string | undefined,
+    page = 1,
+    limit = 12,
+    filters?: {
+      topic?: string | undefined;
+      q?: string | undefined;
+      mine?: boolean | undefined;
+      authorId?: string | undefined;
+    }
+  ): Promise<{
+    items: BlogListItem[];
+    pagination: { total: number; page: number; totalPages: number };
+  }> {
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(50, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const query: Record<string, unknown> = {
+      isDeleted: false,
+      status: "PUBLISHED",
+    };
+
+    if (filters?.mine && userId) {
+      query.authorId = toObjectId(userId, "user id");
+      // Only the owner's own list includes drafts — never shown to anyone
+      // browsing someone else's posts. An experience the author anchored to a
+      // coach or expert also stays visible to them here while it is PENDING —
+      // this is the one place they can see it is still awaiting review.
+      query.status = { $in: ["PUBLISHED", "DRAFT"] };
+    } else if (filters?.authorId) {
+      query.authorId = toObjectId(filters.authorId, "author id");
+      // A public author-profile listing must not leak someone's
+      // still-under-review, coach/expert-anchored experience to visitors.
+      query.moderationStatus = "APPROVED";
+    } else {
+      // The open feed and any topic/search browse of it — never shows a
+      // PENDING (coach/expert, awaiting review), FLAGGED or REMOVED post.
+      query.moderationStatus = "APPROVED";
+    }
+
+    const topic = (filters?.topic || "").trim();
+    if (topic && topic.toLowerCase() !== "all") {
+      Object.assign(query, topicFilter(topic));
+    }
+
+    // Case-insensitive "contains" match across title, excerpt, tags, sport,
+    // category and — once experiences are anchored — the subject's name, so
+    // searching a tournament by name finds what parents wrote about it.
+    const search = (filters?.q || "").trim();
+    if (search) {
+      const safe = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const rx = new RegExp(safe, "i");
+      query.$or = [
+        { title: rx },
+        { excerpt: rx },
+        { tags: rx },
+        { sport: rx },
+        { category: rx },
+        { "subject.nameSnapshot": rx },
+      ];
+    }
+
+    const [posts, total] = await Promise.all([
+      Experience.find(query)
+        .select(
+          "title excerpt coverImageKey coverImageWidth coverImageHeight category sport tags status likeCount commentCount viewCount createdAt authorId subject attendedAt moderationStatus"
+        )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      Experience.countDocuments(query),
+    ]);
+
+    const { buildAuthor } = await buildAuthorMaps(posts.map((post) => post.authorId));
+
+    const likedSet = await this.buildLikedSet(
+      userId,
+      "EXPERIENCE",
+      posts.map((post) => String(post._id))
+    );
+
+    const coverUrls = await Promise.all(
+      posts.map((post) => resolveBlogImageUrl(post.coverImageKey))
+    );
+
+    const items: BlogListItem[] = posts.map((post, index) => ({
+      id: String(post._id),
+      title: deriveTitle(post),
+      excerpt: post.excerpt || "",
+      coverImageKey: post.coverImageKey || null,
+      coverImageUrl: coverUrls[index] ?? null,
+      coverImageWidth: post.coverImageWidth ?? null,
+      coverImageHeight: post.coverImageHeight ?? null,
+      topic: topicOf(post),
+      category: post.category || "general",
+      sport: post.sport || null,
+      tags: post.tags || [],
+      status: post.status,
+      likeCount: post.likeCount || 0,
+      commentCount: post.commentCount || 0,
+      viewCount: post.viewCount || 0,
+      likedByMe: likedSet.has(String(post._id)),
+      createdAt: post.createdAt,
+      author: buildAuthor(String(post.authorId)),
+      subject: subjectToView(post),
+      attendedAt: post.attendedAt || null,
+    }));
+
+    return {
+      items,
+      pagination: {
+        total,
+        page: safePage,
+        totalPages: Math.ceil(total / safeLimit) || 0,
+      },
+    };
+  },
+
+  async buildLikedSet(
+    userId: string | undefined,
+    targetType: ExperienceLikeTargetType,
+    targetIds: string[]
+  ): Promise<Set<string>> {
+    if (!targetIds.length || !userId) {
+      return new Set();
+    }
+    const likes = await ExperienceLike.find({
+      userId,
+      targetType,
+      targetId: { $in: targetIds },
+    })
+      .select("targetId")
+      .lean();
+    return new Set(likes.map((like) => String(like.targetId)));
+  },
+
+  async getBlog(userId: string | undefined, blogId: string): Promise<BlogDetail> {
+    const id = toObjectId(blogId, "blog id");
+    const post = await Experience.findOne({ _id: id, isDeleted: false }).lean();
+    if (!post) {
+      throw new Error("Blog not found");
+    }
+
+    const isMine = Boolean(userId) && String(post.authorId) === userId;
+    // A draft is only visible to its author — hide its existence entirely
+    // from anyone else rather than leaking a 403 (which would confirm the id
+    // is real). Same treatment for an experience still PENDING review because
+    // it is anchored to a coach or expert: to anyone but its author, that link
+    // does not exist yet either.
+    const moderationStatus = post.moderationStatus || "APPROVED";
+    if ((post.status === "DRAFT" || moderationStatus !== "APPROVED") && !isMine) {
+      throw new Error("Blog not found");
+    }
+
+    // Fire-and-forget view increment (don't block the read) — skip for the
+    // author viewing their own draft, no point counting those.
+    if (!(post.status === "DRAFT" && isMine)) {
+      Experience.updateOne({ _id: id }, { $inc: { viewCount: 1 } }).catch(() => {});
+    }
+
+    const [{ buildAuthor }, likedSet, coverImageUrl, content] = await Promise.all([
+      buildAuthorMaps([post.authorId]),
+      this.buildLikedSet(userId, "EXPERIENCE", [String(post._id)]),
+      resolveBlogImageUrl(post.coverImageKey),
+      resolveContentImageUrls(toContentHtml(post.content)),
+    ]);
+
+    // Both only matter for a COACH/EXPERT subject — skip the extra queries
+    // for the common case of no subject or an event/venue/academy one.
+    let subjectReply: BlogDetail["subjectReply"] = null;
+    let canReply = false;
+    if (post.subject && requiresPreModeration(post.subject.kind)) {
+      if (post.subjectReply) {
+        const replyAuthor = await User.findById(post.subjectReply.authorId)
+          .select("name")
+          .lean<{ name?: string }>();
+        subjectReply = {
+          content: post.subjectReply.content,
+          authorName: replyAuthor?.name || null,
+          createdAt: post.subjectReply.createdAt,
+        };
+      } else if (userId) {
+        canReply = await ExperienceSubjectService.isSubjectOwner(userId, post.subject);
+      }
+    }
+
+    return {
+      id: String(post._id),
+      title: deriveTitle(post),
+      excerpt: post.excerpt || "",
+      coverImageKey: post.coverImageKey || null,
+      coverImageUrl,
+      coverImageWidth: post.coverImageWidth ?? null,
+      coverImageHeight: post.coverImageHeight ?? null,
+      topic: topicOf(post),
+      category: post.category || "general",
+      sport: post.sport || null,
+      tags: post.tags || [],
+      status: post.status,
+      likeCount: post.likeCount || 0,
+      commentCount: post.commentCount || 0,
+      viewCount: (post.viewCount || 0) + (post.status === "DRAFT" && isMine ? 0 : 1),
+      likedByMe: likedSet.has(String(post._id)),
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      content,
+      isMine,
+      author: buildAuthor(String(post.authorId)),
+      subject: subjectToView(post),
+      attendedAt: post.attendedAt || null,
+      signals: post.signals || null,
+      moderationStatus,
+      subjectReply,
+      canReply,
+    };
+  },
+
+  async createBlog(
+    userId: string,
+    payload: {
+      // Optional: two lines and a photo is a complete experience, and
+      // requiring a headline first was most of what made the old composer
+      // read as "write an essay". `deriveTitle` fills one in on read.
+      title?: string;
+      excerpt?: string;
+      coverImageKey?: string | null;
+      coverImageWidth?: number | null;
+      coverImageHeight?: number | null;
+      topic?: string;
+      category?: string;
+      sport?: string | null;
+      tags?: string[];
+      content?: string;
+      status?: "DRAFT" | "PUBLISHED";
+      subject?: SubjectInput | null;
+      signals?: Record<string, string> | null;
+      attendedAt?: string | null;
+    }
+  ): Promise<BlogDetail> {
+    await ensureBlogProfile(userId);
+
+    const content = stripContentImageSrc(payload.content || "");
+    const status = payload.status === "DRAFT" ? "DRAFT" : "PUBLISHED";
+    const trimmedTitle = payload.title?.trim();
+    const subject = toSubjectDoc(payload.subject) || null;
+    const post = await Experience.create({
+      authorId: userId,
+      ...(trimmedTitle ? { title: trimmedTitle } : {}),
+      excerpt: deriveExcerpt(payload.excerpt, content),
+      coverImageKey: payload.coverImageKey || null,
+      coverImageWidth: payload.coverImageWidth ?? null,
+      coverImageHeight: payload.coverImageHeight ?? null,
+      ...resolveCategoryAndSport(payload),
+      tags: normalizeTags(payload.tags),
+      content,
+      status,
+      subject,
+      signals: pickValidSignals(subject?.kind, payload.signals) || null,
+      attendedAt: payload.attendedAt ? new Date(payload.attendedAt) : null,
+      // A coach or expert cannot be named without a chance to have that
+      // reviewed first — every other subject (or none) publishes straight
+      // away, exactly as the blog always did.
+      moderationStatus: requiresPreModeration(subject?.kind) ? "PENDING" : "APPROVED",
+    });
+
+    // Points are for a published experience, never a draft — the same rule
+    // question/answer creation already follows.
+    if (status === "PUBLISHED") {
+      await awardExperienceReputation(userId);
+    }
+
+    return this.getBlog(userId, String(post._id));
+  },
+
+  async updateBlog(
+    userId: string,
+    blogId: string,
+    payload: {
+      title?: string;
+      excerpt?: string;
+      coverImageKey?: string | null;
+      coverImageWidth?: number | null;
+      coverImageHeight?: number | null;
+      topic?: string;
+      category?: string;
+      sport?: string | null;
+      tags?: string[];
+      content?: string;
+      status?: "DRAFT" | "PUBLISHED";
+      subject?: SubjectInput | null;
+      signals?: Record<string, string> | null;
+      attendedAt?: string | null;
+    }
+  ): Promise<BlogDetail> {
+    const id = toObjectId(blogId, "blog id");
+    const post = await Experience.findOne({ _id: id, isDeleted: false });
+    if (!post) {
+      throw new Error("Blog not found");
+    }
+    if (String(post.authorId) !== userId) {
+      throw new Error("Access denied");
+    }
+
+    if (typeof payload.title === "string") {
+      post.title = payload.title.trim();
+    }
+    if (
+      typeof payload.topic === "string" ||
+      payload.category !== undefined ||
+      payload.sport !== undefined
+    ) {
+      const { sport, category } = resolveCategoryAndSport(payload);
+      post.sport = sport;
+      post.category = category;
+    }
+    if (Array.isArray(payload.tags)) {
+      post.tags = normalizeTags(payload.tags);
+    }
+    if (payload.coverImageKey !== undefined) {
+      post.coverImageKey = payload.coverImageKey || null;
+      // Size travels with the key: a new cover must never keep the old shape.
+      post.coverImageWidth = payload.coverImageWidth ?? null;
+      post.coverImageHeight = payload.coverImageHeight ?? null;
+    }
+    if (typeof payload.content === "string") {
+      const cleaned = stripContentImageSrc(payload.content);
+      post.content = cleaned;
+      post.excerpt = deriveExcerpt(payload.excerpt, cleaned);
+    } else if (typeof payload.excerpt === "string") {
+      post.excerpt = payload.excerpt.trim().slice(0, 300);
+    }
+
+    // Subject is set-or-cleared, never merged: the composer always sends the
+    // whole thing, and `undefined` means "leave it alone" (an autosave that
+    // never touched the subject step must not silently drop it).
+    if (payload.subject !== undefined) {
+      post.subject = toSubjectDoc(payload.subject) || null;
+      // A moderator's FLAGGED/REMOVED call stands regardless of what the
+      // author does to the subject afterwards — only move the needle between
+      // PENDING and APPROVED, which is what adding or removing a coach/expert
+      // anchor actually changes.
+      if (post.moderationStatus === "PENDING" || post.moderationStatus === "APPROVED") {
+        post.moderationStatus = requiresPreModeration(post.subject?.kind) ? "PENDING" : "APPROVED";
+      }
+    }
+    if (payload.signals !== undefined) {
+      post.signals = pickValidSignals(post.subject?.kind, payload.signals) || null;
+    }
+    if (payload.attendedAt !== undefined) {
+      post.attendedAt = payload.attendedAt ? new Date(payload.attendedAt) : null;
+    }
+
+    // Only change status when explicitly given — omitted means "keep as is"
+    // (e.g. a periodic autosave on an already-published post must not
+    // silently pull it back to draft).
+    const wasDraft = post.status === "DRAFT";
+    if (payload.status === "DRAFT" || payload.status === "PUBLISHED") {
+      post.status = payload.status;
+    }
+
+    await post.save();
+
+    // A draft going live for the first time earns the same points a fresh
+    // publish would; re-saving an already-published post never awards again.
+    if (wasDraft && post.status === "PUBLISHED") {
+      await awardExperienceReputation(userId);
+    }
+
+    return this.getBlog(userId, String(post._id));
+  },
+
+  async deleteBlog(userId: string, blogId: string): Promise<{ id: string; deleted: boolean }> {
+    const id = toObjectId(blogId, "blog id");
+    const post = await Experience.findOne({ _id: id, isDeleted: false });
+    if (!post) {
+      throw new Error("Blog not found");
+    }
+    if (String(post.authorId) !== userId) {
+      throw new Error("Access denied");
+    }
+
+    post.isDeleted = true;
+    post.deletedAt = new Date();
+    await post.save();
+
+    return { id: String(post._id), deleted: true };
+  },
+
+  async toggleLike(
+    userId: string,
+    targetType: ExperienceLikeTargetType | "BLOG",
+    targetId: string
+  ): Promise<{ liked: boolean; likeCount: number; blogId: string }> {
+    await ensureBlogProfile(userId);
+    const id = toObjectId(targetId, "target id");
+
+    const kind = normalizeLikeTargetType(targetType);
+    const isExperience = kind === "EXPERIENCE";
+
+    const Model = (isExperience ? Experience : ExperienceComment) as mongoose.Model<{
+      likeCount: number;
+    }>;
+    // A comment like has to resolve its parent experience so the realtime event
+    // can be addressed to that experience's room rather than to everyone.
+    const target = await Model.findOne({ _id: id, isDeleted: false }).select(
+      isExperience ? "_id" : "_id experienceId"
+    );
+    if (!target) {
+      throw new Error(isExperience ? "Blog not found" : "Comment not found");
+    }
+
+    const blogId = isExperience
+      ? String(id)
+      : String(
+          (target as unknown as { experienceId?: mongoose.Types.ObjectId }).experienceId || ""
+        );
+
+    const existing = await ExperienceLike.findOne({
+      userId,
+      targetType: kind,
+      targetId: id,
+    });
+
+    let liked: boolean;
+    if (existing) {
+      await ExperienceLike.deleteOne({ _id: existing._id });
+      await Model.updateOne({ _id: id }, { $inc: { likeCount: -1 } });
+      liked = false;
+    } else {
+      try {
+        await ExperienceLike.create({ userId, targetType: kind, targetId: id });
+        await Model.updateOne({ _id: id }, { $inc: { likeCount: 1 } });
+        liked = true;
+      } catch (error) {
+        if (!isDuplicateKeyError(error)) {
+          throw error;
+        }
+        liked = true;
+      }
+    }
+
+    const updated = await Model.findById(id).select("likeCount").lean();
+    return { liked, likeCount: Math.max(0, updated?.likeCount || 0), blogId };
+  },
+
+  async listComments(
+    userId: string | undefined,
+    blogId: string,
+    page = 1,
+    limit = 30
+  ): Promise<{
+    items: BlogCommentItem[];
+    pagination: { total: number; page: number; totalPages: number };
+  }> {
+    const id = toObjectId(blogId, "blog id");
+    const safePage = Math.max(1, page);
+    const safeLimit = Math.min(50, Math.max(1, limit));
+    const skip = (safePage - 1) * safeLimit;
+
+    const [topLevel, total] = await Promise.all([
+      ExperienceComment.find({ experienceId: id, parentId: null, isDeleted: false })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeLimit)
+        .lean(),
+      ExperienceComment.countDocuments({
+        experienceId: id,
+        parentId: null,
+        isDeleted: false,
+      }),
+    ]);
+
+    // No per-parent cap here — this is a single safety ceiling across the
+    // whole page of top-level comments, so one pathologically long thread
+    // cannot make a comment page unbounded. Ordinary threads never get near
+    // it; a thread that does is truncated to its oldest replies rather than
+    // failing the request.
+    const MAX_REPLIES_PER_PAGE = 500;
+    const topIds = topLevel.map((comment) => comment._id);
+    const replies = topIds.length
+      ? await ExperienceComment.find({
+          parentId: { $in: topIds },
+          isDeleted: false,
+        })
+          .sort({ createdAt: 1 })
+          .limit(MAX_REPLIES_PER_PAGE)
+          .lean()
+      : [];
+
+    const all = [...topLevel, ...replies];
+    const { buildAuthor } = await buildAuthorMaps(all.map((comment) => comment.authorId));
+    const likedSet = await this.buildLikedSet(
+      userId,
+      "COMMENT",
+      all.map((comment) => String(comment._id))
+    );
+
+    const toItem = (comment: (typeof all)[number]): BlogCommentItem => ({
+      id: String(comment._id),
+      blogId: String(comment.experienceId),
+      content: comment.content,
+      parentId: comment.parentId ? String(comment.parentId) : null,
+      likeCount: comment.likeCount || 0,
+      likedByMe: likedSet.has(String(comment._id)),
+      createdAt: comment.createdAt,
+      author: buildAuthor(String(comment.authorId)),
+      replies: [],
+      isMine: String(comment.authorId) === userId,
+    });
+
+    const repliesByParent = new Map<string, BlogCommentItem[]>();
+    for (const reply of replies) {
+      const parentKey = String(reply.parentId);
+      const list = repliesByParent.get(parentKey) || [];
+      list.push(toItem(reply));
+      repliesByParent.set(parentKey, list);
+    }
+
+    const items = topLevel.map((comment) => {
+      const item = toItem(comment);
+      item.replies = repliesByParent.get(String(comment._id)) || [];
+      return item;
+    });
+
+    return {
+      items,
+      pagination: {
+        total,
+        page: safePage,
+        totalPages: Math.ceil(total / safeLimit) || 0,
+      },
+    };
+  },
+
+  async createComment(
+    userId: string,
+    blogId: string,
+    content: string,
+    parentId?: string
+  ): Promise<BlogCommentItem> {
+    await ensureBlogProfile(userId);
+    const id = toObjectId(blogId, "blog id");
+
+    const blog = await Experience.findOne({ _id: id, isDeleted: false }).select("_id");
+    if (!blog) {
+      throw new Error("Blog not found");
+    }
+
+    let parent: mongoose.Types.ObjectId | null = null;
+    if (parentId) {
+      const parentObjId = toObjectId(parentId, "parent id");
+      const parentComment = await ExperienceComment.findOne({
+        _id: parentObjId,
+        experienceId: id,
+        isDeleted: false,
+      }).select("_id parentId");
+      if (!parentComment) {
+        throw new Error("Parent comment not found");
+      }
+      // Enforce single-level threading: reply to the top-level ancestor.
+      parent = parentComment.parentId
+        ? (parentComment.parentId as mongoose.Types.ObjectId)
+        : (parentComment._id as mongoose.Types.ObjectId);
+    }
+
+    const comment = await ExperienceComment.create({
+      experienceId: id,
+      authorId: userId,
+      content: content.trim(),
+      parentId: parent,
+    });
+    await Experience.updateOne({ _id: id }, { $inc: { commentCount: 1 } });
+
+    const { buildAuthor } = await buildAuthorMaps([comment.authorId]);
+    return {
+      id: String(comment._id),
+      blogId: String(comment.experienceId),
+      content: comment.content,
+      parentId: comment.parentId ? String(comment.parentId) : null,
+      likeCount: 0,
+      likedByMe: false,
+      createdAt: comment.createdAt,
+      author: buildAuthor(String(comment.authorId)),
+      replies: [],
+      isMine: true,
+    };
+  },
+
+  async deleteComment(
+    userId: string,
+    commentId: string
+  ): Promise<{ id: string; deleted: boolean }> {
+    const id = toObjectId(commentId, "comment id");
+    const comment = await ExperienceComment.findOne({ _id: id, isDeleted: false });
+    if (!comment) {
+      throw new Error("Comment not found");
+    }
+    if (String(comment.authorId) !== userId) {
+      throw new Error("Access denied");
+    }
+
+    comment.isDeleted = true;
+    comment.deletedAt = new Date();
+    await comment.save();
+    await Experience.updateOne({ _id: comment.experienceId }, { $inc: { commentCount: -1 } });
+
+    return { id: String(comment._id), deleted: true };
+  },
+
+  async buildProfilePayload(
+    viewerId: string | undefined,
+    targetUserId: string
+  ): Promise<BlogAuthorProfile> {
+    const [user, profile] = await Promise.all([
+      User.findById(targetUserId)
+        .select("_id name photoUrl photoS3Key createdAt")
+        .lean<LeanUser & { createdAt: Date }>(),
+      CommunityProfile.findOne({ userId: targetUserId }).lean(),
+    ]);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const [photoUrl, blogCount, likeAgg] = await Promise.all([
+      resolveUserPhotoUrl(user),
+      Experience.countDocuments({
+        authorId: targetUserId,
+        isDeleted: false,
+        status: "PUBLISHED",
+      }),
+      Experience.aggregate<{ total: number }>([
+        {
+          $match: {
+            authorId: new mongoose.Types.ObjectId(targetUserId),
+            isDeleted: false,
+            status: "PUBLISHED",
+          },
+        },
+        { $group: { _id: null, total: { $sum: "$likeCount" } } },
+      ]),
+    ]);
+
+    return {
+      userId: String(user._id),
+      username: profile?.username || "",
+      name: user.name || "PowerMySport Member",
+      photoUrl,
+      bio: profile?.bio || "",
+      socialLinks: normalizeSocialLinks(profile?.socialLinks),
+      joinedAt: user.createdAt,
+      blogCount,
+      totalLikes: likeAgg[0]?.total || 0,
+      isMe: String(user._id) === viewerId,
+    };
+  },
+
+  async getMyBlogProfile(userId: string): Promise<BlogAuthorProfile> {
+    await ensureBlogProfile(userId);
+    return this.buildProfilePayload(userId, userId);
+  },
+
+  async getBlogAuthorProfile(
+    viewerId: string | undefined,
+    identifier: string
+  ): Promise<BlogAuthorProfile> {
+    let targetUserId: string | null = null;
+
+    // Resolve by @username first, then by raw user id.
+    const byUsername = await CommunityProfile.findOne({
+      username: identifier.trim().toLowerCase(),
+    })
+      .select("userId")
+      .lean();
+    if (byUsername) {
+      targetUserId = String(byUsername.userId);
+    } else if (mongoose.Types.ObjectId.isValid(identifier)) {
+      targetUserId = identifier;
+    }
+
+    if (!targetUserId) {
+      throw new Error("Author not found");
+    }
+
+    return this.buildProfilePayload(viewerId, targetUserId);
+  },
+
+  async updateBlogProfile(
+    userId: string,
+    payload: {
+      username?: string;
+      bio?: string;
+      socialLinks?: Partial<CommunitySocialLinks>;
+    }
+  ): Promise<BlogAuthorProfile> {
+    const { profile } = await ensureBlogProfile(userId);
+
+    if (typeof payload.username === "string" && payload.username.trim()) {
+      const nextUsername = payload.username.trim().toLowerCase();
+      if (nextUsername !== profile.username) {
+        const taken = await CommunityProfile.findOne({
+          username: nextUsername,
+          userId: { $ne: userId },
+        })
+          .select("_id")
+          .lean();
+        if (taken) {
+          throw new Error("Username is already taken");
+        }
+        profile.username = nextUsername;
+      }
+    }
+
+    if (typeof payload.bio === "string") {
+      profile.bio = payload.bio.trim().slice(0, 300);
+    }
+
+    if (payload.socialLinks) {
+      profile.socialLinks = normalizeSocialLinks({
+        ...(profile.socialLinks || {}),
+        ...payload.socialLinks,
+      });
+    }
+
+    try {
+      await profile.save();
+    } catch (error) {
+      if (isDuplicateKeyError(error)) {
+        throw new Error("Username is already taken");
+      }
+      throw error;
+    }
+
+    return this.buildProfilePayload(userId, userId);
+  },
+
+  async generateImageUploadUrl(
+    userId: string,
+    contentType: "image/jpeg" | "image/png" | "image/webp"
+  ): Promise<{ uploadUrl: string; downloadUrl: string; key: string }> {
+    await ensureCommunityUser(userId);
+    const { uploadUrl, downloadUrl, key } = await s3Service.generateBlogImageUploadUrl(
+      userId,
+      contentType
+    );
+    return { uploadUrl, downloadUrl, key };
+  },
+};

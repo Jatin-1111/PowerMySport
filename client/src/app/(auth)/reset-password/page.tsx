@@ -1,9 +1,10 @@
-﻿"use client";
+"use client";
 
 import { toast } from "@/lib/toast";
 import { authApi } from "@/modules/auth/services/auth";
 import { Button } from "@/modules/shared/ui/Button";
 import { Card, CardContent, CardHeader } from "@/modules/shared/ui/Card";
+import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -66,128 +67,125 @@ function ResetPasswordContent() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <h1 className="text-3xl font-bold text-center text-white">
-          Reset Password
-        </h1>
-        {!success && (
-          <p className="text-center text-slate-300 mt-2">
-            Enter your new password below
-          </p>
-        )}
-      </CardHeader>
+    <SlideUp duration={0.6} yOffset={20}>
+      <Card className="glass-panel-heavy premium-shadow w-full border-0">
+        <CardHeader>
+          <h1 className="text-center text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
+            Reset Password
+          </h1>
+          {!success && (
+            <p className="mt-2 text-center text-sm text-slate-600 sm:text-base dark:text-slate-300">
+              Enter your new password below
+            </p>
+          )}
+        </CardHeader>
 
-      <CardContent>
-        {!success ? (
-          <>
-            {!token && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                <p className="text-red-800 text-center">
-                  Invalid or missing reset token. Please request a new password
-                  reset.
+        <CardContent>
+          {!success ? (
+            <>
+              {!token && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                  <p className="text-center font-semibold text-red-800">
+                    Invalid or missing reset token. Please request a new password reset.
+                  </p>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="newPassword"
+                      value={formData.newPassword}
+                      onChange={handleChange}
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:outline-none focus:ring-2 dark:border-slate-600"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                      title="Toggle password visibility"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-white">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className="focus:ring-power-orange/50 w-full rounded-lg border border-slate-300 bg-white/50 px-4 py-3 text-slate-900 backdrop-blur-sm transition-all focus:outline-none focus:ring-2 dark:border-slate-600"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+                      title="Toggle password visibility"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !token}
+                  variant="primary"
+                  className="premium-shadow w-full"
+                >
+                  {isSubmitting ? "Resetting..." : "Reset Password"}
+                </Button>
+              </form>
+
+              <p className="mt-6 text-center text-slate-600 dark:text-slate-300">
+                Remember your password?{" "}
+                <Link
+                  href="/login"
+                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
+                >
+                  Login
+                </Link>
+              </p>
+            </>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-center font-semibold text-emerald-800">
+                  Password reset successfully!
+                </p>
+                <p className="mt-2 text-center text-sm text-emerald-700">
+                  Redirecting to login page...
                 </p>
               </div>
-            )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">
-                  New Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    name="newPassword"
-                    value={formData.newPassword}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    title="Toggle password visibility"
-                    aria-label="Toggle password visibility"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
+              <div className="text-center">
+                <Link
+                  href="/login"
+                  className="text-power-orange font-semibold transition-colors hover:text-orange-600"
+                >
+                  Go to Login
+                </Link>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-power-orange/50 bg-white text-slate-900 transition-all"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-                    title="Toggle password visibility"
-                    aria-label="Toggle password visibility"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} />
-                    ) : (
-                      <Eye size={20} />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isSubmitting || !token}
-                variant="primary"
-                className="w-full"
-              >
-                {isSubmitting ? "Resetting..." : "Reset Password"}
-              </Button>
-            </form>
-
-            <p className="text-center mt-6 text-slate-300">
-              Remember your password?{" "}
-              <Link
-                href="/login"
-                className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
-              >
-                Login
-              </Link>
-            </p>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-800 text-center font-semibold">
-                Password reset successfully!
-              </p>
-              <p className="text-green-700 text-sm text-center mt-2">
-                Redirecting to login page...
-              </p>
             </div>
-
-            <div className="text-center">
-              <Link
-                href="/login"
-                className="text-power-orange font-semibold hover:text-orange-600 transition-colors"
-              >
-                Go to Login
-              </Link>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </SlideUp>
   );
 }
 

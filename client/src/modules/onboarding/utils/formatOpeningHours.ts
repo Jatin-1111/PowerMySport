@@ -7,15 +7,7 @@ export function formatOpeningHours(openingHours: any): string {
 
   // Handle structured format
   if (typeof openingHours === "object" && openingHours !== null) {
-    const days = [
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-      "sunday",
-    ];
+    const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
     const openDays: string[] = [];
     const closedDays: string[] = [];
@@ -30,14 +22,10 @@ export function formatOpeningHours(openingHours: any): string {
             : [];
         const slotLabel =
           slots.length > 0
-            ? slots
-                .map((slot: any) => `${slot.startTime}-${slot.endTime}`)
-                .join(", ")
+            ? slots.map((slot: any) => `${slot.startTime}-${slot.endTime}`).join(", ")
             : "N/A";
 
-        openDays.push(
-          `${day.charAt(0).toUpperCase() + day.slice(1)}: ${slotLabel}`,
-        );
+        openDays.push(`${day.charAt(0).toUpperCase() + day.slice(1)}: ${slotLabel}`);
       } else {
         closedDays.push(day.charAt(0).toUpperCase() + day.slice(1));
       }

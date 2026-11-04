@@ -1,34 +1,48 @@
 "use client";
 
+import { ErrorNotice } from "@/modules/shared/ui/States";
 import { AdminPageHeader } from "@/modules/admin/components/AdminPageHeader";
 import { adminEcommerceApi } from "@/modules/admin/services/ecommerce";
 import { Card } from "@/modules/shared/ui/Card";
 import { Button } from "@/modules/shared/ui/Button";
-const Input = ({ error, className, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
+import { usePrompt } from "@/modules/shared/ui/usePrompt";
+const Input = ({
+  error,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { error?: string }) => (
   <div className="w-full">
     <input
       {...props}
-      className={`w-full rounded-md border ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-power-orange focus:ring-power-orange'} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange-solid focus:ring-power-orange-solid border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
 );
 
-const Textarea = ({ error, className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: string }) => (
+const Textarea = ({
+  error,
+  className,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { error?: string }) => (
   <div className="w-full">
     <textarea
       {...props}
-      className={`w-full rounded-md border ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-power-orange focus:ring-power-orange'} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange-solid focus:ring-power-orange-solid border-slate-300"} px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
 );
 
-const Select = ({ error, className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
+const Select = ({
+  error,
+  className,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { error?: string }) => (
   <div className="w-full">
     <select
       {...props}
-      className={`w-full rounded-md border ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-300 focus:border-power-orange focus:ring-power-orange'} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
+      className={`w-full rounded-md border ${error ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "focus:border-power-orange-solid focus:ring-power-orange-solid border-slate-300"} bg-white px-3 py-2 text-sm focus:outline-none focus:ring-1 ${className || ""}`}
     />
     {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
   </div>
@@ -45,6 +59,7 @@ import { useState, useRef, useEffect } from "react";
 
 export default function AddProductPage() {
   const router = useRouter();
+  const [prompt, promptDialog] = usePrompt();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -60,7 +75,8 @@ export default function AddProductPage() {
     if (field === "salePrice" && value.trim() !== "") {
       const num = parseFloat(value);
       if (isNaN(num) || num < 0) errMsg = "Sale Price must be valid.";
-      if (formData.basePrice && num >= parseFloat(formData.basePrice)) errMsg = "Sale Price must be less than Base Price.";
+      if (formData.basePrice && num >= parseFloat(formData.basePrice))
+        errMsg = "Sale Price must be less than Base Price.";
     }
     if (field === "weight") {
       const num = parseFloat(value);
@@ -70,7 +86,7 @@ export default function AddProductPage() {
       const num = parseFloat(value);
       if (isNaN(num) || num <= 0) errMsg = "Dimension must be greater than 0.";
     }
-    setErrors(prev => ({ ...prev, [field]: errMsg }));
+    setErrors((prev) => ({ ...prev, [field]: errMsg }));
     return errMsg === "";
   };
 
@@ -88,7 +104,7 @@ export default function AddProductPage() {
       // It's technically okay if both are empty (label becomes "Standard"), but usually we want at least one or it's just the default variant.
       // We will allow empty, so no error here unless we specifically require variants to be named.
     }
-    setErrors(prev => ({ ...prev, [`variant_${index}_${field}`]: errMsg }));
+    setErrors((prev) => ({ ...prev, [`variant_${index}_${field}`]: errMsg }));
     return errMsg === "";
   };
 
@@ -154,13 +170,10 @@ export default function AddProductPage() {
     try {
       setUploadingImage(true);
       setError(null);
-      
+
       const uploadPromises = files.map(async (file) => {
-        const res = await adminEcommerceApi.generateProductImageUploadUrl(
-          file.name,
-          file.type
-        );
-        
+        const res = await adminEcommerceApi.generateProductImageUploadUrl(file.name, file.type);
+
         if (!res?.data) throw new Error("Failed to get upload URL");
 
         await fetch(res.data.uploadUrl, {
@@ -170,12 +183,12 @@ export default function AddProductPage() {
             "Content-Type": file.type,
           },
         });
-        
+
         return res.data.downloadUrl;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
-      setImages(prev => [...prev, ...uploadedUrls].filter(Boolean));
+      setImages((prev) => [...prev, ...uploadedUrls].filter(Boolean));
     } catch (err: any) {
       console.error(err);
       setError("Failed to upload image. Ensure S3 CORS is properly configured.");
@@ -189,10 +202,19 @@ export default function AddProductPage() {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleAddImageUrl = () => {
-    const url = window.prompt("Enter image URL:");
-    if (url && url.trim()) {
-      setImages(prev => [...prev, url.trim()]);
+  const handleAddImageUrl = async () => {
+    const url = await prompt({
+      title: "Add an image by link",
+      label: "Image URL",
+      placeholder: "https://",
+      confirmLabel: "Add image",
+      validate: (value) =>
+        /^https?:\/\/\S+$/i.test(value)
+          ? null
+          : "Enter a full link starting with http:// or https://",
+    });
+    if (url) {
+      setImages((prev) => [...prev, url]);
     }
   };
 
@@ -214,11 +236,7 @@ export default function AddProductPage() {
     setVariants(variants.filter((_, i) => i !== index));
   };
 
-  const handleVariantChange = (
-    index: number,
-    field: keyof typeof variants[0],
-    value: string
-  ) => {
+  const handleVariantChange = (index: number, field: keyof (typeof variants)[0], value: string) => {
     const newVariants = [...variants];
     newVariants[index][field] = value;
     setVariants(newVariants);
@@ -240,7 +258,7 @@ export default function AddProductPage() {
         const attrs: Record<string, string> = {};
         if (v.size) attrs.size = v.size;
         if (v.color) attrs.color = v.color;
-        
+
         const variantLabel = [v.size, v.color].filter(Boolean).join(" - ") || "Standard";
 
         return {
@@ -268,10 +286,15 @@ export default function AddProductPage() {
         ageGroup: formData.ageGroup,
         skillLevel: formData.skillLevel,
         gender: formData.gender,
-        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         category: formData.category,
         basePrice: Math.round(parseFloat(formData.basePrice) * 100),
-        salePrice: formData.salePrice ? Math.round(parseFloat(formData.salePrice) * 100) : undefined,
+        salePrice: formData.salePrice
+          ? Math.round(parseFloat(formData.salePrice) * 100)
+          : undefined,
         weight: parseFloat(formData.weight),
         dimensions: {
           length: parseFloat(dimensions.length),
@@ -297,24 +320,21 @@ export default function AddProductPage() {
 
   return (
     <div className="space-y-6">
+      {promptDialog}
       <AdminPageHeader
-        badge="Ecommerce"
-        title="New Product"
-        subtitle="Add a new product to the catalog."
+        badge="Commerce"
+        title="New product"
+        subtitle="Add an item to the merchandise catalog. Prices are in rupees."
       />
 
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
-        {error && (
-          <div className="rounded-lg bg-red-50 p-4 text-sm font-medium text-red-600">
-            {error}
-          </div>
-        )}
+        {error && <ErrorNotice message={error} />}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="space-y-6 md:col-span-2">
             {/* Basic Info */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Basic Information</h3>
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-semibold text-slate-900">Basic Information</h3>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Name *</Label>
@@ -348,9 +368,7 @@ export default function AddProductPage() {
                   <Label>Brand</Label>
                   <Select
                     value={formData.brand}
-                    onChange={(e) =>
-                      setFormData({ ...formData, brand: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                   >
                     <option value="SG">SG</option>
                     <option value="SS">SS</option>
@@ -375,7 +393,10 @@ export default function AddProductPage() {
                   <Input
                     value={formData.shortDescription}
                     onChange={(e) =>
-                      setFormData({ ...formData, shortDescription: e.target.value })
+                      setFormData({
+                        ...formData,
+                        shortDescription: e.target.value,
+                      })
                     }
                     placeholder="Punchy one-liner for the catalog"
                   />
@@ -396,16 +417,14 @@ export default function AddProductPage() {
             </Card>
 
             {/* Targeting & Details */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Targeting & Specifications</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-semibold text-slate-900">Targeting & Specifications</h3>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Age Group</Label>
                   <Select
                     value={formData.ageGroup}
-                    onChange={(e) =>
-                      setFormData({ ...formData, ageGroup: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
                   >
                     <option value="ALL">All Ages</option>
                     <option value="KIDS">Kids</option>
@@ -417,9 +436,7 @@ export default function AddProductPage() {
                   <Label>Skill Level</Label>
                   <Select
                     value={formData.skillLevel}
-                    onChange={(e) =>
-                      setFormData({ ...formData, skillLevel: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, skillLevel: e.target.value })}
                   >
                     <option value="ALL">All Levels</option>
                     <option value="BEGINNER">Beginner</option>
@@ -431,9 +448,7 @@ export default function AddProductPage() {
                   <Label>Gender</Label>
                   <Select
                     value={formData.gender}
-                    onChange={(e) =>
-                      setFormData({ ...formData, gender: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   >
                     <option value="UNISEX">Unisex</option>
                     <option value="BOYS">Boys</option>
@@ -446,9 +461,7 @@ export default function AddProductPage() {
                   <Label>Material</Label>
                   <Select
                     value={formData.material}
-                    onChange={(e) =>
-                      setFormData({ ...formData, material: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, material: e.target.value })}
                   >
                     <option value="ENGLISH_WILLOW">English Willow</option>
                     <option value="KASHMIR_WILLOW">Kashmir Willow</option>
@@ -469,9 +482,7 @@ export default function AddProductPage() {
                   <Label>Warranty / Cert</Label>
                   <Input
                     value={formData.warranty}
-                    onChange={(e) =>
-                      setFormData({ ...formData, warranty: e.target.value })
-                    }
+                    onChange={(e) => setFormData({ ...formData, warranty: e.target.value })}
                     placeholder="E.g., 6 Months, CE Marked"
                   />
                 </div>
@@ -487,27 +498,23 @@ export default function AddProductPage() {
             </Card>
 
             {/* Images */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Images *</h3>
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-semibold text-slate-900">Images *</h3>
               {images.length > 0 && (
-                <div className="flex flex-wrap gap-4 mb-4">
+                <div className="mb-4 flex flex-wrap gap-4">
                   {images.map((img, index) => (
                     <div
                       key={index}
-                      className="relative group h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-all hover:border-slate-300"
+                      className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm transition-all hover:border-slate-300"
                     >
                       {img ? (
-                        <img
-                          src={img}
-                          alt="Preview"
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={img} alt="Preview" className="h-full w-full object-cover" />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <ImageIcon className="h-8 w-8 text-slate-300" />
                         </div>
                       )}
-                      
+
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
@@ -520,7 +527,7 @@ export default function AddProductPage() {
                   ))}
                 </div>
               )}
-              
+
               <div className="relative" ref={dropdownRef}>
                 <Button
                   type="button"
@@ -529,12 +536,12 @@ export default function AddProductPage() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   disabled={uploadingImage}
                 >
-                  <Plus className="mr-2 h-4 w-4" /> 
+                  <Plus className="mr-2 h-4 w-4" />
                   {uploadingImage ? "Uploading..." : "Add Image"}
                 </Button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg z-10">
+                  <div className="absolute left-0 top-full z-10 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-[0_12px_32px_-16px_rgb(15_23_42/0.3)]">
                     <div className="p-1">
                       <label className="flex w-full cursor-pointer items-center rounded-sm px-3 py-2 text-sm text-slate-700 hover:bg-slate-100">
                         <UploadCloud className="mr-2 h-4 w-4 text-slate-500" /> Upload File to S3
@@ -566,37 +573,32 @@ export default function AddProductPage() {
             </Card>
 
             {/* Variants */}
-            <Card className="p-6 space-y-4">
+            <Card className="space-y-4 p-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-slate-900">Variants</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Variants</h3>
                 <Button type="button" size="sm" onClick={handleAddVariant}>
                   <Plus className="mr-2 h-4 w-4" /> Add Variant
                 </Button>
               </div>
               <div className="space-y-4">
                 {variants.map((variant, index) => (
-                  <div
-                    key={index}
-                    className="relative rounded-lg border border-slate-200 p-4"
-                  >
+                  <div key={index} className="relative rounded-lg border border-slate-200 p-4">
                     {variants.length > 1 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveVariant(index)}
-                        className="absolute right-2 top-2 text-slate-400 hover:text-red-500"
+                        className="absolute right-2 top-2 text-slate-500 hover:text-red-500"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                       <div className="space-y-2">
                         <Label className="text-xs">Variant SKU</Label>
                         <Input
                           placeholder="Optional auto-generated"
                           value={variant.sku}
-                          onChange={(e) =>
-                            handleVariantChange(index, "sku", e.target.value)
-                          }
+                          onChange={(e) => handleVariantChange(index, "sku", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -604,9 +606,7 @@ export default function AddProductPage() {
                         <Input
                           placeholder="E.g., L, XL, 42"
                           value={variant.size}
-                          onChange={(e) =>
-                            handleVariantChange(index, "size", e.target.value)
-                          }
+                          onChange={(e) => handleVariantChange(index, "size", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -614,9 +614,7 @@ export default function AddProductPage() {
                         <Input
                           placeholder="E.g., Red, Black"
                           value={variant.color}
-                          onChange={(e) =>
-                            handleVariantChange(index, "color", e.target.value)
-                          }
+                          onChange={(e) => handleVariantChange(index, "color", e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
@@ -628,7 +626,8 @@ export default function AddProductPage() {
                           value={variant.price}
                           onChange={(e) => {
                             handleVariantChange(index, "price", e.target.value);
-                            if (errors[`variant_${index}_price`]) validateVariantField(index, "price", e.target.value);
+                            if (errors[`variant_${index}_price`])
+                              validateVariantField(index, "price", e.target.value);
                           }}
                           onBlur={(e) => validateVariantField(index, "price", e.target.value)}
                           error={errors[`variant_${index}_price`]}
@@ -642,7 +641,8 @@ export default function AddProductPage() {
                           value={variant.stock}
                           onChange={(e) => {
                             handleVariantChange(index, "stock", e.target.value);
-                            if (errors[`variant_${index}_stock`]) validateVariantField(index, "stock", e.target.value);
+                            if (errors[`variant_${index}_stock`])
+                              validateVariantField(index, "stock", e.target.value);
                           }}
                           onBlur={(e) => validateVariantField(index, "stock", e.target.value)}
                           error={errors[`variant_${index}_stock`]}
@@ -657,15 +657,13 @@ export default function AddProductPage() {
 
           <div className="space-y-6">
             {/* Categorization & Status */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Organization</h3>
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-semibold text-slate-900">Organization</h3>
               <div className="space-y-2">
                 <Label>Category *</Label>
                 <Select
                   value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 >
                   <option value="APPAREL">Apparel</option>
                   <option value="FOOTWEAR">Footwear</option>
@@ -681,15 +679,15 @@ export default function AddProductPage() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                     setFormData({ ...formData, isActive: e.target.checked })
                   }
-                  className="rounded border-slate-300 text-power-orange focus:ring-power-orange"
+                  className="text-power-orange-solid focus:ring-power-orange-solid rounded border-slate-300"
                 />
                 <Label htmlFor="isActive">Active in Store</Label>
               </div>
             </Card>
 
             {/* Pricing */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Pricing</h3>
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-semibold text-slate-900">Pricing</h3>
               <div className="space-y-2">
                 <Label>Base Price (in ₹) *</Label>
                 <Input
@@ -724,8 +722,8 @@ export default function AddProductPage() {
             </Card>
 
             {/* Logistics */}
-            <Card className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-900">Logistics</h3>
+            <Card className="space-y-4 p-6">
+              <h3 className="text-lg font-semibold text-slate-900">Logistics</h3>
               <div className="space-y-2">
                 <Label>Weight (g) *</Label>
                 <Input
@@ -803,7 +801,7 @@ export default function AddProductPage() {
             Cancel
           </Button>
           <Button type="submit" variant="primary" disabled={saving}>
-            {saving ? "Saving..." : "Create Product"}
+            {saving ? "Saving…" : "Create product"}
           </Button>
         </div>
       </form>

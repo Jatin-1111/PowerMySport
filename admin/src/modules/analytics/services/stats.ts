@@ -9,6 +9,20 @@ export interface PlatformStats {
   revenue: number;
 }
 
+export interface PendingCounts {
+  academyOnboarding: number;
+  coachVerification: number;
+  venueApprovals: number;
+  communityReports: number;
+  disputes: number;
+  supportTickets: number;
+  conciergeRequests: number;
+  webhookErrors: number;
+  dataSourcesPending: number;
+  /** Everyone waiting on an admin across coaches, experts, venues and academies. */
+  reviewQueue: number;
+}
+
 export interface UserData {
   id: string;
   name: string;
@@ -18,12 +32,39 @@ export interface UserData {
   createdAt: string;
 }
 
-export type UsersTabRole = "PLAYER" | "COACH" | "VENUE_LISTER";
+export type UsersTabRole = "EXPERT" | "Parent" | "Player" | "Coach" | "VenueLister";
 
 export interface UsersRoleSummary {
-  PLAYER: number;
-  COACH: number;
-  VENUE_LISTER: number;
+  EXPERT: number;
+  Parent: number;
+  Player: number;
+  Coach: number;
+  VenueLister: number;
+}
+
+export interface ParentUserRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "Parent";
+  createdAt: string;
+  lastActiveAt: string;
+  isOnlineNow: boolean;
+  dependentsCount: number;
+}
+
+export interface ExpertUserRow {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: "EXPERT";
+  createdAt: string;
+  lastActiveAt: string;
+  isOnlineNow: boolean;
+  specialization?: string;
+  sessionCount?: number;
 }
 
 export interface PlayerUserRow {
@@ -31,14 +72,13 @@ export interface PlayerUserRow {
   name: string;
   email: string;
   phone: string;
-  role: "PLAYER";
+  role: "Player";
   createdAt: string;
   lastActiveAt: string;
   isOnlineNow: boolean;
   sports: string[];
   sportsCount: number;
   hasSportsProfile: boolean;
-  dependentsCount: number;
 }
 
 export interface CoachUserRow {
@@ -46,19 +86,14 @@ export interface CoachUserRow {
   name: string;
   email: string;
   phone: string;
-  role: "COACH";
+  role: "Coach";
   createdAt: string;
   lastActiveAt: string;
   isOnlineNow: boolean;
   sports: string[];
   hourlyRate: number | null;
   serviceMode: "OWN_VENUE" | "FREELANCE" | "HYBRID" | null;
-  verificationStatus:
-    | "UNVERIFIED"
-    | "PENDING"
-    | "REVIEW"
-    | "VERIFIED"
-    | "REJECTED";
+  verificationStatus: "UNVERIFIED" | "PENDING" | "REVIEW" | "VERIFIED" | "REJECTED";
   isVerified: boolean;
   rating: number;
   reviewCount: number;
@@ -70,7 +105,7 @@ export interface VenueListerUserRow {
   name: string;
   email: string;
   phone: string;
-  role: "VENUE_LISTER";
+  role: "VenueLister";
   createdAt: string;
   lastActiveAt: string;
   isOnlineNow: boolean;
@@ -135,9 +170,9 @@ export interface UserGrowthPoint {
   monthKey: string;
   label: string;
   total: number;
-  PLAYER: number;
-  COACH: number;
-  VENUE_LISTER: number;
+  Player: number;
+  Coach: number;
+  VenueLister: number;
 }
 
 export interface UserGrowthAnalytics {
@@ -178,9 +213,133 @@ export interface ObservabilitySnapshot {
   generatedAt: string;
 }
 
+export interface GuestActivityTotals {
+  events: number;
+  uniqueGuests: number;
+  pageViews: number;
+  avgScrollPct: number;
+  avgTimeOnPageSec: number;
+}
+
+export interface GuestTopPage {
+  path: string;
+  views: number;
+  uniqueGuests: number;
+}
+
+export interface GuestTopEvent {
+  eventName: string;
+  count: number;
+  uniqueGuests: number;
+}
+
+export interface GuestDailyPoint {
+  label: string;
+  views: number;
+  uniqueGuests: number;
+}
+
+export interface GuestActivity {
+  days: number;
+  totals: GuestActivityTotals;
+  topPages: GuestTopPage[];
+  topEvents: GuestTopEvent[];
+  daily: GuestDailyPoint[];
+}
+
+export interface InfraOverview {
+  available: boolean;
+  error?: string;
+  region: string;
+  environmentName: string;
+  refreshedAt: string;
+  environment: {
+    status?: string;
+    health?: string;
+    healthStatus?: string;
+    color?: string;
+    versionLabel?: string;
+    endpointUrl?: string;
+    dateUpdated?: string;
+    causes: string[];
+  } | null;
+  application: {
+    requestCount: number;
+    durationSec: number;
+    statusCodes: { p2xx: number; p3xx: number; p4xx: number; p5xx: number };
+    latencyMs: { p50: number; p90: number; p99: number };
+  } | null;
+  instanceCounts: Record<string, number>;
+  instances: Array<{
+    instanceId: string;
+    health?: string;
+    color?: string;
+    cpuBusyPct: number;
+    loadAvg: number[];
+    version?: string;
+    launchedAt?: string;
+    causes: string[];
+  }>;
+  events: Array<{ date?: string; severity?: string; message?: string }>;
+  runtime?: RuntimeStats;
+}
+
+export interface RuntimeStats {
+  hostname: string;
+  uptimeSec: number;
+  cpuCount: number;
+  loadAvg: number[];
+  memory: {
+    totalMb: number;
+    usedMb: number;
+    freeMb: number;
+    usedPct: number;
+    processRssMb: number;
+    heapUsedMb: number;
+    heapTotalMb: number;
+  };
+}
+
+export interface InfraMetricPoint {
+  t: string;
+  v: number;
+}
+
+export interface InfraMetrics {
+  available: boolean;
+  error?: string;
+  hours: number;
+  periodSec: number;
+  series: {
+    cpuPct: InfraMetricPoint[];
+    requestCount: InfraMetricPoint[];
+    latencyMs: InfraMetricPoint[];
+    errors4xx: InfraMetricPoint[];
+    errors5xx: InfraMetricPoint[];
+  };
+}
+
+export interface UnsupportedSportRow {
+  sport: string;
+  count: number;
+  lastSearched: string;
+  sources: string[];
+}
+
+export interface UnsupportedSportsStats {
+  rows: UnsupportedSportRow[];
+  totalSearches: number;
+  days: number;
+}
+
 export const statsApi = {
   getPlatformStats: async (): Promise<ApiResponse<PlatformStats>> => {
     const response = await axiosInstance.get("/stats/platform");
+    return response.data;
+  },
+
+  getPendingCounts: async (): Promise<ApiResponse<PendingCounts>> => {
+    const response = await axiosInstance.get("/stats/pending-counts");
     return response.data;
   },
 
@@ -192,9 +351,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users?${params.toString()}`);
     return response.data;
   },
 
@@ -203,12 +360,34 @@ export const statsApi = {
     return response.data;
   },
 
-  getUserGrowthAnalytics: async (
-    months = 6,
-  ): Promise<ApiResponse<UserGrowthAnalytics>> => {
+  getUserGrowthAnalytics: async (months = 6): Promise<ApiResponse<UserGrowthAnalytics>> => {
     const response = await axiosInstance.get("/stats/users/growth", {
       params: { months },
     });
+    return response.data;
+  },
+
+  getExpertUsers: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ExpertUserRow[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(`/stats/users/experts?${params.toString()}`);
+    return response.data;
+  },
+
+  getParentUsers: async (pagination?: {
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<ParentUserRow[]>> => {
+    const params = new URLSearchParams();
+    if (pagination?.page) params.append("page", pagination.page.toString());
+    if (pagination?.limit) params.append("limit", pagination.limit.toString());
+
+    const response = await axiosInstance.get(`/stats/users/parents?${params.toString()}`);
     return response.data;
   },
 
@@ -220,9 +399,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/players?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/players?${params.toString()}`);
     return response.data;
   },
 
@@ -234,9 +411,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/coaches?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/coaches?${params.toString()}`);
     return response.data;
   },
 
@@ -248,9 +423,7 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/users/venue-listers?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/users/venue-listers?${params.toString()}`);
     return response.data;
   },
 
@@ -264,26 +437,22 @@ export const statsApi = {
     return response.data;
   },
 
-  getVenueListersAnalytics: async (): Promise<
-    ApiResponse<VenueListersAnalytics>
-  > => {
-    const response = await axiosInstance.get(
-      "/stats/users/analytics/venue-listers",
-    );
+  getVenueListersAnalytics: async (): Promise<ApiResponse<VenueListersAnalytics>> => {
+    const response = await axiosInstance.get("/stats/users/analytics/venue-listers");
     return response.data;
   },
 
   getAllVenues: async (pagination?: {
     page?: number;
     limit?: number;
+    search?: string;
   }): Promise<ApiResponse<Venue[]>> => {
     const params = new URLSearchParams();
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
+    if (pagination?.search) params.append("search", pagination.search);
 
-    const response = await axiosInstance.get(
-      `/stats/venues?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/venues?${params.toString()}`);
     return response.data;
   },
 
@@ -295,14 +464,12 @@ export const statsApi = {
     if (pagination?.page) params.append("page", pagination.page.toString());
     if (pagination?.limit) params.append("limit", pagination.limit.toString());
 
-    const response = await axiosInstance.get(
-      `/stats/bookings?${params.toString()}`,
-    );
+    const response = await axiosInstance.get(`/stats/bookings?${params.toString()}`);
     return response.data;
   },
 
   getFunnelSummary: async (
-    days = 30,
+    days = 30
   ): Promise<ApiResponse<{ days: number; events: FunnelSummaryRow[] }>> => {
     const response = await axiosInstance.get(`/stats/funnel/summary`, {
       params: { days },
@@ -317,22 +484,52 @@ export const statsApi = {
     return response.data;
   },
 
-  getFinanceReconciliation: async (): Promise<
-    ApiResponse<FinanceReconciliation>
-  > => {
+  getFinanceReconciliation: async (): Promise<ApiResponse<FinanceReconciliation>> => {
     const response = await axiosInstance.get("/stats/finance/reconciliation");
     return response.data;
   },
 
-  getObservabilitySnapshot: async (): Promise<
-    ApiResponse<ObservabilitySnapshot>
-  > => {
+  getObservabilitySnapshot: async (): Promise<ApiResponse<ObservabilitySnapshot>> => {
     const response = await axiosInstance.get("/stats/observability");
     return response.data;
   },
 
+  getGuestActivity: async (days = 30): Promise<ApiResponse<GuestActivity>> => {
+    const response = await axiosInstance.get("/stats/guests/activity", {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Destructive: permanently deletes every analytics event.
+  clearAnalytics: async (): Promise<ApiResponse<{ deletedCount: number }>> => {
+    const response = await axiosInstance.delete("/stats/analytics");
+    return response.data;
+  },
+
+  getInfraOverview: async (): Promise<ApiResponse<InfraOverview>> => {
+    const response = await axiosInstance.get("/stats/infra/overview");
+    return response.data;
+  },
+
+  getInfraMetrics: async (hours = 6): Promise<ApiResponse<InfraMetrics>> => {
+    const response = await axiosInstance.get("/stats/infra/metrics", {
+      params: { hours },
+    });
+    return response.data;
+  },
+
   getVenueById: async (venueId: string): Promise<ApiResponse<Venue>> => {
-    const response = await axiosInstance.get(`/venues/${venueId}`);
+    // Permissioned admin route: the public GET /venues/:id no longer carries
+    // the owner's contact details or payout/verification fields.
+    const response = await axiosInstance.get(`/stats/venues/${venueId}`);
+    return response.data;
+  },
+
+  getUnsupportedSportsStats: async (days = 30): Promise<ApiResponse<UnsupportedSportsStats>> => {
+    const response = await axiosInstance.get("/stats/unsupported-sports", {
+      params: { days },
+    });
     return response.data;
   },
 };

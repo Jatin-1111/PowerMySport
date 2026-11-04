@@ -36,16 +36,13 @@ const communityVoteSchema = new Schema<CommunityVoteDocument>(
       required: true,
     },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
-communityVoteSchema.index(
-  { userId: 1, targetType: 1, targetId: 1 },
-  { unique: true },
-);
+communityVoteSchema.index({ userId: 1, targetType: 1, targetId: 1 }, { unique: true });
 communityVoteSchema.index({ targetType: 1, targetId: 1 });
 
 export const CommunityVote = mongoose.model<CommunityVoteDocument>(
   "CommunityVote",
-  communityVoteSchema,
+  communityVoteSchema
 );

@@ -1,16 +1,13 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { notifyUserDataUpdated } from "../sockets/friendSocket";
 
-export type CoachSubscriptionStatus =
-  | "ACTIVE"
-  | "PAST_DUE"
-  | "CANCELLED"
-  | "EXPIRED";
+export type CoachSubscriptionStatus = "ACTIVE" | "PAST_DUE" | "CANCELLED" | "EXPIRED";
 
 export interface CoachSubscriptionDocument extends Document {
   id?: string;
   coachId: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
+  dependentId?: mongoose.Types.ObjectId; // Optional dependent for whom this was purchased
   packageId: mongoose.Types.ObjectId; // References CoachSubscriptionPackage
   status: CoachSubscriptionStatus;
   currentPeriodStart: Date;
@@ -20,6 +17,11 @@ export interface CoachSubscriptionDocument extends Document {
   gracePeriodEndsAt?: Date | null;
   cancelledAt?: Date | null;
   cancellationReason?: string;
+  /**
+   * One-shot dedup for the "your classes renew soon" nudge. Cleared on every
+   * successful renewal so the next period can nudge again.
+   */
+  renewalReminderSentAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +38,11 @@ const coachSubscriptionSchema = new Schema<CoachSubscriptionDocument>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: [true, "User ID is required"],
+      index: true,
+    },
+    dependentId: {
+      type: Schema.Types.ObjectId,
+      ref: "Player",
       index: true,
     },
     packageId: {
@@ -80,6 +87,7 @@ const coachSubscriptionSchema = new Schema<CoachSubscriptionDocument>(
       default: "",
       trim: true,
     },
+    renewalReminderSentAt: { type: Date, default: null },
   },
   {
     timestamps: true,
@@ -99,17 +107,17 @@ const coachSubscriptionSchema = new Schema<CoachSubscriptionDocument>(
         return ret;
       },
     },
-  },
+  }
 );
 
-coachSubscriptionSchema.virtual("id").get(function (
-  this: CoachSubscriptionDocument,
-) {
+coachSubscriptionSchema.virtual("id").get(function (this: CoachSubscriptionDocument) {
   return this._id.toString();
 });
 
 coachSubscriptionSchema.index({ coachId: 1, status: 1 });
 coachSubscriptionSchema.index({ userId: 1, status: 1 });
+// Drives the renewal-due sweep.
+coachSubscriptionSchema.index({ status: 1, currentPeriodEnd: 1 });
 
 // --- Real-time Auto Updates ---
 const notifyUsersOfSubscriptionUpdate = (doc: any) => {
@@ -132,5 +140,5 @@ coachSubscriptionSchema.post("findOneAndUpdate", function (doc) {
 
 export const CoachSubscription = mongoose.model<CoachSubscriptionDocument>(
   "CoachSubscription",
-  coachSubscriptionSchema,
+  coachSubscriptionSchema
 );

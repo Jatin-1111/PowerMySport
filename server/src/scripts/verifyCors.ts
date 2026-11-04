@@ -7,8 +7,7 @@ import "dotenv/config";
 
 const region = process.env.AWS_REGION || "us-east-1";
 const imagesBucket = process.env.AWS_S3_IMAGES_BUCKET || "powermysport-images";
-const documentsBucket =
-  process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-verification";
+const documentsBucket = process.env.AWS_S3_DOCUMENTS_BUCKET || "powermysport-verification";
 
 const requiredOrigins = [
   "https://powermysport.com",
@@ -42,19 +41,14 @@ async function checkCors(bucketName: string) {
     });
 
     const missingOrigins = requiredOrigins.filter(
-      (origin) =>
-        !response.CORSRules?.some((rule) =>
-          rule.AllowedOrigins?.includes(origin),
-        ),
+      (origin) => !response.CORSRules?.some((rule) => rule.AllowedOrigins?.includes(origin))
     );
 
-    const hasPUT = response.CORSRules?.some((rule) =>
-      rule.AllowedMethods?.includes("PUT"),
-    );
+    const hasPUT = response.CORSRules?.some((rule) => rule.AllowedMethods?.includes("PUT"));
 
     console.log("\n--- Verification ---");
     console.log(
-      `✓ required origins allowed: ${missingOrigins.length === 0 ? "YES" : `NO (missing: ${missingOrigins.join(", ")})`}`,
+      `✓ required origins allowed: ${missingOrigins.length === 0 ? "YES" : `NO (missing: ${missingOrigins.join(", ")})`}`
     );
     console.log(`✓ PUT method allowed: ${hasPUT ? "YES" : "NO"}`);
 

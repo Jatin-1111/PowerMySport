@@ -1,6 +1,7 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,7 +9,7 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   closeButton?: boolean;
 }
 
@@ -16,6 +17,7 @@ const sizeClasses = {
   sm: "max-w-sm",
   md: "max-w-md",
   lg: "max-w-lg",
+  xl: "max-w-3xl",
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -43,7 +45,14 @@ export const Modal: React.FC<ModalProps> = ({
       previousFocusRef.current = document.activeElement as HTMLElement;
 
       setTimeout(() => {
-        modalRef.current?.focus();
+        // Only grab focus on the modal container if nothing inside it already
+        // has focus (e.g. an input with autoFocus). Otherwise we would steal
+        // focus away, forcing the user to click the input again to type.
+        const activeEl = document.activeElement;
+        const insideModal = modalRef.current?.contains(activeEl);
+        if (!insideModal) {
+          modalRef.current?.focus();
+        }
       }, 0);
     }
 
@@ -60,15 +69,13 @@ export const Modal: React.FC<ModalProps> = ({
     if (event.key !== "Tab") return;
 
     const focusableElements = modalRef.current?.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
     if (!focusableElements || focusableElements.length === 0) return;
 
     const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[
-      focusableElements.length - 1
-    ] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
     if (event.shiftKey && document.activeElement === firstElement) {
       event.preventDefault();
@@ -79,7 +86,31 @@ export const Modal: React.FC<ModalProps> = ({
     }
   };
 
-  return (
+  /**
+   * Rendered into `document.body`, never where it was written.
+   *
+   * `position: fixed` is not as absolute as it looks: an ancestor with a
+   * `transform`, a `filter` or a `backdrop-filter` becomes the containing block
+   * for fixed descendants, and the overlay then anchors to that element instead
+   * of the viewport. This codebase hits that constantly, because `.shop-surface`
+   * — the class on most cards — is `backdrop-blur-md`, and those cards are
+   * usually `overflow-hidden` too. A modal written inside one rendered as a
+   * clipped sliver floating inside the card.
+   *
+   * Portalling makes the question moot: whatever the tree above looks like, the
+   * overlay is a child of `body` and covers the viewport. It also fixes the
+   * z-index arithmetic, since nothing above it can create a stacking context
+   * that traps it.
+   *
+   * The `document` check is for the server pass. A modal is never open on first
+   * paint — it opens from a click — so rendering nothing there matches what the
+   * client produces, and no hydration mismatch is possible. Deliberately not a
+   * `mounted` flag set in an effect: that is a setState in an effect body, which
+   * this repo's lint rules reject, and it would cost every page an extra render.
+   */
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -106,15 +137,15 @@ export const Modal: React.FC<ModalProps> = ({
             aria-modal="true"
             aria-labelledby={title ? "modal-title" : undefined}
             onKeyDown={handleKeyDown}
-            className={`relative z-10 w-full rounded-2xl bg-white shadow-2xl ${sizeClasses[size]}`}
+            className={`relative z-10 flex max-h-[90vh] w-full flex-col rounded-xl bg-white shadow-2xl ${sizeClasses[size]}`}
           >
             {/* Header */}
             {(title || closeButton) && (
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+              <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
                 {title && (
                   <h2
                     id="modal-title"
-                    className="text-lg font-semibold text-slate-900 tracking-tight"
+                    className="text-lg font-semibold tracking-tight text-slate-900"
                   >
                     {title}
                   </h2>
@@ -123,7 +154,7 @@ export const Modal: React.FC<ModalProps> = ({
                 {closeButton && (
                   <button
                     onClick={onClose}
-                    className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                    className="rounded-full p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
                     aria-label="Close modal"
                   >
                     <X size={18} strokeWidth={2.5} />
@@ -133,17 +164,18 @@ export const Modal: React.FC<ModalProps> = ({
             )}
 
             {/* Body */}
-            <div className="p-6">{children}</div>
+            <div className="overflow-y-auto p-6">{children}</div>
 
             {/* Footer */}
             {footer && (
-              <div className="border-t border-slate-100 bg-slate-50/50 rounded-b-2xl px-6 py-4">
+              <div className="shrink-0 rounded-b-xl border-t border-slate-100 bg-slate-50/50 px-6 py-4">
                 {footer}
               </div>
             )}
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

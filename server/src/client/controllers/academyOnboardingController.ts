@@ -8,6 +8,8 @@ import {
   getDocumentUploadPresignedUrls,
   confirmAcademyDocuments,
   submitAcademyForApproval,
+  sendAcademyEmailCode,
+  verifyAcademyEmail,
   getPendingAcademies,
   getAcademyOnboardingDetails,
   approveAcademy,
@@ -20,12 +22,54 @@ import {
 } from "../../admin/services/AcademyOnboardingService";
 import Academy from "../../admin/models/Academy";
 import { getPaginationParams } from "../../utils/pagination";
+import { buildSafeSearchRegexSource } from "../../utils/regex";
 import { ADMIN_ROLES } from "../../constants/adminPermissions";
+import { asyncHandler } from "../../middleware/asyncHandler";
+import { AppError } from "../../utils/AppError";
+
+/** Fields the public academy profile may serve. See getAcademyProfileHandler. */
+const ACADEMY_PUBLIC_SELECT = [
+  "name",
+  "slug",
+  "description",
+  "establishedYear",
+  "logoUrl",
+  "coverPhotoUrl",
+  "photos",
+  "sports",
+  "ageGroups",
+  "location",
+  "address",
+  "city",
+  "state",
+  "pincode",
+  "placeId",
+  "operatingHours",
+  "languagesSpoken",
+  "whatsappNumber",
+  "contactEmail",
+  "contactPhone",
+  "contactPersonName",
+  "maxBatchSize",
+  "batchTimings",
+  "sessionRatePerHour",
+  "trialsessionOffered",
+  "trialSessionPrice",
+  "venueIds",
+  "coachIds",
+  "subscriptionPlans",
+  "sessionPackages",
+  "kycVerified",
+  "isApproved",
+  "rating",
+  "reviewCount",
+  "createdAt",
+].join(" ");
 
 // Helper to check if role is admin
 const isAdminRole = (role: string): boolean => {
   return Object.values(ADMIN_ROLES).includes(
-    role as (typeof ADMIN_ROLES)[keyof typeof ADMIN_ROLES],
+    role as (typeof ADMIN_ROLES)[keyof typeof ADMIN_ROLES]
   );
 };
 
@@ -40,12 +84,9 @@ const isAdminRole = (role: string): boolean => {
  * POST /api/academies/onboarding/start
  * Body: { ownerEmail, ownerName, ownerPhone, name, legalName, sports[], ageGroups[], ... }
  */
-export const startAcademyOnboardingHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academy = await startAcademyOnboarding(req.body);
+export const startAcademyOnboardingHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { academy, onboardingToken } = await startAcademyOnboarding(req.body);
 
     res.status(201).json({
       success: true,
@@ -56,28 +97,49 @@ export const startAcademyOnboardingHandler = async (
         slug: academy.slug,
         currentStep: 1,
         nextStep: "Enter location & contact details",
+        // Shown once. Every later onboarding call must send it back in the
+        // X-Academy-Onboarding-Token header (see academyOnboardingAccess).
+        onboardingToken,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to start onboarding",
-    });
   }
-};
+);
+
+/**
+ * POST: Email the owner a confirmation code for the contact address
+ * POST /api/academies/onboarding/:academyId/send-verification
+ */
+export const sendAcademyEmailCodeHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
+    await sendAcademyEmailCode(academyId);
+    res.status(200).json({ success: true, message: "Verification code sent" });
+  }
+);
+
+/**
+ * POST: Confirm the code
+ * POST /api/academies/onboarding/:academyId/verify-email   Body: { code }
+ */
+export const verifyAcademyEmailHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
+    const code = typeof req.body?.code === "string" ? req.body.code.trim() : "";
+    if (!/^\d{6}$/.test(code)) {
+      throw new AppError("Enter the 6-digit code", 400);
+    }
+    await verifyAcademyEmail(academyId, code);
+    res.status(200).json({ success: true, message: "Email verified" });
+  }
+);
 
 /**
  * GET: Academy onboarding progress
  * GET /api/academies/onboarding/:academyId/progress
  */
-export const getAcademyProgressHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const getAcademyProgressHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const progress = await getAcademyOnboardingProgress(academyId);
 
     res.status(200).json({
@@ -85,37 +147,21 @@ export const getAcademyProgressHandler = async (
       message: "Progress retrieved",
       data: progress,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get progress",
-    });
   }
-};
+);
 
 /**
  * PUT: Save any onboarding step (2-7)
  * PUT /api/academies/onboarding/:academyId/step/:stepNumber
  * Body: { stepData: {...} }
  */
-export const saveAcademyStepHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
-    const stepNumber = parseInt(
-      (req.params as Record<string, unknown>).stepNumber as string,
-    );
+export const saveAcademyStepHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
+    const stepNumber = parseInt((req.params as Record<string, unknown>).stepNumber as string);
 
     if (stepNumber < 2 || stepNumber > 7) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid step number. Must be between 2 and 7.",
-      });
-      return;
+      throw new AppError("Invalid step number. Must be between 2 and 7.", 400);
     }
 
     const academy = await updateAcademyStep(academyId, stepNumber, req.body);
@@ -126,48 +172,30 @@ export const saveAcademyStepHandler = async (
       data: {
         academyId: academy._id,
         currentStep: academy.onboardingStep,
-        nextStep:
-          stepNumber < 7 ? `Step ${stepNumber + 1}` : "Submit for review",
+        nextStep: stepNumber < 7 ? `Step ${stepNumber + 1}` : "Submit for review",
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to save step",
-    });
   }
-};
+);
 
 /**
  * GET: Image upload presigned URLs
  * POST /api/academies/onboarding/:academyId/image-upload-urls
  * Body: { imageTypes: ['logo', 'coverPhoto', 'galleryPhotos'] }
  */
-export const getImageUploadUrlsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const getImageUploadUrlsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { imageTypes } = req.body;
 
     if (!imageTypes || imageTypes.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Image types are required",
-      });
-      return;
+      throw new AppError("Image types are required", 400);
     }
 
     // Verify academy exists
     const academy = await Academy.findById(academyId);
     if (!academy) {
-      res.status(404).json({
-        success: false,
-        message: "Academy not found",
-      });
-      return;
+      throw new AppError("Academy not found", 404);
     }
 
     const urls = await getImageUploadPresignedUrls(academyId, imageTypes);
@@ -180,36 +208,22 @@ export const getImageUploadUrlsHandler = async (
         constraints: UPLOAD_CONSTRAINTS.IMAGES,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get upload URLs",
-    });
   }
-};
+);
 
 /**
  * POST: Confirm images uploaded
  * POST /api/academies/onboarding/:academyId/confirm-images
  * Body: { logoUrl, logoKey, coverPhotoUrl, coverPhotoKey, galleryPhotoUrls[], galleryPhotoKeys[] }
  */
-export const confirmImagesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const confirmImagesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     // Verify academy exists
     const academy = await Academy.findById(academyId);
     if (!academy) {
-      res.status(404).json({
-        success: false,
-        message: "Academy not found",
-      });
-      return;
+      throw new AppError("Academy not found", 404);
     }
 
     const updatedAcademy = await confirmAcademyImages(academyId, req.body);
@@ -224,45 +238,27 @@ export const confirmImagesHandler = async (
         galleryPhotosCount: updatedAcademy?.photos.length,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm images",
-    });
   }
-};
+);
 
 /**
  * GET: Document upload presigned URLs
  * POST /api/academies/onboarding/:academyId/document-upload-urls
  * Body: { docTypes: ['panDocument', 'gstDocument'] }
  */
-export const getDocumentUploadUrlsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const getDocumentUploadUrlsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { docTypes } = req.body;
 
     if (!docTypes || docTypes.length === 0) {
-      res.status(400).json({
-        success: false,
-        message: "Document types are required",
-      });
-      return;
+      throw new AppError("Document types are required", 400);
     }
 
     // Verify academy exists
     const academy = await Academy.findById(academyId);
     if (!academy) {
-      res.status(404).json({
-        success: false,
-        message: "Academy not found",
-      });
-      return;
+      throw new AppError("Academy not found", 404);
     }
 
     const urls = await getDocumentUploadPresignedUrls(academyId, docTypes);
@@ -275,36 +271,22 @@ export const getDocumentUploadUrlsHandler = async (
         constraints: UPLOAD_CONSTRAINTS.DOCUMENTS,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to get upload URLs",
-    });
   }
-};
+);
 
 /**
  * POST: Confirm documents uploaded
  * POST /api/academies/onboarding/:academyId/confirm-documents
  * Body: { panDocumentUrl, panDocumentKey, gstDocumentUrl, gstDocumentKey }
  */
-export const confirmDocumentsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const confirmDocumentsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     // Verify academy exists
     const academy = await Academy.findById(academyId);
     if (!academy) {
-      res.status(404).json({
-        success: false,
-        message: "Academy not found",
-      });
-      return;
+      throw new AppError("Academy not found", 404);
     }
 
     const updatedAcademy = await confirmAcademyDocuments(academyId, req.body);
@@ -318,33 +300,22 @@ export const confirmDocumentsHandler = async (
         gstDocumentUrl: updatedAcademy?.gstDocumentUrl,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to confirm documents",
-    });
   }
-};
+);
 
 /**
  * POST: Submit academy for approval
  * POST /api/academies/onboarding/:academyId/submit
  */
-export const submitAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const submitAcademyHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     const academy = await submitAcademyForApproval(academyId);
 
     res.status(200).json({
       success: true,
-      message:
-        "Academy submitted for review. You will be notified once approved.",
+      message: "Academy submitted for review. You will be notified once approved.",
       data: {
         academyId: academy._id,
         name: academy.name,
@@ -356,38 +327,32 @@ export const submitAcademyHandler = async (
         ],
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to submit academy",
-    });
   }
-};
+);
 
 /**
  * GET: List approved academies (public discovery)
  * GET /api/academies?city=Mumbai&sport=Basketball&page=1&limit=20
  */
-export const listApprovedAcademiesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+export const listApprovedAcademiesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const city = (req.query.city as string) || undefined;
     const sport = (req.query.sport as string) || undefined;
+    const rawSearch = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const search = rawSearch ? rawSearch.slice(0, 100) : undefined;
 
     const query: any = {
       isApproved: true,
       kycVerified: true,
       isActive: true,
     };
+
+    // One search box for name, city or sport.
+    if (search) {
+      const regex = { $regex: buildSafeSearchRegexSource(search), $options: "i" };
+      query.$or = [{ name: regex }, { city: regex }, { sports: regex }];
+    }
 
     if (city) {
       query.city = { $regex: city, $options: "i" };
@@ -429,42 +394,34 @@ export const listApprovedAcademiesHandler = async (
         },
       },
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch academies",
-    });
   }
-};
+);
 
 /**
  * GET: Single academy profile
  * GET /api/academies/:slug
  */
-export const getAcademyProfileHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getAcademyProfileHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     const slug = (req.params as Record<string, unknown>).slug as string;
 
+    // Allowlist, not a denylist. This route is unauthenticated and the Academy
+    // schema decrypts bank/UPI fields on serialization (`toJSON` getters), and
+    // also holds PAN, Aadhaar last 4, KYC document links and S3 keys. Anything
+    // not named here never leaves the database. The owner's User record is
+    // deliberately not populated either: nothing on the profile page reads it.
     const academy = await Academy.findOne({
       slug,
       isApproved: true,
       kycVerified: true,
       isActive: true,
     })
-      .populate("ownerId", "name email phone")
+      .select(ACADEMY_PUBLIC_SELECT)
       .populate("subscriptionPlans")
       .populate("sessionPackages");
 
     if (!academy) {
-      res.status(404).json({
-        success: false,
-        message: "Academy not found",
-      });
-      return;
+      throw new AppError("Academy not found", 404);
     }
 
     res.status(200).json({
@@ -472,14 +429,8 @@ export const getAcademyProfileHandler = async (
       message: "Academy profile retrieved",
       data: academy,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch academy",
-    });
   }
-};
+);
 
 /**
  * ============================================
@@ -491,31 +442,19 @@ export const getAcademyProfileHandler = async (
  * GET: List all pending academies
  * GET /api/academies/admin/pending?page=1&limit=20&filter=pending
  */
-export const listPendingAcademiesHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const listPendingAcademiesHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const { page, limit } = getPaginationParams(
-      req.query.page,
-      req.query.limit,
-      20,
-      100,
-    );
+    const { page, limit } = getPaginationParams(req.query.page, req.query.limit, 20, 100);
     const filter = (req.query.filter as string) || undefined;
 
     const result = await getPendingAcademies(
       page,
       limit,
-      filter as "pending" | "approved" | "rejected" | undefined,
+      filter as "pending" | "approved" | "rejected" | undefined
     );
 
     res.status(200).json({
@@ -523,44 +462,24 @@ export const listPendingAcademiesHandler = async (
       message: "Pending academies retrieved",
       data: result,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch pending academies",
-    });
   }
-};
+);
 
 /**
  * GET: Academy details for admin review
  * GET /api/academies/admin/:academyId/review
  */
-export const getAcademyReviewDetailsHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const getAcademyReviewDetailsHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const academy = await getAcademyOnboardingDetails(academyId);
 
     if (!academy) {
-      res.status(404).json({
-        success: false,
-        message: "Academy not found",
-      });
-      return;
+      throw new AppError("Academy not found", 404);
     }
 
     res.status(200).json({
@@ -568,34 +487,20 @@ export const getAcademyReviewDetailsHandler = async (
       message: "Academy review details retrieved",
       data: academy,
     });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to fetch details",
-    });
   }
-};
+);
 
 /**
  * PUT: Approve academy
  * PUT /api/academies/admin/:academyId/approve
  */
-export const approveAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const approveAcademyHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const academy = await approveAcademy(academyId);
 
     res.status(200).json({
@@ -608,43 +513,25 @@ export const approveAcademyHandler = async (
         isActive: academy?.kycVerified ? true : false,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to approve academy",
-    });
   }
-};
+);
 
 /**
  * PUT: Reject academy
  * PUT /api/academies/admin/:academyId/reject
  * Body: { rejectionReason: string }
  */
-export const rejectAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const rejectAcademyHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { rejectionReason } = req.body;
 
     if (!rejectionReason) {
-      res.status(400).json({
-        success: false,
-        message: "Rejection reason is required",
-      });
-      return;
+      throw new AppError("Rejection reason is required", 400);
     }
 
     const academy = await rejectAcademy(academyId, rejectionReason);
@@ -659,34 +546,20 @@ export const rejectAcademyHandler = async (
         rejectionReason,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to reject academy",
-    });
   }
-};
+);
 
 /**
  * PUT: Mark academy as KYC verified
  * PUT /api/academies/admin/:academyId/kyc-verify
  */
-export const markKycVerifiedHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const markKycVerifiedHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const academy = await markAcademyKycVerified(academyId);
 
     res.status(200).json({
@@ -699,35 +572,21 @@ export const markKycVerifiedHandler = async (
         isActive: academy?.isActive,
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to mark KYC verified",
-    });
   }
-};
+);
 
 /**
  * PUT: Suspend academy
  * PUT /api/academies/admin/:academyId/suspend
  * Body: { reason?: string }
  */
-export const suspendAcademyHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
+export const suspendAcademyHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
     if (!req.user?.id || !isAdminRole(req.user.role)) {
-      res.status(403).json({
-        success: false,
-        message: "Admin access required",
-      });
-      return;
+      throw new AppError("Admin access required", 403);
     }
 
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
     const { reason } = req.body;
 
     const academy = await suspendAcademy(academyId, reason);
@@ -742,14 +601,8 @@ export const suspendAcademyHandler = async (
         reason: reason || "No reason provided",
       },
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to suspend academy",
-    });
   }
-};
+);
 
 /**
  * ============================================
@@ -761,13 +614,9 @@ export const suspendAcademyHandler = async (
  * POST: Create subscription plan
  * POST /api/academies/:academyId/subscriptions
  */
-export const createSubscriptionPlanHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const createSubscriptionPlanHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     const plan = await createSubscriptionPlan({
       ...req.body,
@@ -779,25 +628,16 @@ export const createSubscriptionPlanHandler = async (
       message: "Subscription plan created",
       data: plan,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error instanceof Error ? error.message : "Failed to create plan",
-    });
   }
-};
+);
 
 /**
  * POST: Create session package
  * POST /api/academies/:academyId/packages
  */
-export const createSessionPackageHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const academyId = (req.params as Record<string, unknown>)
-      .academyId as string;
+export const createSessionPackageHandler = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const academyId = (req.params as Record<string, unknown>).academyId as string;
 
     const pkg = await createSessionPackage({
       ...req.body,
@@ -809,11 +649,5 @@ export const createSessionPackageHandler = async (
       message: "Session package created",
       data: pkg,
     });
-  } catch (error) {
-    res.status(400).json({
-      success: false,
-      message:
-        error instanceof Error ? error.message : "Failed to create package",
-    });
   }
-};
+);

@@ -1,77 +1,72 @@
 "use client";
 
-import { bookingApi } from "@/modules/booking/services/booking";
-import { coachApi } from "@/modules/coach/services/coach";
-import { PlayerPageHeader } from "@/modules/player/components/PlayerPageHeader";
-import { Button } from "@/modules/shared/ui/Button";
-import { Card } from "@/modules/shared/ui/Card";
-import { Booking, Venue } from "@/types";
-import { getOwnVenueLocationDisplay } from "@/utils/location";
-import { formatDate, formatTime } from "@/utils/format";
 import { toast } from "@/lib/toast";
+import { bookingApi } from "@/modules/booking/services/booking";
+import { RequestRows } from "@/modules/shared/components/bookings/RequestRows";
+import { SessionCheckIn } from "@/modules/shared/components/bookings/SessionCheckIn";
+import { SessionRows } from "@/modules/shared/components/bookings/SessionRows";
+import { useSessionCheckIn } from "@/modules/shared/hooks/useSessionCheckIn";
+import { coachApi } from "@/modules/coach/services/coach";
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  IndianRupee,
-  MapPin,
-} from "lucide-react";
+  bookingPlace,
+  countByFilter,
+  filterSessions,
+  requestsOf,
+  type BookingFilter,
+} from "@/modules/coach/utils/bookings";
+import { Button } from "@/modules/shared/ui/Button";
+import { Skeleton } from "@/modules/shared/ui/Skeleton";
+import { TEXT_LINK } from "@/modules/shared/ui/textLink";
+import { UnderlineFilter } from "@/modules/shared/ui/UnderlineFilter";
+import { bookingPlayerName } from "@/modules/shared/utils/bookingDisplay";
+import { plural } from "@/modules/shared/utils/figures";
+import type { Booking, Coach } from "@/types";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import {
-  StaggerContainer,
-  StaggerItem,
-} from "@/modules/shared/ui/motion/StaggerContainer";
-import { SlideUp } from "@/modules/shared/ui/motion/SlideUp";
 
 const PAGE_SIZE = 10;
 
-const getStatusBadgeClass = (status: Booking["status"]) => {
-  switch (status) {
-    case "PENDING_CONFIRMATION":
-      return "bg-amber-100 text-amber-700 border border-amber-300";
-    case "PENDING_INVITES":
-      return "bg-blue-100 text-blue-700 border border-blue-300";
-    case "CONFIRMED":
-      return "bg-green-100 text-green-700 border border-green-300";
-    case "IN_PROGRESS":
-      return "bg-blue-100 text-blue-700 border border-blue-300";
-    case "COMPLETED":
-      return "bg-emerald-100 text-emerald-700 border border-emerald-300";
-    case "NO_SHOW":
-      return "bg-yellow-100 text-yellow-700 border border-yellow-300";
-    default:
-      return "bg-red-100 text-red-700 border border-red-300";
-  }
-};
+/** The API's own message when it sent one, else ours. */
+const messageOf = (error: unknown, fallback: string): string =>
+  (error as { response?: { data?: { message?: string } } })?.response?.data?.message || fallback;
 
-const formatStatusLabel = (status: Booking["status"]) =>
-  status.charAt(0).toUpperCase() +
-  status.slice(1).toLowerCase().replace(/_/g, " ");
+/** The list endpoints return raw documents, so the id may arrive as `_id`. */
+const idOf = (booking: Booking): string =>
+  booking.id || (booking as unknown as { _id?: string })._id || "";
 
 export default function CoachBookingsPage() {
   const [allCoachBookings, setAllCoachBookings] = useState<Booking[]>([]);
-  const [currentCoach, setCurrentCoach] = useState<Booking["coach"] | null>(
-    null,
-  );
+  const [currentCoach, setCurrentCoach] = useState<Coach | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [filter, setFilter] = useState<BookingFilter>("upcoming");
   const [currentPage, setCurrentPage] = useState(1);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+
+  // A started session is in progress now; reflect it in the list without a refetch.
+  const checkIn = useSessionCheckIn((started) =>
+    setAllCoachBookings((prev) =>
+      prev.map((booking) =>
+        idOf(booking) === idOf(started) ? { ...booking, status: started.status } : booking
+      )
+    )
+  );
 
   useEffect(() => {
     const fetchBookings = async () => {
       try {
         setIsLoading(true);
+        setLoadFailed(false);
         const [bookingsResponse, coachResponse] = await Promise.all([
           bookingApi.getMyBookings(),
           coachApi.getMyProfile().catch(() => null),
         ]);
 
         if (bookingsResponse.success && bookingsResponse.data) {
-          const coachBookings = bookingsResponse.data.filter((b) => b.coachId);
-          setAllCoachBookings(coachBookings);
+          setAllCoachBookings(bookingsResponse.data.filter((b) => b.coachId));
         }
 
         if (coachResponse?.success && coachResponse.data) {
@@ -79,46 +74,30 @@ export default function CoachBookingsPage() {
         }
       } catch (error) {
         console.error("Failed to fetch bookings:", error);
+        setLoadFailed(true);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchBookings();
-  }, []);
+  }, [reloadKey]);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(allCoachBookings.length / PAGE_SIZE),
+  const requests = useMemo(() => requestsOf(allCoachBookings), [allCoachBookings]);
+  const counts = useMemo(() => countByFilter(allCoachBookings), [allCoachBookings]);
+  const sessions = useMemo(
+    () => filterSessions(allCoachBookings, filter),
+    [allCoachBookings, filter]
   );
 
-  const paginatedBookings = useMemo(
-    () =>
-      allCoachBookings.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE,
-      ),
-    [allCoachBookings, currentPage],
-  );
+  const totalPages = Math.max(1, Math.ceil(sessions.length / PAGE_SIZE));
+  const pageSessions = sessions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const now = new Date();
 
-  const stats = useMemo(() => {
-    const confirmed = allCoachBookings.filter(
-      (booking) => booking.status === "CONFIRMED",
-    ).length;
-    const completed = allCoachBookings.filter(
-      (booking) => booking.status === "COMPLETED",
-    ).length;
-    const totalEarnings = allCoachBookings
-      .filter((booking) => booking.status === "COMPLETED")
-      .reduce((sum, booking) => sum + (booking.totalAmount || 0), 0);
-
-    return {
-      total: allCoachBookings.length,
-      confirmed,
-      completed,
-      totalEarnings,
-    };
-  }, [allCoachBookings]);
+  const changeFilter = (next: BookingFilter) => {
+    setFilter(next);
+    setCurrentPage(1);
+  };
 
   const handleApproveBooking = async (bookingId: string) => {
     try {
@@ -128,17 +107,13 @@ export default function CoachBookingsPage() {
       if (response.success && confirmedStatus) {
         setAllCoachBookings((prev) =>
           prev.map((booking) =>
-            booking.id === bookingId
-              ? { ...booking, status: confirmedStatus }
-              : booking,
-          ),
+            idOf(booking) === bookingId ? { ...booking, status: confirmedStatus } : booking
+          )
         );
         toast.success("Booking confirmed.");
       }
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Unable to confirm booking.",
-      );
+    } catch (error: unknown) {
+      toast.error(messageOf(error, "Unable to confirm booking."));
     } finally {
       setApprovingId(null);
     }
@@ -147,285 +122,178 @@ export default function CoachBookingsPage() {
   const handleRejectBooking = async (bookingId: string) => {
     try {
       setRejectingId(bookingId);
-      const response = await bookingApi.rejectBookingByProvider(
-        bookingId,
-        "Rejected by coach",
-      );
+      const response = await bookingApi.rejectBookingByProvider(bookingId, "Rejected by coach");
       const rejectedBooking = response.data?.booking;
       if (response.success && rejectedBooking) {
         setAllCoachBookings((prev) =>
           prev.map((booking) =>
-            booking.id === bookingId
-              ? { ...booking, status: rejectedBooking.status }
-              : booking,
-          ),
+            idOf(booking) === bookingId ? { ...booking, status: rejectedBooking.status } : booking
+          )
         );
-        toast.success("Booking rejected.");
+        toast.success("Booking declined.");
       }
-    } catch (error: any) {
-      toast.error(
-        error?.response?.data?.message || "Unable to reject booking.",
-      );
+    } catch (error: unknown) {
+      toast.error(messageOf(error, "Unable to decline booking."));
     } finally {
       setRejectingId(null);
     }
   };
 
+  const header = (
+    <header>
+      <p className="text-ink-body text-sm">Coach console</p>
+      <h1 className="font-editorial text-ink mt-1 text-balance text-4xl font-light leading-[1.05] tracking-tight sm:text-5xl">
+        Bookings
+      </h1>
+      {!isLoading && !loadFailed && allCoachBookings.length > 0 && (
+        <p className="text-ink-body mt-3">
+          {plural(allCoachBookings.length, "booking")}, {counts.upcoming} upcoming
+          {requests.length > 0 && `, ${requests.length} waiting for your reply`}.
+        </p>
+      )}
+    </header>
+  );
+
   if (isLoading) {
-    return <div className="text-center py-12">Loading bookings...</div>;
+    return (
+      <div className="space-y-10" role="status" aria-busy="true">
+        <span className="sr-only">Loading your bookings</span>
+        <div aria-hidden="true">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="mt-3 h-11 w-56" />
+        </div>
+        <div aria-hidden="true" className="space-y-4">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="space-y-10">
+        {header}
+        <div role="alert" className="bg-paper-deep max-w-xl rounded-2xl p-6 sm:p-8">
+          <h2 className="font-editorial text-ink text-2xl font-light tracking-tight">
+            We could not load your bookings
+          </h2>
+          <p className="text-ink-body mt-2 text-pretty">
+            Check your connection and try again. Your bookings are safe.
+          </p>
+          <Button className="mt-5" variant="secondary" onClick={() => setReloadKey((k) => k + 1)}>
+            Try again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (allCoachBookings.length === 0) {
+    return (
+      <div className="space-y-10">
+        {header}
+        <div className="border-hairline max-w-xl border-t pt-6">
+          <p className="text-ink-body text-pretty">
+            No bookings yet. Clients can book you once your availability is open, and each request
+            appears here for you to confirm or decline.
+          </p>
+          <p className="mt-4">
+            <Link href="/coach/schedule" className={`${TEXT_LINK} ring-offset-paper`}>
+              Open your schedule
+              <ArrowRight size={16} strokeWidth={1.5} aria-hidden="true" />
+            </Link>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <PlayerPageHeader
-        badge="Coach"
-        title="My Bookings"
-        subtitle="Track your sessions, upcoming slots, and earnings in one place."
-        action={
-          <Link href="/coach/profile">
-            <Button variant="secondary">Go to Profile</Button>
-          </Link>
-        }
+    <div className="space-y-10 sm:space-y-12">
+      {header}
+
+      {requests.length > 0 && (
+        <RequestRows
+          requests={requests}
+          now={now}
+          titleOf={bookingPlayerName}
+          placeOf={(booking) => bookingPlace(booking, currentCoach)}
+          approvingId={approvingId}
+          rejectingId={rejectingId}
+          onApprove={handleApproveBooking}
+          onReject={handleRejectBooking}
+        />
+      )}
+
+      <SessionCheckIn
+        code={checkIn.code}
+        onCodeChange={checkIn.setCode}
+        loading={checkIn.loading}
+        message={checkIn.message}
+        startedBooking={checkIn.startedBooking}
+        onSubmit={() => void checkIn.submit()}
       />
 
-      {allCoachBookings.length === 0 ? (
-        <Card className="bg-white">
-          <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="rounded-full bg-power-orange/10 px-4 py-2 text-sm font-semibold text-power-orange">
-              No bookings yet
-            </div>
-            <p className="max-w-md text-slate-600">
-              Player bookings for your sessions will appear here once they start
-              booking with you.
+      <section aria-labelledby="sessions-heading">
+        <h2 id="sessions-heading" className="sr-only">
+          Sessions
+        </h2>
+        <UnderlineFilter
+          label="Filter sessions"
+          value={filter}
+          onChange={changeFilter}
+          items={[
+            { label: "Upcoming", value: "upcoming", count: counts.upcoming },
+            { label: "Past", value: "past", count: counts.past },
+            { label: "All", value: "all", count: counts.all },
+          ]}
+        />
+
+        {pageSessions.length === 0 ? (
+          <p className="text-ink-body border-hairline max-w-[56ch] text-pretty border-b py-6">
+            {filter === "upcoming"
+              ? "No upcoming sessions. Confirmed sessions appear here, soonest first."
+              : "Nothing here yet."}
+          </p>
+        ) : (
+          <SessionRows
+            sessions={pageSessions}
+            now={now}
+            titleOf={bookingPlayerName}
+            placeOf={(booking) => bookingPlace(booking, currentCoach)}
+          />
+        )}
+
+        {totalPages > 1 && (
+          <nav aria-label="Pages" className="mt-6 flex items-center justify-between gap-4 text-sm">
+            <p className="text-ink-body tabular-nums">
+              Page {currentPage} of {totalPages}
             </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          <StaggerContainer className="grid gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Total Bookings
-                </p>
-                <p className="text-2xl font-bold text-slate-900 sm:text-3xl dark:text-white">
-                  {stats.total}
-                </p>
-              </Card>
-            </StaggerItem>
-            <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Confirmed
-                </p>
-                <p className="text-2xl font-bold text-green-600 sm:text-3xl">
-                  {stats.confirmed}
-                </p>
-              </Card>
-            </StaggerItem>
-            <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Completed
-                </p>
-                <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">
-                  {stats.completed}
-                </p>
-              </Card>
-            </StaggerItem>
-            <StaggerItem className="h-full">
-              <Card className="glass-panel premium-shadow hover:shadow-xl transition-all h-full">
-                <p className="mb-1 text-sm text-slate-600 dark:text-slate-400">
-                  Tracked Earnings
-                </p>
-                <p className="text-2xl font-bold text-power-orange sm:text-3xl">
-                  ₹{stats.totalEarnings}
-                </p>
-              </Card>
-            </StaggerItem>
-          </StaggerContainer>
-
-          <StaggerContainer className="space-y-4">
-            {paginatedBookings.map((booking) => (
-              <StaggerItem key={booking.id}>
-                <Card className="glass-panel hover:shadow-lg transition-all">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="flex-1">
-                      <div className="mb-3 flex flex-wrap items-center gap-3">
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          Session #{booking.id.slice(-6)}
-                        </h3>
-                        <span
-                          className={`inline-block rounded px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(
-                            booking.status,
-                          )}`}
-                        >
-                          {formatStatusLabel(booking.status)}
-                        </span>
-                      </div>
-
-                      <div className="grid gap-4 lg:grid-cols-2">
-                        <div>
-                          <p className="mb-1 text-sm text-slate-600">
-                            Date & Time
-                          </p>
-                          <p className="flex items-center gap-2 font-semibold text-slate-900">
-                            <Calendar className="h-4 w-4 text-slate-500" />
-                            {formatDate(booking.date)}
-                          </p>
-                          <p className="mt-1 flex items-center gap-2 text-sm text-slate-700">
-                            <Clock className="h-4 w-4 text-slate-400" />
-                            {formatTime(booking.startTime)} -{" "}
-                            {formatTime(booking.endTime)}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="mb-1 text-sm text-slate-600">Venue</p>
-                          {typeof booking.venueId === "object" &&
-                          booking.venueId !== null ? (
-                            <>
-                              <Link
-                                href={`/venues/${(booking.venueId as Venue).id || (booking.venueId as Venue)._id}`}
-                                className="inline-flex items-center gap-2 font-semibold text-slate-900 transition-colors hover:text-power-orange"
-                              >
-                                <MapPin className="h-4 w-4 text-slate-400" />
-                                {(booking.venueId as Venue).name || "Venue"}
-                              </Link>
-                              {(booking.venueId as Venue).address && (
-                                <p className="mt-1 text-sm text-slate-600">
-                                  {(booking.venueId as Venue).address}
-                                </p>
-                              )}
-                            </>
-                          ) : currentCoach?.ownVenueDetails ? (
-                            (() => {
-                              const venueLocation = getOwnVenueLocationDisplay(
-                                currentCoach.ownVenueDetails,
-                              );
-
-                              if (!venueLocation) {
-                                return (
-                                  <p className="font-semibold text-slate-900">
-                                    Location on file
-                                  </p>
-                                );
-                              }
-
-                              return (
-                                <>
-                                  <p className="font-semibold text-slate-900">
-                                    {venueLocation.title}
-                                  </p>
-                                  <p className="mt-1 text-sm text-slate-600">
-                                    {venueLocation.description}
-                                  </p>
-                                </>
-                              );
-                            })()
-                          ) : (
-                            <p className="font-semibold text-slate-900">
-                              Location on file
-                            </p>
-                          )}
-                          {booking.sport && (
-                            <p className="mt-1 text-sm text-slate-600">
-                              Sport:{" "}
-                              <span className="font-medium">
-                                {booking.sport}
-                              </span>
-                            </p>
-                          )}
-                          {booking.participantName && (
-                            <p className="mt-1 text-sm text-slate-600">
-                              Participant:{" "}
-                              <span className="font-medium">
-                                {booking.participantName}
-                              </span>
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <p className="mb-2 text-sm font-semibold text-slate-900">
-                          Session Value
-                        </p>
-                        <p className="flex items-center gap-1 text-2xl font-bold text-power-orange">
-                          <IndianRupee className="h-5 w-5" />
-                          {booking.totalAmount}
-                        </p>
-                      </div>
-
-                      {booking.status === "PENDING_CONFIRMATION" && (
-                        <div className="mt-4 grid gap-2 sm:flex sm:flex-wrap">
-                          <Button
-                            variant="primary"
-                            onClick={() => handleApproveBooking(booking.id)}
-                            disabled={approvingId === booking.id}
-                            className="w-full sm:w-auto"
-                          >
-                            {approvingId === booking.id
-                              ? "Confirming..."
-                              : "Confirm booking"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => handleRejectBooking(booking.id)}
-                            disabled={rejectingId === booking.id}
-                            className="w-full sm:w-auto"
-                          >
-                            {rejectingId === booking.id
-                              ? "Rejecting..."
-                              : "Reject"}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              </StaggerItem>
-            ))}
-          </StaggerContainer>
-
-          {totalPages > 1 && (
-            <SlideUp delay={0.2} yOffset={10}>
-              <Card className="glass-panel">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-sm text-slate-600">
-                    Page {currentPage} of {totalPages} •{" "}
-                    {allCoachBookings.length} bookings
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 sm:flex">
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        setCurrentPage((page) => Math.max(1, page - 1))
-                      }
-                      disabled={currentPage === 1 || isLoading}
-                      className="flex items-center justify-center gap-2"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                      Previous
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      onClick={() =>
-                        setCurrentPage((page) => Math.min(totalPages, page + 1))
-                      }
-                      disabled={currentPage === totalPages || isLoading}
-                      className="flex items-center justify-center gap-2"
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            </SlideUp>
-          )}
-        </div>
-      )}
+            <div className="flex gap-3">
+              <Button
+                size="sm"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          </nav>
+        )}
+      </section>
     </div>
   );
 }

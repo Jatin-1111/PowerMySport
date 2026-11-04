@@ -27,7 +27,12 @@ const walletTransactionSchema = new Schema<WalletTransaction>(
     id: { type: String, required: true },
     type: { type: String, enum: ["CREDIT", "DEBIT"], required: true },
     amount: { type: Number, required: true, min: 0 },
-    status: { type: String, enum: ["PENDING", "COMPLETED", "FAILED"], required: true, default: "COMPLETED" },
+    status: {
+      type: String,
+      enum: ["PENDING", "COMPLETED", "FAILED"],
+      required: true,
+      default: "COMPLETED",
+    },
     reason: { type: String, required: true },
     referenceId: { type: String },
     createdAt: { type: Date, default: Date.now },

@@ -23,7 +23,7 @@ type IncomingNotification = {
 
 const buildActionHref = (payload: IncomingNotification): string | null => {
   if (payload.data?.postId) {
-    return `/q/${payload.data.postId}`;
+    return `/questions/${payload.data.postId}`;
   }
 
   if (payload.data?.conversationId) {
@@ -53,10 +53,7 @@ export default function CommunityNotificationToastListener() {
 
       // Suppress toast if we are already viewing this conversation/group in the UI
       const activeConversation = searchParams?.get("conversation");
-      if (
-        activeConversation &&
-        payload.data?.conversationId === activeConversation
-      ) {
+      if (activeConversation && payload.data?.conversationId === activeConversation) {
         return;
       }
 
@@ -65,8 +62,8 @@ export default function CommunityNotificationToastListener() {
         return;
       }
 
-      const title = payload.title?.trim() || "New community notification";
-      const message = payload.message?.trim() || "You have a new update";
+      const title = payload.title?.trim() || "New notification";
+      const message = payload.message?.trim() || "New update";
       const actionHref = buildActionHref(payload);
       const toastKey = [
         payload.id || "",

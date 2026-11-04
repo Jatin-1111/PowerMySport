@@ -1,9 +1,9 @@
 import axiosInstance from "@/lib/api/axios";
-import { ApiResponse, ReviewListData, ReviewItem } from "@/types";
+import { ApiResponse, ReviewItem, ReviewListData } from "@/types";
 
 export const reviewApi = {
   getReviewEligibility: async (params: {
-    targetType: "VENUE" | "COACH";
+    targetType: "VENUE" | "Coach";
     targetId: string;
   }): Promise<
     ApiResponse<{
@@ -21,7 +21,7 @@ export const reviewApi = {
   getVenueReviews: async (
     venueId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<ApiResponse<ReviewListData>> => {
     const response = await axiosInstance.get(`/reviews/venues/${venueId}`, {
       params: { page, limit },
@@ -32,7 +32,7 @@ export const reviewApi = {
   getCoachReviews: async (
     coachId: string,
     page: number = 1,
-    limit: number = 10,
+    limit: number = 10
   ): Promise<ApiResponse<ReviewListData>> => {
     const response = await axiosInstance.get(`/reviews/coaches/${coachId}`, {
       params: { page, limit },
@@ -42,7 +42,7 @@ export const reviewApi = {
 
   createReview: async (payload: {
     bookingId: string;
-    targetType: "VENUE" | "COACH";
+    targetType: "VENUE" | "Coach";
     targetId: string;
     rating: number;
     review?: string;

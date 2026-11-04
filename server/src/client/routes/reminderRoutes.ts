@@ -5,14 +5,6 @@ import {
   updateReminderPreferences,
   getUpcomingReminders,
   getReminderStats,
-  processRemindersManually,
-  getMonitoringStats,
-  checkSchedulerHealth,
-  getFailedReminders,
-  triggerHealthCheck,
-  sendDailySummary,
-  retryFailedReminder,
-  retryMultipleReminders,
   createReminder,
 } from "../controllers/reminderController";
 
@@ -32,16 +24,7 @@ router.post("/", createReminder);
 router.get("/upcoming", getUpcomingReminders);
 router.get("/stats", getReminderStats);
 
-// Manual processing (for testing/admin)
-router.post("/process", processRemindersManually);
-
-// Monitoring endpoints
-router.get("/monitoring/stats", getMonitoringStats);
-router.get("/monitoring/health", checkSchedulerHealth);
-router.get("/monitoring/failed", getFailedReminders);
-router.post("/monitoring/health-check", triggerHealthCheck);
-router.post("/monitoring/send-summary", sendDailySummary);
-router.post("/monitoring/retry/:id", retryFailedReminder);
-router.post("/monitoring/retry-batch", retryMultipleReminders);
+// Scheduler operations (process, monitoring, retries) are admin-only and
+// live in admin/routes/reminderAdminRoutes.ts.
 
 export default router;

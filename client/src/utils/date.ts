@@ -4,9 +4,7 @@
 export function formatDistanceToNow(date: Date | string): string {
   const now = new Date();
   const targetDate = typeof date === "string" ? new Date(date) : date;
-  const diffInSeconds = Math.floor(
-    (now.getTime() - targetDate.getTime()) / 1000,
-  );
+  const diffInSeconds = Math.floor((now.getTime() - targetDate.getTime()) / 1000);
 
   if (diffInSeconds < 60) {
     return "just now";
@@ -67,4 +65,35 @@ export function formatDate(date: Date | string): string {
   const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
 
   return `${month} ${day}, ${year} at ${displayHours}:${displayMinutes} ${ampm}`;
+}
+
+/**
+ * Month and year, for "member since" style lines (e.g. "March 2026").
+ *
+ * Returns null for a missing or unparseable date so a caller can drop the line
+ * rather than print a fallback. The page this was written for hardcoded
+ * "Member since 2024" for every user, which was a fabricated fact shown next to
+ * a real name — an absent date should show nothing, not a plausible guess.
+ */
+export function formatMonthYear(date: Date | string | undefined | null): string | null {
+  if (!date) return null;
+  const target = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(target.getTime())) return null;
+
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  return `${months[target.getMonth()]} ${target.getFullYear()}`;
 }

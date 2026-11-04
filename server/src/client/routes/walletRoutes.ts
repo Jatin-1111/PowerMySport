@@ -1,10 +1,6 @@
 import express from "express";
 import { authMiddleware } from "../../middleware/auth";
-import {
-  getWallet,
-  topUpWallet,
-  verifyTopUp,
-} from "../controllers/walletController";
+import { getWallet, topUpWallet, verifyTopUp } from "../controllers/walletController";
 
 const router = express.Router();
 

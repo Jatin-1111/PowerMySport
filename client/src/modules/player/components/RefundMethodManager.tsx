@@ -1,11 +1,11 @@
 "use client";
 
+import { Input } from "../../shared/ui/Input";
 import { toast } from "@/lib/toast";
-import { cn } from "@/utils/cn";
 import { Button } from "@/modules/shared/ui/Button";
-import { Input } from "@/components/ui/input";
+import { useConfirm } from "@/modules/shared/ui/useConfirm";
+import { cn } from "@/utils/cn";
 import {
-  AlertTriangle,
   BadgeCheck,
   Eye,
   EyeOff,
@@ -15,10 +15,8 @@ import {
   Shield,
   Trash2,
   Wallet,
-  CreditCard,
-  Smartphone,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type RefundMethodType = "ORIGINAL_CARD" | "BANK_ACCOUNT" | "STORE_CREDIT";
 
@@ -36,12 +34,10 @@ interface IRefundMethod {
 
 interface RefundMethodManagerProps {
   onLoad: () => Promise<IRefundMethod[]>;
-  onAdd: (
-    payload: Omit<IRefundMethod, "id" | "addedAt" | "updatedAt">,
-  ) => Promise<IRefundMethod>;
+  onAdd: (payload: Omit<IRefundMethod, "id" | "addedAt" | "updatedAt">) => Promise<IRefundMethod>;
   onUpdate: (
     methodId: string,
-    payload: Omit<IRefundMethod, "id" | "addedAt" | "updatedAt">,
+    payload: Omit<IRefundMethod, "id" | "addedAt" | "updatedAt">
   ) => Promise<IRefundMethod>;
   onDelete: (methodId: string) => Promise<void>;
   onSetDefault: (methodId: string) => Promise<void>;
@@ -54,14 +50,13 @@ export function RefundMethodManager({
   onDelete,
   onSetDefault,
 }: RefundMethodManagerProps) {
+  const [confirm, confirmDialog] = useConfirm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [methods, setMethods] = useState<IRefundMethod[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingMethod, setEditingMethod] = useState<IRefundMethod | null>(
-    null,
-  );
+  const [editingMethod, setEditingMethod] = useState<IRefundMethod | null>(null);
   const [activeTab, setActiveTab] = useState<RefundMethodType>("BANK_ACCOUNT");
   const [showPasswords, setShowPasswords] = useState(false);
 
@@ -156,25 +151,29 @@ export function RefundMethodManager({
       if (editingMethod) {
         saved = await onUpdate(editingMethod.id!, payload);
         setMethods((prev) => prev.map((m) => (m.id === saved.id ? saved : m)));
-        toast.success("Refund method updated!");
+        toast.success("Refund method updated");
       } else {
         saved = await onAdd(payload);
         setMethods((prev) => [...prev, saved]);
-        toast.success("Refund method added!");
+        toast.success("Refund method added");
       }
 
       resetForm();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to save refund method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to save refund method");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (methodId: string) => {
-    if (!window.confirm("Remove this refund method?")) return;
+    const confirmed = await confirm({
+      title: "Remove this refund method?",
+      message: "Refunds will no longer be sent to it.",
+      confirmLabel: "Remove",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setProcessingId(methodId);
     try {
@@ -182,9 +181,7 @@ export function RefundMethodManager({
       setMethods((prev) => prev.filter((m) => m.id !== methodId));
       toast.success("Refund method removed");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to remove refund method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to remove refund method");
     } finally {
       setProcessingId(null);
     }
@@ -194,14 +191,10 @@ export function RefundMethodManager({
     setProcessingId(methodId);
     try {
       await onSetDefault(methodId);
-      setMethods((prev) =>
-        prev.map((m) => ({ ...m, isDefault: m.id === methodId })),
-      );
+      setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === methodId })));
       toast.success("Default refund method updated");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to set default method",
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to set default method");
     } finally {
       setProcessingId(null);
     }
@@ -210,31 +203,29 @@ export function RefundMethodManager({
   if (loading) {
     return (
       <div className="flex h-48 items-center justify-center">
-        <Loader2 className="animate-spin text-power-orange" size={28} />
+        <Loader2 className="text-power-orange animate-spin" size={28} />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {confirmDialog}
       {/* Header */}
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <Wallet size={20} className="text-power-orange" />
-              <h2 className="text-lg font-bold text-slate-900">
-                Refund Methods
-              </h2>
+              <h2 className="text-lg font-bold text-slate-900">Refund Methods</h2>
             </div>
             <p className="text-sm text-slate-600">
-              Add refund methods for maximum flexibility. By default, refunds
-              are sent to your original payment card. You can optionally add a
-              bank account for other refund options.
+              Add refund methods for maximum flexibility. By default, refunds are sent to your
+              original payment card. You can optionally add a bank account for other refund options.
             </p>
           </div>
           {methods.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700">
               <BadgeCheck size={12} />
               {methods.length} method{methods.length !== 1 ? "s" : ""}
             </span>
@@ -242,17 +233,16 @@ export function RefundMethodManager({
         </div>
 
         {/* Info Banner */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="mb-6 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
           <div className="flex gap-3">
-            <Shield size={18} className="text-blue-600 flex-shrink-0 mt-0.5" />
+            <Shield size={18} className="mt-0.5 flex-shrink-0 text-indigo-600" />
             <div>
               <p className="text-sm font-semibold text-blue-900">
                 No setup required for basic refunds
               </p>
-              <p className="text-xs text-blue-700 mt-1">
-                If we refund you, money returns to your original payment card
-                automatically (3-5 business days). Only add a bank account below
-                if you prefer that method instead.
+              <p className="mt-1 text-xs text-indigo-700">
+                If we refund you, money returns to your original payment card automatically (3-5
+                business days). Only add a bank account below if you prefer that method instead.
               </p>
             </div>
           </div>
@@ -264,24 +254,22 @@ export function RefundMethodManager({
             {methods.map((method) => (
               <div
                 key={method.id}
-                className="rounded-lg border border-slate-200 p-4 hover:shadow-md transition-shadow"
+                className="rounded-lg border border-slate-200 p-4 transition-shadow hover:shadow-md"
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="mb-3 flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-lg bg-slate-100">
+                    <div className="rounded-lg bg-slate-100 p-2">
                       <Landmark size={18} className="text-slate-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        Bank Account
-                      </p>
+                      <p className="text-sm font-semibold text-slate-900">Bank Account</p>
                       <p className="text-xs text-slate-500">
-                        {method.bankName} — {method.ifscCode}
+                        {method.bankName}, {method.ifscCode}
                       </p>
                     </div>
                   </div>
                   {method.isDefault && (
-                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
                       <Shield size={12} />
                       Default
                     </span>
@@ -289,19 +277,15 @@ export function RefundMethodManager({
                 </div>
 
                 {/* Details */}
-                <div className="space-y-1 border-t border-slate-100 pt-3 mb-4 text-sm">
+                <div className="mb-4 space-y-1 border-t border-slate-100 pt-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-600">Account Holder:</span>
-                    <span className="font-medium text-slate-900">
-                      {method.accountHolderName}
-                    </span>
+                    <span className="font-medium text-slate-900">{method.accountHolderName}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-600">Account Number:</span>
                     <span className="font-medium text-slate-900">
-                      {method.accountNumber
-                        ?.slice(-4)
-                        .padStart(method.accountNumber.length, "•")}
+                      {method.accountNumber?.slice(-4).padStart(method.accountNumber.length, "•")}
                     </span>
                   </div>
                 </div>
@@ -337,7 +321,7 @@ export function RefundMethodManager({
                     disabled={processingId === method.id}
                     className={cn(
                       "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
-                      "text-red-600 hover:bg-red-50 disabled:opacity-50",
+                      "text-red-600 hover:bg-red-50 disabled:opacity-50"
                     )}
                   >
                     <Trash2 size={14} />
@@ -350,29 +334,23 @@ export function RefundMethodManager({
             {methods.length > 0 && (
               <button
                 onClick={() => setIsAdding(true)}
-                className="w-full rounded-lg border-2 border-dashed border-slate-300 p-4 hover:border-power-orange hover:bg-orange-50/30 transition-colors flex flex-col items-center justify-center gap-2 text-center"
+                className="hover:border-power-orange flex w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 p-4 text-center transition-colors hover:bg-orange-50/30"
               >
                 <Wallet size={18} className="text-slate-600" />
-                <p className="text-sm font-semibold text-slate-700">
-                  Add Another Method
-                </p>
+                <p className="text-sm font-semibold text-slate-700">Add Another Method</p>
               </button>
             )}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
-              <Landmark size={26} className="text-blue-600" />
+          <div className="py-8 text-center">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50">
+              <Landmark size={26} className="text-indigo-600" />
             </div>
-            <p className="text-sm text-slate-600 mb-4">
-              No bank account added yet. Only add if you want an alternative to
-              automatic card refunds.
+            <p className="mb-4 text-sm text-slate-600">
+              No bank account added yet. Only add if you want an alternative to automatic card
+              refunds.
             </p>
-            <Button
-              onClick={() => setIsAdding(true)}
-              variant="primary"
-              size="md"
-            >
+            <Button onClick={() => setIsAdding(true)} variant="primary" size="md">
               <Wallet size={18} />
               Add Bank Account
             </Button>
@@ -382,14 +360,14 @@ export function RefundMethodManager({
 
       {/* Form */}
       {(isAdding || editingMethod) && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div className="animate-in fade-in slide-in-from-bottom-2 space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm duration-300">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <h3 className="text-base font-bold text-slate-900">
               {editingMethod ? "Update Bank Account" : "Add Bank Account"}
             </h3>
             <button
               onClick={resetForm}
-              className="text-sm text-slate-500 hover:text-slate-700 font-medium"
+              className="text-sm font-medium text-slate-500 hover:text-slate-700"
             >
               Cancel
             </button>
@@ -411,9 +389,7 @@ export function RefundMethodManager({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-slate-700">
-                Account Number
-              </label>
+              <label className="block text-sm font-semibold text-slate-700">Account Number</label>
               <div className="relative">
                 <Input
                   type={showPasswords ? "text" : "password"}
@@ -446,9 +422,7 @@ export function RefundMethodManager({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-slate-700">
-                IFSC Code
-              </label>
+              <label className="block text-sm font-semibold text-slate-700">IFSC Code</label>
               <Input
                 type="text"
                 value={ifscCode}
@@ -463,9 +437,7 @@ export function RefundMethodManager({
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-slate-700">
-                Bank Name
-              </label>
+              <label className="block text-sm font-semibold text-slate-700">Bank Name</label>
               <Input
                 type="text"
                 value={bankName}
@@ -477,13 +449,8 @@ export function RefundMethodManager({
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 pt-4 border-t border-slate-200">
-            <Button
-              onClick={handleSave}
-              variant="primary"
-              disabled={saving}
-              className="flex-1"
-            >
+          <div className="flex gap-2 border-t border-slate-200 pt-4">
+            <Button onClick={handleSave} variant="primary" disabled={saving} className="flex-1">
               {saving ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />

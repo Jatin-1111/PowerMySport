@@ -21,9 +21,7 @@ const migrateUserRoles = async () => {
 
     // Connect to database
     const mongoUri =
-      process.env.MONGO_URI ||
-      process.env.MONGODB_URI ||
-      "mongodb://localhost:27017/powermysport";
+      process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017/powermysport";
     await mongoose.connect(mongoUri);
     console.log("Connected to database");
 
@@ -32,12 +30,12 @@ const migrateUserRoles = async () => {
       { role: "user" },
       {
         $set: {
-          role: "PLAYER",
+          role: "Player",
           playerProfile: {
             paymentHistory: [],
           },
         },
-      },
+      }
     );
     console.log(`✅ Migrated ${userResult.modifiedCount} users to PLAYER role`);
 
@@ -46,7 +44,7 @@ const migrateUserRoles = async () => {
       { role: "vendor" },
       {
         $set: {
-          role: "VENUE_LISTER",
+          role: "VenueLister",
           venueListerProfile: {
             businessDetails: {
               name: "",
@@ -59,24 +57,17 @@ const migrateUserRoles = async () => {
             },
           },
         },
-      },
+      }
     );
-    console.log(
-      `✅ Migrated ${vendorResult.modifiedCount} vendors to VENUE_LISTER role`,
-    );
+    console.log(`✅ Migrated ${vendorResult.modifiedCount} vendors to VENUE_LISTER role`);
 
     // Migrate: admin → ADMIN (just uppercase)
-    const adminResult = await User.updateMany(
-      { role: "admin" },
-      { $set: { role: "ADMIN" } },
-    );
-    console.log(
-      `✅ Migrated ${adminResult.modifiedCount} admins to ADMIN role`,
-    );
+    const adminResult = await User.updateMany({ role: "admin" }, { $set: { role: "Admin" } });
+    console.log(`✅ Migrated ${adminResult.modifiedCount} admins to ADMIN role`);
 
     console.log("\n✅ User Role Migration Complete!");
     console.log(
-      `Total users migrated: ${userResult.modifiedCount + vendorResult.modifiedCount + adminResult.modifiedCount}`,
+      `Total users migrated: ${userResult.modifiedCount + vendorResult.modifiedCount + adminResult.modifiedCount}`
     );
   } catch (error) {
     console.error("❌ Migration failed:", error);
