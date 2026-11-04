@@ -6,11 +6,12 @@ import {
   getSupportTicketsForAdmin,
   updateSupportTicketByAdmin,
 } from "../controllers/supportTicketController";
+import { publicSupportTicketRateLimiter } from "../../middleware/rateLimit";
 import { adminMiddleware, authMiddleware, requirePermission } from "../../middleware/auth";
 
 const router = Router();
 
-router.post("/public", createPublicSupportTicket);
+router.post("/public", publicSupportTicketRateLimiter, createPublicSupportTicket);
 router.post("/", authMiddleware, createSupportTicket);
 router.get("/my", authMiddleware, getMySupportTickets);
 

@@ -1,4 +1,11 @@
-import { sendEmail, emailFrontendUrl, formatInr, renderEmailShell, detailTable } from "./shared";
+import {
+  sendEmail,
+  emailFrontendUrl,
+  formatInr,
+  renderEmailShell,
+  detailTable,
+  escapeHtml,
+} from "./shared";
 
 export const sendShopLaunchEmail = async (email: string): Promise<void> => {
   const shopUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/shop`;
@@ -128,8 +135,8 @@ export const sendOrderConfirmationEmail = async (
       (item) => `
     <tr>
       <td style="padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-        <div style="font-weight: bold; color: #0f172a;">${item.productName}</div>
-        <div style="font-size: 12px; color: #64748b;">${item.variantLabel}</div>
+        <div style="font-weight: bold; color: #0f172a;">${escapeHtml(String(item.productName ?? ""))}</div>
+        <div style="font-size: 12px; color: #64748b;">${escapeHtml(String(item.variantLabel ?? ""))}</div>
       </td>
       <td style="padding: 12px 0; text-align: center; border-bottom: 1px solid #e2e8f0; color: #475569;">
         x${item.quantity}
@@ -164,7 +171,7 @@ export const sendOrderConfirmationEmail = async (
 
           <tr>
             <td style="padding:28px 28px 22px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your payment has been captured and order <strong>#${options.orderNumber}</strong> is now being processed.</p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;">
@@ -186,11 +193,11 @@ export const sendOrderConfirmationEmail = async (
                 </tr>
                 <tr>
                   <td style="font-size:14px;line-height:20px;color:#475569;padding-top:8px;">
-                    <strong>${options.shippingAddress.fullName}</strong><br/>
-                    ${options.shippingAddress.addressLine1}<br/>
-                    ${options.shippingAddress.addressLine2 ? `${options.shippingAddress.addressLine2}<br/>` : ""}
-                    ${options.shippingAddress.city}, ${options.shippingAddress.state} - ${options.shippingAddress.postalCode}<br/>
-                    ${options.shippingAddress.country}
+                    <strong>${escapeHtml(String(options.shippingAddress.fullName ?? ""))}</strong><br/>
+                    ${escapeHtml(String(options.shippingAddress.addressLine1 ?? ""))}<br/>
+                    ${options.shippingAddress.addressLine2 ? `${escapeHtml(String(options.shippingAddress.addressLine2 ?? ""))}<br/>` : ""}
+                    ${escapeHtml(String(options.shippingAddress.city ?? ""))}, ${escapeHtml(String(options.shippingAddress.state ?? ""))} - ${escapeHtml(String(options.shippingAddress.postalCode ?? ""))}<br/>
+                    ${escapeHtml(String(options.shippingAddress.country ?? ""))}
                   </td>
                 </tr>
               </table>
@@ -241,11 +248,13 @@ export const sendSupportTicketReceivedEmail = async (
 ): Promise<void> => {
   const html = renderEmailShell({
     heading: "We've received your request",
-    intro: `Hi ${options.name || "there"}, thanks for reaching out. Our support team has received your ticket and will get back to you soon.`,
+    intro: `Hi ${escapeHtml(String(options.name || "there"))}, thanks for reaching out. Our support team has received your ticket and will get back to you soon.`,
     bodyHtml: detailTable([
       ["Ticket", `#${options.ticketId.slice(-8)}`],
-      ["Subject", options.subject],
-      ...(options.category ? ([["Category", options.category]] as [string, string][]) : []),
+      ["Subject", escapeHtml(String(options.subject ?? ""))],
+      ...(options.category
+        ? ([["Category", escapeHtml(String(options.category))]] as [string, string][])
+        : []),
     ]),
     ctaLabel: "View my tickets",
     ctaUrl: `${emailFrontendUrl()}/dashboard`,
@@ -272,15 +281,15 @@ export const sendSupportTicketStatusEmail = async (
   const resolved = ["RESOLVED", "CLOSED"].includes(options.status.toUpperCase());
   const html = renderEmailShell({
     heading: resolved ? "Your support ticket was updated" : "Update on your support ticket",
-    intro: `Hi ${options.name || "there"}, there's an update on your support ticket.`,
+    intro: `Hi ${escapeHtml(String(options.name || "there"))}, there's an update on your support ticket.`,
     bodyHtml:
       detailTable([
         ["Ticket", `#${options.ticketId.slice(-8)}`],
-        ["Subject", options.subject],
+        ["Subject", escapeHtml(String(options.subject ?? ""))],
         ["New status", options.status.replace(/_/g, " ")],
       ]) +
       (options.note
-        ? `<p style="margin-top:8px;"><strong>Note from our team:</strong><br/>${options.note}</p>`
+        ? `<p style="margin-top:8px;"><strong>Note from our team:</strong><br/>${escapeHtml(String(options.note ?? ""))}</p>`
         : ""),
     ctaLabel: "View ticket",
     ctaUrl: `${emailFrontendUrl()}/dashboard`,
@@ -304,7 +313,7 @@ interface PayoutProcessedOptions {
 export const sendPayoutProcessedEmail = async (options: PayoutProcessedOptions): Promise<void> => {
   const html = renderEmailShell({
     heading: "You've been paid 🎉",
-    intro: `Hi ${options.name || "there"}, a payout has been processed to your account.`,
+    intro: `Hi ${escapeHtml(String(options.name || "there"))}, a payout has been processed to your account.`,
     bodyHtml: detailTable([
       ["Amount", formatInr(options.amount)],
       ["Bookings settled", String(options.bookingCount)],
@@ -336,8 +345,8 @@ export const sendDisputeStatusEmail = async (options: DisputeStatusOptions): Pro
   const html = renderEmailShell({
     heading: isResolved ? "Your dispute has been resolved" : "We've received your dispute",
     intro: isResolved
-      ? `Hi ${options.name || "there"}, your dispute has been reviewed and resolved.`
-      : `Hi ${options.name || "there"}, your dispute has been logged and our team will review it.`,
+      ? `Hi ${escapeHtml(String(options.name || "there"))}, your dispute has been reviewed and resolved.`
+      : `Hi ${escapeHtml(String(options.name || "there"))}, your dispute has been logged and our team will review it.`,
     bodyHtml: detailTable([
       ["Booking", `#${options.bookingId.slice(-8)}`],
       ["Type", options.disputeType.replace(/_/g, " ")],

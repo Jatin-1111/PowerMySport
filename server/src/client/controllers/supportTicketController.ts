@@ -70,6 +70,20 @@ const createTicketFromRequest = async (
     if (!requesterName?.trim() || !requesterEmail?.trim()) {
       throw new AppError("name and email are required", 400);
     }
+    // The public form is open to anyone and emails a receipt to the address given,
+    // so bound what it accepts: a real-looking address and short free text.
+    if (
+      requesterEmail.trim().length > 254 ||
+      !/^[^\s@<>"',;]+@[^\s@<>"',;]+\.[^\s@<>"',;]{2,}$/.test(requesterEmail.trim())
+    ) {
+      throw new AppError("Please enter a valid email address", 400);
+    }
+    if (requesterName.trim().length > 100) {
+      throw new AppError("Name must be 100 characters or fewer", 400);
+    }
+  }
+  if (subject.trim().length > 200 || description.trim().length > 5000) {
+    throw new AppError("subject or description is too long", 400);
   }
 
   const notes = initialNote?.trim()
@@ -107,10 +121,22 @@ const createTicketFromRequest = async (
     try {
       let toEmail = ticket.requesterEmail;
       let toName = ticket.requesterName;
-      if (!toEmail && ticket.userId) {
+      if (options.requireAuth && ticket.userId) {
+        // A signed-in user's receipt goes to THEIR account address. The request body
+        // must not be able to point it at somebody else's mailbox.
         const owner = await User.findById(ticket.userId).select("name email").lean();
         toEmail = owner?.email;
-        toName = toName || owner?.name;
+        toName = owner?.name || toName;
+      } else if (toEmail) {
+        // Anonymous submissions: one automatic receipt per address per hour, so the
+        // form cannot be used to repeatedly mail a third party.
+        const recentReceipts = await SupportTicket.countDocuments({
+          requesterEmail: toEmail,
+          userId: { $exists: false },
+          createdAt: { $gte: new Date(Date.now() - 60 * 60 * 1000) },
+          _id: { $ne: ticket._id },
+        });
+        if (recentReceipts > 0) toEmail = undefined;
       }
       if (toEmail) {
         await sendSupportTicketReceivedEmail({

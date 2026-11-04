@@ -150,6 +150,22 @@ export const academyStartRateLimiter = rateLimit({
   },
 });
 
+/**
+ * The public support form needs no account and emails a receipt to the address
+ * given. Per source address, hourly. Fails open if Redis is down.
+ */
+export const publicSupportTicketRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: createRedisRateLimitStore("rl:support:public:"),
+  message: {
+    success: false,
+    message: "Too many support requests from this address. Please try again in an hour.",
+  },
+});
+
 export const sendVerificationRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
