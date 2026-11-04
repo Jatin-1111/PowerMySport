@@ -46,6 +46,17 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "91e6688b-b080-4bc2-8bde-ee4f58848e3c"
+      }
+    },
+    "owner": "powermysport-pvt-ltd"
   }
 }
