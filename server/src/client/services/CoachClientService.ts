@@ -101,6 +101,19 @@ export const getCoachClients = async (coachUserId: string): Promise<ClientSummar
     .filter(Boolean) as ClientSummary[];
 };
 
+/** True when the user has a non-cancelled booking with this coach. */
+const hasBookedWithCoach = async (
+  coachId: mongoose.Types.ObjectId,
+  clientUserId: string
+): Promise<boolean> =>
+  Boolean(
+    await Booking.exists({
+      coachId,
+      userId: new mongoose.Types.ObjectId(clientUserId),
+      status: { $nin: ["CANCELLED"] },
+    })
+  );
+
 export const getClientDetails = async (
   coachUserId: string,
   clientUserId: string
@@ -110,6 +123,13 @@ export const getClientDetails = async (
 
   if (!mongoose.Types.ObjectId.isValid(clientUserId)) {
     throw new Error("Invalid client ID");
+  }
+
+  // A coach may only see a user's contact details if that user has booked with this
+  // coach. Answer exactly like a missing user so the response does not confirm which
+  // user ids exist.
+  if (!(await hasBookedWithCoach(coach._id, clientUserId))) {
+    throw new Error("Client not found");
   }
 
   const [user, bookings, notes] = await Promise.all([
@@ -178,6 +198,10 @@ export const addClientNote = async (
 
   if (!mongoose.Types.ObjectId.isValid(clientUserId)) {
     throw new Error("Invalid client ID");
+  }
+
+  if (!(await hasBookedWithCoach(coach._id, clientUserId))) {
+    throw new Error("Client not found");
   }
 
   const created = await CoachClientNote.create({

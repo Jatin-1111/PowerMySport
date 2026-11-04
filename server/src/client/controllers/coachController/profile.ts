@@ -44,6 +44,13 @@ export const createNewCoach = asyncHandler(async (req: Request, res: Response): 
     throw new AppError("Unauthorized", 401);
   }
 
+  // Only accounts that signed up as a Coach may create a coach profile; any other
+  // role (Parent, Player, ...) holding a Coach document would be treated as a coach
+  // by every route that looks the caller up by Coach.findOne({ userId }).
+  if (req.user.role !== "Coach") {
+    throw new AppError("Only coach accounts can create a coach profile", 403);
+  }
+
   // Validate required fields
   const { bio, certifications, sports, hourlyRate, serviceMode } = req.body;
 

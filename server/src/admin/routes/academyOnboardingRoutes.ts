@@ -287,16 +287,28 @@ router.put(
 /**
  * POST: Create subscription plan
  * POST /api/academies/:academyId/subscriptions
- * Requires: authMiddleware (owner verification)
+ * Requires: a session AND ownership of the academy (the linked owner account, its
+ * onboarding token, or an admin). A session alone is not enough: academy ids are
+ * public, so without the ownership gate any account could add plans to any academy.
  */
-router.post("/:academyId/subscriptions", authMiddleware, createSubscriptionPlanHandler);
+router.post(
+  "/:academyId/subscriptions",
+  authMiddleware,
+  requireAcademyOnboardingAccess,
+  createSubscriptionPlanHandler
+);
 
 /**
  * POST: Create session package
  * POST /api/academies/:academyId/packages
- * Requires: authMiddleware (owner verification)
+ * Requires: a session AND ownership of the academy (see above).
  */
-router.post("/:academyId/packages", authMiddleware, createSessionPackageHandler);
+router.post(
+  "/:academyId/packages",
+  authMiddleware,
+  requireAcademyOnboardingAccess,
+  createSessionPackageHandler
+);
 
 // Academy owner analytics (authenticated, not admin)
 router.get("/my/earnings", authMiddleware, getAcademyEarningsHandler);
