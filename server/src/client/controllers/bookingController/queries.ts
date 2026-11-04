@@ -96,11 +96,16 @@ export const getBookingById = asyncHandler(async (req: Request, res: Response): 
 
   const booking = await Booking.findById(bookingId)
     .select("+checkInCode")
+    // Booking readers (the booker, the venue owner, admins) must never receive a
+    // provider's payout methods, KYC documents or admin notes, or the booker's saved
+    // refund bank details, so those fields are excluded from every populated document.
     .populate([
-      { path: "userId" },
-      { path: "venueId" },
+      { path: "userId", select: "-refundMethods -googleId" },
+      { path: "venueId", select: "-payoutMethods -documents -pendingChanges" },
       {
         path: "coachId",
+        select:
+          "-payoutMethods -verificationDocuments -verificationNotes -verifiedBy -pendingChanges",
         populate: { path: "userId", select: "name email phone" },
       },
       { path: "academyId" },

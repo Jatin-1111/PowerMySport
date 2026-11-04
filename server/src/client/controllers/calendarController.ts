@@ -41,8 +41,11 @@ export const getCalendarBookings = asyncHandler(
     })
       .select("date startTime endTime status sport venueId coachId")
       .populate("venueId", "name")
+      // The calendar only needs the coach's display name. Never populate the whole
+      // Coach document: it carries KYC document keys, admin notes, GST and payout details.
       .populate({
         path: "coachId",
+        select: "userId",
         populate: { path: "userId", select: "name" },
       })
       .sort({ date: 1, startTime: 1 })
