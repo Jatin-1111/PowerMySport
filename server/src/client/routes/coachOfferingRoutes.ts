@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middleware/auth";
+import { authMiddleware, coachVerificationCompletedMiddleware } from "../../middleware/auth";
 import { validateRequest } from "../../middleware/validation";
 import { cacheResponse } from "../../middleware/cacheMiddleware";
 import { cacheControl } from "../../middleware/cacheControl";
@@ -81,7 +81,15 @@ router.post("/waitlist/:entryId/leave", authMiddleware, leaveWaitlistHandler);
 // ── coach: programmes ───────────────────────────────────────────────────────
 router.get("/mine", authMiddleware, listMyOfferingsHandler);
 router.post("/", authMiddleware, validateRequest(createCoachOfferingSchema), createOfferingHandler);
-router.post("/:offeringId/activate", authMiddleware, activateOfferingHandler);
+// Publishing a programme is the same act as taking bookings: it is reserved for
+// admin-approved coaches (see coachVerificationCompletedMiddleware). A coach can
+// still prepare a draft while their verification is pending.
+router.post(
+  "/:offeringId/activate",
+  authMiddleware,
+  coachVerificationCompletedMiddleware,
+  activateOfferingHandler
+);
 router.post("/:offeringId/pause", authMiddleware, pauseOfferingHandler);
 router.get("/:offeringId/roster", authMiddleware, offeringRosterHandler);
 router.get("/:offeringId/waitlist", authMiddleware, offeringWaitlistHandler);

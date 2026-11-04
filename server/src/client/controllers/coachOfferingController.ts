@@ -73,6 +73,10 @@ const requireOwnCoach = async (req: Request, res: Response) => {
   return coach;
 };
 
+/** An admin-approved coach: the same test the public coach search applies. */
+const isCoachVerified = (coach: { verificationStatus?: string; isVerified?: boolean }): boolean =>
+  coach.verificationStatus === "VERIFIED" && coach.isVerified === true;
+
 const asObjectId = (value: string): mongoose.Types.ObjectId | null =>
   mongoose.Types.ObjectId.isValid(value) ? new mongoose.Types.ObjectId(value) : null;
 
@@ -510,6 +514,17 @@ export const enrollHandler = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Parents pay for sessions their child attends, so only an admin-approved coach
+    // may take enrolments. A coach who is not (or is no longer) verified is
+    // indistinguishable from a closed programme.
+    const offeringCoach = await Coach.findById(offering.coachId).select(
+      "verificationStatus isVerified"
+    );
+    if (!offeringCoach || !isCoachVerified(offeringCoach)) {
+      fail(res, 404, "Programme not found or not open for enrolment");
+      return;
+    }
+
     const pkg = await CoachSubscriptionPackage.findById(offering.packageId);
     if (!pkg || !pkg.isActive) {
       fail(res, 409, "This programme has no active price set");
@@ -862,7 +877,15 @@ export const myUpcomingSessionsHandler = async (req: Request, res: Response): Pr
  */
 export const browseOfferingsHandler = async (req: Request, res: Response): Promise<void> => {
   try {
-    const query: Record<string, unknown> = { status: "ACTIVE" };
+    // Only programmes run by admin-approved coaches are listed publicly.
+    const verifiedCoachIds = await Coach.find({
+      verificationStatus: "VERIFIED",
+      isVerified: true,
+    }).distinct("_id");
+    const query: Record<string, unknown> = {
+      status: "ACTIVE",
+      coachId: { $in: verifiedCoachIds },
+    };
 
     if (req.query.sport) query.sport = String(req.query.sport);
     if (req.query.deliveryKind) {

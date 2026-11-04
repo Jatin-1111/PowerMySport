@@ -28,6 +28,15 @@ const isAdminRole = (role: string): boolean => {
   return Object.values(ADMIN_ROLES).includes(role as any);
 };
 
+// Same rule as VenueOnboardingService.updateVenueDetails: once a venue is approved
+// it is live, and further edits go through the venue dashboard (with admin review),
+// not through the onboarding token issued at step 1.
+const assertNotApproved = (approvalStatus: string | undefined): void => {
+  if (approvalStatus === "APPROVED") {
+    throw new AppError("This venue is approved. Edit it from the venue dashboard.", 409);
+  }
+};
+
 /**
  * Venue Onboarding Controller
  *
@@ -204,6 +213,7 @@ export const confirmImagesStep2 = asyncHandler(
     if (!venue) {
       throw new AppError("Venue not found", 404);
     }
+    assertNotApproved(venue.approvalStatus);
 
     const updatedVenue = await confirmVenueImages(req.body);
 
@@ -306,9 +316,18 @@ export const deleteVenueOnboardingHandler = asyncHandler(
   async (req: Request, res: Response): Promise<void> => {
     const venueId = (req.params as Record<string, unknown>).venueId as string;
 
-    // For onboarding cancellation, we allow deletion without auth
-    // (user just needs to know the venueId)
-    const venue = await Venue.findByIdAndDelete(venueId);
+    // Onboarding cancellation is for venues that are still being onboarded. The
+    // onboarding token must not be able to delete a live, admin-approved venue.
+    const existing = await Venue.findById(venueId).select("approvalStatus");
+    if (!existing) {
+      throw new AppError("Venue not found", 404);
+    }
+    assertNotApproved(existing.approvalStatus);
+
+    const venue = await Venue.findOneAndDelete({
+      _id: venueId,
+      approvalStatus: { $ne: "APPROVED" },
+    });
 
     if (!venue) {
       throw new AppError("Venue not found", 404);
@@ -482,11 +501,10 @@ export const addVenueCoaches = asyncHandler(async (req: Request, res: Response):
     throw new AppError("Venue ID is required", 400);
   }
 
-  // Venue is already imported at the top
-
-  // Update venue with coaches
-  const venue = await Venue.findByIdAndUpdate(
-    venueId,
+  // Update venue with coaches. Once approved, edits go through the venue dashboard,
+  // so the update only matches a venue that is not approved yet.
+  const venue = await Venue.findOneAndUpdate(
+    { _id: venueId, approvalStatus: { $ne: "APPROVED" } },
     {
       hasCoaches: coaches && coaches.length > 0,
       venueCoaches: coaches || [],
@@ -495,6 +513,8 @@ export const addVenueCoaches = asyncHandler(async (req: Request, res: Response):
   );
 
   if (!venue) {
+    const existing = await Venue.findById(venueId).select("approvalStatus");
+    if (existing) assertNotApproved(existing.approvalStatus);
     throw new AppError("Venue not found", 404);
   }
 
