@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import { View, Text } from "react-native";
-import { Home, Users, User } from "lucide-react-native";
+import { Home, Users, Award, User } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "@/lib/constants";
 
@@ -62,6 +62,14 @@ export default function TabsLayout() {
         name="children"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon icon={Users} label="Children" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="opportunities"
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={Award} label="Opportunities" focused={focused} />
+          ),
         }}
       />
       <Tabs.Screen
