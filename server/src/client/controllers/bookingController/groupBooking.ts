@@ -27,9 +27,13 @@ export const initiateNewGroupBooking = asyncHandler(
       throw new AppError("Group booking is available for player and parent accounts.", 403);
     }
 
+    // The organizer is always the authenticated caller. `userId` must come AFTER the
+    // body spread: this route has no schema that strips it, so a body-supplied
+    // userId would otherwise let the caller book, invite and spend promo usage as
+    // another user.
     const result = await initiateGroupBooking({
-      userId: req.user.id,
       ...req.body,
+      userId: req.user.id,
       date: new Date(req.body.date),
     });
 
