@@ -1,11 +1,12 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Bell, ChevronRight } from "lucide-react-native";
+import { Bell, BookOpen, ChevronRight, ListOrdered } from "lucide-react-native";
 import { notificationsApi } from "@/modules/notifications/services/notifications";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { COLORS } from "@lib/constants";
+import { RANKINGS_HOME, ROADMAP_HOME } from "@lib/routes";
 
 function greeting() {
   const hour = new Date().getHours();
@@ -14,8 +15,38 @@ function greeting() {
   return "Good evening";
 }
 
-export default function HomeScreen() {
+function LinkCard({
+  icon: Icon,
+  title,
+  subtitle,
+  href,
+}: {
+  icon: React.ComponentType<{ size: number; color: string }>;
+  title: string;
+  subtitle: string;
+  href: Href;
+}) {
   const router = useRouter();
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(href)}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      className="rounded-tile border-hairline bg-surface mb-3 min-h-[72px] flex-row items-center border p-4"
+    >
+      <View className="rounded-tile bg-wash mr-3 h-10 w-10 items-center justify-center">
+        <Icon size={18} color={COLORS.action} />
+      </View>
+      <View className="flex-1">
+        <Text className="text-ink text-base font-semibold">{title}</Text>
+        <Text className="text-muted mt-0.5 text-sm">{subtitle}</Text>
+      </View>
+      <ChevronRight size={18} color={COLORS.muted} />
+    </TouchableOpacity>
+  );
+}
+
+export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [unread, setUnread] = useState<number | null>(null);
@@ -47,26 +78,30 @@ export default function HomeScreen() {
       </Text>
       <Text className="text-ink mb-6 mt-1 text-3xl font-bold">PowerMySport</Text>
 
-      <TouchableOpacity
-        onPress={() => router.push("/notifications")}
-        activeOpacity={0.7}
-        className="rounded-tile border-hairline bg-surface flex-row items-center border p-4"
-      >
-        <View className="rounded-tile bg-wash mr-3 h-10 w-10 items-center justify-center">
-          <Bell size={18} color={COLORS.action} />
-        </View>
-        <View className="flex-1">
-          <Text className="text-ink text-base font-semibold">Notifications</Text>
-          <Text className="text-muted mt-0.5 text-sm">
-            {unread === null
-              ? "Open your inbox"
-              : unread === 0
-                ? "You are all caught up"
-                : `${unread} unread`}
-          </Text>
-        </View>
-        <ChevronRight size={18} color={COLORS.muted} />
-      </TouchableOpacity>
+      <LinkCard
+        icon={Bell}
+        title="Notifications"
+        subtitle={
+          unread === null
+            ? "Open your inbox"
+            : unread === 0
+              ? "You are all caught up"
+              : `${unread} unread`
+        }
+        href="/notifications"
+      />
+      <LinkCard
+        icon={BookOpen}
+        title="Roadmap"
+        subtitle="The path in a sport, stage by stage, for parents"
+        href={ROADMAP_HOME}
+      />
+      <LinkCard
+        icon={ListOrdered}
+        title="Rankings"
+        subtitle="Official AITA tennis lists, searchable, week by week"
+        href={RANKINGS_HOME}
+      />
     </ScrollView>
   );
 }

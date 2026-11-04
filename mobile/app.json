@@ -36,7 +36,6 @@
           "imageWidth": 200
         }
       ],
-      "expo-image",
       "expo-status-bar"
     ],
     "experiments": {

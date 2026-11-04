@@ -11,6 +11,7 @@ import {
 } from "@powermysport/shared-types";
 import { Button } from "@components/ui/Button";
 import { childrenApi } from "@/modules/children/services/children";
+import { RankingCard } from "@/modules/rankings/components/RankingCard";
 import { COLORS } from "@lib/constants";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -104,6 +105,8 @@ export default function ChildDetailScreen() {
             <View className="bg-hairline w-px" />
             <Stat label="Awards" value={view.stats.awards} />
           </View>
+
+          <RankingCard childId={id} childName={view.child.name} sport={view.child.sport} />
 
           <Text className="text-ink mb-3 text-lg font-semibold">Sporting record</Text>
           {view.timeline.length === 0 ? (
