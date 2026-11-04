@@ -654,15 +654,24 @@ export const initiateBooking = async (
             ...(bookingPayload.delivery ? { delivery: bookingPayload.delivery } : {}),
           });
 
-    // Record promo code usage after successful booking
+    // Record promo code usage after successful booking. The usage limits are part of
+    // the update's filter, so this is where a limit is actually enforced: validation
+    // above is only a read, and several overlapping requests for different slots can
+    // all pass it. If the code has no room left, the booking that would have used it
+    // is still unpaid, so remove it rather than let it keep a discount that was
+    // never granted.
     if (validPromoCode && discountAmount > 0) {
-      await applyPromoCode(
+      const consumed = await applyPromoCode(
         validPromoCode,
         payload.userId,
         booking._id.toString(),
         null,
         discountAmount
       );
+      if (!consumed) {
+        await Booking.deleteOne({ _id: booking._id });
+        throw new Error("Promo code usage limit reached");
+      }
     }
 
     await recordBookingEventFor(booking, {

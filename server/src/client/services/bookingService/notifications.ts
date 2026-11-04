@@ -230,22 +230,47 @@ export const initiateBookingRefunds = async (
       continue;
     }
 
+    // Claim the refund atomically BEFORE calling the gateway. The check above reads
+    // refundState off a document loaded earlier, so two overlapping requests (a double
+    // tap on retry-refund, the retry job racing a cancel) could both pass it and each
+    // send a refund. Exactly one caller flips the state from "none or FAILED" to
+    // INITIATED; the other is treated as "a refund is already in flight".
+    const claimed = await BookingPaymentTransaction.findOneAndUpdate(
+      {
+        _id: transaction._id,
+        status: "COMPLETED",
+        $or: [
+          { refundState: { $exists: false } },
+          { refundState: null },
+          { refundState: "" },
+          { refundState: "FAILED" },
+        ],
+      },
+      { $set: { refundState: "INITIATED", refundAmount: target.amountPaise } },
+      { new: true }
+    );
+    if (!claimed) {
+      hasPending = true;
+      skippedRefundPaise += target.amountPaise;
+      continue;
+    }
+
     const refundMerchantId = `rf_${Date.now()}_${randomBytes(4).toString("hex")}`;
     try {
       const refundResponse = await initiatePhonePeRefund({
         merchantRefundId: refundMerchantId,
-        originalMerchantOrderId: transaction.merchantOrderId,
+        originalMerchantOrderId: claimed.merchantOrderId,
         amount: target.amountPaise / 100, // initiatePhonePeRefund expects rupees
       });
       const refundState = refundResponse.state || "INITIATED";
-      const refundId = refundResponse.refundId ?? transaction.refundId;
+      const refundId = refundResponse.refundId ?? claimed.refundId;
 
-      transaction.refundMerchantId = refundMerchantId;
-      if (refundId) transaction.refundId = refundId;
-      transaction.refundState = refundState;
-      transaction.refundAmount = target.amountPaise;
-      transaction.refundResponse = refundResponse.raw;
-      await transaction.save();
+      claimed.refundMerchantId = refundMerchantId;
+      if (refundId) claimed.refundId = refundId;
+      claimed.refundState = refundState;
+      claimed.refundAmount = target.amountPaise;
+      claimed.refundResponse = refundResponse.raw;
+      await claimed.save();
 
       totalRefundPaise += target.amountPaise;
 
@@ -253,10 +278,10 @@ export const initiateBookingRefunds = async (
       if (refundState !== "COMPLETED") hasPending = true;
     } catch (err) {
       // PhonePe threw — record the attempt and defer. Never hard-reject here.
-      transaction.refundMerchantId = refundMerchantId;
-      transaction.refundState = "FAILED";
-      transaction.refundAmount = target.amountPaise;
-      await transaction.save();
+      claimed.refundMerchantId = refundMerchantId;
+      claimed.refundState = "FAILED";
+      claimed.refundAmount = target.amountPaise;
+      await claimed.save();
       hasPending = true;
       totalRefundPaise += target.amountPaise;
       log.error(
