@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,32 +7,32 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-} from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Search, X, SlidersHorizontal } from 'lucide-react-native';
-import { CoachCard } from '@components/shared/CoachCard';
-import { VenueCard } from '@components/shared/VenueCard';
-import { Badge } from '@components/ui/Badge';
-import { discoveryApi } from '@/modules/discovery/services/discovery';
-import { COLORS, SPORTS } from '@lib/constants';
-import type { Coach, Venue, Academy } from '@/types';
+} from "react-native";
+import { useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Search, X, SlidersHorizontal } from "lucide-react-native";
+import { CoachCard } from "@components/shared/CoachCard";
+import { VenueCard } from "@components/shared/VenueCard";
+import { Badge } from "@components/ui/Badge";
+import { discoveryApi } from "@/modules/discovery/services/discovery";
+import { COLORS, SPORTS } from "@lib/constants";
+import type { Coach, Venue, Academy } from "@/types";
 
-type Tab = 'coaches' | 'venues' | 'academies';
+type Tab = "coaches" | "venues" | "academies";
 
 const TABS: { key: Tab; label: string }[] = [
-  { key: 'coaches', label: 'Coaches' },
-  { key: 'venues', label: 'Venues' },
-  { key: 'academies', label: 'Academies' },
+  { key: "coaches", label: "Coaches" },
+  { key: "venues", label: "Venues" },
+  { key: "academies", label: "Academies" },
 ];
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ q?: string; sport?: string }>();
 
-  const [activeTab, setActiveTab] = useState<Tab>('coaches');
-  const [query, setQuery] = useState(params.q ?? '');
-  const [selectedSport, setSelectedSport] = useState(params.sport ?? '');
+  const [activeTab, setActiveTab] = useState<Tab>("coaches");
+  const [query, setQuery] = useState(params.q ?? "");
+  const [selectedSport, setSelectedSport] = useState(params.sport ?? "");
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,12 +51,12 @@ export default function DiscoverScreen() {
           limit: 10,
         };
 
-        if (activeTab === 'coaches') {
+        if (activeTab === "coaches") {
           const res = await discoveryApi.getCoaches(filters);
           const data = res.data ?? [];
           setCoaches(reset ? data : (prev) => [...prev, ...data]);
           setHasMore(data.length === 10);
-        } else if (activeTab === 'venues') {
+        } else if (activeTab === "venues") {
           const res = await discoveryApi.getVenues(filters);
           const data = res.data ?? [];
           setVenues(reset ? data : (prev) => [...prev, ...data]);
@@ -68,7 +68,7 @@ export default function DiscoverScreen() {
         setLoading(false);
       }
     },
-    [activeTab, query, selectedSport, page],
+    [activeTab, query, selectedSport, page]
   );
 
   useEffect(() => {
@@ -82,37 +82,35 @@ export default function DiscoverScreen() {
   };
 
   const clearSearch = () => {
-    setQuery('');
+    setQuery("");
     setPage(1);
     loadData(true);
   };
 
   const EmptyState = ({ tab }: { tab: Tab }) => (
     <View className="flex-1 items-center justify-center py-20">
-      <Text className="text-4xl mb-3">🔍</Text>
-      <Text className="text-base font-semibold text-foreground mb-1">
-        No {tab} found
-      </Text>
-      <Text className="text-sm text-muted text-center px-8">
+      <Text className="mb-3 text-4xl">🔍</Text>
+      <Text className="text-foreground mb-1 text-base font-semibold">No {tab} found</Text>
+      <Text className="text-muted px-8 text-center text-sm">
         Try adjusting your filters or search query
       </Text>
     </View>
   );
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="bg-background flex-1">
       {/* Header */}
       <View
-        className="bg-white border-b border-border px-5 pb-4"
+        className="border-border border-b bg-white px-5 pb-4"
         style={{ paddingTop: insets.top + 12 }}
       >
-        <Text className="text-xl font-bold text-foreground mb-4">Discover</Text>
+        <Text className="text-foreground mb-4 text-xl font-bold">Discover</Text>
 
         {/* Search */}
-        <View className="flex-row items-center bg-gray-100 rounded-2xl px-4 h-12 gap-3">
+        <View className="h-12 flex-row items-center gap-3 rounded-2xl bg-gray-100 px-4">
           <Search size={18} color={COLORS.muted} />
           <TextInput
-            className="flex-1 text-base text-foreground"
+            className="text-foreground flex-1 text-base"
             placeholder="Search coaches, venues..."
             placeholderTextColor={COLORS.muted}
             value={query}
@@ -121,27 +119,28 @@ export default function DiscoverScreen() {
             returnKeyType="search"
           />
           {query.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity
+              onPress={clearSearch}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
               <X size={16} color={COLORS.muted} />
             </TouchableOpacity>
           )}
         </View>
 
         {/* Tabs */}
-        <View className="flex-row mt-4 gap-2">
+        <View className="mt-4 flex-row gap-2">
           {TABS.map((tab) => (
             <TouchableOpacity
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              className={`px-4 py-2 rounded-full ${
-                activeTab === tab.key
-                  ? 'bg-deep-slate'
-                  : 'bg-gray-100'
+              className={`rounded-full px-4 py-2 ${
+                activeTab === tab.key ? "bg-deep-slate" : "bg-gray-100"
               }`}
             >
               <Text
                 className={`text-sm font-semibold ${
-                  activeTab === tab.key ? 'text-white' : 'text-muted'
+                  activeTab === tab.key ? "text-white" : "text-muted"
                 }`}
               >
                 {tab.label}
@@ -155,17 +154,17 @@ export default function DiscoverScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        className="border-b border-border bg-white"
+        className="border-border border-b bg-white"
         contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 10, gap: 8 }}
       >
         <TouchableOpacity
-          onPress={() => setSelectedSport('')}
-          className={`px-3 py-1.5 rounded-full ${
-            !selectedSport ? 'bg-power-orange' : 'bg-gray-100'
+          onPress={() => setSelectedSport("")}
+          className={`rounded-full px-3 py-1.5 ${
+            !selectedSport ? "bg-power-orange" : "bg-gray-100"
           }`}
         >
           <Text
-            className={`text-xs font-medium ${!selectedSport ? 'text-white' : 'text-foreground'}`}
+            className={`text-xs font-medium ${!selectedSport ? "text-white" : "text-foreground"}`}
           >
             All
           </Text>
@@ -173,14 +172,14 @@ export default function DiscoverScreen() {
         {SPORTS.map((sport) => (
           <TouchableOpacity
             key={sport}
-            onPress={() => setSelectedSport(selectedSport === sport ? '' : sport)}
-            className={`px-3 py-1.5 rounded-full ${
-              selectedSport === sport ? 'bg-power-orange' : 'bg-gray-100'
+            onPress={() => setSelectedSport(selectedSport === sport ? "" : sport)}
+            className={`rounded-full px-3 py-1.5 ${
+              selectedSport === sport ? "bg-power-orange" : "bg-gray-100"
             }`}
           >
             <Text
               className={`text-xs font-medium ${
-                selectedSport === sport ? 'text-white' : 'text-foreground'
+                selectedSport === sport ? "text-white" : "text-foreground"
               }`}
             >
               {sport}
@@ -195,17 +194,17 @@ export default function DiscoverScreen() {
           <ActivityIndicator size="large" color={COLORS.powerOrange} />
         </View>
       ) : (
-        <FlatList
-          data={activeTab === 'coaches' ? coaches : activeTab === 'venues' ? venues : []}
+        <FlatList<Coach | Venue>
+          data={activeTab === "coaches" ? coaches : activeTab === "venues" ? venues : []}
           keyExtractor={(item) => item._id}
           contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={<EmptyState tab={activeTab} />}
           renderItem={({ item }) => {
-            if (activeTab === 'coaches') {
+            if (activeTab === "coaches") {
               return <CoachCard coach={item as Coach} />;
             }
-            if (activeTab === 'venues') {
+            if (activeTab === "venues") {
               return <VenueCard venue={item as Venue} />;
             }
             return null;
@@ -213,17 +212,17 @@ export default function DiscoverScreen() {
           ListFooterComponent={
             loading && page > 1 ? (
               <ActivityIndicator color={COLORS.powerOrange} style={{ marginVertical: 16 }} />
-            ) : activeTab === 'academies' ? (
-              <View className="py-20 items-center">
-                <Text className="text-4xl mb-3">🏫</Text>
-                <Text className="text-base font-semibold text-foreground mb-1">
+            ) : activeTab === "academies" ? (
+              <View className="items-center py-20">
+                <Text className="mb-3 text-4xl">🏫</Text>
+                <Text className="text-foreground mb-1 text-base font-semibold">
                   Academies coming soon
                 </Text>
-                <Text className="text-sm text-muted text-center px-8">
+                <Text className="text-muted px-8 text-center text-sm">
                   Academy listings are launching shortly
                 </Text>
               </View>
-            ) : null
+            ) : undefined
           }
           onEndReached={() => {
             if (hasMore && !loading) {

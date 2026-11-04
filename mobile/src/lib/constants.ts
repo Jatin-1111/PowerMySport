@@ -1,5 +1,5 @@
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import Constants from "expo-constants";
+import { Platform } from "react-native";
 
 // For Android emulator, localhost = 10.0.2.2
 // For iOS simulator, localhost works directly
@@ -9,40 +9,41 @@ const getApiUrl = () => {
   if (envUrl) return envUrl;
 
   if (__DEV__) {
-    return Platform.OS === 'android'
-      ? 'http://10.0.2.2:5000/api'
-      : 'http://localhost:5000/api';
+    // Expo Go on a phone: the dev server's host is the PC's LAN IP, and the API runs on the same PC.
+    const devHost = Constants.expoConfig?.hostUri?.split(":")[0];
+    if (devHost) return `http://${devHost}:5000/api`;
+    return Platform.OS === "android" ? "http://10.0.2.2:5000/api" : "http://localhost:5000/api";
   }
 
-  return 'https://api.powermysport.com/api';
+  return "https://api.powermysport.com/api";
 };
 
 export const API_URL = getApiUrl();
 
 export const COLORS = {
-  powerOrange: '#E97316',
-  deepSlate: '#0F172A',
-  ghostWhite: '#F8FAFC',
-  turfGreen: '#22C55E',
-  errorRed: '#EF4444',
-  background: '#f4f7ff',
-  foreground: '#111827',
-  border: '#E5E7EB',
-  muted: '#6B7280',
-  card: '#FFFFFF',
+  powerOrange: "#E97316",
+  deepSlate: "#0F172A",
+  ghostWhite: "#F8FAFC",
+  turfGreen: "#22C55E",
+  errorRed: "#EF4444",
+  background: "#f4f7ff",
+  foreground: "#111827",
+  border: "#E5E7EB",
+  muted: "#6B7280",
+  card: "#FFFFFF",
 } as const;
 
 export const SPORTS = [
-  'Cricket',
-  'Football',
-  'Basketball',
-  'Tennis',
-  'Badminton',
-  'Swimming',
-  'Hockey',
-  'Volleyball',
-  'Athletics',
-  'Boxing',
-  'Kabaddi',
-  'Table Tennis',
+  "Cricket",
+  "Football",
+  "Basketball",
+  "Tennis",
+  "Badminton",
+  "Swimming",
+  "Hockey",
+  "Volleyball",
+  "Athletics",
+  "Boxing",
+  "Kabaddi",
+  "Table Tennis",
 ] as const;
