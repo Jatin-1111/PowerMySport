@@ -1,0 +1,30 @@
+# What Expo uploads for a mobile build. This file REPLACES .gitignore for the build archive, so it
+# has to name everything that must stay out.
+#
+# The repo is a monorepo, and the mobile app needs only itself and one shared package
+# (packages/shared-types/src, imported by mobile/). Everything else (the server, the websites,
+# docs, data dumps) is never sent to Expo.
+
+# Start by leaving out every top-level entry...
+/*
+# ...then bring back only what the app needs.
+!/mobile
+!/packages
+/packages/*
+!/packages/shared-types
+/packages/shared-types/*
+!/packages/shared-types/src
+!/packages/shared-types/package.json
+
+# Never upload installed packages or local build output, wherever they are.
+node_modules
+.expo
+dist
+web-build
+*.log
+
+# Local secrets and machine settings.
+.env
+.env.*
+*.jks
+*.keystore
