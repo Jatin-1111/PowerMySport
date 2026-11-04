@@ -12,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useAuthStore } from "@/modules/auth/store/authStore";
+import { PushBootstrap } from "@/modules/push/components/PushBootstrap";
 import "../global.css";
 
 void SplashScreen.preventAutoHideAsync();
@@ -65,6 +66,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthGuard />
+        <PushBootstrap />
         <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="(auth)" />

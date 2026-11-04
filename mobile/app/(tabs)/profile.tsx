@@ -20,6 +20,7 @@ import { Avatar } from "@components/ui/Avatar";
 import { Badge } from "@components/ui/Badge";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { authApi } from "@/modules/auth/services/auth";
+import { unregisterOnSignOut } from "@/modules/push/services/push";
 import { COLORS } from "@lib/constants";
 
 interface MenuItemProps {
@@ -78,6 +79,9 @@ export default function ProfileScreen() {
         text: "Sign out",
         style: "destructive",
         onPress: async () => {
+          // While the session still works: this phone stops buzzing for this account, and the next
+          // account to sign in on it chooses for itself.
+          await unregisterOnSignOut();
           await authApi.logout();
           await logout();
           router.replace("/(auth)/login");
@@ -137,6 +141,12 @@ export default function ProfileScreen() {
             label="Notifications"
             sublabel="Your inbox"
             onPress={() => router.push("/notifications")}
+          />
+          <MenuItem
+            icon={Bell}
+            label="Notification settings"
+            sublabel="What reaches this phone"
+            onPress={() => router.push("/notification-settings")}
           />
         </View>
 

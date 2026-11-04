@@ -6,6 +6,7 @@ import { ArrowLeft, Lock } from "lucide-react-native";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
 import { authApi } from "@/modules/auth/services/auth";
+import { forgetPushLocally } from "@/modules/push/services/push";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { COLORS } from "@lib/constants";
 
@@ -20,6 +21,8 @@ export default function DeleteAccountScreen() {
     setLoading(true);
     try {
       await authApi.deleteAccount(password);
+      // The server already removed this phone; forget the token here too.
+      await forgetPushLocally();
       await logout();
       Alert.alert(
         "Account scheduled for deletion",

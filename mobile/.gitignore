@@ -19,3 +19,7 @@ ios/
 
 expo-env.d.ts
 # @end expo-cli
+# Firebase and signing material for builds. Never commit.
+google-services.json
+*.jks
+*.keystore

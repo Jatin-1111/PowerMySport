@@ -36,7 +36,13 @@
           "imageWidth": 200
         }
       ],
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-notifications",
+        {
+          "color": "#C2410C"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
