@@ -2,6 +2,8 @@
 // Palette mirrors client/DESIGN.md (warm paper). The older class names (background, foreground,
 // border, power-orange, deep-slate ...) stay as aliases so screens built before the redesign keep working.
 module.exports = {
+  // The app is light-only (app.json userInterfaceStyle). NativeWind throws on a forced scheme unless this is 'class'.
+  darkMode: "class",
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./src/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
