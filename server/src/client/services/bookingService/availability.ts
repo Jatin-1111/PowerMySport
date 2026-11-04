@@ -53,7 +53,12 @@ const hasConflictingVenueBooking = async (
       userId &&
       conflicts.userId.toString() === userId &&
       (conflicts.status === "AWAITING_PAYMENT" || conflicts.status === "PENDING_INVITES") &&
-      !conflicts.paymentConfirmedAt
+      !conflicts.paymentConfirmedAt &&
+      // A split booking with a PAID share holds someone's money: it is a real
+      // conflict, not an abandoned checkout, so it must not be cancelled here.
+      !conflicts.payments?.some(
+        (payment) => payment.userType === "Player" && payment.status === "PAID"
+      )
     ) {
       conflicts.status = "CANCELLED";
       conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";
@@ -106,7 +111,12 @@ const hasConflictingCoachBooking = async (
       userId &&
       conflicts.userId.toString() === userId &&
       (conflicts.status === "AWAITING_PAYMENT" || conflicts.status === "PENDING_INVITES") &&
-      !conflicts.paymentConfirmedAt
+      !conflicts.paymentConfirmedAt &&
+      // A split booking with a PAID share holds someone's money: it is a real
+      // conflict, not an abandoned checkout, so it must not be cancelled here.
+      !conflicts.payments?.some(
+        (payment) => payment.userType === "Player" && payment.status === "PAID"
+      )
     ) {
       conflicts.status = "CANCELLED";
       conflicts.cancellationReason = "Overwritten by a new booking attempt from the same user";

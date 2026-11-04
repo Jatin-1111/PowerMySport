@@ -143,6 +143,9 @@ export const initiateBooking = async (
       startTime: normalizedStartTime,
       endTime: normalizedEndTime,
       status: "AWAITING_PAYMENT",
+      // Only a truly unpaid booking is "abandoned": one with a PAID share (split
+      // booking) holds someone's money and must go through expiry and refund.
+      payments: { $not: { $elemMatch: { userType: "Player", status: "PAID" } } },
     };
     if (payload.coachId) cleanupQuery.coachId = payload.coachId;
     if (payload.venueId) cleanupQuery.venueId = payload.venueId;

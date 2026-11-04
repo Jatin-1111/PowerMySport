@@ -36,9 +36,19 @@ export const expireOldBookings = async (): Promise<number> => {
     //
     // (This job previously queried a status of "PENDING_PAYMENT", which was
     // never a valid enum value, so it silently matched nothing on every run.)
+    //
+    // A split booking can also be paid into while it is still PENDING_INVITES. If it
+    // lapses there with a share already PAID, nothing else would ever touch it (the
+    // unpaid-cleanup job deliberately skips it), so expire it here and refund.
     const expiredCandidates = await Booking.find({
-      status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] },
       expiresAt: { $lte: now },
+      $or: [
+        { status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] } },
+        {
+          status: "PENDING_INVITES",
+          payments: { $elemMatch: { userType: "Player", status: "PAID" } },
+        },
+      ],
     });
 
     let expiredCount = 0;
@@ -50,7 +60,7 @@ export const expireOldBookings = async (): Promise<number> => {
         const updated = await Booking.findOneAndUpdate(
           {
             _id: booking._id,
-            status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER"] },
+            status: { $in: ["AWAITING_PAYMENT", "AWAITING_PROVIDER", "PENDING_INVITES"] },
           },
           { $set: { status: "EXPIRED" } }
         );
@@ -76,12 +86,15 @@ export const expireOldBookings = async (): Promise<number> => {
 
         // Refund any payment already collected — the parent shouldn't be
         // charged for a slot the venue/coach never confirmed.
-        const transaction = await BookingPaymentTransaction.findOne({
+        // A split booking has one settled transaction PER PAYER, so refund every one of
+        // them, not just the first found.
+        const transactions = await BookingPaymentTransaction.find({
           bookingId: booking._id,
           status: "COMPLETED",
         });
 
-        if (transaction && !transaction.refundState) {
+        for (const transaction of transactions) {
+          if (transaction.refundState) continue;
           try {
             await initiateRefund({
               bookingPaymentTransactionId: transaction._id.toString(),
@@ -112,7 +125,7 @@ export const expireOldBookings = async (): Promise<number> => {
             const rupees = (transaction.amount / 100).toLocaleString("en-IN");
             await NotificationService.send(
               {
-                userId: booking.organizerId.toString(),
+                userId: (transaction.userId ?? booking.organizerId).toString(),
                 type: "PAYMENT_REFUND",
                 title: "Booking expired — refund initiated",
                 message: `Your ${booking.sport} booking on ${booking.startTime}-${booking.endTime} wasn't confirmed by the venue/coach in time, so it has expired. We've initiated a refund of ₹${rupees} to your original payment method.`,

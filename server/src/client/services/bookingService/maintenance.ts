@@ -40,6 +40,11 @@ export const cleanupExpiredBookings = async (): Promise<number> => {
     status: { $in: ["AWAITING_PAYMENT", "PENDING_INVITES"] },
     paymentConfirmedAt: { $exists: false },
     expiresAt: { $lt: now },
+    // A split booking only gets paymentConfirmedAt once EVERY share is paid, so one
+    // that is partly paid still matches the lines above. Never delete a booking
+    // that carries a PAID share: that money would be left with no booking and no
+    // refund. The expiry job (utils/timer.ts) expires those and refunds each payer.
+    payments: { $not: { $elemMatch: { userType: "Player", status: "PAID" } } },
   } as const;
 
   // Read before deleting: these documents are removed outright, so without an

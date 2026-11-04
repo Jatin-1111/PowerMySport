@@ -7,6 +7,7 @@ import friendService from "../FriendService";
 import BookingInvitation from "../../models/BookingInvitation";
 import { sendBookingInvitationEmail } from "../../../utils/email";
 import { calculateGroupPaymentSplits } from "../../../utils/payment";
+import { AppError } from "../../../utils/AppError";
 import { recordBookingEventFor } from "../BookingEventService";
 import { NotificationService } from "../NotificationService";
 import { log, toPaise, type InitiateBookingPayload, type InitiateBookingResponse } from "./shared";
@@ -323,20 +324,46 @@ export const respondToBookingInvitation = async (
         const playerPayments = booking.payments.filter((p) => p.userType === "Player");
         const totalPlayerAmount = playerPayments.reduce((sum, p) => sum + p.amount, 0);
 
-        // Redistribute total among accepted participants
+        // A share that is already PAID must survive the redistribution: rebuilding it
+        // as PENDING would charge that person again and drop them from the refund
+        // targets (only PAID shares are refunded). Keep paid rows as they are and
+        // split only what is still unpaid among the accepted participants who have
+        // not paid yet.
+        const paidPlayerPayments = playerPayments.filter((p) => p.status === "PAID");
+        const paidUserIds = new Set(paidPlayerPayments.map((p) => p.userId.toString()));
+        const paidTotal = paidPlayerPayments.reduce((sum, p) => sum + p.amount, 0);
+        const unpaidAccepted = acceptedParticipants.filter(
+          (p) => !paidUserIds.has(p.userId.toString())
+        );
+        const amountToSplit = Math.round((totalPlayerAmount - paidTotal) * 100) / 100;
+
+        if (unpaidAccepted.length === 0 && amountToSplit > 0.005) {
+          // Everyone left has already paid their own share and nobody can absorb the
+          // decline. Rebuilding would either under-collect or reset paid shares, so
+          // stop here: the hold expires and every paid share is refunded.
+          throw new AppError(
+            "A share of this booking is already paid, so the group can no longer be changed. Please contact support.",
+            409
+          );
+        }
+
+        // Redistribute what is unpaid among accepted participants who have not paid
         const amountPerPerson =
-          Math.round((totalPlayerAmount / acceptedParticipants.length) * 100) / 100;
-        const sumOfSplits = amountPerPerson * (acceptedParticipants.length - 1);
-        const lastPersonAmount = Math.round((totalPlayerAmount - sumOfSplits) * 100) / 100;
+          unpaidAccepted.length > 0
+            ? Math.round((amountToSplit / unpaidAccepted.length) * 100) / 100
+            : 0;
+        const sumOfSplits = amountPerPerson * Math.max(unpaidAccepted.length - 1, 0);
+        const lastPersonAmount = Math.round((amountToSplit - sumOfSplits) * 100) / 100;
 
         // Update player payments
         const nonPlayerPayments = booking.payments.filter((p) => p.userType !== "Player");
         booking.payments = [
           ...nonPlayerPayments,
-          ...acceptedParticipants.map((p, index) => ({
+          ...paidPlayerPayments,
+          ...unpaidAccepted.map((p, index) => ({
             userId: p.userId,
             userType: "Player" as const,
-            amount: index === acceptedParticipants.length - 1 ? lastPersonAmount : amountPerPerson,
+            amount: index === unpaidAccepted.length - 1 ? lastPersonAmount : amountPerPerson,
             status: "PENDING" as const,
           })),
         ];

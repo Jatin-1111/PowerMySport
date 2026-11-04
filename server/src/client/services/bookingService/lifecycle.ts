@@ -878,6 +878,19 @@ export const updatePaymentStatus = async (
 
   // Send payment status notification and delete booking if failed
   if (status === "FAILED") {
+    // In a split booking another payer's share may already be PAID. One person's
+    // failed payment must not destroy a booking other people have paid for: keep it,
+    // so the failed payer can retry and the existing expiry job refunds the paid
+    // shares if the group never completes.
+    const otherSharePaid = Boolean(
+      booking.payments?.some(
+        (payment) =>
+          payment.userType === "Player" &&
+          payment.status === "PAID" &&
+          payment.userId.toString() !== payerUserId
+      )
+    );
+
     // Recorded BEFORE the delete below. The booking document is about to be
     // destroyed outright, so this event is the only durable trace that it
     // ever existed — which is much of the point of having an audit log.
@@ -888,10 +901,12 @@ export const updatePaymentStatus = async (
       actorUserId: context?.actorUserId ?? payerUserId,
       channel: eventChannel,
       amountPaise: toPaise(payerShare?.amount ?? booking.totalAmount),
-      summary: "Payment failed — booking document hard-deleted by updatePaymentStatus",
+      summary: otherSharePaid
+        ? "Payment failed — booking kept because another payer's share is already paid"
+        : "Payment failed — booking document hard-deleted by updatePaymentStatus",
       metadata: {
         payerUserId,
-        bookingDeleted: true,
+        bookingDeleted: !otherSharePaid,
         sport: booking.sport,
         date: getDateKey(booking.date),
         startTime: booking.startTime,
@@ -902,10 +917,12 @@ export const updatePaymentStatus = async (
 
     // Automatically delete the booking if payment fails
     // This removes unpaid bookings from showing up for coaches/venues/players
-    if (session) {
-      await Booking.deleteOne({ _id: booking._id }, { session });
-    } else {
-      await Booking.deleteOne({ _id: booking._id });
+    if (!otherSharePaid) {
+      if (session) {
+        await Booking.deleteOne({ _id: booking._id }, { session });
+      } else {
+        await Booking.deleteOne({ _id: booking._id });
+      }
     }
 
     const venue = await Venue.findById(booking.venueId).select("name");
