@@ -9,6 +9,7 @@ export interface Child {
   gender?: ChildGender;
   relation?: string;
   sportsFocus?: string[];
+  chosenSport?: string;
 }
 
 export interface AddChildPayload {

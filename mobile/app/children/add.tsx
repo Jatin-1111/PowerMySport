@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -17,6 +16,7 @@ import { CHILD_GENDERS, type ChildGender } from "@powermysport/shared-types";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
 import { Checkbox } from "@components/ui/Checkbox";
+import { DobFields, EMPTY_DOB, dobToIso, type DobValue } from "@components/ui/DobFields";
 import { childrenApi, RELATIONS, ageFromDob } from "@/modules/children/services/children";
 import { COLORS, WEB_URL } from "@lib/constants";
 
@@ -45,43 +45,12 @@ function Chip({
   );
 }
 
-function DigitBox({
-  label,
-  value,
-  onChangeText,
-  maxLength,
-  width,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  maxLength: number;
-  width: number;
-}) {
-  return (
-    <View style={{ width }}>
-      <Text className="text-muted mb-1.5 text-xs">{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={(v) => onChangeText(v.replace(/\D/g, "").slice(0, maxLength))}
-        keyboardType="number-pad"
-        maxLength={maxLength}
-        placeholder={label === "Year" ? "YYYY" : label === "Day" ? "DD" : "MM"}
-        placeholderTextColor={COLORS.ash}
-        className="rounded-button border-hairline bg-surface text-ink h-12 border px-3 text-base"
-      />
-    </View>
-  );
-}
-
 export default function AddChildScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [name, setName] = useState("");
-  const [day, setDay] = useState("");
-  const [month, setMonth] = useState("");
-  const [year, setYear] = useState("");
+  const [dob, setDob] = useState<DobValue>(EMPTY_DOB);
   const [gender, setGender] = useState<ChildGender | undefined>();
   const [relation, setRelation] = useState("CHILD");
   const [consentNeeded, setConsentNeeded] = useState(false);
@@ -98,21 +67,10 @@ export default function AddChildScreen() {
       .catch(() => setConsentNeeded(true));
   }, []);
 
-  const dobIso = (): string | null => {
-    const d = Number(day);
-    const m = Number(month);
-    const y = Number(year);
-    if (!d || !m || year.length !== 4) return null;
-    const date = new Date(Date.UTC(y, m - 1, d));
-    if (date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d)
-      return null;
-    return `${year}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-  };
-
   const validate = (): string | null => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = "Enter your child's name";
-    const iso = dobIso();
+    const iso = dobToIso(dob);
     if (!iso) e.dob = "Enter a valid date of birth";
     else {
       const age = ageFromDob(iso);
@@ -183,10 +141,8 @@ export default function AddChildScreen() {
         />
 
         <Text className="text-ink mb-1.5 text-sm font-medium">Date of birth</Text>
-        <View className="mb-1 flex-row gap-3">
-          <DigitBox label="Day" value={day} onChangeText={setDay} maxLength={2} width={72} />
-          <DigitBox label="Month" value={month} onChangeText={setMonth} maxLength={2} width={72} />
-          <DigitBox label="Year" value={year} onChangeText={setYear} maxLength={4} width={96} />
+        <View className="mb-1">
+          <DobFields value={dob} onChange={setDob} />
         </View>
         {errors.dob ? (
           <Text className="text-danger mb-3 text-xs">{errors.dob}</Text>
