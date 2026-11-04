@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { sendEmail } from "../../utils/email";
+import { sendEmail, escapeHtml } from "../../utils/email";
 import { EmailVerification } from "../models/EmailVerification";
 import { RateLimit } from "../models/RateLimit";
 import {
@@ -232,7 +232,7 @@ export const sendVerificationCode = async (
   </div>
   
   <div class="content">
-    <h2>Hi ${name}! 👋</h2>
+    <h2>Hi ${escapeHtml(name)}! 👋</h2>
     
     <p>Thank you for starting your venue onboarding with <strong>PowerMySport</strong>!</p>
     
@@ -252,7 +252,7 @@ export const sendVerificationCode = async (
   </div>
   
   <div class="footer">
-    <p>This email was sent to ${email}</p>
+    <p>This email was sent to ${escapeHtml(email)}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>

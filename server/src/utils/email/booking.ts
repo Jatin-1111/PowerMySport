@@ -1,4 +1,4 @@
-import { sendEmail, emailFrontendUrl, renderEmailShell, detailTable } from "./shared";
+import { sendEmail, emailFrontendUrl, renderEmailShell, detailTable, escapeHtml } from "./shared";
 
 type BookingLifecycleState = "AWAITING_PROVIDER" | "CONFIRMED" | "CANCELLED";
 
@@ -97,7 +97,7 @@ export const sendBookingLifecycleEmail = async (
                   <td colspan="2" style="padding:12px 0 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Reason</td>
                 </tr>
                 <tr>
-                  <td colspan="2" style="padding:4px 0 0;font-size:13px;color:#0f172a;">${options.cancellationReason}</td>
+                  <td colspan="2" style="padding:4px 0 0;font-size:13px;color:#0f172a;">${escapeHtml(String(options.cancellationReason ?? ""))}</td>
                 </tr>`
                     : ""
                 }
@@ -140,7 +140,7 @@ export const sendBookingLifecycleEmail = async (
 
           <tr>
             <td style="padding:28px 28px 22px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">${options.state === "CONFIRMED" ? "Here are your confirmed booking details." : options.state === "CANCELLED" ? "We have updated your booking status." : "Here are the booking details for your review."}</p>
 
               <div style="display:inline-block;background-color:${stateConfig.badgeBg};border:1px solid ${stateConfig.badgeBorder};color:${stateConfig.badgeText};font-size:12px;font-weight:700;line-height:12px;padding:8px 12px;border-radius:999px;margin-bottom:16px;">${stateConfig.badge}</div>
@@ -151,11 +151,11 @@ export const sendBookingLifecycleEmail = async (
                 </tr>
                 <tr>
                   <td style="padding:10px 0;font-size:13px;color:#64748b;">Venue</td>
-                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.venueName}</td>
+                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${escapeHtml(String(options.venueName ?? ""))}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Sport</td>
-                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.sport}</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${escapeHtml(String(options.sport ?? ""))}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Date</td>
@@ -302,19 +302,19 @@ export const sendBookingInvitationEmail = async (
   </div>
 
   <div class="content">
-    <h2>Hi ${options.inviteeName},</h2>
+    <h2>Hi ${escapeHtml(String(options.inviteeName ?? ""))},</h2>
 
-    <p><strong>${options.inviterName}</strong> has invited you to join a group booking!</p>
+    <p><strong>${escapeHtml(String(options.inviterName ?? ""))}</strong> has invited you to join a group booking!</p>
 
     <div class="booking-card">
       <h3>📅 Booking Details</h3>
       <div class="detail-row">
         <span class="detail-label">Sport:</span>
-        <span>${options.sport}</span>
+        <span>${escapeHtml(String(options.sport ?? ""))}</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Venue:</span>
-        <span>${options.venueName}</span>
+        <span>${escapeHtml(String(options.venueName ?? ""))}</span>
       </div>
       <div class="detail-row">
         <span class="detail-label">Date:</span>
@@ -349,7 +349,7 @@ export const sendBookingInvitationEmail = async (
   </div>
 
   <div class="footer">
-    <p>This email was sent to ${options.inviteeEmail}</p>
+    <p>This email was sent to ${escapeHtml(String(options.inviteeEmail ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -417,7 +417,7 @@ export const sendBookingConfirmationEmail = async (
 
           <tr>
             <td style="padding:28px 28px 22px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Thanks for booking with PowerMySport. Your session is confirmed and ready to view.</p>
 
               <div style="display:inline-block;background-color:#ecfdf3;border:1px solid #bbf7d0;color:#15803d;font-size:12px;font-weight:700;line-height:12px;padding:8px 12px;border-radius:999px;margin-bottom:16px;">PAYMENT SUCCESSFUL</div>
@@ -428,11 +428,11 @@ export const sendBookingConfirmationEmail = async (
                 </tr>
                 <tr>
                   <td style="padding:10px 0;font-size:13px;color:#64748b;">Venue</td>
-                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.venueName}</td>
+                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${escapeHtml(String(options.venueName ?? ""))}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Sport</td>
-                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.sport}</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${escapeHtml(String(options.sport ?? ""))}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Date</td>
@@ -553,7 +553,7 @@ export const sendBookingReminderEmail = async (
 </head>
 <body style="margin:0;padding:0;background-color:#eef2f7;font-family:Arial,sans-serif;color:#0f172a;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;visibility:hidden;">
-    ${reminderMessage} Your ${options.sport} booking at ${options.venueName}.
+    ${reminderMessage} Your ${escapeHtml(String(options.sport ?? ""))} booking at ${escapeHtml(String(options.venueName ?? ""))}.
   </div>
 
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef2f7;padding:28px 10px;">
@@ -570,7 +570,7 @@ export const sendBookingReminderEmail = async (
 
           <tr>
             <td style="padding:28px 28px 22px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">This is a friendly reminder about your upcoming booking.</p>
 
               <div style="display:inline-block;background-color:#fef3c7;border:1px solid #fde68a;color:#92400e;font-size:12px;font-weight:700;line-height:12px;padding:8px 12px;border-radius:999px;margin-bottom:16px;">STARTS IN ${timeframeText}</div>
@@ -581,11 +581,11 @@ export const sendBookingReminderEmail = async (
                 </tr>
                 <tr>
                   <td style="padding:10px 0;font-size:13px;color:#64748b;">Venue</td>
-                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.venueName}</td>
+                  <td style="padding:10px 0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${escapeHtml(String(options.venueName ?? ""))}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Sport</td>
-                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${options.sport}</td>
+                  <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#0f172a;font-weight:700;text-align:right;">${escapeHtml(String(options.sport ?? ""))}</td>
                 </tr>
                 <tr>
                   <td style="padding:10px 0;border-top:1px solid #e2e8f0;font-size:13px;color:#64748b;">Date</td>
@@ -660,10 +660,10 @@ export const sendWaitlistSlotAvailableEmail = async (
   });
   const html = renderEmailShell({
     heading: "A slot just opened up! ⚡",
-    intro: `Hi ${options.name || "there"}, good news — a slot you were waiting for is now available. These go fast, so book soon.`,
+    intro: `Hi ${escapeHtml(String(options.name || "there"))}, good news — a slot you were waiting for is now available. These go fast, so book soon.`,
     bodyHtml: detailTable([
-      ["Venue", options.venueName],
-      ["Sport", options.sport],
+      ["Venue", escapeHtml(String(options.venueName ?? ""))],
+      ["Sport", escapeHtml(String(options.sport ?? ""))],
       ["Date", dateStr],
       ["Time", `${options.startTime} – ${options.endTime}`],
     ]),

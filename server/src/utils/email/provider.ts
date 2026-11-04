@@ -1,4 +1,11 @@
-import { sendEmail, emailFrontendUrl, formatInr, renderEmailShell, detailTable } from "./shared";
+import {
+  sendEmail,
+  emailFrontendUrl,
+  formatInr,
+  renderEmailShell,
+  detailTable,
+  escapeHtml,
+} from "./shared";
 
 interface CoachVerificationStatusEmailOptions {
   name: string;
@@ -42,11 +49,11 @@ export const sendCoachVerificationStatusEmail = async (
     <h1>Coach Verification Update</h1>
   </div>
   <div class="content">
-    <p>Hi ${options.name},</p>
+    <p>Hi ${escapeHtml(String(options.name ?? ""))},</p>
     <p>Your coach verification status is now:</p>
     <p><span class="badge">${statusMessage}</span></p>
     <p>${actionCopy}</p>
-    ${options.notes ? `<div class="note"><strong>Notes:</strong> ${options.notes}</div>` : ""}
+    ${options.notes ? `<div class="note"><strong>Notes:</strong> ${escapeHtml(String(options.notes ?? ""))}</div>` : ""}
     <p style="margin-top: 20px;">Thanks,<br/>PowerMySport Team</p>
   </div>
 </body>
@@ -84,7 +91,7 @@ export const sendCoachVerificationReminderEmail = async (
     <h1>Complete Your Coach Verification</h1>
   </div>
   <div class="content">
-    <p>Hi ${options.name},</p>
+    <p>Hi ${escapeHtml(String(options.name ?? ""))},</p>
     <p>This is a reminder to complete and submit your coach verification profile and documents for admin review.</p>
     <div class="tip">
       <strong>What to do next:</strong>
@@ -158,20 +165,20 @@ export const sendCoachAdminCredentialsEmail = async (
 
           <tr>
             <td style="padding:28px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your coach profile has been created by the admin team. Use the details below to sign in and finish setting up your coaching presence.</p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dbeafe;border-radius:12px;background-color:#f8fbff;margin:0 0 16px;">
                 <tr>
                   <td style="padding:14px 16px;border-bottom:1px solid #dbeafe;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">Email</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.email}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.email ?? ""))}</p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:14px 16px;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">Temporary Password</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.password}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.password ?? ""))}</p>
                   </td>
                 </tr>
               </table>
@@ -198,7 +205,7 @@ export const sendCoachAdminCredentialsEmail = async (
 
           <tr>
             <td style="padding:18px 28px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${options.email}</p>
+              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
               <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
             </td>
           </tr>
@@ -246,20 +253,20 @@ export const sendVenueAdminCredentialsEmail = async (
 
           <tr>
             <td style="padding:28px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your venue has been listed by the admin team and is now ready to manage from your venue dashboard.</p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #fed7aa;border-radius:12px;background-color:#fffaf0;margin:0 0 16px;">
                 <tr>
                   <td style="padding:14px 16px;border-bottom:1px solid #fed7aa;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#9a3412;">Email</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.email}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.email ?? ""))}</p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:14px 16px;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#9a3412;">Temporary Password</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.password}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.password ?? ""))}</p>
                   </td>
                 </tr>
               </table>
@@ -286,7 +293,7 @@ export const sendVenueAdminCredentialsEmail = async (
 
           <tr>
             <td style="padding:18px 28px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${options.email}</p>
+              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
               <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
             </td>
           </tr>
@@ -334,20 +341,20 @@ export const sendExpertAdminCredentialsEmail = async (
 
           <tr>
             <td style="padding:28px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your expert profile has been created by the admin team. Use the details below to sign in and access your dashboard.</p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #e0e7ff;border-radius:12px;background-color:#f5f7ff;margin:0 0 16px;">
                 <tr>
                   <td style="padding:14px 16px;border-bottom:1px solid #e0e7ff;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#4f46e5;">Email</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.email}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.email ?? ""))}</p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:14px 16px;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#4f46e5;">Temporary Password</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;font-family:monospace;">${options.password}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;font-family:monospace;">${escapeHtml(String(options.password ?? ""))}</p>
                   </td>
                 </tr>
               </table>
@@ -406,12 +413,12 @@ export const sendCoachSubscriptionPurchasedEmail = async (
   const html = renderEmailShell({
     heading: forPlayer ? "Your coaching plan is active 🏆" : "You have a new subscriber 🎉",
     intro: forPlayer
-      ? `Hi ${options.name || "there"}, your subscription to ${options.counterpartName}'s coaching plan is now active.`
-      : `Hi ${options.name || "there"}, ${options.counterpartName} just subscribed to your coaching plan.`,
+      ? `Hi ${escapeHtml(String(options.name || "there"))}, your subscription to ${escapeHtml(String(options.counterpartName ?? ""))}'s coaching plan is now active.`
+      : `Hi ${escapeHtml(String(options.name || "there"))}, ${escapeHtml(String(options.counterpartName ?? ""))} just subscribed to your coaching plan.`,
     bodyHtml: detailTable([
-      ["Plan", options.packageName],
+      ["Plan", escapeHtml(String(options.packageName ?? ""))],
       ["Price", formatInr(options.price)],
-      [forPlayer ? "Coach" : "Subscriber", options.counterpartName],
+      [forPlayer ? "Coach" : "Subscriber", escapeHtml(String(options.counterpartName ?? ""))],
     ]),
     ctaLabel: forPlayer ? "View my subscriptions" : "View my clients",
     ctaUrl: `${emailFrontendUrl()}/${forPlayer ? "dashboard" : "coach/clients"}`,
@@ -421,7 +428,7 @@ export const sendCoachSubscriptionPurchasedEmail = async (
     to: options.email,
     subject: forPlayer
       ? `Your coaching plan with ${options.counterpartName} is active`
-      : `${options.counterpartName} subscribed to your coaching plan`,
+      : `${escapeHtml(String(options.counterpartName ?? ""))} subscribed to your coaching plan`,
     html,
   });
 };
@@ -441,11 +448,11 @@ export const sendCoachSubscriptionCancelledEmail = async (
   const html = renderEmailShell({
     heading: "Subscription cancelled",
     intro: forPlayer
-      ? `Hi ${options.name || "there"}, your subscription to ${options.counterpartName}'s coaching plan has been cancelled.`
-      : `Hi ${options.name || "there"}, ${options.counterpartName} has cancelled their subscription to your coaching plan.`,
+      ? `Hi ${escapeHtml(String(options.name || "there"))}, your subscription to ${escapeHtml(String(options.counterpartName ?? ""))}'s coaching plan has been cancelled.`
+      : `Hi ${escapeHtml(String(options.name || "there"))}, ${escapeHtml(String(options.counterpartName ?? ""))} has cancelled their subscription to your coaching plan.`,
     bodyHtml: detailTable([
-      ["Plan", options.packageName],
-      [forPlayer ? "Coach" : "Subscriber", options.counterpartName],
+      ["Plan", escapeHtml(String(options.packageName ?? ""))],
+      [forPlayer ? "Coach" : "Subscriber", escapeHtml(String(options.counterpartName ?? ""))],
     ]),
     ctaLabel: forPlayer ? "Explore coaches" : "View dashboard",
     ctaUrl: `${emailFrontendUrl()}/${forPlayer ? "coaches" : "coach/clients"}`,
@@ -484,7 +491,7 @@ export const sendExpertApprovedEmail = async (options: {
           </tr>
           <tr>
             <td style="padding:28px;background-color:#ffffff;">
-              <p style="margin:0 0 16px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Congratulations, ${options.name}!</p>
+              <p style="margin:0 0 16px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Congratulations, ${escapeHtml(String(options.name ?? ""))}!</p>
               <p style="margin:0 0 20px;font-size:15px;line-height:24px;color:#475569;">Your profile is now live on the PowerMySport platform. Clients can discover your profile, browse your availability, and book 1:1 sessions with you.</p>
               <p style="margin:0 0 20px;font-size:15px;line-height:24px;color:#475569;">Make sure your availability windows are set so clients can start booking right away.</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
@@ -539,10 +546,10 @@ export const sendExpertRejectedEmail = async (options: {
           </tr>
           <tr>
             <td style="padding:28px;background-color:#ffffff;">
-              <p style="margin:0 0 16px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 16px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Thank you for applying to join PowerMySport as an expert. After reviewing your profile, our team has some feedback for you:</p>
               <div style="background-color:#fef2f2;border-left:4px solid #dc2626;border-radius:4px;padding:14px 16px;margin:0 0 20px;">
-                <p style="margin:0;font-size:15px;line-height:24px;color:#7f1d1d;">${options.reason}</p>
+                <p style="margin:0;font-size:15px;line-height:24px;color:#7f1d1d;">${escapeHtml(String(options.reason ?? ""))}</p>
               </div>
               <p style="margin:0 0 20px;font-size:15px;line-height:24px;color:#475569;">Please update your profile and resubmit for review. Our team will review it again promptly.</p>
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">

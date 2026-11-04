@@ -1,4 +1,4 @@
-import { sendEmail, emailFrontendUrl, renderEmailShell, detailTable } from "./shared";
+import { sendEmail, emailFrontendUrl, renderEmailShell, detailTable, escapeHtml } from "./shared";
 
 interface PlanCheckInEmailOptions {
   email: string;
@@ -31,11 +31,11 @@ export const sendPlanCheckInEmail = async (options: PlanCheckInEmailOptions): Pr
 </head>
 <body>
   <div class="header">
-    <h1>How's it going with ${options.sport}?</h1>
+    <h1>How's it going with ${escapeHtml(String(options.sport ?? ""))}?</h1>
   </div>
   <div class="content">
-    <h2>Hi ${options.name},</h2>
-    <p>${options.title}</p>
+    <h2>Hi ${escapeHtml(String(options.name ?? ""))},</h2>
+    <p>${escapeHtml(String(options.title ?? ""))}</p>
     <p>A quick check-in — what have you noticed?</p>
     <div class="signal-box">
       <ul>${signalsHtml}</ul>
@@ -47,7 +47,7 @@ export const sendPlanCheckInEmail = async (options: PlanCheckInEmailOptions): Pr
     <p>Best regards,<br><strong>The PowerMySport Team</strong></p>
   </div>
   <div class="footer">
-    <p>This email was sent to ${options.email}</p>
+    <p>This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -67,6 +67,16 @@ interface FriendRequestEmailOptions {
   requesterName: string;
   requesterPhotoUrl?: string | undefined;
 }
+
+/**
+ * A user-supplied image URL placed inside a CSS `url("...")` in an email's <style>
+ * block. HTML entities are not decoded there, so escapeHtml does not help: allow only
+ * http(s), percent-encode everything unsafe, and drop anything else.
+ */
+const cssUrl = (value: string | undefined): string => {
+  if (!value || !/^https?:\/\//i.test(value)) return "";
+  return encodeURI(value).replace(/['()]/g, (c) => "%" + c.charCodeAt(0).toString(16));
+};
 
 export const sendFriendRequestEmail = async (options: FriendRequestEmailOptions): Promise<void> => {
   const dashboardUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/dashboard/friends`;
@@ -119,7 +129,7 @@ export const sendFriendRequestEmail = async (options: FriendRequestEmailOptions)
       height: 80px;
       border-radius: 50%;
       margin: 0 auto 15px;
-      ${options.requesterPhotoUrl ? `background-image: url(${options.requesterPhotoUrl});` : "background-color: #ff6b35;"}
+      ${options.requesterPhotoUrl ? `background-image: url("${cssUrl(options.requesterPhotoUrl)}");` : "background-color: #ff6b35;"}
       background-size: cover;
       background-position: center;
       display: flex;
@@ -145,13 +155,13 @@ export const sendFriendRequestEmail = async (options: FriendRequestEmailOptions)
   </div>
 
   <div class="content">
-    <h2>Hi ${options.recipientName},</h2>
+    <h2>Hi ${escapeHtml(String(options.recipientName ?? ""))},</h2>
 
-    <p><strong>${options.requesterName}</strong> wants to connect with you on PowerMySport!</p>
+    <p><strong>${escapeHtml(String(options.requesterName ?? ""))}</strong> wants to connect with you on PowerMySport!</p>
 
     <div class="user-card">
-      <div class="avatar">${!options.requesterPhotoUrl ? options.requesterName.charAt(0).toUpperCase() : ""}</div>
-      <h3>${options.requesterName}</h3>
+      <div class="avatar">${!options.requesterPhotoUrl ? escapeHtml(options.requesterName.charAt(0).toUpperCase()) : ""}</div>
+      <h3>${escapeHtml(String(options.requesterName ?? ""))}</h3>
       <p>Wants to be your friend</p>
     </div>
 
@@ -168,7 +178,7 @@ export const sendFriendRequestEmail = async (options: FriendRequestEmailOptions)
   </div>
 
   <div class="footer">
-    <p>This email was sent to ${options.recipientEmail}</p>
+    <p>This email was sent to ${escapeHtml(String(options.recipientEmail ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -242,7 +252,7 @@ export const sendFriendRequestAcceptedEmail = async (
       height: 80px;
       border-radius: 50%;
       margin: 0 auto 15px;
-      ${options.acceptedByPhotoUrl ? `background-image: url(${options.acceptedByPhotoUrl});` : "background-color: #28a745;"}
+      ${options.acceptedByPhotoUrl ? `background-image: url("${cssUrl(options.acceptedByPhotoUrl)}");` : "background-color: #28a745;"}
       background-size: cover;
       background-position: center;
       display: flex;
@@ -268,17 +278,17 @@ export const sendFriendRequestAcceptedEmail = async (
   </div>
 
   <div class="content">
-    <h2>Great news, ${options.requesterName}!</h2>
+    <h2>Great news, ${escapeHtml(String(options.requesterName ?? ""))}!</h2>
 
-    <p><strong>${options.acceptedByName}</strong> has accepted your friend request!</p>
+    <p><strong>${escapeHtml(String(options.acceptedByName ?? ""))}</strong> has accepted your friend request!</p>
 
     <div class="user-card">
-      <div class="avatar">${!options.acceptedByPhotoUrl ? options.acceptedByName.charAt(0).toUpperCase() : ""}</div>
-      <h3>${options.acceptedByName}</h3>
+      <div class="avatar">${!options.acceptedByPhotoUrl ? escapeHtml(options.acceptedByName.charAt(0).toUpperCase()) : ""}</div>
+      <h3>${escapeHtml(String(options.acceptedByName ?? ""))}</h3>
       <p>✓ Now friends</p>
     </div>
 
-    <p>You can now invite ${options.acceptedByName} to group bookings and stay connected through PowerMySport!</p>
+    <p>You can now invite ${escapeHtml(String(options.acceptedByName ?? ""))} to group bookings and stay connected through PowerMySport!</p>
 
     <center>
       <a href="${dashboardUrl}" class="button">
@@ -291,7 +301,7 @@ export const sendFriendRequestAcceptedEmail = async (
   </div>
 
   <div class="footer">
-    <p>This email was sent to ${options.requesterEmail}</p>
+    <p>This email was sent to ${escapeHtml(String(options.requesterEmail ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -320,11 +330,11 @@ export const sendReviewReceivedEmail = async (options: ReviewReceivedOptions): P
     "☆".repeat(5 - Math.max(0, Math.min(5, Math.round(options.rating))));
   const html = renderEmailShell({
     heading: "You received a new review",
-    intro: `Hi ${options.name || "there"}, ${options.reviewerName || "a player"} left a review for your ${options.targetType === "Coach" ? "coaching" : "venue"}.`,
+    intro: `Hi ${escapeHtml(String(options.name || "there"))}, ${escapeHtml(String(options.reviewerName || "a player"))} left a review for your ${options.targetType === "Coach" ? "coaching" : "venue"}.`,
     bodyHtml:
       detailTable([["Rating", `${stars} (${options.rating}/5)`]]) +
       (options.review
-        ? `<p style="margin-top:8px;"><strong>Their comment:</strong><br/>"${options.review}"</p>`
+        ? `<p style="margin-top:8px;"><strong>Their comment:</strong><br/>"${escapeHtml(String(options.review ?? ""))}"</p>`
         : ""),
     ctaLabel: "View reviews",
     ctaUrl: `${emailFrontendUrl()}/${options.targetType === "Coach" ? "coach/reviews" : "venue-lister/reviews"}`,
@@ -409,7 +419,7 @@ export const sendRankingDigestEmail = async (options: RankingDigestEmailOptions)
 
   const html = renderEmailShell({
     heading: "This week's ranking",
-    intro: `Hi ${options.name}, the list published on ${options.asOnDate} is out.`,
+    intro: `Hi ${escapeHtml(String(options.name ?? ""))}, the list published on ${options.asOnDate} is out.`,
     bodyHtml:
       detailTable(rows) +
       (idle

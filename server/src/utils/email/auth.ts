@@ -1,4 +1,4 @@
-import { sendEmail, emailFrontendUrl, renderEmailShell, detailTable } from "./shared";
+import { sendEmail, emailFrontendUrl, renderEmailShell, detailTable, escapeHtml } from "./shared";
 
 interface WelcomeEmailOptions {
   name: string;
@@ -79,7 +79,7 @@ export const sendWelcomeEmail = async (options: WelcomeEmailOptions): Promise<vo
   </div>
 
   <div class="content">
-    <h2>Hi ${options.name}! 👋</h2>
+    <h2>Hi ${escapeHtml(String(options.name ?? ""))}! 👋</h2>
 
     <p>Thank you for joining <strong>PowerMySport</strong> as a <strong>${roleNames[options.role] || "User"}</strong>!</p>
 
@@ -150,7 +150,7 @@ export const sendWelcomeEmail = async (options: WelcomeEmailOptions): Promise<vo
   </div>
 
   <div class="footer">
-    <p>This email was sent to ${options.email}</p>
+    <p>This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -231,7 +231,7 @@ export const sendPasswordResetEmail = async (options: PasswordResetEmailOptions)
   </div>
 
   <div class="content">
-    <h2>Hi ${options.name},</h2>
+    <h2>Hi ${escapeHtml(String(options.name ?? ""))},</h2>
 
     <p>We received a request to reset your password for your PowerMySport account.</p>
 
@@ -255,7 +255,7 @@ export const sendPasswordResetEmail = async (options: PasswordResetEmailOptions)
   </div>
 
   <div class="footer">
-    <p>This email was sent to ${options.email}</p>
+    <p>This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -343,14 +343,14 @@ export const sendCredentialsEmail = async (options: CredentialsEmailOptions): Pr
   </div>
 
   <div class="content">
-    <h2>Hi ${options.name},</h2>
+    <h2>Hi ${escapeHtml(String(options.name ?? ""))},</h2>
 
     <p>Good news! Your venue inquiry has been approved. You can now login to your Venue Lister Dashboard and start managing your venue.</p>
 
     <div class="credentials-box">
       <h3>🔐 Your Login Credentials</h3>
-      <p><strong>Email:</strong> ${options.email}</p>
-      <p><strong>Password:</strong> ${options.password}</p>
+      <p><strong>Email:</strong> ${escapeHtml(String(options.email ?? ""))}</p>
+      <p><strong>Password:</strong> ${escapeHtml(String(options.password ?? ""))}</p>
       <p><em>Please change your password after your first login.</em></p>
     </div>
 
@@ -365,7 +365,7 @@ export const sendCredentialsEmail = async (options: CredentialsEmailOptions): Pr
   </div>
 
   <div class="footer">
-    <p>This email was sent to ${options.email}</p>
+    <p>This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
     <p>© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
   </div>
 </body>
@@ -414,20 +414,20 @@ export const sendAdminTemporaryCredentialsEmail = async (
 
           <tr>
             <td style="padding:28px;background-color:#ffffff;">
-              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${options.name},</p>
+              <p style="margin:0 0 8px;font-size:18px;line-height:26px;color:#0f172a;font-weight:700;">Hi ${escapeHtml(String(options.name ?? ""))},</p>
               <p style="margin:0 0 16px;font-size:15px;line-height:24px;color:#475569;">Your ${roleLabel.toLowerCase()} account has been created successfully. Use the details below to sign in.</p>
 
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #dbeafe;border-radius:12px;background-color:#f8fbff;margin:0 0 16px;">
                 <tr>
                   <td style="padding:14px 16px;border-bottom:1px solid #dbeafe;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">Email</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.email}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.email ?? ""))}</p>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:14px 16px;">
                     <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#64748b;">Temporary Password</p>
-                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${options.temporaryPassword}</p>
+                    <p style="margin:6px 0 0;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;word-break:break-word;">${escapeHtml(String(options.temporaryPassword ?? ""))}</p>
                   </td>
                 </tr>
               </table>
@@ -454,7 +454,7 @@ export const sendAdminTemporaryCredentialsEmail = async (
 
           <tr>
             <td style="padding:18px 28px;background-color:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;">
-              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${options.email}</p>
+              <p style="margin:0 0 4px;font-size:13px;line-height:20px;color:#64748b;">This email was sent to ${escapeHtml(String(options.email ?? ""))}</p>
               <p style="margin:0;font-size:12px;line-height:18px;color:#94a3b8;">© ${new Date().getFullYear()} PowerMySport. All rights reserved.</p>
             </td>
           </tr>
@@ -495,8 +495,8 @@ export const sendAccountStatusEmail = async (options: AccountStatusOptions): Pro
   const html = renderEmailShell({
     heading,
     intro: reactivated
-      ? `Hi ${options.name || "there"}, your PowerMySport account has been reactivated and you can log in again.`
-      : `Hi ${options.name || "there"}, your PowerMySport account has been ${options.action === "DEACTIVATE" ? "deactivated" : "suspended"} by our team.`,
+      ? `Hi ${escapeHtml(String(options.name || "there"))}, your PowerMySport account has been reactivated and you can log in again.`
+      : `Hi ${escapeHtml(String(options.name || "there"))}, your PowerMySport account has been ${options.action === "DEACTIVATE" ? "deactivated" : "suspended"} by our team.`,
     bodyHtml: options.reason
       ? detailTable([["Reason", options.reason]]) +
         `<p style="margin-top:8px;">If you believe this was a mistake, please reply to this email or contact support.</p>`
@@ -522,7 +522,7 @@ interface PasswordChangedOptions {
 export const sendPasswordChangedEmail = async (options: PasswordChangedOptions): Promise<void> => {
   const html = renderEmailShell({
     heading: "Your password was changed",
-    intro: `Hi ${options.name || "there"}, this is a confirmation that the password for your PowerMySport account was just changed.`,
+    intro: `Hi ${escapeHtml(String(options.name || "there"))}, this is a confirmation that the password for your PowerMySport account was just changed.`,
     bodyHtml: `<p>If you made this change, no action is needed. <strong>If you did not change your password</strong>, please reset it immediately and contact support — your account may be at risk.</p>`,
     ctaLabel: "Reset password",
     ctaUrl: `${emailFrontendUrl()}/forgot-password`,
