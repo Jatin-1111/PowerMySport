@@ -210,7 +210,7 @@ export class CartService {
   /**
    * Clear entire cart
    */
-  async clearCart(userId: string): Promise<void> {
+  async clearCart(userId: string, options: { releaseReservations?: boolean } = {}): Promise<void> {
     const cart = await CartModel.findOne({
       userId: new mongoose.Types.ObjectId(userId),
     });
@@ -219,12 +219,17 @@ export class CartService {
       return;
     }
 
-    // Release all reserved inventory
-    for (const item of cart.items) {
-      await this.inventoryService.releaseReservedInventory(
-        item.productVariantId.toString(),
-        item.quantity
-      );
+    // Release all reserved inventory, unless the caller says the reservation was
+    // already consumed. After a successful payment the stock deduction has already
+    // taken these units out of "reserved"; releasing them again would subtract
+    // units other shoppers are holding.
+    if (options.releaseReservations !== false) {
+      for (const item of cart.items) {
+        await this.inventoryService.releaseReservedInventory(
+          item.productVariantId.toString(),
+          item.quantity
+        );
+      }
     }
 
     // Clear items and reset totals

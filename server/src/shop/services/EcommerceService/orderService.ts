@@ -238,9 +238,10 @@ export class OrderService {
       }
     }
 
-    // 3) Clear user's cart after successful order (best effort).
+    // 3) Clear user's cart after successful order (best effort). The reservation for
+    // these items was just consumed by the deduction above, so do NOT release it again.
     try {
-      await this.cartService.clearCart(order.userId.toString());
+      await this.cartService.clearCart(order.userId.toString(), { releaseReservations: false });
     } catch (err) {
       log.error("[order] cart clear failed (non-fatal)", {
         orderId,

@@ -13,13 +13,19 @@ process.env.PHONEPE_ENV = "SANDBOX";
 process.env.REDIS_ENABLED = "false";
 
 import assert = require("node:assert/strict");
-const { after, before, beforeEach, describe, it } = require("node:test");
+const { after, afterEach, before, beforeEach, describe, it, mock } = require("node:test");
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const { applyPromoCode, releasePromoUsage } = require("../client/services/PromoCodeService");
 const { cleanupExpiredBookings } = require("../client/services/bookingService/maintenance");
 const { updatePaymentStatus } = require("../client/services/bookingService/lifecycle");
+const PhonePeService = require("../shared/services/PhonePeService");
+const { initiateBookingRefunds } = require("../client/services/bookingService/notifications");
+const { CartService } = require("../shop/services/EcommerceService/cartService");
+const { ProductService } = require("../shop/services/EcommerceService/productService");
+const { Inventory, Cart } = require("../shop/models/Ecommerce");
+const { BookingPaymentTransaction } = require("../client/models/BookingPayment");
 const { Booking } = require("../client/models/Booking");
 const { PromoCode } = require("../shared/models/PromoCode");
 const redis = require("../config/redis").default;
@@ -164,5 +170,109 @@ describe("a booking with a PAID share is never destroyed", () => {
       "FAILED"
     );
     assert.equal(await Booking.collection.countDocuments({ _id: unpaid._id }), 0);
+  });
+});
+
+describe("a booking refund is claimed atomically", () => {
+  afterEach(() => mock.restoreAll());
+
+  it("sends one gateway refund even when two requests race", async () => {
+    const payer = oid();
+    const bookingId = oid();
+    await Booking.collection.insertOne({
+      _id: bookingId,
+      organizerId: payer,
+      userId: payer,
+      venueId: oid(),
+      status: "CANCELLED",
+      paymentType: "SINGLE",
+      participantName: "Test Player",
+      participantId: payer,
+      sport: "tennis",
+      date: new Date(),
+      startTime: "10:00",
+      endTime: "11:00",
+      totalAmount: 500,
+      payments: [{ userId: payer, userType: "Player", amount: 500, status: "PAID" }],
+    });
+    await BookingPaymentTransaction.collection.insertOne({
+      bookingId,
+      userId: payer,
+      merchantOrderId: "MO-" + bookingId.toString(),
+      status: "COMPLETED",
+      amount: 50000,
+    });
+
+    let gatewayCalls = 0;
+    mock.method(PhonePeService, "initiatePhonePeRefund", async () => {
+      gatewayCalls++;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return { state: "INITIATED", refundId: "rf-1", raw: {} };
+    });
+
+    const [a, b] = await Promise.all(
+      [1, 2].map(async () => {
+        const booking = await Booking.findById(bookingId);
+        return initiateBookingRefunds(booking, 100, "test");
+      })
+    );
+
+    assert.equal(gatewayCalls, 1, "exactly one refund reaches the gateway");
+    assert.equal([a, b].filter((r: any) => r.refundStatus === "PENDING").length >= 1, true);
+    const stored = await BookingPaymentTransaction.collection.findOne({ bookingId });
+    assert.equal(stored.refundState, "INITIATED");
+    assert.equal(stored.refundAmount, 50000);
+  });
+});
+
+describe("clearing a cart after payment does not release stock twice", () => {
+  const cartService = new CartService();
+  const productService = new ProductService();
+
+  const seed = async () => {
+    const sku = "CLR-" + oid().toString().slice(-6);
+    const product = await productService.createProduct({
+      sku,
+      name: "Test Racket",
+      description: "A test product.",
+      category: "EQUIPMENT",
+      images: ["https://cdn.example.com/racket.jpg"],
+      basePrice: 1000,
+      weight: 300,
+      dimensions: { length: 68, width: 25, height: 3 },
+      taxable: false,
+      taxRate: 0,
+      variants: [
+        {
+          sku: sku + "-STD",
+          variantLabel: "Standard",
+          attributes: new Map([["size", "27in"]]),
+          price: 1000,
+          stock: 10,
+          reorderLevel: 2,
+        },
+      ],
+    });
+    return product.variants[0]._id.toString();
+  };
+
+  it("keeps the reservation when the caller says it was already consumed", async () => {
+    const variantId = await seed();
+    const userId = oid().toString();
+    await cartService.addItemToCart(userId, variantId, 4);
+    await cartService.clearCart(userId, { releaseReservations: false });
+    const inventory = await Inventory.findOne({ productVariantId: variantId });
+    assert.equal(inventory.quantityReserved, 4);
+    const cart = await Cart.findOne({ userId });
+    assert.equal(cart.items.length, 0);
+  });
+
+  it("still releases the reservation by default (abandoning a cart)", async () => {
+    const variantId = await seed();
+    const userId = oid().toString();
+    await cartService.addItemToCart(userId, variantId, 4);
+    await cartService.clearCart(userId);
+    const inventory = await Inventory.findOne({ productVariantId: variantId });
+    assert.equal(inventory.quantityReserved, 0);
   });
 });

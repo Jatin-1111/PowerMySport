@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { Inventory as InventoryModel, Product as ProductModel } from "../../models/Ecommerce";
+import { log as __rootLog } from "../../../utils/logger";
+const log = __rootLog.child("ecommerce");
 
 export class InventoryService {
   /**
@@ -37,6 +39,15 @@ export class InventoryService {
       throw new Error("Inventory record not found");
     }
 
+    if (inventoryDoc.quantityReserved < quantity) {
+      // The clamp below hides an accounting error (a unit released twice, or a
+      // reservation that was never made). Say so, so the drift is visible.
+      log.warn("[inventory] release exceeds reserved quantity; clamping to 0", {
+        productVariantId,
+        reserved: inventoryDoc.quantityReserved,
+        releasing: quantity,
+      });
+    }
     inventoryDoc.quantityReserved = Math.max(0, inventoryDoc.quantityReserved - quantity);
     await inventoryDoc.save();
     return true;
