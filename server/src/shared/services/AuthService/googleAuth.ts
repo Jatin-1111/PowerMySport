@@ -5,9 +5,24 @@ import { sendWelcomeEmail } from "../../../utils/email";
 import { isSelfRegisterRole, SelfRegisterRole } from "../../constants/selfRegisterRoles";
 import { log, LEGAL_POLICY_VERSION, restoreIfPendingDeletion } from "./shared";
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+/**
+ * The Google OAuth client IDs whose ID tokens this server accepts.
+ *
+ * `GOOGLE_CLIENT_ID` may hold several, comma separated. One is the normal case. Two is how a client
+ * is moved to another Google Cloud project without a gap: the server accepts the old and the new ID
+ * while the website, and the mobile app, switch over, then the old one is removed. A token is
+ * accepted when it was issued for ANY listed ID. IDs are public, so listing one grants nothing by
+ * itself: the token's signature and expiry are still checked by Google's keys.
+ */
+export const parseGoogleClientIds = (raw: string | undefined): string[] =>
+  (raw ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 
-const googleOAuthClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+// Built without an ID on purpose: the accepted audiences are passed on every verification.
+// Exported only so a test can stand in for Google's network call.
+export const googleOAuthClient = new OAuth2Client();
 
 export interface VerifiedGoogleIdentity {
   googleId: string;
@@ -25,7 +40,8 @@ export interface VerifiedGoogleIdentity {
 export const verifyGoogleCredential = async (
   credential: unknown
 ): Promise<VerifiedGoogleIdentity> => {
-  if (!GOOGLE_CLIENT_ID) {
+  const clientIds = parseGoogleClientIds(process.env.GOOGLE_CLIENT_ID);
+  if (clientIds.length === 0) {
     throw new Error("Google login is not configured on the server.");
   }
   if (!credential || typeof credential !== "string") {
@@ -36,7 +52,7 @@ export const verifyGoogleCredential = async (
   try {
     ticket = await googleOAuthClient.verifyIdToken({
       idToken: credential,
-      audience: GOOGLE_CLIENT_ID,
+      audience: clientIds,
     });
   } catch {
     throw new Error("Invalid Google credential.");

@@ -71,6 +71,7 @@
     "migrate:sports-focus": "ts-node src/migrations/43_backfill_sports_focus_from_chosen_sport.ts",
     "migrate:ranking-link-indexes": "ts-node src/migrations/44_add_player_ranking_link_indexes.ts",
     "test:ranking-claim": "npm run build && node --test --test-force-exit dist/tests/rankingClaim.integration.test.js",
+    "test:google-client-ids": "npm run build && node --test --test-force-exit dist/tests/googleAuthClientIds.unit.test.js",
     "test:expo-push": "npm run build && node --test --test-force-exit dist/tests/expoPush.integration.test.js",
     "test:ranking-digest": "npm run build && node --test --test-force-exit dist/tests/rankingDigest.integration.test.js",
     "test:ranking-dedupe": "npm run build && node --test --test-force-exit dist/tests/aitaIngestDedupe.integration.test.js",
