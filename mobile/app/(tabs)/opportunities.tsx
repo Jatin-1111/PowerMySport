@@ -13,6 +13,7 @@ import {
   type OpportunityTrack,
 } from "@/modules/opportunities/services/opportunities";
 import { COLORS } from "@lib/constants";
+import { PressableScale, Reveal } from "@lib/motion";
 
 const TRACKS: { value: OpportunityTrack; label: string }[] = [
   { value: "scholarship", label: "Scholarships" },
@@ -129,28 +130,31 @@ export default function OpportunitiesScreen() {
               </Text>
               <View className="rounded-tile border-hairline bg-surface overflow-hidden border">
                 {group.items.map((o, index) => (
-                  <TouchableOpacity
-                    key={o.slug}
-                    activeOpacity={0.7}
-                    onPress={() =>
-                      router.push({ pathname: "/opportunities/[slug]", params: { slug: o.slug } })
-                    }
-                    className={`flex-row items-center px-4 py-4 ${index > 0 ? "border-hairline border-t" : ""}`}
-                  >
-                    <View className="mr-3 flex-1">
-                      <Text className="text-ink text-base font-semibold">{o.title}</Text>
-                      {o.owner?.name ? (
-                        <Text className="text-muted mt-0.5 text-sm">{o.owner.name}</Text>
-                      ) : null}
-                      <Text className={`mt-1.5 text-sm font-medium ${STATE_COLOR[o.cycleState]}`}>
-                        {windowLine(o, list.today)}
-                      </Text>
-                      {followed.has(o.slug) ? (
-                        <Text className="text-action mt-1 text-xs">Following</Text>
-                      ) : null}
-                    </View>
-                    <ChevronRight size={18} color={COLORS.muted} />
-                  </TouchableOpacity>
+                  <Reveal key={o.slug} index={index}>
+                    <PressableScale
+                      onPress={() =>
+                        router.push({
+                          pathname: "/opportunities/[slug]",
+                          params: { slug: o.slug },
+                        })
+                      }
+                      className={`flex-row items-center px-4 py-4 ${index > 0 ? "border-hairline border-t" : ""}`}
+                    >
+                      <View className="mr-3 flex-1">
+                        <Text className="text-ink text-base font-semibold">{o.title}</Text>
+                        {o.owner?.name ? (
+                          <Text className="text-muted mt-0.5 text-sm">{o.owner.name}</Text>
+                        ) : null}
+                        <Text className={`mt-1.5 text-sm font-medium ${STATE_COLOR[o.cycleState]}`}>
+                          {windowLine(o, list.today)}
+                        </Text>
+                        {followed.has(o.slug) ? (
+                          <Text className="text-action mt-1 text-xs">Following</Text>
+                        ) : null}
+                      </View>
+                      <ChevronRight size={18} color={COLORS.muted} />
+                    </PressableScale>
+                  </Reveal>
                 ))}
               </View>
             </View>

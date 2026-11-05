@@ -22,6 +22,7 @@ import { useAuthStore } from "@/modules/auth/store/authStore";
 import { authApi } from "@/modules/auth/services/auth";
 import { unregisterOnSignOut } from "@/modules/push/services/push";
 import { COLORS } from "@lib/constants";
+import { PressableScale, Reveal } from "@lib/motion";
 
 interface MenuItemProps {
   icon: React.ComponentType<{ size: number; color: string }>;
@@ -34,9 +35,8 @@ interface MenuItemProps {
 
 function MenuItem({ icon: Icon, label, sublabel, onPress, badge, destructive }: MenuItemProps) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
-      activeOpacity={0.7}
       className="border-border flex-row items-center border-b px-4 py-4 last:border-b-0"
     >
       <View
@@ -59,7 +59,7 @@ function MenuItem({ icon: Icon, label, sublabel, onPress, badge, destructive }: 
       ) : (
         <ChevronRight size={16} color={COLORS.muted} />
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -132,35 +132,39 @@ export default function ProfileScreen() {
         </View>
 
         {/* Preferences Section */}
-        <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <Text className="text-muted px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wider">
-            Preferences
-          </Text>
-          <MenuItem
-            icon={Bell}
-            label="Notifications"
-            sublabel="Your inbox"
-            onPress={() => router.push("/notifications")}
-          />
-          <MenuItem
-            icon={Bell}
-            label="Notification settings"
-            sublabel="What reaches this phone"
-            onPress={() => router.push("/notification-settings")}
-          />
-        </View>
+        <Reveal index={1}>
+          <View className="mx-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
+            <Text className="text-muted px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wider">
+              Preferences
+            </Text>
+            <MenuItem
+              icon={Bell}
+              label="Notifications"
+              sublabel="Your inbox"
+              onPress={() => router.push("/notifications")}
+            />
+            <MenuItem
+              icon={Bell}
+              label="Notification settings"
+              sublabel="What reaches this phone"
+              onPress={() => router.push("/notification-settings")}
+            />
+          </View>
+        </Reveal>
 
         {/* Logout */}
-        <View className="mx-4 mb-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
-          <MenuItem icon={LogOut} label="Sign Out" onPress={handleLogout} destructive />
-          <MenuItem
-            icon={Trash2}
-            label="Delete account"
-            sublabel="Permanently deleted after 30 days"
-            onPress={() => router.push("/delete-account")}
-            destructive
-          />
-        </View>
+        <Reveal index={2}>
+          <View className="mx-4 mb-4 mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
+            <MenuItem icon={LogOut} label="Sign Out" onPress={handleLogout} destructive />
+            <MenuItem
+              icon={Trash2}
+              label="Delete account"
+              sublabel="Permanently deleted after 30 days"
+              onPress={() => router.push("/delete-account")}
+              destructive
+            />
+          </View>
+        </Reveal>
 
         <Text className="text-muted mb-4 text-center text-xs">PowerMySport v1.0.0</Text>
       </ScrollView>

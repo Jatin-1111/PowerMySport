@@ -15,6 +15,7 @@ import { SuggestedPanel } from "@/modules/planner/components/SuggestedPanel";
 import { ExpectedLater, PlannerTour } from "@/modules/planner/components/ExpectedAndTour";
 import { Body, Panel, Segmented, SmallButton } from "@/modules/planner/components/ui";
 import { COLORS } from "@lib/constants";
+import { Reveal } from "@lib/motion";
 
 type Tab = "plan" | "suggested" | "find";
 
@@ -138,7 +139,7 @@ function Board({ child }: { child: Child }) {
   const active = tab ?? "suggested";
 
   return (
-    <View>
+    <Reveal>
       <Text className="text-ink mb-1 text-2xl font-bold">{name}'s season</Text>
       <Text className="text-body mb-3 text-sm leading-relaxed">{standingSentence(overview)}</Text>
       <View className="mb-5 flex-row flex-wrap gap-2">
@@ -190,7 +191,7 @@ function Board({ child }: { child: Child }) {
       </View>
 
       <PlannerTour replay={replay} onClose={() => setReplay(false)} />
-    </View>
+    </Reveal>
   );
 }
 

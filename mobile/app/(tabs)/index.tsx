@@ -35,6 +35,7 @@ import {
   type AttentionItem,
 } from "@/modules/home/utils/attention";
 import { COLORS } from "@lib/constants";
+import { PressableScale, Reveal } from "@lib/motion";
 import { RANKINGS_HOME, ROADMAP_HOME } from "@lib/routes";
 
 const sportOf = (c: Child): string => c.chosenSport || c.sportsFocus?.[0] || "";
@@ -64,9 +65,8 @@ function Row({
   icon: React.ComponentType<{ size: number; color: string }>;
 }) {
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={onPress}
-      activeOpacity={0.7}
       accessibilityRole="button"
       className="border-hairline min-h-[64px] flex-row items-center border-t px-4 py-3"
     >
@@ -78,7 +78,7 @@ function Row({
         <Text className="text-muted mt-0.5 text-sm">{subtitle}</Text>
       </View>
       <ChevronRight size={18} color={COLORS.muted} />
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -86,9 +86,8 @@ function AttentionRow({ item, first }: { item: AttentionItem; first: boolean }) 
   const router = useRouter();
   const urgent = item.daysAway <= URGENT_DAYS;
   return (
-    <TouchableOpacity
+    <PressableScale
       onPress={() => router.push(item.href)}
-      activeOpacity={0.7}
       accessibilityRole="button"
       className={`min-h-[64px] flex-row items-center px-4 py-3 ${first ? "" : "border-hairline border-t"}`}
     >
@@ -100,7 +99,7 @@ function AttentionRow({ item, first }: { item: AttentionItem; first: boolean }) 
         <Text className="text-body mt-0.5 text-sm">{item.line}</Text>
       </View>
       <ChevronRight size={18} color={COLORS.muted} />
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 
@@ -214,7 +213,7 @@ export default function HomeScreen() {
           </Text>
           <Text className="text-ink mt-1 text-3xl font-bold">PowerMySport</Text>
         </View>
-        <TouchableOpacity
+        <PressableScale
           onPress={() => router.push("/notifications")}
           accessibilityRole="button"
           accessibilityLabel={
@@ -230,7 +229,7 @@ export default function HomeScreen() {
               </Text>
             </View>
           ) : null}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {children.status === "error" && !children.data ? (
@@ -261,7 +260,7 @@ export default function HomeScreen() {
           </Panel>
         </View>
       ) : (
-        <>
+        <Reveal key={child._id}>
           {list.length > 1 ? (
             <View className="mt-5 flex-row flex-wrap gap-2">
               {list.map((c) => (
@@ -426,14 +425,13 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </>
           ) : null}
-        </>
+        </Reveal>
       )}
 
       <SectionTitle>Explore</SectionTitle>
       <View className="border-hairline bg-surface rounded-tile overflow-hidden border">
-        <TouchableOpacity
+        <PressableScale
           onPress={() => router.push(ROADMAP_HOME as Href)}
-          activeOpacity={0.7}
           accessibilityRole="button"
           className="min-h-[64px] flex-row items-center px-4 py-3"
         >
@@ -445,7 +443,7 @@ export default function HomeScreen() {
             <Text className="text-muted mt-0.5 text-sm">The path in a sport, stage by stage</Text>
           </View>
           <ChevronRight size={18} color={COLORS.muted} />
-        </TouchableOpacity>
+        </PressableScale>
         <Row
           icon={ListOrdered}
           title="Rankings"

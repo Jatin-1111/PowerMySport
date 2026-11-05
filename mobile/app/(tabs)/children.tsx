@@ -7,6 +7,7 @@ import { Avatar } from "@components/ui/Avatar";
 import { Button } from "@components/ui/Button";
 import { childrenApi, ageFromDob, type Child } from "@/modules/children/services/children";
 import { COLORS } from "@lib/constants";
+import { PressableScale, Reveal } from "@lib/motion";
 
 export default function ChildrenScreen() {
   const router = useRouter();
@@ -86,21 +87,21 @@ export default function ChildrenScreen() {
               .filter(Boolean)
               .join(" · ");
             return (
-              <TouchableOpacity
-                key={child._id}
-                activeOpacity={0.7}
-                onPress={() =>
-                  router.push({ pathname: "/children/[id]", params: { id: child._id } })
-                }
-                className={`flex-row items-center px-4 py-4 ${index > 0 ? "border-hairline border-t" : ""}`}
-              >
-                <Avatar name={child.name} size="md" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-ink text-base font-semibold">{child.name}</Text>
-                  {detail ? <Text className="text-muted mt-0.5 text-sm">{detail}</Text> : null}
-                </View>
-                <ChevronRight size={18} color={COLORS.muted} />
-              </TouchableOpacity>
+              <Reveal key={child._id} index={index}>
+                <PressableScale
+                  onPress={() =>
+                    router.push({ pathname: "/children/[id]", params: { id: child._id } })
+                  }
+                  className={`flex-row items-center px-4 py-4 ${index > 0 ? "border-hairline border-t" : ""}`}
+                >
+                  <Avatar name={child.name} size="md" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-ink text-base font-semibold">{child.name}</Text>
+                    {detail ? <Text className="text-muted mt-0.5 text-sm">{detail}</Text> : null}
+                  </View>
+                  <ChevronRight size={18} color={COLORS.muted} />
+                </PressableScale>
+              </Reveal>
             );
           })}
         </View>
