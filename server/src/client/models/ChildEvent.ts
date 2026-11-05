@@ -37,6 +37,22 @@ export interface ChildEventDocument extends Document {
   /** The planner edition this result belongs to, when it was added from a played tournament. */
   editionSlug?: string;
   sportSlug?: string;
+  /**
+   * One photo of the certificate or result sheet, in the private child bucket. It starts as
+   * `uploading` and counts only once the server has checked the stored object's real size and
+   * type. The row holds the key from the moment the upload starts, so every delete path
+   * (entry, child, account) can find the object and remove it.
+   */
+  photo?: {
+    status: "uploading" | "ready";
+    key: string;
+    contentType: string;
+    /** What the phone said it would send; checked against the stored object on completion. */
+    declaredBytes: number;
+    /** The real size, read from storage once the upload completes. */
+    sizeBytes?: number;
+    startedAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,6 +81,19 @@ const childEventSchema = new Schema<ChildEventDocument>(
     resultUrl: { type: String, trim: true, maxlength: 500 },
     editionSlug: { type: String, trim: true, maxlength: 120 },
     sportSlug: { type: String, trim: true, maxlength: 60 },
+    photo: {
+      type: new Schema(
+        {
+          status: { type: String, enum: ["uploading", "ready"], required: true },
+          key: { type: String, required: true },
+          contentType: { type: String, required: true },
+          declaredBytes: { type: Number, required: true, min: 1 },
+          sizeBytes: { type: Number, min: 1 },
+          startedAt: { type: Date, required: true },
+        },
+        { _id: false }
+      ),
+    },
   },
   { timestamps: true }
 );

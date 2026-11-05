@@ -3,6 +3,7 @@ import {
   CHILD_EVENT_DATE_PRECISIONS,
   CHILD_EVENT_KINDS,
   CHILD_HISTORY_LIMITS,
+  CHILD_PHOTO_CONTENT_TYPES,
   CHILD_SHARE_SECTIONS,
   CHILD_VIDEO_CONTENT_TYPES,
 } from "@powermysport/shared-types";
@@ -57,6 +58,13 @@ export const saveAcademicsSchema = z
   .strict()
   .refine((body) => Object.keys(body).length > 0, "Nothing to change");
 
+export const startPhotoUploadSchema = z
+  .object({
+    contentType: z.enum(CHILD_PHOTO_CONTENT_TYPES),
+    sizeBytes: z.number().int().min(1).max(CHILD_HISTORY_LIMITS.photoMaxBytes),
+  })
+  .strict();
+
 export const startVideoUploadSchema = z
   .object({
     contentType: z.enum(CHILD_VIDEO_CONTENT_TYPES),
@@ -92,6 +100,10 @@ const shareSections = z
   .max(CHILD_SHARE_SECTIONS.length);
 const objectId = z.string().regex(/^[a-f0-9]{24}$/i, "Not a valid video");
 
+const photoEventIds = z
+  .array(z.string().regex(/^[a-f0-9]{24}$/i, "Not a valid entry"))
+  .max(CHILD_HISTORY_LIMITS.photosPerChild);
+
 export const createShareSchema = z
   .object({
     recipientLabel: z
@@ -101,6 +113,7 @@ export const createShareSchema = z
       .max(CHILD_HISTORY_LIMITS.shareLabelChars),
     sections: shareSections,
     videoIds: z.array(objectId).max(CHILD_HISTORY_LIMITS.videosPerChild).optional(),
+    photoEventIds: photoEventIds.optional(),
     /** The parent's agreement to the sharing notice. Nothing is created without it. */
     consent: z.literal(true),
   })
@@ -110,6 +123,7 @@ export const previewShareSchema = z
   .object({
     sections: shareSections,
     videoIds: z.array(objectId).max(CHILD_HISTORY_LIMITS.videosPerChild).optional(),
+    photoEventIds: photoEventIds.optional(),
   })
   .strict();
 

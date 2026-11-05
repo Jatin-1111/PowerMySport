@@ -57,6 +57,8 @@ const SECTION_TITLES: Record<ChildShareSection, string> = {
   awards: "Awards",
   academics: "Academics",
   videos: "Videos",
+  // Never drawn: a CV is text only, so certificate photos are not part of the PDF.
+  certificates: "Certificates",
 };
 
 const ORDER: ChildShareSection[] = [

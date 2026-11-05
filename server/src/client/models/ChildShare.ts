@@ -25,6 +25,8 @@ export interface ChildShareDocument extends Document {
   tokenHash: string;
   sections: ChildShareSection[];
   videoIds: Types.ObjectId[];
+  /** The entries whose certificate photo this link shows. A photo added later is never included. */
+  photoEventIds: Types.ObjectId[];
   expiresAt: Date;
   revokedAt?: Date;
   purgeAt: Date;
@@ -49,6 +51,7 @@ const childShareSchema = new Schema<ChildShareDocument>(
     tokenHash: { type: String, required: true },
     sections: { type: [{ type: String, enum: [...CHILD_SHARE_SECTIONS] }], default: [] },
     videoIds: { type: [Schema.Types.ObjectId], ref: "ChildVideo", default: [] },
+    photoEventIds: { type: [Schema.Types.ObjectId], ref: "ChildEvent", default: [] },
     expiresAt: { type: Date, required: true },
     revokedAt: { type: Date },
     purgeAt: { type: Date, required: true },

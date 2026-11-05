@@ -7,8 +7,10 @@ import mongoose from "mongoose";
 import { AppError } from "../../../utils/AppError";
 import { ChildAcademicProfile } from "../../models/ChildAcademicProfile";
 import { ChildEvent } from "../../models/ChildEvent";
+import { ChildShare } from "../../models/ChildShare";
 import { Player } from "../../models/Player";
 import { SeasonPlan } from "../../models/SeasonPlan";
+import { removeEventPhotos } from "../ChildEventPhotoCleanup";
 import { RankingClaimService } from "../RankingClaimService";
 import type { CreateChildEventInput, SaveAcademicsInput, UpdateChildEventInput } from "./schemas";
 import { buildStats, buildTimeline, presentStoredEvent, type StoredEvent } from "./timeline";
@@ -291,8 +293,17 @@ export const ChildHistoryService = {
   async deleteEvent(userId: string, childId: string, eventId: string): Promise<void> {
     await assertOwnedChild(userId, childId);
     assertOwnedEventId(eventId);
+    // The photo's file goes first: if storage refuses, the entry stays and the delete can be
+    // retried, rather than leaving a file nothing points to.
+    try {
+      await removeEventPhotos({ _id: eventId, childId, userId });
+    } catch {
+      throw new AppError("Could not remove this entry's photo just now. Please try again.", 502);
+    }
     const result = await ChildEvent.deleteOne({ _id: eventId, childId, userId });
     if (result.deletedCount === 0) throw new AppError("That entry was not found.", 404);
+    // Links made earlier stop listing this entry's photo.
+    await ChildShare.updateMany({ childId }, { $pull: { photoEventIds: eventId } });
   },
 
   async saveAcademics(userId: string, childId: string, input: SaveAcademicsInput) {

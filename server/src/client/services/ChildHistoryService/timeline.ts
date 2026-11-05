@@ -32,6 +32,7 @@ export interface StoredEvent {
   endedOn?: Date | null | undefined;
   resultUrl?: string | null | undefined;
   editionSlug?: string | null | undefined;
+  photo?: { status: string } | null | undefined;
 }
 
 export interface PlayedEntry {
@@ -65,6 +66,7 @@ export const presentStoredEvent = (event: StoredEvent): ChildTimelineRow => ({
   source: sourceOf({ resultUrl: event.resultUrl }),
   editable: true,
   canAddResult: false,
+  ...(event.photo?.status === "ready" ? { hasPhoto: true } : {}),
 });
 
 const fromPlayed = (entry: PlayedEntry): ChildTimelineRow => ({

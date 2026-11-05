@@ -98,6 +98,12 @@ export const requestContact = asyncHandler(async (req: Request, res: Response): 
   res.status(201).json({ success: true, data });
 });
 
+/** GET /api/share/:token/photos/:entryId  (a ten-minute link to one chosen certificate photo) */
+export const viewSharedPhoto = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const data = await ChildShareService.photoFor(tokenOf(req), String(req.params.entryId ?? ""));
+  res.json({ success: true, data });
+});
+
 /** GET /api/share/:token/videos/:videoId/playback */
 export const playSharedVideo = asyncHandler(async (req: Request, res: Response): Promise<void> => {
   const data = await ChildShareService.playbackFor(tokenOf(req), String(req.params.videoId ?? ""));

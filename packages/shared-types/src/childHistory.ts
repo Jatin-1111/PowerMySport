@@ -47,6 +47,8 @@ export const CHILD_SHARE_SECTIONS = [
   "awards",
   "academics",
   "videos",
+  /** Photos of certificates the parent chose, one entry at a time. Off unless ticked. */
+  "certificates",
 ] as const;
 export type ChildShareSection = (typeof CHILD_SHARE_SECTIONS)[number];
 
@@ -64,6 +66,13 @@ export type ChildVideoStatus = (typeof CHILD_VIDEO_STATUSES)[number];
 /** Only these are accepted, because the clip is played as uploaded, with no conversion. */
 export const CHILD_VIDEO_CONTENT_TYPES = ["video/mp4", "video/quicktime", "video/webm"] as const;
 export type ChildVideoContentType = (typeof CHILD_VIDEO_CONTENT_TYPES)[number];
+
+/**
+ * A photo of a certificate or result sheet, one per entry. Only formats a phone camera or gallery
+ * produces as is; the picker hands over JPEG unless asked otherwise.
+ */
+export const CHILD_PHOTO_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export type ChildPhotoContentType = (typeof CHILD_PHOTO_CONTENT_TYPES)[number];
 
 export const CHILD_ACADEMIC_BOARDS = ["CBSE", "ICSE", "ISC", "IB", "STATE", "OTHER"] as const;
 export type ChildAcademicBoard = (typeof CHILD_ACADEMIC_BOARDS)[number];
@@ -85,6 +94,9 @@ export const CHILD_HISTORY_LIMITS = {
   videoPartBytes: 8 * 1024 * 1024,
   /** One account may start this much video in a day, so a script cannot fill storage. */
   videoBytesPerDay: 5 * 300 * 1024 * 1024,
+  /** One photo per entry, and a ceiling per child so storage cannot grow without bound. */
+  photoMaxBytes: 8 * 1024 * 1024,
+  photosPerChild: 60,
   shareLabelChars: 60,
   contactMessageChars: 500,
   contactNameChars: 80,
@@ -121,6 +133,11 @@ export interface ChildTimelineRow {
   editable: boolean;
   /** A tournament marked played that has no stored result yet: the screen offers "Add result". */
   canAddResult: boolean;
+  /**
+   * A finished photo is attached. Only the parent's own page carries this; it is never part of
+   * what a shared link shows unless the parent chose to include certificates.
+   */
+  hasPhoto?: boolean;
 }
 
 /** A clip as the parent's page lists it. The file itself is only reached through a short link. */
@@ -178,6 +195,11 @@ export interface ChildSharePublicRow {
   endedOn?: string;
   resultUrl?: string;
   source: ChildHistorySource;
+  /**
+   * Present only when the parent chose this entry's certificate photo for this link. It is the
+   * entry's id; the photo itself is reached through a short-lived link, never by a stored address.
+   */
+  photoId?: string;
 }
 
 export interface ChildSharePublicView {
@@ -208,6 +230,8 @@ export interface ChildShareListItem {
   recipientLabel: string;
   sections: ChildShareSection[];
   videoCount: number;
+  /** How many certificate photos the link shows. */
+  photoCount: number;
   createdAt: string;
   expiresAt: string;
   revokedAt?: string;

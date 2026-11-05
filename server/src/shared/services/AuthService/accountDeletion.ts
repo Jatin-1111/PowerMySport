@@ -173,8 +173,14 @@ export const cascadeDeleteUserData = async (userId: string): Promise<void> => {
     ],
     [
       "ChildEvent",
-      async () =>
-        (await import("../../../client/models/ChildEvent")).ChildEvent.deleteMany({ userId }),
+      async () => {
+        await (
+          await import("../../../client/services/ChildEventPhotoCleanup")
+        ).removeEventPhotos({ userId });
+        return (await import("../../../client/models/ChildEvent")).ChildEvent.deleteMany({
+          userId,
+        });
+      },
     ],
     [
       "ChildAcademicProfile",

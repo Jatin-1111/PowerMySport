@@ -126,10 +126,15 @@ export const CHILD_RECORDS: ChildRecordRule[] = [
     field: "childId",
     action: "remove",
     why: "The sporting history is the child's own record, so it goes with them. Retention: kept until the child or the account is deleted.",
-    run: async (context) =>
-      (await import("../../../client/models/ChildEvent")).ChildEvent.deleteMany({
+    run: async (context) => {
+      // The certificate photos' files first, so none is left in storage with nothing pointing to it.
+      await (
+        await import("../../../client/services/ChildEventPhotoCleanup")
+      ).removeEventPhotos({ childId: idOf(context) });
+      return (await import("../../../client/models/ChildEvent")).ChildEvent.deleteMany({
         childId: idOf(context),
-      }),
+      });
+    },
   },
   {
     model: "ChildAcademicProfile",

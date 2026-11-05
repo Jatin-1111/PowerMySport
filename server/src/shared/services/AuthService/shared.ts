@@ -26,7 +26,7 @@ export const CHILD_VIDEO_CONSENT_VERSION = "2026-10";
  * coach. It is stored on the link itself, so what a parent agreed to is a fact about that link.
  * Raise it when the wording changes.
  */
-export const CHILD_SHARING_CONSENT_VERSION = "2026-10";
+export const CHILD_SHARING_CONSENT_VERSION = "2026-11";
 
 /**
  * Grace period (in ms) between a self-service deletion request and the

@@ -258,7 +258,7 @@ describe("making a link", () => {
     const stored = await ChildShare.findOne({}).lean();
     assert.ok(!JSON.stringify(stored).includes(token), "the link itself is not stored anywhere");
     assert.match(stored.tokenHash, /^[a-f0-9]{64}$/);
-    assert.equal(stored.consentVersion, "2026-10");
+    assert.equal(stored.consentVersion, "2026-11");
     assert.ok(Math.abs(stored.consentAt.getTime() - Date.now()) < 10_000);
     assert.equal(stored.recipientLabel, "Coach Miller, State University");
     assert.ok(Math.abs(stored.expiresAt.getTime() - (Date.now() + 30 * DAY)) < 60_000, "30 days");

@@ -1048,6 +1048,62 @@ export class S3Service {
     }
   }
 
+  // ─── Child photos ──────────────────────────────────────────────────────────
+  //
+  // A photo of a certificate goes from the phone straight to the same private bucket as the
+  // videos, under `child-photos/`. One signed PUT per photo. As with video parts, the exact length
+  // and type are part of the signature, so the stored object cannot be larger than the size the
+  // server agreed to or a different type. Viewing is by a link that works for a few minutes.
+
+  async generateChildPhotoUploadUrl(
+    key: string,
+    contentType: string,
+    sizeBytes: number,
+    expiresIn: number = 600
+  ): Promise<string> {
+    const command = new PutObjectCommand({
+      Bucket: this.childVideosBucket,
+      Key: key,
+      ContentType: contentType,
+      ContentLength: sizeBytes,
+    });
+    return await getSignedUrl(this.s3Client, command, {
+      expiresIn,
+      signableHeaders: new Set(["content-length", "content-type"]),
+    });
+  }
+
+  /** The stored photo's real size and type, or null if there is no such object. */
+  async headChildPhoto(key: string): Promise<{ sizeBytes: number; contentType: string } | null> {
+    try {
+      const out = await this.s3Client.send(
+        new HeadObjectCommand({ Bucket: this.childVideosBucket, Key: key })
+      );
+      return {
+        sizeBytes: Number(out.ContentLength ?? 0),
+        contentType: String(out.ContentType ?? ""),
+      };
+    } catch (error: any) {
+      if (error?.name === "NotFound" || error?.$metadata?.httpStatusCode === 404) return null;
+      throw error;
+    }
+  }
+
+  /** A short-lived link to show a photo. The type is fixed by the server, and shown inline. */
+  async generateChildPhotoViewUrl(
+    key: string,
+    contentType: string,
+    expiresIn: number = 600
+  ): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.childVideosBucket,
+      Key: key,
+      ResponseContentType: contentType,
+      ResponseContentDisposition: "inline",
+    });
+    return await getSignedUrl(this.s3Client, command, { expiresIn });
+  }
+
   /**
    * A short-lived link to play a clip. The type is fixed by the server rather than taken from
    * what the object says, and the browser is told to play it, not to treat it as a page.

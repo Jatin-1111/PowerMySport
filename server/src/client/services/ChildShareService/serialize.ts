@@ -32,6 +32,7 @@ export const SHARE_ROW_FIELDS = [
   "endedOn",
   "resultUrl",
   "source",
+  "photoId",
 ] as const;
 
 export const SHARE_VIEW_FIELDS = [
@@ -63,11 +64,20 @@ export interface ShareSelection {
   sections: ChildShareSection[];
   /** The clips the parent ticked. A clip not listed here is never shown by this link. */
   videoIds: string[];
+  /**
+   * The entries whose certificate photo the parent chose. A photo is named in the output only
+   * when "certificates" is ticked AND its entry is listed here AND the entry's own section is
+   * shared; the file itself is never in the output, only the entry's id.
+   */
+  photoEventIds: string[];
   sharedAt: Date;
   expiresAt: Date;
 }
 
-const toRow = (row: ChildHistoryView["timeline"][number]): ChildSharePublicRow => ({
+const toRow = (
+  row: ChildHistoryView["timeline"][number],
+  photoId: string | null
+): ChildSharePublicRow => ({
   kind: row.kind,
   section: row.section,
   title: row.title,
@@ -78,6 +88,7 @@ const toRow = (row: ChildHistoryView["timeline"][number]): ChildSharePublicRow =
   ...(row.endedOn ? { endedOn: row.endedOn } : {}),
   ...(row.resultUrl ? { resultUrl: row.resultUrl } : {}),
   source: row.source,
+  ...(photoId ? { photoId } : {}),
 });
 
 export const serializeChildForShare = (
@@ -90,6 +101,7 @@ export const serializeChildForShare = (
   const withAcademics = shared.has("academics");
   const academics = withAcademics ? view.academics : null;
 
+  const photoEvents = new Set(selection.photoEventIds);
   const videoIds = new Set(selection.videoIds);
   const videos = shared.has("videos")
     ? view.videos
@@ -127,7 +139,14 @@ export const serializeChildForShare = (
           ...(academics.intendedField ? { intendedField: academics.intendedField } : {}),
         }
       : null,
-    timeline: view.timeline.filter((row) => shared.has(row.section)).map(toRow),
+    timeline: view.timeline
+      .filter((row) => shared.has(row.section))
+      .map((row) =>
+        toRow(
+          row,
+          shared.has("certificates") && row.hasPhoto && photoEvents.has(row.id) ? row.id : null
+        )
+      ),
     videos,
     sections: selection.sections,
     sharedAt: selection.sharedAt.toISOString(),

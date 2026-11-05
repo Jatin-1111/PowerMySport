@@ -4,6 +4,7 @@ import {
   openSharedProfile,
   playSharedVideo,
   requestContact,
+  viewSharedPhoto,
 } from "../controllers/childShareController";
 import {
   contactRequestRateLimiter,
@@ -51,6 +52,12 @@ childShareRouter.post(
   contactRequestRateLimiter,
   validateRequest(contactRequestSchema),
   requestContact
+);
+childShareRouter.get(
+  "/:token/photos/:entryId",
+  publicShareRateLimiter,
+  publicShareTokenRateLimiter,
+  viewSharedPhoto
 );
 childShareRouter.get(
   "/:token/videos/:videoId/playback",

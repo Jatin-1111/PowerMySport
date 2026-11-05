@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import {
+  CHILD_EVENT_SECTION,
   CHILD_HISTORY_LIMITS,
   CHILD_SHARE_LIFETIME_DAYS,
   CHILD_SHARE_PURGE_AFTER_EXPIRY_DAYS,
@@ -12,6 +13,7 @@ import mongoose from "mongoose";
 import { AppError } from "../../../utils/AppError";
 import { CHILD_SHARING_CONSENT_VERSION } from "../../../shared/services/AuthService/shared";
 import { sendContactRequestEmail } from "../../../utils/email";
+import { ChildEvent } from "../../models/ChildEvent";
 import { ChildShare, type ChildShareDocument } from "../../models/ChildShare";
 import { ContactRequest } from "../../models/ContactRequest";
 import { User } from "../../models/User";
@@ -58,6 +60,7 @@ const present = (share: ChildShareDocument, now: Date): ChildShareListItem => ({
   recipientLabel: share.recipientLabel,
   sections: share.sections,
   videoCount: share.videoIds.length,
+  photoCount: share.photoEventIds?.length ?? 0,
   createdAt: share.createdAt.toISOString(),
   expiresAt: share.expiresAt.toISOString(),
   ...(share.revokedAt ? { revokedAt: share.revokedAt.toISOString() } : {}),
@@ -69,33 +72,81 @@ const present = (share: ChildShareDocument, now: Date): ChildShareListItem => ({
 export interface ShareChoice {
   sections: ChildShareSection[];
   videoIds?: string[] | undefined;
+  photoEventIds?: string[] | undefined;
 }
 
-/** Order and de-duplicate the sections, and decide which clips go with the link. */
-const resolveChoice = async (
+interface ResolvedChoice {
+  sections: ChildShareSection[];
+  videoIds: mongoose.Types.ObjectId[];
+  photoEventIds: mongoose.Types.ObjectId[];
+}
+
+/**
+ * The certificate photos a link may show: this child's finished photos, on entries whose own
+ * section is part of the link. A photo whose entry the link does not show would hang there with
+ * nothing around it, so it is not offered. Asking for one that is not eligible is refused rather
+ * than quietly dropped, so a mistake is noticed. Nothing is chosen by default: a certificate can
+ * show a full name, a date of birth or a school, so each photo is the parent's explicit choice.
+ */
+const resolvePhotos = async (
   childId: string,
-  choice: ShareChoice
-): Promise<{ sections: ChildShareSection[]; videoIds: mongoose.Types.ObjectId[] }> => {
+  sections: ChildShareSection[],
+  wanted: string[] | undefined
+): Promise<mongoose.Types.ObjectId[]> => {
+  const ready = await ChildEvent.find({ childId, "photo.status": "ready" })
+    .select("_id kind")
+    .lean();
+  const eligible = new Set(
+    ready
+      .filter((event) => sections.includes(CHILD_EVENT_SECTION[event.kind]))
+      .map((event) => String(event._id))
+  );
+  const asked = [...new Set((wanted ?? []).map(String))];
+  if (asked.some((id) => !eligible.has(id))) {
+    throw new AppError("One of those photos is not available to share.", 400);
+  }
+  return asked.map((id) => new mongoose.Types.ObjectId(id));
+};
+
+/** Order and de-duplicate the sections, and decide which clips and photos go with the link. */
+const resolveChoice = async (childId: string, choice: ShareChoice): Promise<ResolvedChoice> => {
   const picked = new Set(choice.sections);
-  const sections = CHILD_SHARE_SECTIONS.filter((section) => picked.has(section));
+  let sections = CHILD_SHARE_SECTIONS.filter((section) => picked.has(section));
   if (sections.length === 0) throw new AppError("Choose at least one section to share.", 400);
 
-  if (!sections.includes("videos")) return { sections, videoIds: [] };
+  let videoIds: mongoose.Types.ObjectId[] = [];
+  if (sections.includes("videos")) {
+    // Only this child's finished clips can be shared. Asking for one that is not theirs is refused
+    // rather than quietly dropped, so a mistake is noticed.
+    const ready = await ChildVideo.find({ childId, status: "ready" }).select("_id").lean();
+    const readyIds = new Set(ready.map((video) => String(video._id)));
+    const wanted = choice.videoIds ?? [...readyIds];
+    if (wanted.some((id) => !readyIds.has(String(id)))) {
+      throw new AppError("One of those videos is not available to share.", 400);
+    }
+    const unique = [...new Set(wanted.map(String))];
+    // Videos ticked with nothing to show is a section with no content, so it is left out.
+    if (unique.length === 0) sections = sections.filter((section) => section !== "videos");
+    else videoIds = unique.map((id) => new mongoose.Types.ObjectId(id));
+  }
 
-  // Only this child's finished clips can be shared. Asking for one that is not theirs is refused
-  // rather than quietly dropped, so a mistake is noticed.
-  const ready = await ChildVideo.find({ childId, status: "ready" }).select("_id").lean();
-  const readyIds = new Set(ready.map((video) => String(video._id)));
-  const wanted = choice.videoIds ?? [...readyIds];
-  if (wanted.some((id) => !readyIds.has(String(id)))) {
-    throw new AppError("One of those videos is not available to share.", 400);
+  let photoEventIds: mongoose.Types.ObjectId[] = [];
+  if (sections.includes("certificates")) {
+    photoEventIds = await resolvePhotos(childId, sections, choice.photoEventIds);
+    if (photoEventIds.length === 0) {
+      // Certificates ticked with no photo chosen is a section with no content, so it is left out;
+      // if it was all the link had, there is nothing to share.
+      sections = sections.filter((section) => section !== "certificates");
+      if (sections.length === 0) {
+        throw new AppError("Choose at least one photo, or tick something else to share.", 400);
+      }
+    }
+  } else if ((choice.photoEventIds ?? []).length > 0) {
+    // Photos named without ticking certificates: the choice contradicts itself, so it is refused.
+    throw new AppError("Tick certificates to share photos.", 400);
   }
-  const unique = [...new Set(wanted.map(String))];
-  // Videos ticked with nothing to show is a section with no content, so it is left out.
-  if (unique.length === 0) {
-    return { sections: sections.filter((section) => section !== "videos"), videoIds: [] };
-  }
-  return { sections, videoIds: unique.map((id) => new mongoose.Types.ObjectId(id)) };
+
+  return { sections, videoIds, photoEventIds };
 };
 
 const publicViewOf = async (
@@ -104,6 +155,7 @@ const publicViewOf = async (
   selection: {
     sections: ChildShareSection[];
     videoIds: Array<{ toString(): string }>;
+    photoEventIds: Array<{ toString(): string }>;
     sharedAt: Date;
     expiresAt: Date;
   }
@@ -114,7 +166,11 @@ const publicViewOf = async (
   ]);
   return serializeChildForShare(
     view,
-    { ...selection, videoIds: selection.videoIds.map(String) },
+    {
+      ...selection,
+      videoIds: selection.videoIds.map(String),
+      photoEventIds: selection.photoEventIds.map(String),
+    },
     player?.location ?? null
   );
 };
@@ -128,10 +184,11 @@ export const ChildShareService = {
     now: Date = new Date()
   ): Promise<ChildSharePublicView> {
     await assertOwnedChild(userId, childId);
-    const { sections, videoIds } = await resolveChoice(childId, choice);
+    const { sections, videoIds, photoEventIds } = await resolveChoice(childId, choice);
     return publicViewOf(userId, childId, {
       sections,
       videoIds,
+      photoEventIds,
       sharedAt: now,
       expiresAt: new Date(now.getTime() + CHILD_SHARE_LIFETIME_DAYS * DAY_MS),
     });
@@ -165,7 +222,7 @@ export const ChildShareService = {
       );
     }
 
-    const { sections, videoIds } = await resolveChoice(childId, input);
+    const { sections, videoIds, photoEventIds } = await resolveChoice(childId, input);
     const token = crypto.randomBytes(32).toString("base64url");
     const expiresAt = new Date(now.getTime() + CHILD_SHARE_LIFETIME_DAYS * DAY_MS);
 
@@ -176,6 +233,7 @@ export const ChildShareService = {
       tokenHash: hashToken(token),
       sections,
       videoIds,
+      photoEventIds,
       expiresAt,
       purgeAt: new Date(expiresAt.getTime() + CHILD_SHARE_PURGE_AFTER_EXPIRY_DAYS * DAY_MS),
       consentVersion: CHILD_SHARING_CONSENT_VERSION,
@@ -238,6 +296,7 @@ export const ChildShareService = {
       return await publicViewOf(String(share.userId), String(share.childId), {
         sections: share.sections,
         videoIds: share.videoIds,
+        photoEventIds: share.photoEventIds ?? [],
         sharedAt: share.createdAt,
         expiresAt: share.expiresAt,
       });
@@ -352,6 +411,39 @@ export const ChildShareService = {
       throw new AppError("Your request could not be sent. Please try again.", 502);
     }
     return { sent: true };
+  },
+
+  /**
+   * A ten-minute link to one certificate photo the parent chose for this link. Every condition is
+   * checked again here, from the stored link and the stored entry, so a photo removed or an entry
+   * deleted after the link was made stops being shown at once.
+   */
+  async photoFor(token: string, eventId: string, now: Date = new Date()) {
+    const share = await ChildShareService.resolve(token, now);
+    const allowed =
+      share.sections.includes("certificates") &&
+      (share.photoEventIds ?? []).some((id) => String(id) === eventId);
+    if (!allowed || !mongoose.isValidObjectId(eventId)) {
+      throw new AppError("That photo was not found.", 404);
+    }
+    const event = await ChildEvent.findOne({
+      _id: eventId,
+      childId: share.childId,
+      "photo.status": "ready",
+    })
+      .select("kind photo")
+      .lean();
+    // The entry's own section must still be part of the link, as it was when the photo was chosen.
+    if (!event?.photo || !share.sections.includes(CHILD_EVENT_SECTION[event.kind])) {
+      throw new AppError("That photo was not found.", 404);
+    }
+
+    const url = await s3Service.generateChildPhotoViewUrl(
+      event.photo.key,
+      event.photo.contentType,
+      PLAYBACK_SECONDS
+    );
+    return { url, expiresInSeconds: PLAYBACK_SECONDS };
   },
 
   /** A ten-minute link to play one clip the parent ticked for this link. */

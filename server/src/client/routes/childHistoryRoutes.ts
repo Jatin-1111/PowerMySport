@@ -1,13 +1,17 @@
 import { Router } from "express";
 import {
+  completePhotoUpload,
   completeVideoUpload,
   createChildEvent,
   deleteChildEvent,
+  deletePhoto,
   deleteVideo,
   getChildHistory,
+  getPhotoUrl,
   getVideoPlayback,
   recordVideoConsent,
   saveChildAcademics,
+  startPhotoUpload,
   startVideoUpload,
   updateChildEvent,
 } from "../controllers/childHistoryController";
@@ -27,6 +31,7 @@ import {
   createShareSchema,
   previewShareSchema,
   saveAcademicsSchema,
+  startPhotoUploadSchema,
   startVideoUploadSchema,
   updateChildEventSchema,
   videoConsentSchema,
@@ -68,6 +73,30 @@ childHistoryRouter.delete(
   dependentsWriteRateLimiter,
   deleteChildEvent
 );
+
+// A photo of the certificate behind an entry. Private to the parent: nothing here makes it part
+// of a shared link.
+childHistoryRouter.post(
+  "/:childId/events/:eventId/photo",
+  authMiddleware,
+  dependentsWriteRateLimiter,
+  validateRequest(startPhotoUploadSchema),
+  startPhotoUpload
+);
+childHistoryRouter.post(
+  "/:childId/events/:eventId/photo/complete",
+  authMiddleware,
+  dependentsWriteRateLimiter,
+  completePhotoUpload
+);
+childHistoryRouter.get("/:childId/events/:eventId/photo", authMiddleware, getPhotoUrl);
+childHistoryRouter.delete(
+  "/:childId/events/:eventId/photo",
+  authMiddleware,
+  dependentsWriteRateLimiter,
+  deletePhoto
+);
+
 childHistoryRouter.put(
   "/:childId/academics",
   authMiddleware,

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../../middleware/asyncHandler";
 import { AppError } from "../../utils/AppError";
+import { ChildEventPhotoService } from "../services/ChildEventPhotoService";
 import { ChildHistoryService } from "../services/ChildHistoryService";
 import { ChildVideoService } from "../services/ChildVideoService";
 
@@ -49,6 +50,50 @@ export const deleteChildEvent = asyncHandler(async (req: Request, res: Response)
     childIdOf(req),
     String(req.params.eventId ?? "")
   );
+  res.json({ success: true });
+});
+
+const eventIdOf = (req: Request): string => String(req.params.eventId ?? "");
+
+/** POST /api/child-history/:childId/events/:eventId/photo  { contentType, sizeBytes } */
+export const startPhotoUpload = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const data = await ChildEventPhotoService.startUpload(
+    requireUser(req),
+    childIdOf(req),
+    eventIdOf(req),
+    req.body
+  );
+  // The signed link is a credential: it must not be kept by a cache.
+  res.set("Cache-Control", "no-store");
+  res.status(201).json({ success: true, data });
+});
+
+/** POST /api/child-history/:childId/events/:eventId/photo/complete */
+export const completePhotoUpload = asyncHandler(
+  async (req: Request, res: Response): Promise<void> => {
+    const data = await ChildEventPhotoService.completeUpload(
+      requireUser(req),
+      childIdOf(req),
+      eventIdOf(req)
+    );
+    res.json({ success: true, data });
+  }
+);
+
+/** GET /api/child-history/:childId/events/:eventId/photo */
+export const getPhotoUrl = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  const data = await ChildEventPhotoService.viewUrl(
+    requireUser(req),
+    childIdOf(req),
+    eventIdOf(req)
+  );
+  res.set("Cache-Control", "no-store");
+  res.json({ success: true, data });
+});
+
+/** DELETE /api/child-history/:childId/events/:eventId/photo */
+export const deletePhoto = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+  await ChildEventPhotoService.remove(requireUser(req), childIdOf(req), eventIdOf(req));
   res.json({ success: true });
 });
 
