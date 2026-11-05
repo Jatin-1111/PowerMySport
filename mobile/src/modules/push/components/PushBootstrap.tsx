@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { useAuthStore } from "@/modules/auth/store/authStore";
-import { pushSupport, refreshPushRegistration } from "../services/push";
+import { askForPushOnce, pushSupport, refreshPushRegistration } from "../services/push";
 import { routeForNotification } from "../utils/route";
 
 // A notification can be seen twice: once by the live listener and once as "the notification that
@@ -12,8 +12,8 @@ const handled = new Set<string>();
 /**
  * Mounted once at the root. Shows a notification that arrives while the app is open, opens the right
  * screen when one is tapped (including the tap that launched the app), and keeps a phone that already
- * turned push on registered. It asks for no permission itself: that happens on the settings screen,
- * when the parent chooses to turn notifications on.
+ * turned push on registered. A new sign-in is shown Android's permission dialog once, right away
+ * (askForPushOnce); after that the settings screen is where a parent turns it on or off.
  */
 export function PushBootstrap() {
   const router = useRouter();
@@ -48,7 +48,9 @@ export function PushBootstrap() {
   }, [router]);
 
   useEffect(() => {
-    if (userId) void refreshPushRegistration(userId);
+    if (!userId) return;
+    // A phone that already opted in stays registered; a new sign-in is asked once, right away.
+    void refreshPushRegistration(userId).then(() => askForPushOnce(userId));
   }, [userId]);
 
   return null;

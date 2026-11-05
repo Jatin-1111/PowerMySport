@@ -134,6 +134,24 @@ export async function refreshPushRegistration(userId: string): Promise<void> {
   await enablePush(userId);
 }
 
+const ASKED_KEY = "pms_push_asked";
+
+/**
+ * Right after sign-in: shows Android's own permission dialog, once per account on this phone, and
+ * registers the phone if the parent allows it. It never asks when the phone has already answered
+ * (allowed for another account, or refused), because Android would show no dialog and a second
+ * refusal blocks it for good; the settings screen is where those cases are handled.
+ * The "asked" mark is written before the dialog, so a crash or a back-press never re-prompts.
+ */
+export async function askForPushOnce(userId: string): Promise<void> {
+  if (pushSupport() !== "supported") return;
+  const asked = (await storage.get<string[]>(ASKED_KEY)) ?? [];
+  if (asked.includes(userId)) return;
+  if ((await pushPermission()) !== "undetermined") return;
+  await storage.set(ASKED_KEY, [...asked, userId]);
+  await enablePush(userId);
+}
+
 /** Stops notifications to this phone: tells the server, and forgets the token here. */
 export async function disablePush(keepOwner = false): Promise<void> {
   const token = await storage.get<string>(TOKEN_KEY);
