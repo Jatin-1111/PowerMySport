@@ -12,7 +12,9 @@ import { childHistoryApi, type CreatedShare } from "@/modules/my-child/services/
 import { cvFileNameFor, saveBlob } from "@/modules/my-child/utils/saveFile";
 import {
   choiceFrom,
+  eligiblePhotos,
   offeredSections,
+  photoEntries,
   readyVideos,
   whatsappShareUrl,
 } from "@/modules/my-child/utils/shareChoices";
@@ -75,23 +77,45 @@ function ShareFlow({
 }) {
   const offered = offeredSections(history);
   const clips = readyVideos(history);
+  const photos = photoEntries(history);
 
   const [step, setStep] = useState<Step>("choose");
   const [label, setLabel] = useState("");
-  const [ticked, setTicked] = useState<ChildShareSection[]>(() => offered.map((o) => o.section));
+  // Everything starts ticked except certificate photos: a certificate can show a full name, a date
+  // of birth or a school, so including one is something the parent does on purpose.
+  const [ticked, setTicked] = useState<ChildShareSection[]>(() =>
+    offered.map((o) => o.section).filter((section) => section !== "certificates")
+  );
   const [tickedClips, setTickedClips] = useState<string[]>(() => clips.map((clip) => clip.id));
+  const [tickedPhotoIds, setTickedPhotoIds] = useState<string[]>([]);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedShare | null>(null);
   const [savingPdf, setSavingPdf] = useState(false);
 
   const { create } = useChildShares(childId);
-  const choice = choiceFrom(ticked, tickedClips);
+  const choice = choiceFrom(
+    ticked,
+    tickedClips,
+    photos.filter((row) => tickedPhotoIds.includes(row.id))
+  );
   const preview = useSharePreview(childId, choice, step === "check");
+  const choosablePhotos = eligiblePhotos(photos, ticked);
 
-  const toggle = (section: ChildShareSection) =>
+  const toggle = (section: ChildShareSection) => {
+    const turningOn = !ticked.includes(section);
     setTicked((previous) =>
       previous.includes(section) ? previous.filter((s) => s !== section) : [...previous, section]
+    );
+    // Ticking certificates picks every photo it can show, in plain view in the list below, so the
+    // parent unticks the ones to keep back. Unticking it forgets the choice.
+    if (section === "certificates") {
+      setTickedPhotoIds(turningOn ? choosablePhotos.map((row) => row.id) : []);
+    }
+  };
+  const togglePhoto = (id: string) =>
+    setTickedPhotoIds((previous) =>
+      previous.includes(id) ? previous.filter((p) => p !== id) : [...previous, id]
     );
   const toggleClip = (id: string) =>
     setTickedClips((previous) =>
@@ -192,6 +216,14 @@ function ShareFlow({
               The coach can ask to contact you. Your email is never shown to them, and you choose
               whether to reply.
             </li>
+            {choice.photoEventIds && (
+              <li>
+                The certificate photos you chose are shown exactly as photographed, including
+                anything printed on them, such as {history.child.name}&apos;s full name, date of
+                birth or school. A coach who saves a photo keeps that copy, and we cannot take it
+                back.
+              </li>
+            )}
             <li>PowerMySport does not check what you have entered.</li>
             <li>
               You can stop sharing at any time and the link stops working straight away. A coach who
@@ -281,6 +313,42 @@ function ShareFlow({
                     <span className="text-ink-body tabular-nums">({count})</span>
                   </span>
                 </label>
+                {section === "certificates" && ticked.includes("certificates") && (
+                  <div className="mb-2 ml-8">
+                    <p className="text-ink-body text-pretty text-sm">
+                      Certificates can show {history.child.name}&apos;s full name, date of birth or
+                      school. Tick only the photos you are happy for the coach to see.
+                    </p>
+                    {choosablePhotos.length === 0 ? (
+                      <p className="text-ink-body mt-2 text-sm">
+                        Tick the section an entry belongs to, such as Awards or Results, to choose
+                        its photo.
+                      </p>
+                    ) : (
+                      <ul className="mt-1 space-y-1">
+                        {choosablePhotos.map((row) => (
+                          <li key={row.id}>
+                            <label className="flex min-h-11 items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={tickedPhotoIds.includes(row.id)}
+                                onChange={() => togglePhoto(row.id)}
+                                className="h-5 w-5 shrink-0"
+                              />
+                              <span className="text-ink-body">
+                                {row.title}
+                                <span className="tabular-nums">
+                                  {" "}
+                                  · {formatEntryDate(row.occurredOn, row.datePrecision)}
+                                </span>
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
                 {section === "videos" && ticked.includes("videos") && clips.length > 1 && (
                   <ul className="mb-2 ml-8 space-y-1">
                     {clips.map((clip) => (

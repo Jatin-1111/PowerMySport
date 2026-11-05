@@ -96,6 +96,7 @@ const item = (over: Partial<ChildShareListItem> = {}): ChildShareListItem => ({
   recipientLabel: "Coach Miller",
   sections: ["results"],
   videoCount: 0,
+  photoCount: 0,
   createdAt: NOW,
   expiresAt: "2026-12-03T00:00:00.000Z",
   status: "active",
@@ -438,5 +439,142 @@ describe("the list of links", () => {
     renderCard();
     await screen.findByText("Coach Miller");
     expect(document.body.innerHTML).not.toMatch(/\/share\//);
+  });
+});
+
+describe("certificate photos", () => {
+  const entry = (
+    id: string,
+    kind: "award" | "tournament_result",
+    section: "awards" | "results",
+    title: string,
+    photo: boolean
+  ) => ({
+    id,
+    origin: "stored" as const,
+    kind,
+    section,
+    title,
+    occurredOn: "2026-03-01T00:00:00.000Z",
+    datePrecision: "month" as const,
+    source: "parent" as const,
+    editable: true,
+    canAddResult: false,
+    ...(photo ? { hasPhoto: true } : {}),
+  });
+
+  const withPhotos = () =>
+    history({
+      videos: [],
+      academics: null,
+      timeline: [
+        entry("e1", "tournament_result", "results", "Pune Open", true),
+        entry("e2", "award", "awards", "State champion", true),
+        entry("e3", "award", "awards", "Club champion", false),
+      ],
+    });
+
+  const openWith = async (h: ChildHistoryView) => {
+    renderCard(h);
+    fireEvent.click(screen.getByRole("button", { name: "Share with a coach" }));
+    return screen.findByRole("dialog");
+  };
+
+  it("leaves the certificate photos unticked, so a link made without touching them shows none", async () => {
+    const dialog = await openWith(withPhotos());
+    const box = within(dialog).getByRole("checkbox", {
+      name: /^Certificate photos/,
+    }) as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    expect(within(dialog).queryByRole("checkbox", { name: /Pune Open/ })).toBeNull();
+
+    await toStepTwo(dialog);
+    await waitFor(() => expect(api.previewShare).toHaveBeenCalledTimes(1));
+    expect(api.previewShare).toHaveBeenCalledWith("c1", { sections: ["results", "awards"] });
+    expect(within(dialog).queryByText(/certificate photos you chose/)).toBeNull();
+  });
+
+  it("lists the photos once the section is ticked, with all of them chosen to start, and sends the ones left ticked", async () => {
+    const dialog = await openWith(withPhotos());
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /^Certificate photos/ }));
+
+    const pune = within(dialog).getByRole("checkbox", { name: /Pune Open/ }) as HTMLInputElement;
+    const state = within(dialog).getByRole("checkbox", {
+      name: /State champion/,
+    }) as HTMLInputElement;
+    expect(pune.checked).toBe(true);
+    expect(state.checked).toBe(true);
+    // Only entries that have a photo are listed.
+    expect(within(dialog).queryByRole("checkbox", { name: /Club champion/ })).toBeNull();
+    expect(within(dialog).getByText(/full name, date of birth or school/)).toBeTruthy();
+
+    fireEvent.click(pune);
+    await toStepTwo(dialog);
+    await waitFor(() => expect(api.previewShare).toHaveBeenCalledTimes(1));
+    expect(api.previewShare).toHaveBeenCalledWith("c1", {
+      sections: ["results", "awards", "certificates"],
+      photoEventIds: ["e2"],
+    });
+    expect(
+      within(dialog).getByText(/certificate photos you chose are shown exactly as photographed/)
+    ).toBeTruthy();
+  });
+
+  it("offers an entry's photo only while the section that entry belongs to is ticked", async () => {
+    const dialog = await openWith(withPhotos());
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /^Certificate photos/ }));
+    expect(within(dialog).getByRole("checkbox", { name: /State champion/ })).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /^Awards/ }));
+    expect(within(dialog).queryByRole("checkbox", { name: /State champion/ })).toBeNull();
+    expect(within(dialog).getByRole("checkbox", { name: /Pune Open/ })).toBeTruthy();
+
+    await toStepTwo(dialog);
+    await waitFor(() => expect(api.previewShare).toHaveBeenCalledTimes(1));
+    expect(api.previewShare).toHaveBeenCalledWith("c1", {
+      sections: ["results", "certificates"],
+      photoEventIds: ["e1"],
+    });
+  });
+
+  it("forgets the photo choice when the section is unticked, and sends the choice with the agreement", async () => {
+    const dialog = await openWith(withPhotos());
+    const section = within(dialog).getByRole("checkbox", { name: /^Certificate photos/ });
+    fireEvent.click(section);
+    fireEvent.click(section);
+    expect(within(dialog).queryByRole("checkbox", { name: /State champion/ })).toBeNull();
+    fireEvent.click(section);
+    fireEvent.click(within(dialog).getByRole("checkbox", { name: /Pune Open/ }));
+
+    await toStepTwo(dialog);
+    await within(dialog).findByRole("heading", { level: 2, name: "Anaya" });
+    fireEvent.click(within(dialog).getByRole("checkbox"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create link" }));
+
+    await waitFor(() => expect(api.createShare).toHaveBeenCalledTimes(1));
+    expect(api.createShare).toHaveBeenCalledWith("c1", {
+      recipientLabel: "Coach Miller",
+      sections: ["results", "awards", "certificates"],
+      photoEventIds: ["e2"],
+      consent: true,
+    });
+  });
+
+  it("does not offer the section when no entry has a finished photo", async () => {
+    const dialog = await openWith(history());
+    expect(within(dialog).queryByRole("checkbox", { name: /^Certificate photos/ })).toBeNull();
+  });
+
+  it("says in the list how many photos each link shows", async () => {
+    api.listShares.mockResolvedValue([
+      item({ id: "a", recipientLabel: "Coach Miller", photoCount: 2 }),
+      item({ id: "b", recipientLabel: "Coach Lee", photoCount: 1 }),
+      item({ id: "c", recipientLabel: "Coach Ray", photoCount: 0 }),
+    ]);
+    renderCard();
+    await screen.findByText("Coach Miller");
+    expect(screen.getByText(/Shows 2 certificate photos\./)).toBeTruthy();
+    expect(screen.getByText(/Shows 1 certificate photo\./)).toBeTruthy();
+    expect(screen.getAllByText(/certificate photo/)).toHaveLength(2);
   });
 });

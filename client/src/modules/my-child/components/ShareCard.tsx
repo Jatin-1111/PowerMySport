@@ -78,6 +78,9 @@ export function ShareCard({ childId, history }: { childId: string; history: Chil
                 <p className="text-ink truncate font-medium">{share.recipientLabel}</p>
                 <p className="text-ink-body text-sm">
                   {describeStatus(share)}. {describeOpens(share)}.
+                  {share.photoCount > 0
+                    ? ` Shows ${share.photoCount} certificate ${share.photoCount === 1 ? "photo" : "photos"}.`
+                    : ""}
                 </p>
               </div>
               {share.status === "active" && (

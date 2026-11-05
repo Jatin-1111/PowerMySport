@@ -210,3 +210,77 @@ describe("the videos", () => {
     expect(screen.getByText("Plays on the link")).toBeTruthy();
   });
 });
+
+describe("certificate photos", () => {
+  const withPhoto = () =>
+    view({
+      timeline: [
+        {
+          kind: "award",
+          section: "awards",
+          title: "State champion",
+          occurredOn: "2026-03-01T00:00:00.000Z",
+          datePrecision: "month",
+          source: "parent",
+          photoId: "entry-1",
+        },
+        {
+          kind: "award",
+          section: "awards",
+          title: "Club champion",
+          occurredOn: "2025-03-01T00:00:00.000Z",
+          datePrecision: "month",
+          source: "parent",
+        },
+      ],
+      sections: ["awards", "certificates"],
+    });
+
+  const viewButton = () =>
+    screen.getByRole("button", { name: "View the certificate for State champion" });
+
+  it("shows a button only on the entry whose photo was chosen, and loads nothing until pressed", () => {
+    const viewPhoto = vi.fn();
+    render(<SharedProfile view={withPhoto()} viewPhoto={viewPhoto} />);
+    expect(screen.getAllByRole("button", { name: /View the certificate for/ })).toHaveLength(1);
+    expect(viewButton()).toBeTruthy();
+    expect(viewPhoto).not.toHaveBeenCalled();
+    expect(document.querySelector("img")).toBeNull();
+  });
+
+  it("asks for the photo of that entry, then shows it with a way to open or save it", async () => {
+    const viewPhoto = vi.fn().mockResolvedValue({ url: "https://storage.example/c?sig=1" });
+    render(<SharedProfile view={withPhoto()} viewPhoto={viewPhoto} />);
+    fireEvent.click(viewButton());
+
+    await waitFor(() => expect(document.querySelector("img")).toBeTruthy());
+    expect(viewPhoto).toHaveBeenCalledWith("entry-1");
+    const img = document.querySelector("img")!;
+    expect(img.getAttribute("src")).toBe("https://storage.example/c?sig=1");
+    expect(img.getAttribute("alt")).toBe("Certificate for State champion");
+    expect(img.getAttribute("referrerpolicy")).toBe("no-referrer");
+    const open = screen.getByRole("link", { name: /open or save the photo/i });
+    expect(open.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("says so, and lets the reader try again, when the photo cannot be shown", async () => {
+    const viewPhoto = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("404"))
+      .mockResolvedValue({ url: "https://s/c" });
+    render(<SharedProfile view={withPhoto()} viewPhoto={viewPhoto} />);
+    fireEvent.click(viewButton());
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/could not be shown/);
+    fireEvent.click(viewButton());
+    await waitFor(() => expect(document.querySelector("img")).toBeTruthy());
+    expect(viewPhoto).toHaveBeenCalledTimes(2);
+  });
+
+  it("loads nothing in a preview, and says the photo is part of the link", () => {
+    render(<SharedProfile view={withPhoto()} preview />);
+    expect(screen.queryByRole("button", { name: /View the certificate/ })).toBeNull();
+    expect(screen.getByText("A photo of the certificate is included.")).toBeTruthy();
+    expect(document.querySelector("img")).toBeNull();
+  });
+});

@@ -7,6 +7,7 @@ import {
   type ChildSharePublicView,
   type ChildShareSection,
 } from "@powermysport/shared-types";
+import { SharedPhoto } from "@/modules/my-child/components/SharedPhoto";
 import { SharedVideoRow } from "@/modules/my-child/components/SharedVideoRow";
 import { SECTION_LABELS, formatEntryDate, headerLine } from "@/modules/my-child/utils/format";
 import { StatTile } from "@/modules/shared/ui/StatTile";
@@ -46,11 +47,14 @@ const ORDER: ChildShareSection[] = [
 export function SharedProfile({
   view,
   play,
+  viewPhoto,
   preview = false,
   actions,
 }: {
   view: ChildSharePublicView;
   play?: (videoId: string) => Promise<{ url: string }>;
+  /** Asks for a viewing link to one chosen certificate photo. Left out in a preview. */
+  viewPhoto?: (entryId: string) => Promise<{ url: string }>;
   preview?: boolean;
   /** What a reader can do with the profile: ask for contact, save the CV. Not shown in a preview. */
   actions?: ReactNode;
@@ -117,7 +121,11 @@ export function SharedProfile({
               {rows.length > 0 && (
                 <ol className="divide-hairline mt-2 divide-y">
                   {rows.map((row, index) => (
-                    <SharedRow key={`${row.title}-${row.occurredOn}-${index}`} row={row} />
+                    <SharedRow
+                      key={`${row.title}-${row.occurredOn}-${index}`}
+                      row={row}
+                      {...(viewPhoto ? { viewPhoto } : {})}
+                    />
                   ))}
                 </ol>
               )}
@@ -170,7 +178,14 @@ function AcademicFacts({
   );
 }
 
-function SharedRow({ row }: { row: ChildSharePublicRow }) {
+function SharedRow({
+  row,
+  viewPhoto,
+}: {
+  row: ChildSharePublicRow;
+  viewPhoto?: (entryId: string) => Promise<{ url: string }>;
+}) {
+  const photoId = row.photoId;
   return (
     <li className="grid gap-x-6 gap-y-1 py-4 sm:grid-cols-[9rem_1fr]">
       <p className="text-ink-body text-sm tabular-nums">
@@ -208,6 +223,12 @@ function SharedRow({ row }: { row: ChildSharePublicRow }) {
             </a>
           )}
         </p>
+        {photoId && (
+          <SharedPhoto
+            entryTitle={row.title}
+            {...(viewPhoto ? { view: () => viewPhoto(photoId) } : {})}
+          />
+        )}
       </div>
     </li>
   );

@@ -1,7 +1,14 @@
 import type { ChildHistoryView, ChildTimelineRow } from "@powermysport/shared-types";
 import { describe, expect, it } from "vitest";
 
-import { choiceFrom, offeredSections, readyVideos, whatsappShareUrl } from "./shareChoices";
+import {
+  choiceFrom,
+  eligiblePhotos,
+  offeredSections,
+  photoEntries,
+  readyVideos,
+  whatsappShareUrl,
+} from "./shareChoices";
 
 const row = (section: ChildTimelineRow["section"]): ChildTimelineRow => ({
   id: section,
@@ -77,6 +84,61 @@ describe("what is sent for the ticks", () => {
 
   it("sends nothing when nothing is ticked", () => {
     expect(choiceFrom([], ["v1"])).toEqual({ sections: [] });
+  });
+});
+
+describe("certificate photos", () => {
+  const withPhoto = (id: string, section: ChildTimelineRow["section"]): ChildTimelineRow => ({
+    ...row(section),
+    id,
+    hasPhoto: true,
+  });
+
+  it("offers the section only for entries that have a finished photo", () => {
+    const offered = offeredSections(
+      history({ timeline: [withPhoto("a", "awards"), row("results")] })
+    );
+    expect(offered).toEqual([
+      { section: "results", count: 1 },
+      { section: "awards", count: 1 },
+      { section: "certificates", count: 1 },
+    ]);
+    expect(photoEntries(history({ timeline: [row("awards")] }))).toEqual([]);
+  });
+
+  it("does not offer a photo that a derived row carries, because only stored entries can", () => {
+    const derived: ChildTimelineRow = { ...withPhoto("r", "ranking"), editable: false };
+    expect(photoEntries(history({ timeline: [derived] }))).toEqual([]);
+  });
+
+  it("offers a photo only when its entry's own section is ticked", () => {
+    const photos = [withPhoto("a", "awards"), withPhoto("b", "results")];
+    expect(eligiblePhotos(photos, ["awards"]).map((p) => p.id)).toEqual(["a"]);
+    expect(eligiblePhotos(photos, [])).toEqual([]);
+  });
+
+  it("sends the photos only when certificates is ticked and at least one is chosen", () => {
+    const a = withPhoto("a", "awards");
+    expect(choiceFrom(["awards", "certificates"], [], [a])).toEqual({
+      sections: ["awards", "certificates"],
+      photoEventIds: ["a"],
+    });
+    // Certificates ticked with no photo chosen is a section with nothing in it.
+    expect(choiceFrom(["awards", "certificates"], [], [])).toEqual({ sections: ["awards"] });
+    // A photo chosen but certificates not ticked is never sent.
+    expect(choiceFrom(["awards"], [], [a])).toEqual({ sections: ["awards"] });
+  });
+
+  it("drops a photo whose entry's section was unticked after the photo was chosen", () => {
+    const a = withPhoto("a", "awards");
+    const b = withPhoto("b", "results");
+    expect(choiceFrom(["results", "certificates"], [], [a, b])).toEqual({
+      sections: ["results", "certificates"],
+      photoEventIds: ["b"],
+    });
+    expect(choiceFrom(["coaching", "certificates"], [], [a, b])).toEqual({
+      sections: ["coaching"],
+    });
   });
 });
 

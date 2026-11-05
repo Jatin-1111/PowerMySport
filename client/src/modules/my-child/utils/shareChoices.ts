@@ -1,6 +1,7 @@
 import type {
   ChildHistoryView,
   ChildShareSection,
+  ChildTimelineRow,
   ChildVideoView,
 } from "@powermysport/shared-types";
 
@@ -21,6 +22,7 @@ export const OFFERED_ORDER: ChildShareSection[] = [
   "fitness",
   "academics",
   "videos",
+  "certificates",
 ];
 
 export interface OfferedSection {
@@ -31,6 +33,10 @@ export interface OfferedSection {
 export const readyVideos = (history: Pick<ChildHistoryView, "videos">): ChildVideoView[] =>
   history.videos.filter((video) => video.status === "ready");
 
+/** The entries that carry a finished certificate photo, which are the ones that can be chosen. */
+export const photoEntries = (history: Pick<ChildHistoryView, "timeline">): ChildTimelineRow[] =>
+  history.timeline.filter((row) => row.editable && row.hasPhoto === true);
+
 export const offeredSections = (
   history: Pick<ChildHistoryView, "timeline" | "academics" | "videos">
 ): OfferedSection[] => {
@@ -39,6 +45,8 @@ export const offeredSections = (
   if (history.academics) counts.set("academics", (counts.get("academics") ?? 0) + 1);
   const clips = readyVideos(history).length;
   if (clips > 0) counts.set("videos", clips);
+  const photos = photoEntries(history).length;
+  if (photos > 0) counts.set("certificates", photos);
 
   return OFFERED_ORDER.filter((section) => (counts.get(section) ?? 0) > 0).map((section) => ({
     section,
@@ -47,18 +55,42 @@ export const offeredSections = (
 };
 
 /**
+ * The photos that can go with the ticks made so far: an entry's photo is offered only when the
+ * section its entry belongs to is ticked, because a photo with no entry around it would hang there
+ * with nothing to explain it. The server enforces the same rule.
+ */
+export const eligiblePhotos = (
+  photos: ChildTimelineRow[],
+  ticked: ChildShareSection[]
+): ChildTimelineRow[] => photos.filter((row) => ticked.includes(row.section));
+
+/**
  * What goes to the server for the ticks the parent made. Videos are in only when at least one
- * clip is ticked, because a videos section with nothing to play is a section with no content.
+ * clip is ticked, and certificates only when at least one eligible photo is ticked, because a
+ * section with nothing to show is a section with no content.
  */
 export const choiceFrom = (
   ticked: ChildShareSection[],
-  tickedVideoIds: string[]
-): { sections: ChildShareSection[]; videoIds?: string[] } => {
+  tickedVideoIds: string[],
+  tickedPhotos: Array<Pick<ChildTimelineRow, "id" | "section">> = []
+): { sections: ChildShareSection[]; videoIds?: string[]; photoEventIds?: string[] } => {
   const withVideos = ticked.includes("videos") && tickedVideoIds.length > 0;
+  const photoEventIds = ticked.includes("certificates")
+    ? tickedPhotos.filter((photo) => ticked.includes(photo.section)).map((photo) => photo.id)
+    : [];
+  const withPhotos = photoEventIds.length > 0;
+
   const sections = OFFERED_ORDER.filter(
-    (section) => ticked.includes(section) && (section !== "videos" || withVideos)
+    (section) =>
+      ticked.includes(section) &&
+      (section !== "videos" || withVideos) &&
+      (section !== "certificates" || withPhotos)
   );
-  return withVideos ? { sections, videoIds: tickedVideoIds } : { sections };
+  return {
+    sections,
+    ...(withVideos ? { videoIds: tickedVideoIds } : {}),
+    ...(withPhotos ? { photoEventIds } : {}),
+  };
 };
 
 /** The message a parent sends with the link. Plain, with the name so the coach knows what it is. */

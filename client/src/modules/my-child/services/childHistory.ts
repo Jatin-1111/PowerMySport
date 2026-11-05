@@ -76,6 +76,11 @@ export interface ShareChoice {
   sections: ChildShareSection[];
   /** The clips ticked. Left out, every finished clip goes with the link. */
   videoIds?: string[];
+  /**
+   * The entries whose certificate photo is shown. Left out, no photo goes with the link: each one
+   * is chosen, never assumed.
+   */
+  photoEventIds?: string[];
 }
 
 export interface NewShare extends ShareChoice {
@@ -157,7 +162,8 @@ export const childHistoryApi = {
   async downloadCv(childId: string, choice: ShareChoice): Promise<Blob> {
     const { data } = await axiosInstance.get(`${base(childId)}/cv.pdf`, {
       params: {
-        sections: choice.sections.join(","),
+        // The CV is text only, so certificate photos are never part of it.
+        sections: choice.sections.filter((section) => section !== "certificates").join(","),
         ...(choice.videoIds?.length ? { videoIds: choice.videoIds.join(",") } : {}),
       },
       responseType: "blob",

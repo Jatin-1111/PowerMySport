@@ -89,6 +89,11 @@ export function HistoryTimeline({
                 <span className="border-hairline text-ink-body rounded-md border px-2 py-0.5 text-xs">
                   {CHILD_HISTORY_SOURCE_LABELS[row.source]}
                 </span>
+                {row.hasPhoto && (
+                  <span className="border-hairline text-ink-body rounded-md border px-2 py-0.5 text-xs">
+                    Photo attached
+                  </span>
+                )}
                 {row.resultUrl && (
                   <a
                     href={row.resultUrl}

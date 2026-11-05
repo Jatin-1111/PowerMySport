@@ -3,7 +3,11 @@
 import type { ChildSharePublicView } from "@powermysport/shared-types";
 import { ContactRequestDialog } from "@/modules/my-child/components/ContactRequestDialog";
 import { SharedProfile } from "@/modules/my-child/components/SharedProfile";
-import { fetchSharedPlayback, sharedCvUrl } from "@/modules/my-child/services/sharedProfile";
+import {
+  fetchSharedPhoto,
+  fetchSharedPlayback,
+  sharedCvUrl,
+} from "@/modules/my-child/services/sharedProfile";
 import { Button } from "@/modules/shared/ui/Button";
 import { useState } from "react";
 
@@ -29,6 +33,7 @@ export function PublicSharedProfile({
       <SharedProfile
         view={view}
         play={(videoId) => fetchSharedPlayback(token, videoId)}
+        viewPhoto={(entryId) => fetchSharedPhoto(token, entryId)}
         actions={
           <>
             <Button className="min-h-11" onClick={() => setAsking(true)}>

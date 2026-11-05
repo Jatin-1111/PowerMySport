@@ -29,6 +29,7 @@ export const SECTION_LABELS: Record<ChildShareSection, string> = {
   awards: "Awards",
   academics: "Academics",
   videos: "Videos",
+  certificates: "Certificate photos",
 };
 
 /** What each kind's form asks, in the words a parent would use. */

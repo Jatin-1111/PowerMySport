@@ -55,6 +55,21 @@ export async function fetchSharedPlayback(
   return { url: body.data.url as string };
 }
 
+/**
+ * Asked for in the browser when a reader presses "View certificate". Only a photo the parent chose
+ * for this link has an answer; the link it returns works for minutes.
+ */
+export async function fetchSharedPhoto(token: string, entryId: string): Promise<{ url: string }> {
+  const res = await fetch(
+    `${apiBase()}/share/${encodeURIComponent(token)}/photos/${encodeURIComponent(entryId)}`,
+    { cache: "no-store", headers: { Accept: "application/json" } }
+  );
+  if (!res.ok) throw new Error(`photo ${res.status}`);
+  const body = await res.json();
+  if (!body?.data?.url) throw new Error("photo without a link");
+  return { url: body.data.url as string };
+}
+
 /** Where the CV for a link is downloaded from. A plain address, so it works as a link. */
 export const sharedCvUrl = (token: string): string =>
   `${apiBase()}/share/${encodeURIComponent(token)}/cv.pdf`;
