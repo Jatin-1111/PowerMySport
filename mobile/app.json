@@ -39,6 +39,14 @@
       ],
       "expo-status-bar",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "PowerMySport reads a photo only when you choose one for your child's record.",
+          "cameraPermission": "PowerMySport uses the camera only when you take a photo of a certificate for your child's record.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#C2410C"

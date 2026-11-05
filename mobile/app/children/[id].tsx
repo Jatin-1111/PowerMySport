@@ -1,31 +1,19 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Plus } from "lucide-react-native";
 import {
   CHILD_HISTORY_SOURCE_LABELS,
   CHILD_SHARE_NOTICE,
   type ChildHistoryView,
-  type ChildTimelineRow,
 } from "@powermysport/shared-types";
 import { Button } from "@components/ui/Button";
 import { childrenApi } from "@/modules/children/services/children";
+import { formatWhen } from "@/modules/children/utils/entries";
 import { RankingCard } from "@/modules/rankings/components/RankingCard";
 import { COLORS } from "@lib/constants";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** A parent rarely knows the day, so show only as much of the date as was recorded. */
-function formatWhen(row: ChildTimelineRow): string {
-  const date = new Date(row.occurredOn);
-  if (Number.isNaN(date.getTime())) return "";
-  const year = date.getUTCFullYear();
-  if (row.datePrecision === "year") return String(year);
-  const month = MONTHS[date.getUTCMonth()];
-  if (row.datePrecision === "month") return `${month} ${year}`;
-  return `${date.getUTCDate()} ${month} ${year}`;
-}
+import { entryScreen } from "@lib/routes";
 
 function Stat({ label, value }: { label: string; value: number | null }) {
   return (
@@ -52,9 +40,13 @@ export default function ChildDetailScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Reload each time the screen is shown, so an entry added or edited on the next screen appears
+  // at once.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load])
+  );
 
   return (
     <ScrollView
@@ -108,38 +100,91 @@ export default function ChildDetailScreen() {
 
           <RankingCard childId={id} childName={view.child.name} sport={view.child.sport} />
 
-          <Text className="text-ink mb-3 text-lg font-semibold">Sporting record</Text>
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-ink text-lg font-semibold">Sporting record</Text>
+            <TouchableOpacity
+              onPress={() => router.push(entryScreen({ childId: id }))}
+              accessibilityRole="button"
+              accessibilityLabel="Add an entry"
+              className="rounded-button bg-action min-h-[44px] flex-row items-center px-4"
+            >
+              <Plus size={16} color="#FFFFFF" />
+              <Text className="ml-1.5 text-sm font-semibold text-white">Add</Text>
+            </TouchableOpacity>
+          </View>
           {view.timeline.length === 0 ? (
             <View className="rounded-tile border-hairline bg-surface border p-5">
               <Text className="text-body text-sm leading-relaxed">
-                Nothing recorded yet. Tournaments, awards, coaching and fitness tests will appear
-                here as they are added.
+                Nothing recorded yet. Add a tournament result, an award, a fitness test or a school
+                result, and it appears here.
               </Text>
             </View>
           ) : (
             <View className="rounded-tile border-hairline bg-surface overflow-hidden border">
-              {view.timeline.map((row, index) => (
-                <View
-                  key={row.id}
-                  className={`px-4 py-4 ${index > 0 ? "border-hairline border-t" : ""}`}
-                >
-                  <View className="flex-row items-start justify-between">
-                    <Text className="text-ink mr-3 flex-1 text-base font-semibold">
-                      {row.title}
-                    </Text>
-                    <Text className="text-muted text-xs">{formatWhen(row)}</Text>
+              {view.timeline.map((row, index) => {
+                const body = (
+                  <>
+                    <View className="flex-row items-start justify-between">
+                      <Text className="text-ink mr-3 flex-1 text-base font-semibold">
+                        {row.title}
+                      </Text>
+                      <Text className="text-muted text-xs">{formatWhen(row)}</Text>
+                    </View>
+                    {row.resultLabel ? (
+                      <Text className="text-body mt-1 text-sm">{row.resultLabel}</Text>
+                    ) : null}
+                    {row.detail ? (
+                      <Text className="text-body mt-1 text-sm leading-relaxed">{row.detail}</Text>
+                    ) : null}
+                    <View className="mt-2 flex-row items-center justify-between">
+                      <Text className="text-ash text-xs">
+                        {CHILD_HISTORY_SOURCE_LABELS[row.source]}
+                        {row.hasPhoto ? " · Photo attached" : ""}
+                      </Text>
+                      {row.editable ? (
+                        <Text className="text-action text-xs font-semibold">Edit</Text>
+                      ) : null}
+                    </View>
+                  </>
+                );
+                const wrap = `px-4 py-4 ${index > 0 ? "border-hairline border-t" : ""}`;
+                return (
+                  <View key={row.id}>
+                    {row.editable ? (
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Edit ${row.title}`}
+                        onPress={() => router.push(entryScreen({ childId: id, entryId: row.id }))}
+                        className={wrap}
+                      >
+                        {body}
+                      </TouchableOpacity>
+                    ) : (
+                      <View className={wrap}>
+                        {body}
+                        {row.canAddResult && row.editionSlug ? (
+                          <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() =>
+                              router.push(
+                                entryScreen({
+                                  childId: id,
+                                  editionSlug: row.editionSlug,
+                                  title: row.title,
+                                })
+                              )
+                            }
+                            className="mt-2 min-h-[44px] justify-center"
+                          >
+                            <Text className="text-action text-sm font-semibold">Add result</Text>
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    )}
                   </View>
-                  {row.resultLabel ? (
-                    <Text className="text-body mt-1 text-sm">{row.resultLabel}</Text>
-                  ) : null}
-                  {row.detail ? (
-                    <Text className="text-body mt-1 text-sm leading-relaxed">{row.detail}</Text>
-                  ) : null}
-                  <Text className="text-ash mt-2 text-xs">
-                    {CHILD_HISTORY_SOURCE_LABELS[row.source]}
-                  </Text>
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
 

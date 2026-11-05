@@ -58,28 +58,37 @@ function Box({
 export function DobFields({
   value,
   onChange,
+  showDay = true,
+  showMonth = true,
 }: {
   value: DobValue;
   onChange: (next: DobValue) => void;
+  /** A record dated only to the month or the year hides the boxes it does not need. */
+  showDay?: boolean;
+  showMonth?: boolean;
 }) {
   return (
     <View className="flex-row gap-3">
-      <Box
-        label="Day"
-        placeholder="DD"
-        value={value.day}
-        maxLength={2}
-        width={72}
-        onChangeText={(day) => onChange({ ...value, day })}
-      />
-      <Box
-        label="Month"
-        placeholder="MM"
-        value={value.month}
-        maxLength={2}
-        width={72}
-        onChangeText={(month) => onChange({ ...value, month })}
-      />
+      {showDay && (
+        <Box
+          label="Day"
+          placeholder="DD"
+          value={value.day}
+          maxLength={2}
+          width={72}
+          onChangeText={(day) => onChange({ ...value, day })}
+        />
+      )}
+      {showMonth && (
+        <Box
+          label="Month"
+          placeholder="MM"
+          value={value.month}
+          maxLength={2}
+          width={72}
+          onChangeText={(month) => onChange({ ...value, month })}
+        />
+      )}
       <Box
         label="Year"
         placeholder="YYYY"
