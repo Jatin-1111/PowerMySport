@@ -27,6 +27,11 @@ export const API_URL = getApiUrl();
 // The public website, for the legal pages the app links to.
 export const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "https://powermysport.com";
 
+// The Google OAuth WEB client ID (the same one the website and the server use). Google sign-in in the
+// app asks Google for a token issued for this ID, because it is the one the server accepts. It is a
+// public identifier, not a secret. Empty means Google sign-in is hidden.
+export const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "";
+
 // Mirrors client/DESIGN.md (warm paper). Keep in step with the colors in tailwind.config.js.
 export const COLORS = {
   canvas: "#F8F3EA",

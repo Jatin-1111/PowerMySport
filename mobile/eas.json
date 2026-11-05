@@ -9,6 +9,9 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "651324832869-b6md49goq69q9j4ls21f31ne5se5ikp8.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -18,7 +21,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api.powermysport.com/api",
-        "EXPO_PUBLIC_WEB_URL": "https://powermysport.com"
+        "EXPO_PUBLIC_WEB_URL": "https://powermysport.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "651324832869-b6md49goq69q9j4ls21f31ne5se5ikp8.apps.googleusercontent.com"
       }
     }
   }

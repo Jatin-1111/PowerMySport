@@ -12,6 +12,8 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Mail, Lock, Zap } from "lucide-react-native";
 import { Button } from "@components/ui/Button";
+import { GoogleButton } from "@/modules/auth/components/GoogleButton";
+import { googleAvailable } from "@/modules/auth/services/google";
 import { Input } from "@components/ui/Input";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
@@ -121,6 +123,17 @@ export default function LoginScreen() {
           <Button onPress={handleLogin} loading={loading} size="lg">
             Sign In
           </Button>
+
+          {googleAvailable() ? (
+            <>
+              <View className="my-6 flex-row items-center">
+                <View className="bg-hairline h-px flex-1" />
+                <Text className="text-muted mx-4 text-sm">or</Text>
+                <View className="bg-hairline h-px flex-1" />
+              </View>
+              <GoogleButton mode="login" />
+            </>
+          ) : null}
 
           {/* Register link */}
           <View className="mt-8 flex-row items-center justify-center">

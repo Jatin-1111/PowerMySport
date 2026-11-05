@@ -35,6 +35,18 @@ export const authApi = {
     }
   },
 
+  /** Signs in or signs up with a Google ID token. The server verifies the token and ignores any other claim. */
+  googleAuth: async (body: {
+    credential: string;
+    action: "login" | "register";
+    role?: "Parent";
+    acceptedTerms?: boolean;
+    acceptedPrivacy?: boolean;
+  }): Promise<AuthResponse> => {
+    const res = await apiClient.post("/auth/google", body);
+    return res.data;
+  },
+
   deleteAccount: async (password: string): Promise<ApiResponse> => {
     const res = await apiClient.post("/auth/delete-account", { password });
     return res.data;

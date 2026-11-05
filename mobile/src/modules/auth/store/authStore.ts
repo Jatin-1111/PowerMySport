@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { storage, secureStorage, STORAGE_KEYS } from "@/utils/storage";
 import { setSessionExpiredHandler } from "@lib/api/axios";
+import { signOutOfGoogle } from "@/modules/auth/services/google";
 import type { User } from "@/types";
 
 interface AuthState {
@@ -43,6 +44,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (isLoading) => set({ isLoading }),
 
   logout: async () => {
+    // Also sign out of Google, so the next Google sign-in offers a choice of account.
+    await signOutOfGoogle();
     await secureStorage.remove(STORAGE_KEYS.AUTH_TOKEN);
     await storage.remove(STORAGE_KEYS.USER);
     set({ user: null, token: null });

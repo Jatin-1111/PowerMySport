@@ -15,6 +15,8 @@ import { Mail, Lock, User, Phone } from "lucide-react-native";
 import { Button } from "@components/ui/Button";
 import { Input } from "@components/ui/Input";
 import { Checkbox } from "@components/ui/Checkbox";
+import { GoogleButton } from "@/modules/auth/components/GoogleButton";
+import { googleAvailable } from "@/modules/auth/services/google";
 import { authApi } from "@/modules/auth/services/auth";
 import { useAuthStore } from "@/modules/auth/store/authStore";
 import { COLORS, WEB_URL } from "@lib/constants";
@@ -185,6 +187,33 @@ export default function RegisterScreen() {
               Create account
             </Button>
           </View>
+
+          {googleAvailable() ? (
+            <>
+              <View className="my-5 flex-row items-center">
+                <View className="bg-hairline h-px flex-1" />
+                <Text className="text-muted mx-4 text-sm">or</Text>
+                <View className="bg-hairline h-px flex-1" />
+              </View>
+              <GoogleButton
+                mode="register"
+                acceptedTerms={acceptedTerms}
+                acceptedPrivacy={acceptedPrivacy}
+                onConsentMissing={() =>
+                  // Google sign-up is a sign-up: the same two agreements are needed first.
+                  setErrors((e) => ({
+                    ...e,
+                    ...(acceptedTerms
+                      ? {}
+                      : { acceptedTerms: "You need to agree to the Terms of Service" }),
+                    ...(acceptedPrivacy
+                      ? {}
+                      : { acceptedPrivacy: "You need to agree to the Privacy Policy" }),
+                  }))
+                }
+              />
+            </>
+          ) : null}
 
           <View className="mt-6 flex-row items-center justify-center">
             <Text className="text-muted">Already have an account? </Text>
